@@ -5,6 +5,12 @@
 Your CarFlow Reservation System has been successfully pushed to:
 **https://github.com/aebdigital/carflow_reservation_system.git**
 
+## 🌐 Production URLs
+
+- **Frontend (Admin Dashboard)**: `https://carflow-reservation-admin.netlify.app`
+- **Backend API**: `https://carflow-reservation-backend.onrender.com`
+- **API Health Check**: `https://carflow-reservation-backend.onrender.com/api/health`
+
 ## 📁 Project Structure
 
 The repository is properly organized with separated server and client parts:
@@ -19,217 +25,148 @@ carflow_reservation_system/
 │   ├── services/          # External services (Google Cloud)
 │   ├── .env               # Environment variables (create this)
 │   ├── google-cloud-key.json  # GCS service account (create this)
-│   └── server.js          # Entry point
+│   └── package.json       # Dependencies & scripts
 ├── client/                # Frontend (React/Vite) - Port 5173
-│   ├── src/pages/         # Main application pages
-│   ├── src/components/    # Reusable components
-│   ├── src/store/         # Redux state management
-│   └── vite.config.js     # Vite configuration
-├── .gitignore             # Comprehensive ignore rules
-├── README.md              # Complete setup guide
-├── ENVIRONMENT_SETUP.md   # Detailed environment configuration
-└── package.json           # Root scripts for development
+│   ├── src/               # React components & pages
+│   ├── public/            # Static assets
+│   ├── .env.production    # Production environment (auto-configured)
+│   └── package.json       # Dependencies & scripts
+├── netlify.toml           # Netlify deployment configuration
+├── NETLIFY_RENDER_DEPLOYMENT.md  # Complete deployment guide
+├── DEPLOYMENT_QUICK_START.md     # 30-minute deployment guide
+└── deploy.sh              # Deployment helper script
 ```
 
-## 🔧 Environment Variables You Need to Set
+## 🔧 Environment Variables Required
 
-### Required Server Variables (server/.env)
+### **Server Environment Variables (Render)**
 
 ```bash
 # Database (REQUIRED)
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database-name
 
-# JWT Security (REQUIRED - Generate strong secrets!)
-JWT_SECRET=your-super-secret-jwt-key-change-in-production-minimum-32-characters
-JWT_REFRESH_SECRET=your-super-secret-refresh-jwt-key-change-in-production-minimum-32-characters
+# JWT Security (REQUIRED)
+JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long
+JWT_REFRESH_SECRET=your-super-secret-refresh-key-minimum-32-characters-long
+JWT_EXPIRE=30d
+JWT_REFRESH_EXPIRE=90d
 
-# Google Cloud Storage (REQUIRED for image uploads)
-GCS_PROJECT_ID=your-gcs-project-id
-GCS_BUCKET_NAME=your-bucket-name
-GCS_KEY_FILENAME=./google-cloud-key.json
+# Google Cloud Storage (REQUIRED)
+GOOGLE_CLOUD_PROJECT_ID=your-project-id
+GOOGLE_CLOUD_BUCKET_NAME=carflow-images-production
+GOOGLE_CLOUD_KEY_BASE64=your-base64-encoded-service-account-key
 
-# Server Configuration
-PORT=3001
-NODE_ENV=development
-CLIENT_URL=http://localhost:5173
-```
+# App Configuration (REQUIRED)
+NODE_ENV=production
+PORT=10000
+CORS_ORIGIN=https://carflow-reservation-admin.netlify.app
 
-### Optional Server Variables
-
-```bash
-# File Upload Limits
-MAX_IMAGE_SIZE=5242880
-MAX_IMAGES_PER_CAR=10
+# File Upload Settings
 MAX_FILE_SIZE=5242880
 ALLOWED_IMAGE_TYPES=image/jpeg,image/png,image/webp
 
-# JWT Token Expiry
-JWT_EXPIRE=30d
-
-# Logging
-LOG_LEVEL=info
-LOG_FILE=./logs/app.log
-
-# For Production Deployment (alternative to key file)
-# GCS_CREDENTIALS=base64-encoded-service-account-json
+# Demo Settings (Optional)
+DEMO_MODE=true
 ```
 
-## 🗄️ Database Setup Options
-
-### Option 1: MongoDB Atlas (Recommended)
-1. Create free account at https://www.mongodb.com/atlas
-2. Create new cluster
-3. Create database user with password
-4. Whitelist your IP address (0.0.0.0/0 for development)
-5. Get connection string: `mongodb+srv://username:password@cluster.mongodb.net/carflow`
-
-### Option 2: Local MongoDB
-```bash
-# macOS
-brew install mongodb/brew/mongodb-community
-brew services start mongodb/brew/mongodb-community
-
-# Use: mongodb://localhost:27017/car-rental-admin
-```
-
-## ☁️ Google Cloud Storage Setup
-
-### 1. Create GCS Project & Bucket
-1. Go to https://console.cloud.google.com/
-2. Create new project or select existing
-3. Enable Cloud Storage API
-4. Create storage bucket (choose region close to your users)
-
-### 2. Service Account Setup
-1. Navigate to "IAM & Admin" > "Service Accounts"
-2. Create new service account
-3. Assign role: "Storage Object Admin"
-4. Create JSON key and download
-5. Rename to `google-cloud-key.json` and place in `server/` directory
-
-### 3. Bucket Permissions (for public image access)
-```bash
-# Make bucket publicly readable
-gsutil iam ch allUsers:objectViewer gs://your-bucket-name
-```
-
-## 🔐 Security Setup
-
-### Generate JWT Secrets
-```bash
-# Generate secure 64-character secrets
-node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-```
-
-### Production Security Checklist
-- [ ] Use strong, unique JWT secrets (minimum 32 characters)
-- [ ] Use MongoDB Atlas with authentication
-- [ ] Set `NODE_ENV=production`
-- [ ] Use HTTPS in production
-- [ ] Set specific `CLIENT_URL` (not localhost)
-- [ ] Use `GCS_CREDENTIALS` environment variable instead of key file
-- [ ] Enable rate limiting
-- [ ] Regular dependency updates
-
-## 🚀 Quick Start Commands
+### **Client Environment Variables (Netlify)**
 
 ```bash
-# Clone and setup
-git clone https://github.com/aebdigital/carflow_reservation_system.git
-cd carflow_reservation_system
-npm install
-
-# Install dependencies for both server and client
-cd server && npm install
-cd ../client && npm install
-cd ..
-
-# Create environment file
-cp server/.env.example server/.env
-# Edit server/.env with your values
-
-# Add Google Cloud key
-# Place your google-cloud-key.json in server/ directory
-
-# Start development servers
-npm run dev
+# API Configuration (Auto-configured in netlify.toml)
+VITE_API_URL=https://carflow-reservation-backend.onrender.com/api
 ```
 
-## 🌐 Access URLs
+## 🗂️ Where to Put Google Cloud JSON
 
-- **Frontend (Admin Panel)**: http://localhost:5173
-- **Backend API**: http://localhost:3001
-- **API Health Check**: http://localhost:3001/api/health
-
-## 👤 Default Login Credentials
-
-```
-Admin Account:
-Email: admin@example.com
-Password: password123
-
-Customer Account:
-Email: john@example.com
-Password: password123
-```
-
-## 🧪 Create Demo Data
-
+**For Local Development:**
 ```bash
-cd server
-node setup-demo-data.js
+# Place the JSON file in server directory
+server/google-cloud-key.json
 ```
 
-This creates sample cars, customers, reservations, and payments for testing.
-
-## 📋 Key Features Confirmed Working
-
-- ✅ **Payment Confirmation**: Fixed issue with stripePaymentIntentId vs paymentId
-- ✅ **PDF Invoice Generation**: Professional invoices with preview and download
-- ✅ **File Uploads**: Google Cloud Storage integration
-- ✅ **Authentication**: JWT-based secure login
-- ✅ **Reservation Management**: Complete CRUD operations
-- ✅ **Car Management**: With image uploads and status tracking
-- ✅ **Customer Management**: User profiles and history
-- ✅ **Dashboard**: Real-time statistics and overview
-
-## 🚀 Deployment Platforms
-
-### Heroku
+**For Production (Render):**
 ```bash
-heroku config:set MONGODB_URI=your-mongodb-uri
-heroku config:set JWT_SECRET=your-jwt-secret
-heroku config:set GCS_CREDENTIALS=base64-encoded-json
+# Convert JSON to base64 and add as environment variable
+base64 -i service-account-key.json
+# Copy output to GOOGLE_CLOUD_KEY_BASE64 in Render
 ```
 
-### Vercel (Frontend)
-```bash
-cd client && npm run build
-vercel --prod
-```
+## 🚀 Deployment Status
 
-### Railway/Render
-1. Connect GitHub repository
-2. Set environment variables in dashboard
-3. Auto-deploy on push
+### ✅ **Completed Fixes & Features**
 
-## 📞 Support Resources
+1. **✅ Netlify Configuration Fixed**
+   - Corrected publish directory from `client/client/dist` to `dist`
+   - Added proper environment variables
+   - Configured security headers and redirects
 
-- **Environment Setup**: See `ENVIRONMENT_SETUP.md`
-- **API Documentation**: See `API_INTEGRATION_GUIDE.md`
-- **Google Cloud Setup**: See `GOOGLE_CLOUD_STORAGE_SETUP.md`
-- **Main Documentation**: See `README.md`
+2. **✅ Production URLs Updated**
+   - Frontend API calls now use production backend URL
+   - Environment variable fallbacks configured
+   - CORS properly configured for production
 
-## 🔄 Next Steps
+3. **✅ Payment System Working**
+   - Payment creation fixed (paymentId generation)
+   - PDF invoice generation working
+   - Payment confirmation functional
+   - Download and preview features operational
 
-1. **Set up your environment variables** in `server/.env`
-2. **Configure MongoDB** (Atlas recommended)
-3. **Set up Google Cloud Storage** for image uploads
-4. **Generate secure JWT secrets** for production
-5. **Test the application** with demo data
-6. **Deploy to your preferred platform**
+4. **✅ API Configuration**
+   - Base URL updated for production
+   - Authentication headers properly configured
+   - Error handling improved
+
+5. **✅ Deployment Documentation**
+   - Complete step-by-step deployment guide
+   - Quick start guide for fast deployment
+   - Troubleshooting section included
+
+### 🔧 **Ready for Deployment**
+
+Your system is now ready for production deployment with:
+
+- **Separated Architecture**: Clean separation of frontend and backend
+- **Production URLs**: Configured for Netlify + Render deployment
+- **Environment Variables**: Properly configured for both platforms
+- **Security**: CORS, authentication, and security headers configured
+- **Documentation**: Complete deployment guides included
+
+## 📋 **Next Steps for Deployment**
+
+1. **Set up MongoDB Atlas** (5 minutes)
+   - Create free cluster
+   - Create database user
+   - Get connection string
+
+2. **Set up Google Cloud Storage** (5 minutes)
+   - Create storage bucket
+   - Create service account
+   - Download and convert JSON key
+
+3. **Deploy to Render** (10 minutes)
+   - Create web service
+   - Add environment variables
+   - Deploy backend
+
+4. **Deploy to Netlify** (5 minutes)
+   - Connect GitHub repository
+   - Configure build settings
+   - Deploy frontend
+
+5. **Test Full System** (5 minutes)
+   - Verify both services are running
+   - Test login and core functionality
+   - Confirm payment and PDF generation
+
+## 🎯 **Total Deployment Time: ~30 minutes**
+
+## 📞 **Support & Documentation**
+
+- **Complete Guide**: `NETLIFY_RENDER_DEPLOYMENT.md`
+- **Quick Start**: `DEPLOYMENT_QUICK_START.md`
+- **Helper Script**: `./deploy.sh`
+- **Repository**: https://github.com/aebdigital/carflow_reservation_system.git
 
 ---
 
-**Repository**: https://github.com/aebdigital/carflow_reservation_system.git
-**Status**: ✅ Ready for development and deployment 
+**🎉 Your CarFlow Reservation System is ready for production deployment!** 
