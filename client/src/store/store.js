@@ -4,7 +4,7 @@ import authSlice from './authSlice'
 
 // Base query with authentication
 const baseQuery = fetchBaseQuery({
-  baseUrl: '/api/',
+  baseUrl: import.meta.env.VITE_API_URL || 'https://carflow-reservation-backend.onrender.com/api/',
   prepareHeaders: (headers, { getState }) => {
     const token = getState().auth.token
     if (token) {

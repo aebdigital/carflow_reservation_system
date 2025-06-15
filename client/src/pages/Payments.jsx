@@ -238,68 +238,63 @@ function Payments() {
     }
   }
 
-  // Handle PDF download
-  const handleDownloadPDF = async (paymentId, invoiceNumber) => {
+  // Handle downloading PDF invoice
+  const handleDownloadPDF = async (paymentId) => {
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:3001/api/payments/${paymentId}/invoice`, {
-        method: 'GET',
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-backend.onrender.com/api';
+      const response = await fetch(`${apiUrl}/payments/${paymentId}/invoice`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/pdf'
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `invoice-${invoiceNumber}.pdf`
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.URL.revokeObjectURL(url)
-    } catch (error) {
-      console.error('Error downloading PDF:', error)
-      alert('Error downloading invoice PDF')
-    }
-  }
-
-  // Handle PDF preview
-  const handlePreviewPDF = async (paymentId, invoiceNumber) => {
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:3001/api/payments/${paymentId}/invoice?preview=true`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/pdf'
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
+      });
       
-      // Open in new tab for preview
-      window.open(url, '_blank')
+      if (!response.ok) {
+        throw new Error('Failed to download invoice');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `invoice-${paymentId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      alert('Error downloading invoice. Please try again.');
+    }
+  };
+
+  // Handle previewing PDF invoice
+  const handlePreviewPDF = async (paymentId) => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-backend.onrender.com/api';
+      const response = await fetch(`${apiUrl}/payments/${paymentId}/invoice?preview=true`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to preview invoice');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
       
       // Clean up the URL after a delay
       setTimeout(() => {
-        window.URL.revokeObjectURL(url)
-      }, 1000)
+        window.URL.revokeObjectURL(url);
+      }, 1000);
     } catch (error) {
-      console.error('Error previewing PDF:', error)
-      alert('Error previewing invoice PDF')
+      console.error('Error previewing PDF:', error);
+      alert('Error previewing invoice. Please try again.');
     }
-  }
+  };
 
   // Get reservations without payments for invoice creation
   const getUnpaidReservations = () => {
@@ -544,7 +539,7 @@ function Payments() {
                                 <Tooltip title="Preview Invoice">
                                   <IconButton
                                     size="small"
-                                    onClick={() => handlePreviewPDF(payment._id, payment.invoice.invoiceNumber)}
+                                    onClick={() => handlePreviewPDF(payment._id)}
                                   >
                                     <VisibilityIcon fontSize="small" />
                                   </IconButton>
@@ -552,7 +547,7 @@ function Payments() {
                                 <Tooltip title="Download Invoice">
                                   <IconButton
                                     size="small"
-                                    onClick={() => handleDownloadPDF(payment._id, payment.invoice.invoiceNumber)}
+                                    onClick={() => handleDownloadPDF(payment._id)}
                                   >
                                     <DownloadIcon fontSize="small" />
                                   </IconButton>
@@ -631,7 +626,7 @@ function Payments() {
                                   <Tooltip title="Preview Invoice">
                                     <IconButton
                                       size="small"
-                                      onClick={() => handlePreviewPDF(payment._id, payment.invoice.invoiceNumber)}
+                                      onClick={() => handlePreviewPDF(payment._id)}
                                     >
                                       <VisibilityIcon fontSize="small" />
                                     </IconButton>
@@ -639,7 +634,7 @@ function Payments() {
                                   <Tooltip title="Download Invoice">
                                     <IconButton
                                       size="small"
-                                      onClick={() => handleDownloadPDF(payment._id, payment.invoice.invoiceNumber)}
+                                      onClick={() => handleDownloadPDF(payment._id)}
                                     >
                                       <DownloadIcon fontSize="small" />
                                     </IconButton>
@@ -824,7 +819,7 @@ function Payments() {
                       <>
                         <Grid item xs={12} md={6}>
                           <Button
-                            onClick={() => handlePreviewPDF(selectedPayment._id, selectedPayment.invoice.invoiceNumber)}
+                            onClick={() => handlePreviewPDF(selectedPayment._id)}
                             variant="outlined"
                             startIcon={<VisibilityIcon />}
                             sx={{ mr: 1 }}
@@ -834,7 +829,7 @@ function Payments() {
                         </Grid>
                         <Grid item xs={12} md={6}>
                           <Button
-                            onClick={() => handleDownloadPDF(selectedPayment._id, selectedPayment.invoice.invoiceNumber)}
+                            onClick={() => handleDownloadPDF(selectedPayment._id)}
                             variant="contained"
                             startIcon={<DownloadIcon />}
                           >
@@ -900,7 +895,7 @@ function Payments() {
               {dialogMode === 'view' && selectedPayment?.invoice?.invoiceNumber && (
                 <>
                   <Button
-                    onClick={() => handlePreviewPDF(selectedPayment._id, selectedPayment.invoice.invoiceNumber)}
+                    onClick={() => handlePreviewPDF(selectedPayment._id)}
                     variant="outlined"
                     startIcon={<VisibilityIcon />}
                     sx={{ mr: 1 }}
@@ -908,7 +903,7 @@ function Payments() {
                     Preview Invoice
                   </Button>
                   <Button
-                    onClick={() => handleDownloadPDF(selectedPayment._id, selectedPayment.invoice.invoiceNumber)}
+                    onClick={() => handleDownloadPDF(selectedPayment._id)}
                     variant="contained"
                     startIcon={<DownloadIcon />}
                   >
