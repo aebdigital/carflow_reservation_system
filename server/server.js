@@ -67,14 +67,21 @@ app.use(cors({
 // Additional CORS headers for preflight requests
 app.use((req, res, next) => {
   const origin = req.headers.origin;
+  console.log(`CORS Debug: ${req.method} ${req.url} from origin: ${origin}`);
+  
   if (allowedOrigins.includes(origin)) {
+    console.log(`CORS: Origin ${origin} is allowed`);
     res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    console.log(`CORS: Origin ${origin} is NOT in allowed list:`, allowedOrigins);
   }
+  
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   
   if (req.method === 'OPTIONS') {
+    console.log(`CORS: Handling OPTIONS preflight request for ${req.url}`);
     res.status(200).end();
     return;
   }
@@ -120,6 +127,18 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ 
     status: 'OK', 
     message: 'Car Rental Admin API is running',
+    timestamp: new Date().toISOString(),
+    corsFixed: true,
+    version: '1.1.0'
+  });
+});
+
+// CORS test endpoint
+app.get('/api/cors-test', (req, res) => {
+  res.status(200).json({ 
+    message: 'CORS test endpoint',
+    origin: req.headers.origin,
+    allowedOrigins: allowedOrigins,
     timestamp: new Date().toISOString()
   });
 });
