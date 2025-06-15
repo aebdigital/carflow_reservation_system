@@ -1,8 +1,8 @@
 # CarFlow Deployment Guide: Netlify + Render
 
 This guide walks you through deploying your CarFlow Reservation System with:
-- **Frontend (React)**: Netlify
-- **Backend (Node.js)**: Render
+- **Frontend (React)**: Netlify → `https://carflow-reservation-admin.netlify.app`
+- **Backend (Node.js)**: Render → `https://carflow-reservation-backend.onrender.com`
 
 ## 📋 Prerequisites
 
@@ -26,276 +26,157 @@ This guide walks you through deploying your CarFlow Reservation System with:
 1. **Database Access** → **Add New Database User**
    - Username: `carflow-admin`
    - Password: Generate secure password (save it!)
-   - Database User Privileges: `Atlas admin`
+   - Database User Privileges: **Read and write to any database**
 
 2. **Network Access** → **Add IP Address**
-   - Add `0.0.0.0/0` (allow access from anywhere)
-   - Or add specific IPs for better security
+   - Add `0.0.0.0/0` (Allow access from anywhere)
+   - This is needed for Render to connect
 
-### 1.3 Get Connection String
+3. **Connect** → **Connect your application**
+   - Copy the connection string
+   - Replace `<password>` with your actual password
+   - Example: `mongodb+srv://carflow-admin:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/carflow-production`
 
-1. Click **Connect** on your cluster
-2. Choose **Connect your application**
-3. Copy the connection string:
-   ```
-   mongodb+srv://carflow-admin:<password>@cluster0.xxxxx.mongodb.net/carflow?retryWrites=true&w=majority
-   ```
-4. Replace `<password>` with your actual password
+## ☁️ Step 2: Set Up Google Cloud Storage
 
-## ☁️ Step 2: Configure Google Cloud Storage
-
-### 2.1 Create Service Account (for Production)
+### 2.1 Create Storage Bucket
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Navigate to **IAM & Admin** → **Service Accounts**
-3. Create new service account: `carflow-production`
-4. Assign role: **Storage Object Admin**
-5. Create and download JSON key
+2. Create new project or select existing
+3. **Cloud Storage** → **Create Bucket**
+   - Name: `carflow-images-production`
+   - Location: Choose region closest to your users
+   - Storage class: Standard
+   - Access control: Fine-grained
 
-### 2.2 Convert Key to Base64 (for Environment Variables)
+### 2.2 Create Service Account
 
-```bash
-# Convert your service account JSON to base64
-base64 -i path/to/your/service-account-key.json
-
-# Copy the output - you'll need this for Render
-```
-
-### 2.3 Set Bucket Permissions
-
-```bash
-# Make bucket publicly readable for images
-gsutil iam ch allUsers:objectViewer gs://your-bucket-name
-```
+1. **IAM & Admin** → **Service Accounts** → **Create Service Account**
+   - Name: `carflow-storage-service`
+   - Role: **Storage Object Admin**
+2. **Create Key** → **JSON** → Download the key file
+3. Convert to base64 for Render: `base64 -i service-account-key.json`
 
 ## 🚀 Step 3: Deploy Backend to Render
 
-### 3.1 Create Render Account
+### 3.1 Create Web Service
 
-1. Go to [Render](https://render.com/)
-2. Sign up with GitHub account
-3. Connect your GitHub repository
-
-### 3.2 Create Web Service
-
-1. **Dashboard** → **New** → **Web Service**
-2. Connect your repository: `aebdigital/carflow_reservation_system`
+1. Go to [Render](https://render.com/) → **New** → **Web Service**
+2. Connect GitHub repository: `aebdigital/carflow_reservation_system`
 3. Configure service:
 
-   **Basic Settings:**
-   - **Name**: `carflow-backend`
-   - **Region**: Choose closest to your users
-   - **Branch**: `main`
-   - **Root Directory**: `server`
-   - **Runtime**: `Node`
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
+```
+Name: carflow-reservation-backend
+Region: Oregon (US West) or closest to your users
+Branch: main
+Root Directory: server
+Runtime: Node
+Build Command: npm install
+Start Command: npm start
+```
 
-### 3.3 Add Environment Variables
+### 3.2 Environment Variables
 
-In Render dashboard, go to **Environment** and add these variables:
+Add these environment variables in Render:
 
 ```bash
 # Database
-MONGODB_URI=mongodb+srv://carflow-admin:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/carflow?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://carflow-admin:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/carflow-production
 
-# JWT Secrets (generate strong ones!)
-JWT_SECRET=your-super-secure-jwt-secret-64-characters-minimum-for-production
-JWT_REFRESH_SECRET=your-super-secure-refresh-jwt-secret-64-characters-minimum
+# JWT Security
+JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long
+JWT_REFRESH_SECRET=your-super-secret-refresh-key-minimum-32-characters-long
+JWT_EXPIRE=30d
+JWT_REFRESH_EXPIRE=90d
 
 # Google Cloud Storage
-GCS_PROJECT_ID=your-gcs-project-id
-GCS_BUCKET_NAME=your-bucket-name
-GCS_CREDENTIALS=your-base64-encoded-service-account-json
+GOOGLE_CLOUD_PROJECT_ID=your-project-id
+GOOGLE_CLOUD_BUCKET_NAME=carflow-images-production
+GOOGLE_CLOUD_KEY_BASE64=your-base64-encoded-service-account-key
 
-# Server Configuration
+# App Configuration
 NODE_ENV=production
-PORT=3001
-CLIENT_URL=https://your-netlify-app.netlify.app
+PORT=10000
+CORS_ORIGIN=https://carflow-reservation-admin.netlify.app
 
 # File Upload Settings
-MAX_IMAGE_SIZE=5242880
-MAX_IMAGES_PER_CAR=10
 MAX_FILE_SIZE=5242880
 ALLOWED_IMAGE_TYPES=image/jpeg,image/png,image/webp
 
-# JWT Configuration
-JWT_EXPIRE=30d
-
-# Logging
-LOG_LEVEL=info
+# Demo/Development Settings (Optional)
+DEMO_MODE=true
 ```
 
-### 3.4 Generate Secure JWT Secrets
-
-```bash
-# Generate secure secrets (run locally)
-node -e "console.log('JWT_SECRET=' + require('crypto').randomBytes(64).toString('hex'))"
-node -e "console.log('JWT_REFRESH_SECRET=' + require('crypto').randomBytes(64).toString('hex'))"
-```
-
-### 3.5 Deploy Backend
+### 3.3 Deploy Backend
 
 1. Click **Create Web Service**
 2. Wait for deployment (5-10 minutes)
-3. Your backend will be available at: `https://carflow-backend.onrender.com`
-
-### 3.6 Test Backend Deployment
-
-```bash
-# Test health endpoint
-curl https://carflow-backend.onrender.com/api/health
-
-# Should return:
-# {"status":"OK","message":"Car Rental Admin API is running","timestamp":"..."}
-```
+3. Your backend will be available at: `https://carflow-reservation-backend.onrender.com`
 
 ## 🌐 Step 4: Deploy Frontend to Netlify
 
-### 4.1 Prepare Frontend for Production
+### 4.1 Create Site
 
-First, update the API URL in your client code:
-
-**Create `client/.env.production`:**
-```bash
-VITE_API_URL=https://carflow-backend.onrender.com/api
-```
-
-**Update `client/vite.config.js` if needed:**
-```javascript
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    port: 5173
-  },
-  build: {
-    outDir: 'dist',
-    sourcemap: false
-  }
-})
-```
-
-### 4.2 Create Netlify Account
-
-1. Go to [Netlify](https://www.netlify.com/)
-2. Sign up with GitHub account
-3. Connect your GitHub repository
-
-### 4.3 Deploy to Netlify
-
-**Option A: Automatic Deployment (Recommended)**
-
-1. **Sites** → **Add new site** → **Import an existing project**
-2. Choose **GitHub** and select your repository
+1. Go to [Netlify](https://netlify.com/) → **Add new site** → **Import from Git**
+2. Connect GitHub repository: `aebdigital/carflow_reservation_system`
 3. Configure build settings:
-   - **Base directory**: `client`
-   - **Build command**: `npm run build`
-   - **Publish directory**: `client/dist`
-   - **Production branch**: `main`
 
-**Option B: Manual Deployment**
+```
+Base directory: client
+Build command: npm run build
+Publish directory: dist
+```
+
+### 4.2 Environment Variables
+
+In Netlify **Site settings** → **Environment variables**, add:
 
 ```bash
-# Build locally
-cd client
-npm run build
-
-# Install Netlify CLI
-npm install -g netlify-cli
-
-# Login to Netlify
-netlify login
-
-# Deploy
-netlify deploy --prod --dir=dist
+VITE_API_URL=https://carflow-reservation-backend.onrender.com/api
 ```
 
-### 4.4 Configure Environment Variables (Netlify)
-
-1. Go to **Site settings** → **Environment variables**
-2. Add production environment variables:
-
-```bash
-VITE_API_URL=https://carflow-backend.onrender.com/api
-VITE_APP_NAME=CarFlow Admin
-VITE_APP_VERSION=1.0.0
-```
-
-### 4.5 Configure Redirects for SPA
-
-Create `client/public/_redirects`:
-```
-/*    /index.html   200
-```
-
-This ensures React Router works properly on Netlify.
-
-### 4.6 Custom Domain (Optional)
+### 4.3 Custom Domain (Optional)
 
 1. **Domain settings** → **Add custom domain**
-2. Follow Netlify's instructions to configure DNS
-3. Enable HTTPS (automatic with Netlify)
+2. Add: `carflow-reservation-admin.netlify.app`
+3. Or use your own domain
 
-## 🔧 Step 5: Update CORS Configuration
+### 4.4 Deploy Frontend
 
-Update your backend's CORS configuration to allow your Netlify domain:
+1. Click **Deploy site**
+2. Wait for deployment (3-5 minutes)
+3. Your frontend will be available at: `https://carflow-reservation-admin.netlify.app`
 
-**In `server/server.js`:**
-```javascript
-// Update CORS configuration
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://your-netlify-app.netlify.app',
-    'https://your-custom-domain.com' // if using custom domain
-  ],
-  credentials: true
-}));
-```
+## ✅ Step 5: Verify Deployment
 
-Redeploy your backend after this change.
-
-## 🧪 Step 6: Test Full Deployment
-
-### 6.1 Test Backend Endpoints
+### 5.1 Test Backend
 
 ```bash
-# Health check
-curl https://carflow-backend.onrender.com/api/health
-
-# Public cars endpoint
-curl https://carflow-backend.onrender.com/api/public/cars
+curl https://carflow-reservation-backend.onrender.com/api/health
 ```
 
-### 6.2 Test Frontend
+Should return:
+```json
+{"status":"OK","message":"Car Rental Admin API is running"}
+```
 
-1. Visit your Netlify URL: `https://your-netlify-app.netlify.app`
-2. Test login with demo credentials:
+### 5.2 Test Frontend
+
+1. Visit: `https://carflow-reservation-admin.netlify.app`
+2. Try logging in with demo credentials:
    - Email: `admin@example.com`
    - Password: `password123`
-3. Test all major features:
-   - Dashboard loading
-   - Car management
-   - Reservations
-   - Payments
-   - PDF generation
 
-## 🔒 Step 7: Security & Performance
+### 5.3 Test Full Integration
 
-### 7.1 Backend Security (Render)
+1. **Create a reservation** in the admin panel
+2. **Generate an invoice** for the reservation
+3. **Download/preview the PDF** invoice
+4. **Confirm the payment** (demo mode)
 
-1. **Environment Variables**: Never commit secrets to Git
-2. **HTTPS**: Render provides automatic HTTPS
-3. **Rate Limiting**: Already configured in your app
-4. **Database**: Use MongoDB Atlas with authentication
+## 🔧 Step 6: Production Optimizations
 
-### 7.2 Frontend Security (Netlify)
-
-1. **HTTPS**: Netlify provides automatic HTTPS
-2. **Headers**: Configure security headers in `netlify.toml`:
+### 6.1 Security Headers (Already configured in netlify.toml)
 
 ```toml
 [[headers]]
@@ -307,151 +188,67 @@ curl https://carflow-backend.onrender.com/api/public/cars
     Referrer-Policy = "strict-origin-when-cross-origin"
 ```
 
-### 7.3 Performance Optimization
+### 6.2 Database Indexes
 
-**Frontend (Netlify):**
-- Automatic CDN
-- Gzip compression
-- Image optimization
+Your MongoDB should have these indexes (automatically created):
+- `paymentId` (unique)
+- `reservation`
+- `customer`
+- `status`
+- `stripePaymentIntentId`
 
-**Backend (Render):**
-- Keep-alive connections
-- Database connection pooling
-- Proper caching headers
+### 6.3 Monitoring
 
-## 📊 Step 8: Monitoring & Maintenance
+1. **Render**: Built-in monitoring and logs
+2. **Netlify**: Analytics and form submissions
+3. **MongoDB Atlas**: Performance monitoring
 
-### 8.1 Render Monitoring
-
-1. **Metrics**: View CPU, memory, and response times
-2. **Logs**: Access real-time logs in Render dashboard
-3. **Alerts**: Set up email notifications for downtime
-
-### 8.2 Netlify Monitoring
-
-1. **Analytics**: Built-in traffic analytics
-2. **Deploy notifications**: Email/Slack notifications
-3. **Form handling**: If you add contact forms
-
-### 8.3 Database Monitoring
-
-1. **MongoDB Atlas**: Built-in monitoring and alerts
-2. **Performance Advisor**: Optimization recommendations
-3. **Backup**: Automatic backups included
-
-## 🚀 Step 9: Continuous Deployment
-
-### 9.1 Automatic Deployments
-
-Both Netlify and Render will automatically deploy when you push to your `main` branch:
-
-```bash
-# Make changes locally
-git add .
-git commit -m "Update feature"
-git push origin main
-
-# This triggers:
-# 1. Netlify rebuilds and deploys frontend
-# 2. Render rebuilds and deploys backend
-```
-
-### 9.2 Environment-Specific Deployments
-
-**Staging Environment:**
-- Create `staging` branch
-- Deploy to separate Render/Netlify instances
-- Use separate MongoDB database
-
-**Production Environment:**
-- Use `main` branch
-- Production MongoDB Atlas cluster
-- Production Google Cloud Storage
-
-## 🔧 Troubleshooting
+## 🚨 Troubleshooting
 
 ### Common Issues
 
-**1. CORS Errors**
-```javascript
-// Ensure backend CORS includes your Netlify URL
-origin: ['https://your-netlify-app.netlify.app']
-```
+1. **CORS Errors**
+   - Ensure `CORS_ORIGIN` in Render matches your Netlify URL
+   - Check that both URLs are using HTTPS
 
-**2. Environment Variables Not Loading**
-- Check variable names (case-sensitive)
-- Restart services after adding variables
-- Verify no trailing spaces
+2. **Database Connection**
+   - Verify MongoDB connection string
+   - Check IP whitelist includes `0.0.0.0/0`
 
-**3. Database Connection Issues**
-- Check MongoDB Atlas IP whitelist
-- Verify connection string format
-- Test connection string locally first
+3. **File Upload Issues**
+   - Verify Google Cloud credentials
+   - Check bucket permissions
 
-**4. File Upload Issues**
-- Verify Google Cloud Storage permissions
-- Check base64 encoding of service account
-- Test GCS bucket accessibility
+4. **Build Failures**
+   - Check Node.js version compatibility
+   - Verify all environment variables are set
 
-**5. Build Failures**
+### Debug Commands
+
 ```bash
-# Common fixes:
-npm install  # Install dependencies
-npm run build  # Test build locally
+# Check backend health
+curl https://carflow-reservation-backend.onrender.com/api/health
+
+# Check frontend build
+npm run build
+
+# Test local connection to production API
+curl -H "Authorization: Bearer YOUR_TOKEN" https://carflow-reservation-backend.onrender.com/api/auth/me
 ```
 
-## 📋 Deployment Checklist
+## 📱 Final URLs
 
-### Pre-Deployment
-- [ ] MongoDB Atlas cluster created and configured
-- [ ] Google Cloud Storage bucket set up
-- [ ] Service account key converted to base64
-- [ ] JWT secrets generated
-- [ ] Repository pushed to GitHub
+- **Admin Dashboard**: https://carflow-reservation-admin.netlify.app
+- **Backend API**: https://carflow-reservation-backend.onrender.com
+- **API Health Check**: https://carflow-reservation-backend.onrender.com/api/health
 
-### Backend (Render)
-- [ ] Web service created
-- [ ] Environment variables configured
-- [ ] Build and start commands set
-- [ ] Deployment successful
-- [ ] Health endpoint responding
-- [ ] Database connection working
+## 🎉 Success!
 
-### Frontend (Netlify)
-- [ ] Site connected to GitHub
-- [ ] Build settings configured
-- [ ] Environment variables set
-- [ ] Redirects file created
-- [ ] Deployment successful
-- [ ] App loads and functions properly
+Your CarFlow Reservation System is now live in production! 
 
-### Post-Deployment
-- [ ] CORS configuration updated
-- [ ] Full application testing completed
-- [ ] Custom domain configured (if applicable)
-- [ ] Security headers configured
-- [ ] Monitoring set up
-
-## 🌐 Final URLs
-
-After successful deployment, you'll have:
-
-- **Frontend**: `https://your-netlify-app.netlify.app`
-- **Backend**: `https://carflow-backend.onrender.com`
-- **API Health**: `https://carflow-backend.onrender.com/api/health`
-
-## 💡 Tips for Success
-
-1. **Test Locally First**: Always test your build locally before deploying
-2. **Environment Variables**: Double-check all environment variables
-3. **Database**: Use MongoDB Atlas for production reliability
-4. **Monitoring**: Set up alerts for both services
-5. **Backups**: MongoDB Atlas provides automatic backups
-6. **Updates**: Keep dependencies updated regularly
-7. **Security**: Regularly rotate JWT secrets and API keys
-
----
-
-**Deployment Complete!** 🎉
-
-Your CarFlow Reservation System is now live and ready for production use! 
+**Next Steps:**
+1. Set up custom domains if desired
+2. Configure email notifications
+3. Set up backup strategies
+4. Monitor performance and usage
+5. Plan for scaling as your business grows 
