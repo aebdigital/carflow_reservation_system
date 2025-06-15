@@ -1,0 +1,1756 @@
+import React, { useState } from 'react'
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  Button,
+  Grid,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert,
+  CircularProgress,
+  Autocomplete,
+  FormHelperText,
+  Divider,
+  Tabs,
+  Tab,
+  IconButton,
+  Tooltip
+} from '@mui/material'
+import {
+  Add as AddIcon,
+  Edit as EditIcon,
+  Cancel as CancelIcon,
+  CheckCircle as CheckInIcon,
+  ExitToApp as CheckOutIcon,
+  Visibility as ViewIcon,
+  Receipt as ReceiptIcon
+} from '@mui/icons-material'
+import {
+  useGetReservationsQuery,
+  useCreateReservationMutation,
+  useUpdateReservationMutation,
+  useCancelReservationMutation,
+  useCheckInReservationMutation,
+  useCheckOutReservationMutation,
+  useGetCarsQuery,
+  useGetUsersQuery,
+  useGetPaymentsQuery
+} from '../store/store'
+import { useNavigate } from 'react-router-dom'
+
+function TabPanel({ children, value, index, ...other }) {
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ p: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  )
+}
+
+function Reservations() {
+  const [tabValue, setTabValue] = useState(0)
+  const [openDialog, setOpenDialog] = useState(false)
+  const [selectedReservation, setSelectedReservation] = useState(null)
+  const [dialogMode, setDialogMode] = useState('create') // 'create', 'edit', 'view'
+
+  // Initial form state
+  const initialFormState = {
+    customer: null,
+    car: null,
+    startDate: null,
+    endDate: null,
+    pickupLocation: {
+      name: '',
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: ''
+      }
+    },
+    dropoffLocation: {
+      name: '',
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: ''
+      }
+    },
+    additionalDrivers: [],
+    specialRequests: '',
+    status: 'pending'
+  }
+
+  const [formData, setFormData] = useState(initialFormState)
+  const [formErrors, setFormErrors] = useState({})
+
+  // API hooks
+  const { 
+    data: reservationsData, 
+    isLoading: reservationsLoading, 
+    error: reservationsError 
+  } = useGetReservationsQuery({ populate: 'customer,car,payment' })
+
+  const { 
+    data: carsData, 
+    isLoading: carsLoading 
+  } = useGetCarsQuery({ status: 'available' })
+
+  const { 
+    data: usersData, 
+    isLoading: usersLoading 
+  } = useGetUsersQuery({ role: 'customer' })
+
+  const { 
+    data: paymentsData, 
+    isLoading: paymentsLoading 
+  } = useGetPaymentsQuery({ populate: 'reservation' })
+
+  const [createReservation, { isLoading: creating }] = useCreateReservationMutation()
+  const [updateReservation, { isLoading: updating }] = useUpdateReservationMutation()
+  const [cancelReservation] = useCancelReservationMutation()
+  const [checkInReservation] = useCheckInReservationMutation()
+  const [checkOutReservation] = useCheckOutReservationMutation()
+
+  const reservations = reservationsData?.data || []
+  const cars = carsData?.data || []
+  const users = usersData?.data || []
+  const payments = paymentsData?.data || []
+
+  // Status color mapping
+  const getStatusColor = (status) => {
+    const colors = {
+      pending: 'warning',
+      confirmed: 'info',
+      ongoing: 'primary',
+      completed: 'success',
+      cancelled: 'error',
+      'no-show': 'error'
+    }
+    return colors[status] || 'default'
+  }
+
+  // Form validation
+  const validateForm = () => {
+    const errors = {}
+    
+    if (!formData.customer) errors.customer = 'Customer is required'
+    if (!formData.car) errors.car = 'Car is required'
+    if (!formData.startDate) errors.startDate = 'Start date is required'
+    if (!formData.endDate) errors.endDate = 'End date is required'
+    if (formData.startDate && formData.endDate && formData.endDate <= formData.startDate) {
+      errors.endDate = 'End date must be after start date'
+    }
+    if (!formData.pickupLocation.name) errors.pickupLocationName = 'Pickup location is required'
+    if (!formData.dropoffLocation.name) errors.dropoffLocationName = 'Dropoff location is required'
+
+    // Additional validation
+    if (formData.startDate && formData.startDate < new Date()) {
+      errors.startDate = 'Start date cannot be in the past'
+    }
+
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  // Handle form submission
+  const handleSubmit = async () => {
+    if (!validateForm()) return
+
+    try {
+      // Prepare only the required fields for the server
+      const reservationData = {
+        customer: formData.customer._id,
+        car: formData.car._id,
+        startDate: formData.startDate.toISOString(),
+        endDate: formData.endDate.toISOString(),
+        pickupLocation: formData.pickupLocation,
+        dropoffLocation: formData.dropoffLocation,
+        additionalDrivers: formData.additionalDrivers || [],
+        specialRequests: formData.specialRequests || ''
+      }
+
+      console.log('Sending reservation data:', reservationData)
+
+      if (dialogMode === 'create') {
+        await createReservation(reservationData).unwrap()
+      } else if (dialogMode === 'edit') {
+        await updateReservation({ 
+          id: selectedReservation._id, 
+          ...reservationData 
+        }).unwrap()
+      }
+
+      handleCloseDialog()
+    } catch (error) {
+      console.error('Error saving reservation:', error)
+      console.error('Error details:', error.data || error.message)
+      
+      // Show user-friendly error message
+      if (error.data && error.data.message) {
+        alert(`Error: ${error.data.message}`)
+      } else {
+        alert('An error occurred while saving the reservation. Please check the console for details.')
+      }
+    }
+  }
+
+  // Dialog handlers
+  const handleOpenDialog = (mode, reservation = null) => {
+    setDialogMode(mode)
+    setSelectedReservation(reservation)
+    
+    if (mode === 'create') {
+      setFormData(initialFormState)
+    } else if ((mode === 'edit' || mode === 'view') && reservation) {
+      setFormData({
+        customer: reservation.customer,
+        car: reservation.car,
+        startDate: new Date(reservation.startDate),
+        endDate: new Date(reservation.endDate),
+        pickupLocation: reservation.pickupLocation || {
+          name: '',
+          address: { street: '', city: '', state: '', zipCode: '', country: '' }
+        },
+        dropoffLocation: reservation.dropoffLocation || {
+          name: '',
+          address: { street: '', city: '', state: '', zipCode: '', country: '' }
+        },
+        additionalDrivers: reservation.additionalDrivers || [],
+        specialRequests: reservation.specialRequests || '',
+        status: reservation.status,
+        pricing: reservation.pricing || {},
+        terms: reservation.terms || {},
+        checkIn: reservation.checkIn || {},
+        checkOut: reservation.checkOut || {},
+        notes: reservation.notes || '',
+        rating: reservation.rating || {},
+        notifications: reservation.notifications || {}
+      })
+    }
+    
+    setFormErrors({})
+    setOpenDialog(true)
+  }
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false)
+    setSelectedReservation(null)
+    setFormData(initialFormState)
+    setFormErrors({})
+  }
+
+  // Action handlers
+  const handleCancel = async (reservation) => {
+    try {
+      await cancelReservation({ 
+        id: reservation._id, 
+        reason: 'Cancelled by admin' 
+      }).unwrap()
+    } catch (error) {
+      console.error('Error cancelling reservation:', error)
+    }
+  }
+
+  const handleCheckIn = async (reservation) => {
+    try {
+      await checkInReservation({
+        id: reservation._id,
+        date: new Date(),
+        mileage: 0,
+        fuelLevel: 'full',
+        condition: 'Good',
+        notes: 'Check-in completed by admin'
+      }).unwrap()
+    } catch (error) {
+      console.error('Error checking in reservation:', error)
+    }
+  }
+
+  const handleCheckOut = async (reservation) => {
+    try {
+      await checkOutReservation({
+        id: reservation._id,
+        date: new Date(),
+        mileage: 0,
+        fuelLevel: 'full',
+        condition: 'Good',
+        notes: 'Check-out completed by admin'
+      }).unwrap()
+    } catch (error) {
+      console.error('Error checking out reservation:', error)
+    }
+  }
+
+  const navigate = useNavigate()
+
+  // Check if reservation has payment
+  const hasPayment = (reservationId) => {
+    if (!payments || payments.length === 0) return false
+    
+    return payments.some(payment => 
+      payment.reservation?._id === reservationId && 
+      ['succeeded', 'pending', 'processing'].includes(payment.status)
+    )
+  }
+
+  // Handle creating invoice for reservation
+  const handleCreateInvoice = (reservation) => {
+    // Navigate to payments page with reservation data
+    navigate('/payments', { 
+      state: { 
+        createInvoice: true, 
+        reservation: reservation 
+      } 
+    })
+  }
+
+  return (
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box>
+          <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
+            Reservations
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Manage all car rental reservations, bookings, and customer requests.
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => handleOpenDialog('create')}
+          size="large"
+        >
+          New Reservation
+        </Button>
+      </Box>
+
+      <Card>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
+            <Tab label="All Reservations" />
+            <Tab label="Active" />
+            <Tab label="Pending" />
+            <Tab label="Completed" />
+          </Tabs>
+        </Box>
+
+        <TabPanel value={tabValue} index={0}>
+          {reservationsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : reservationsError ? (
+            <Alert severity="error" sx={{ m: 2 }}>
+              Error loading reservations: {reservationsError.message}
+            </Alert>
+          ) : (
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Reservation #</TableCell>
+                    <TableCell>Customer</TableCell>
+                    <TableCell>Car</TableCell>
+                    <TableCell>Start Date</TableCell>
+                    <TableCell>End Date</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Total</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {reservations.map((reservation) => (
+                    <TableRow key={reservation._id}>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="medium">
+                          {reservation.reservationNumber}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {reservation.customer ? (
+                          <Box>
+                            <Typography variant="body2">
+                              {reservation.customer.firstName} {reservation.customer.lastName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {reservation.customer.email}
+                            </Typography>
+                          </Box>
+                        ) : (
+                          'N/A'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {reservation.car ? (
+                          <Typography variant="body2">
+                            {reservation.car.brand} {reservation.car.model} ({reservation.car.year})
+                          </Typography>
+                        ) : (
+                          'N/A'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(reservation.startDate).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(reservation.endDate).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={reservation.status}
+                          color={getStatusColor(reservation.status)}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        ${reservation.pricing?.totalAmount?.toFixed(2) || '0.00'}
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <Tooltip title="View">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenDialog('view', reservation)}
+                            >
+                              <ViewIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Edit">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenDialog('edit', reservation)}
+                              disabled={reservation.status === 'completed' || reservation.status === 'cancelled'}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          {reservation.status === 'confirmed' && (
+                            <Tooltip title="Check In">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleCheckIn(reservation)}
+                                color="primary"
+                              >
+                                <CheckInIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          {reservation.status === 'ongoing' && (
+                            <Tooltip title="Check Out">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleCheckOut(reservation)}
+                                color="success"
+                              >
+                                <CheckOutIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          {['pending', 'confirmed'].includes(reservation.status) && (
+                            <Tooltip title="Cancel">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleCancel(reservation)}
+                                color="error"
+                              >
+                                <CancelIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          {reservation.status === 'confirmed' && !hasPayment(reservation._id) && (
+                            <Tooltip title="Create Invoice">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleCreateInvoice(reservation)}
+                                color="info"
+                              >
+                                <ReceiptIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </TabPanel>
+
+        {/* Add filtered tabs for other statuses */}
+        <TabPanel value={tabValue} index={1}>
+          {reservationsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : reservationsError ? (
+            <Alert severity="error" sx={{ m: 2 }}>
+              Error loading reservations: {reservationsError.message}
+            </Alert>
+          ) : (
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Reservation #</TableCell>
+                    <TableCell>Customer</TableCell>
+                    <TableCell>Car</TableCell>
+                    <TableCell>Start Date</TableCell>
+                    <TableCell>End Date</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Total</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {reservations.filter(r => r.status === 'ongoing').map((reservation) => (
+                    <TableRow key={reservation._id}>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="medium">
+                          {reservation.reservationNumber}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {reservation.customer ? (
+                          <Box>
+                            <Typography variant="body2">
+                              {reservation.customer.firstName} {reservation.customer.lastName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {reservation.customer.email}
+                            </Typography>
+                          </Box>
+                        ) : (
+                          'N/A'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {reservation.car ? (
+                          <Typography variant="body2">
+                            {reservation.car.brand} {reservation.car.model} ({reservation.car.year})
+                          </Typography>
+                        ) : (
+                          'N/A'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(reservation.startDate).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(reservation.endDate).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={reservation.status}
+                          color={getStatusColor(reservation.status)}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        ${reservation.pricing?.totalAmount?.toFixed(2) || '0.00'}
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <Tooltip title="View">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenDialog('view', reservation)}
+                            >
+                              <ViewIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Check Out">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleCheckOut(reservation)}
+                              color="success"
+                            >
+                              <CheckOutIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </TabPanel>
+        <TabPanel value={tabValue} index={2}>
+          {reservationsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : reservationsError ? (
+            <Alert severity="error" sx={{ m: 2 }}>
+              Error loading reservations: {reservationsError.message}
+            </Alert>
+          ) : (
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Reservation #</TableCell>
+                    <TableCell>Customer</TableCell>
+                    <TableCell>Car</TableCell>
+                    <TableCell>Start Date</TableCell>
+                    <TableCell>End Date</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Total</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {reservations.filter(r => r.status === 'pending').map((reservation) => (
+                    <TableRow key={reservation._id}>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="medium">
+                          {reservation.reservationNumber}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {reservation.customer ? (
+                          <Box>
+                            <Typography variant="body2">
+                              {reservation.customer.firstName} {reservation.customer.lastName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {reservation.customer.email}
+                            </Typography>
+                          </Box>
+                        ) : (
+                          'N/A'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {reservation.car ? (
+                          <Typography variant="body2">
+                            {reservation.car.brand} {reservation.car.model} ({reservation.car.year})
+                          </Typography>
+                        ) : (
+                          'N/A'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(reservation.startDate).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(reservation.endDate).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={reservation.status}
+                          color={getStatusColor(reservation.status)}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        ${reservation.pricing?.totalAmount?.toFixed(2) || '0.00'}
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <Tooltip title="View">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenDialog('view', reservation)}
+                            >
+                              <ViewIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Edit">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenDialog('edit', reservation)}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Cancel">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleCancel(reservation)}
+                              color="error"
+                            >
+                              <CancelIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </TabPanel>
+        <TabPanel value={tabValue} index={3}>
+          {reservationsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : reservationsError ? (
+            <Alert severity="error" sx={{ m: 2 }}>
+              Error loading reservations: {reservationsError.message}
+            </Alert>
+          ) : (
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Reservation #</TableCell>
+                    <TableCell>Customer</TableCell>
+                    <TableCell>Car</TableCell>
+                    <TableCell>Start Date</TableCell>
+                    <TableCell>End Date</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Total</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {reservations.filter(r => r.status === 'completed').map((reservation) => (
+                    <TableRow key={reservation._id}>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="medium">
+                          {reservation.reservationNumber}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {reservation.customer ? (
+                          <Box>
+                            <Typography variant="body2">
+                              {reservation.customer.firstName} {reservation.customer.lastName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {reservation.customer.email}
+                            </Typography>
+                          </Box>
+                        ) : (
+                          'N/A'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {reservation.car ? (
+                          <Typography variant="body2">
+                            {reservation.car.brand} {reservation.car.model} ({reservation.car.year})
+                          </Typography>
+                        ) : (
+                          'N/A'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(reservation.startDate).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(reservation.endDate).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={reservation.status}
+                          color={getStatusColor(reservation.status)}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        ${reservation.pricing?.totalAmount?.toFixed(2) || '0.00'}
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <Tooltip title="View">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenDialog('view', reservation)}
+                            >
+                              <ViewIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </TabPanel>
+      </Card>
+
+      {/* Create/Edit Reservation Dialog */}
+      <Dialog 
+        open={openDialog} 
+        onClose={handleCloseDialog}
+        maxWidth={dialogMode === 'view' ? 'lg' : 'md'}
+        fullWidth
+        scroll={dialogMode === 'view' ? 'body' : 'paper'}
+        PaperProps={{
+          sx: dialogMode === 'view' ? { minHeight: '80vh', maxHeight: '90vh' } : {}
+        }}
+      >
+        <DialogTitle>
+          {dialogMode === 'create' ? 'Create New Reservation' : 
+           dialogMode === 'edit' ? 'Edit Reservation' : 'View Reservation'}
+        </DialogTitle>
+        <DialogContent>
+          {dialogMode === 'view' && selectedReservation ? (
+            // View Mode - Comprehensive Reservation Details
+            <Box sx={{ mt: 2 }}>
+              {/* Header with Reservation Number and Status */}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Box>
+                  <Typography variant="h5" gutterBottom>
+                    Reservation #{selectedReservation.reservationNumber}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Created: {new Date(selectedReservation.createdAt).toLocaleString()}
+                  </Typography>
+                </Box>
+                <Chip
+                  label={selectedReservation.status}
+                  color={getStatusColor(selectedReservation.status)}
+                  size="large"
+                  sx={{ fontSize: '1rem', px: 2, py: 1 }}
+                />
+              </Box>
+
+              <Grid container spacing={3}>
+                {/* Customer Information */}
+                <Grid item xs={12} md={6}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom color="primary">
+                        Customer Information
+                      </Typography>
+                      {selectedReservation.customer ? (
+                        <>
+                          <Typography variant="body1" fontWeight="medium" gutterBottom>
+                            {selectedReservation.customer.firstName} {selectedReservation.customer.lastName}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Email: {selectedReservation.customer.email}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Phone: {selectedReservation.customer.phone || 'Not provided'}
+                          </Typography>
+                          {selectedReservation.customer.licenseNumber && (
+                            <Typography variant="body2" color="text.secondary">
+                              License: {selectedReservation.customer.licenseNumber}
+                            </Typography>
+                          )}
+                        </>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          Customer information not available
+                        </Typography>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Car Information */}
+                <Grid item xs={12} md={6}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom color="primary">
+                        Vehicle Information
+                      </Typography>
+                      {selectedReservation.car ? (
+                        <>
+                          <Typography variant="body1" fontWeight="medium" gutterBottom>
+                            {selectedReservation.car.brand} {selectedReservation.car.model} ({selectedReservation.car.year})
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Registration: {selectedReservation.car.registrationNumber}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Category: {selectedReservation.car.category}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Daily Rate: ${selectedReservation.car.dailyRate}
+                          </Typography>
+                        </>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          Vehicle information not available
+                        </Typography>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Rental Dates */}
+                <Grid item xs={12} md={6}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom color="primary">
+                        Rental Period
+                      </Typography>
+                      <Typography variant="body2" gutterBottom>
+                        <strong>Start Date:</strong> {new Date(selectedReservation.startDate).toLocaleDateString('en-US', { 
+                          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                        })}
+                      </Typography>
+                      <Typography variant="body2" gutterBottom>
+                        <strong>End Date:</strong> {new Date(selectedReservation.endDate).toLocaleDateString('en-US', { 
+                          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                        })}
+                      </Typography>
+                      <Typography variant="body2" color="primary" fontWeight="medium">
+                        Duration: {Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24))} days
+                      </Typography>
+                      
+                      {/* Status Timeline */}
+                      <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                        <Typography variant="caption" color="text.secondary" gutterBottom display="block">
+                          RESERVATION TIMELINE
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                          <Chip 
+                            label="Created" 
+                            size="small" 
+                            color="success" 
+                            variant={selectedReservation.createdAt ? "filled" : "outlined"}
+                          />
+                          <Chip 
+                            label="Confirmed" 
+                            size="small" 
+                            color="info" 
+                            variant={['confirmed', 'ongoing', 'completed'].includes(selectedReservation.status) ? "filled" : "outlined"}
+                          />
+                          <Chip 
+                            label="Check-in" 
+                            size="small" 
+                            color="primary" 
+                            variant={selectedReservation.checkIn?.date ? "filled" : "outlined"}
+                          />
+                          <Chip 
+                            label="Check-out" 
+                            size="small" 
+                            color="primary" 
+                            variant={selectedReservation.checkOut?.date ? "filled" : "outlined"}
+                          />
+                          <Chip 
+                            label="Completed" 
+                            size="small" 
+                            color="success" 
+                            variant={selectedReservation.status === 'completed' ? "filled" : "outlined"}
+                          />
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Pricing Information */}
+                <Grid item xs={12} md={6}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom color="primary">
+                        Pricing Details
+                      </Typography>
+                      {selectedReservation.pricing ? (
+                        <>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                            <Typography variant="body2">Subtotal:</Typography>
+                            <Typography variant="body2">${selectedReservation.pricing.subtotal?.toFixed(2) || '0.00'}</Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                            <Typography variant="body2">Taxes:</Typography>
+                            <Typography variant="body2">${selectedReservation.pricing.taxes?.toFixed(2) || '0.00'}</Typography>
+                          </Box>
+                          {selectedReservation.pricing.fees && selectedReservation.pricing.fees.length > 0 && (
+                            selectedReservation.pricing.fees.map((fee, index) => (
+                              <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                <Typography variant="body2">{fee.name}:</Typography>
+                                <Typography variant="body2">${fee.amount?.toFixed(2) || '0.00'}</Typography>
+                              </Box>
+                            ))
+                          )}
+                          <Divider sx={{ my: 1 }} />
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography variant="body1" fontWeight="bold">Total Amount:</Typography>
+                            <Typography variant="body1" fontWeight="bold" color="primary">${selectedReservation.pricing.totalAmount?.toFixed(2) || '0.00'}</Typography>
+                          </Box>
+                        </>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          Pricing information not available
+                        </Typography>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Pickup Location */}
+                <Grid item xs={12} md={6}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom color="primary">
+                        Pickup Location
+                      </Typography>
+                      {selectedReservation.pickupLocation ? (
+                        <>
+                          <Typography variant="body1" fontWeight="medium" gutterBottom>
+                            {selectedReservation.pickupLocation.name}
+                          </Typography>
+                          {selectedReservation.pickupLocation.address && (
+                            <>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                {selectedReservation.pickupLocation.address.street}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {[
+                                  selectedReservation.pickupLocation.address.city,
+                                  selectedReservation.pickupLocation.address.state,
+                                  selectedReservation.pickupLocation.address.zipCode,
+                                  selectedReservation.pickupLocation.address.country
+                                ].filter(Boolean).join(', ')}
+                              </Typography>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          Pickup location not specified
+                        </Typography>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Dropoff Location */}
+                <Grid item xs={12} md={6}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom color="primary">
+                        Dropoff Location
+                      </Typography>
+                      {selectedReservation.dropoffLocation ? (
+                        <>
+                          <Typography variant="body1" fontWeight="medium" gutterBottom>
+                            {selectedReservation.dropoffLocation.name}
+                          </Typography>
+                          {selectedReservation.dropoffLocation.address && (
+                            <>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                {selectedReservation.dropoffLocation.address.street}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {[
+                                  selectedReservation.dropoffLocation.address.city,
+                                  selectedReservation.dropoffLocation.address.state,
+                                  selectedReservation.dropoffLocation.address.zipCode,
+                                  selectedReservation.dropoffLocation.address.country
+                                ].filter(Boolean).join(', ')}
+                              </Typography>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          Dropoff location not specified
+                        </Typography>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Terms and Conditions */}
+                {selectedReservation.terms && Object.keys(selectedReservation.terms).length > 0 ? (
+                  <Grid item xs={12}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom color="primary">
+                          Terms and Conditions
+                        </Typography>
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} md={3}>
+                            <Typography variant="body2" gutterBottom>
+                              <strong>Mileage Limit:</strong> {selectedReservation.terms.mileageLimit === -1 ? 'Unlimited' : `${selectedReservation.terms.mileageLimit} miles`}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={12} md={3}>
+                            <Typography variant="body2" gutterBottom>
+                              <strong>Fuel Policy:</strong> {selectedReservation.terms.fuelPolicy}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={12} md={3}>
+                            <Typography variant="body2" gutterBottom>
+                              <strong>Late Return Fee:</strong> ${selectedReservation.terms.lateReturnFee || 0}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={12} md={3}>
+                            <Typography variant="body2" gutterBottom>
+                              <strong>Cancellation:</strong> {selectedReservation.terms.cancellationPolicy || 'Standard policy'}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ) : null}
+
+                {/* Check-in Information */}
+                {selectedReservation.checkIn && selectedReservation.checkIn.date && (
+                  <Grid item xs={12} md={6}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom color="primary">
+                          Check-in Details
+                        </Typography>
+                        <Typography variant="body2" gutterBottom>
+                          <strong>Date:</strong> {new Date(selectedReservation.checkIn.date).toLocaleString()}
+                        </Typography>
+                        <Typography variant="body2" gutterBottom>
+                          <strong>Mileage:</strong> {selectedReservation.checkIn.mileage || 'Not recorded'}
+                        </Typography>
+                        <Typography variant="body2" gutterBottom>
+                          <strong>Fuel Level:</strong> {selectedReservation.checkIn.fuelLevel || 'Not recorded'}
+                        </Typography>
+                        <Typography variant="body2" gutterBottom>
+                          <strong>Condition:</strong> {selectedReservation.checkIn.condition || 'Not recorded'}
+                        </Typography>
+                        {selectedReservation.checkIn.notes && (
+                          <Typography variant="body2" gutterBottom>
+                            <strong>Notes:</strong> {selectedReservation.checkIn.notes}
+                          </Typography>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                )}
+
+                {/* Check-out Information */}
+                {selectedReservation.checkOut && selectedReservation.checkOut.date && (
+                  <Grid item xs={12} md={6}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom color="primary">
+                          Check-out Details
+                        </Typography>
+                        <Typography variant="body2" gutterBottom>
+                          <strong>Date:</strong> {new Date(selectedReservation.checkOut.date).toLocaleString()}
+                        </Typography>
+                        <Typography variant="body2" gutterBottom>
+                          <strong>Mileage:</strong> {selectedReservation.checkOut.mileage || 'Not recorded'}
+                        </Typography>
+                        <Typography variant="body2" gutterBottom>
+                          <strong>Fuel Level:</strong> {selectedReservation.checkOut.fuelLevel || 'Not recorded'}
+                        </Typography>
+                        <Typography variant="body2" gutterBottom>
+                          <strong>Condition:</strong> {selectedReservation.checkOut.condition || 'Not recorded'}
+                        </Typography>
+                        {selectedReservation.checkOut.notes && (
+                          <Typography variant="body2" gutterBottom>
+                            <strong>Notes:</strong> {selectedReservation.checkOut.notes}
+                          </Typography>
+                        )}
+                        {selectedReservation.checkOut.additionalCharges && selectedReservation.checkOut.additionalCharges.length > 0 && (
+                          <>
+                            <Typography variant="body2" fontWeight="medium" gutterBottom sx={{ mt: 1 }}>
+                              Additional Charges:
+                            </Typography>
+                            {selectedReservation.checkOut.additionalCharges.map((charge, index) => (
+                              <Typography key={index} variant="body2" gutterBottom>
+                                • {charge.type}: ${charge.amount} - {charge.description}
+                              </Typography>
+                            ))}
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                )}
+
+                {/* Additional Drivers */}
+                {selectedReservation.additionalDrivers && selectedReservation.additionalDrivers.length > 0 && (
+                  <Grid item xs={12}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom color="primary">
+                          Additional Drivers
+                        </Typography>
+                        {selectedReservation.additionalDrivers.map((driver, index) => (
+                          <Box key={index} sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                            <Typography variant="body1" fontWeight="medium" gutterBottom>
+                              {driver.firstName} {driver.lastName}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                              License: {driver.licenseNumber}
+                            </Typography>
+                            {driver.licenseExpiry && (
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                License Expiry: {new Date(driver.licenseExpiry).toLocaleDateString()}
+                              </Typography>
+                            )}
+                            {driver.relationship && (
+                              <Typography variant="body2" color="text.secondary">
+                                Relationship: {driver.relationship}
+                              </Typography>
+                            )}
+                          </Box>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                )}
+
+                {/* Special Requests */}
+                {selectedReservation.specialRequests && (
+                  <Grid item xs={12}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom color="primary">
+                          Special Requests
+                        </Typography>
+                        <Typography variant="body2">
+                          {selectedReservation.specialRequests}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                )}
+
+                {/* Notes */}
+                {selectedReservation.notes && (
+                  <Grid item xs={12}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom color="primary">
+                          Notes
+                        </Typography>
+                        <Typography variant="body2">
+                          {selectedReservation.notes}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                )}
+
+                {/* Rating */}
+                {selectedReservation.rating && selectedReservation.rating.score && (
+                  <Grid item xs={12}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom color="primary">
+                          Customer Rating
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <Typography variant="body1" fontWeight="medium">
+                            Rating: {selectedReservation.rating.score}/5
+                          </Typography>
+                          <Box sx={{ display: 'flex' }}>
+                            {[...Array(5)].map((_, i) => (
+                              <span key={i} style={{ color: i < selectedReservation.rating.score ? '#ffc107' : '#e0e0e0' }}>
+                                ★
+                              </span>
+                            ))}
+                          </Box>
+                        </Box>
+                        {selectedReservation.rating.comment && (
+                          <Typography variant="body2" color="text.secondary">
+                            "{selectedReservation.rating.comment}"
+                          </Typography>
+                        )}
+                        {selectedReservation.rating.date && (
+                          <Typography variant="caption" color="text.secondary">
+                            Rated on: {new Date(selectedReservation.rating.date).toLocaleDateString()}
+                          </Typography>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                )}
+
+                {/* Notifications Status */}
+                {selectedReservation.notifications && (
+                  <Grid item xs={12}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom color="primary">
+                          Notifications Sent
+                        </Typography>
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} md={6}>
+                            <Typography variant="body2" gutterBottom>
+                              <strong>Email Notifications:</strong>
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
+                              <Chip 
+                                label="Confirmation" 
+                                size="small" 
+                                color={selectedReservation.notifications.emailSent?.confirmation ? "success" : "default"}
+                                variant={selectedReservation.notifications.emailSent?.confirmation ? "filled" : "outlined"}
+                              />
+                              <Chip 
+                                label="Reminder" 
+                                size="small" 
+                                color={selectedReservation.notifications.emailSent?.reminder ? "success" : "default"}
+                                variant={selectedReservation.notifications.emailSent?.reminder ? "filled" : "outlined"}
+                              />
+                              <Chip 
+                                label="Completion" 
+                                size="small" 
+                                color={selectedReservation.notifications.emailSent?.completion ? "success" : "default"}
+                                variant={selectedReservation.notifications.emailSent?.completion ? "filled" : "outlined"}
+                              />
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12} md={6}>
+                            <Typography variant="body2" gutterBottom>
+                              <strong>SMS Notifications:</strong>
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                              <Chip 
+                                label="Confirmation" 
+                                size="small" 
+                                color={selectedReservation.notifications.smsSent?.confirmation ? "success" : "default"}
+                                variant={selectedReservation.notifications.smsSent?.confirmation ? "filled" : "outlined"}
+                              />
+                              <Chip 
+                                label="Reminder" 
+                                size="small" 
+                                color={selectedReservation.notifications.smsSent?.reminder ? "success" : "default"}
+                                variant={selectedReservation.notifications.smsSent?.reminder ? "filled" : "outlined"}
+                              />
+                            </Box>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                )}
+              </Grid>
+            </Box>
+          ) : (
+            // Edit/Create Mode - Original Form
+            <Grid container spacing={3} sx={{ mt: 1 }}>
+              {/* Customer Selection */}
+              <Grid item xs={12} md={6}>
+                <Autocomplete
+                  options={users}
+                  getOptionLabel={(option) => 
+                    `${option.firstName} ${option.lastName} (${option.email})`
+                  }
+                  isOptionEqualToValue={(option, value) => option._id === value?._id}
+                  value={formData.customer}
+                  onChange={(e, value) => setFormData({ ...formData, customer: value })}
+                  loading={usersLoading}
+                  disabled={dialogMode === 'view'}
+                  renderOption={(props, option) => {
+                    const { key, ...otherProps } = props;
+                    return (
+                      <Box component="li" key={key} {...otherProps} sx={{ display: 'flex', flexDirection: 'column', py: 1 }}>
+                        <Typography variant="body2" fontWeight="medium">
+                          {option.firstName} {option.lastName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {option.email} • {option.phone || 'No phone'}
+                        </Typography>
+                        {option.licenseNumber && (
+                          <Typography variant="caption" color="info.main">
+                            License: {option.licenseNumber}
+                          </Typography>
+                        )}
+                      </Box>
+                    );
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Select Customer"
+                      error={!!formErrors.customer}
+                      helperText={formErrors.customer || (users.length === 0 ? 'No customers available' : `${users.length} customers available`)}
+                      required
+                    />
+                  )}
+                  noOptionsText={usersLoading ? "Loading customers..." : "No customers found"}
+                />
+              </Grid>
+
+              {/* Car Selection */}
+              <Grid item xs={12} md={6}>
+                <Autocomplete
+                  options={cars}
+                  getOptionLabel={(option) => 
+                    `${option.brand} ${option.model} (${option.year}) - $${option.dailyRate}/day`
+                  }
+                  isOptionEqualToValue={(option, value) => option._id === value?._id}
+                  value={formData.car}
+                  onChange={(e, value) => setFormData({ ...formData, car: value })}
+                  loading={carsLoading}
+                  disabled={dialogMode === 'view'}
+                  renderOption={(props, option) => {
+                    const { key, ...otherProps } = props;
+                    return (
+                      <Box component="li" key={key} {...otherProps} sx={{ display: 'flex', flexDirection: 'column', py: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                          <Typography variant="body2" fontWeight="medium">
+                            {option.brand} {option.model} ({option.year})
+                          </Typography>
+                          <Typography variant="body2" color="primary.main" fontWeight="medium">
+                            ${option.dailyRate}/day
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                          <Chip label={option.category} size="small" variant="outlined" />
+                          <Chip label={option.registrationNumber} size="small" color="info" />
+                        </Box>
+                        {option.features && option.features.length > 0 && (
+                          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                            Features: {option.features.slice(0, 3).join(', ')}
+                            {option.features.length > 3 && ` +${option.features.length - 3} more`}
+                          </Typography>
+                        )}
+                      </Box>
+                    );
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Select Car"
+                      error={!!formErrors.car}
+                      helperText={formErrors.car || (cars.length === 0 ? 'No available cars' : `${cars.length} cars available`)}
+                      required
+                    />
+                  )}
+                  noOptionsText={carsLoading ? "Loading cars..." : "No available cars"}
+                />
+              </Grid>
+
+              {/* Date Selection */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Start Date"
+                  type="date"
+                  value={formData.startDate ? formData.startDate.toISOString().split('T')[0] : ''}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value ? new Date(e.target.value) : null })}
+                  disabled={dialogMode === 'view'}
+                  error={!!formErrors.startDate}
+                  helperText={formErrors.startDate}
+                  required
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="End Date"
+                  type="date"
+                  value={formData.endDate ? formData.endDate.toISOString().split('T')[0] : ''}
+                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value ? new Date(e.target.value) : null })}
+                  disabled={dialogMode === 'view'}
+                  inputProps={{
+                    min: formData.startDate ? formData.startDate.toISOString().split('T')[0] : ''
+                  }}
+                  error={!!formErrors.endDate}
+                  helperText={formErrors.endDate}
+                  required
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                />
+              </Grid>
+
+              {/* Pricing Estimation */}
+              {formData.car && formData.startDate && formData.endDate && (
+                <Grid item xs={12}>
+                  <Card sx={{ bgcolor: 'primary.50', border: '1px solid', borderColor: 'primary.200' }}>
+                    <CardContent sx={{ py: 2 }}>
+                      <Typography variant="h6" color="primary.main" gutterBottom>
+                        Pricing Estimate
+                      </Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography variant="body2">
+                          Rental Period: {Math.ceil((formData.endDate - formData.startDate) / (1000 * 60 * 60 * 24))} days
+                        </Typography>
+                        <Typography variant="body2">
+                          Daily Rate: ${formData.car.dailyRate}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography variant="body2">
+                          Subtotal:
+                        </Typography>
+                        <Typography variant="body2">
+                          ${(Math.ceil((formData.endDate - formData.startDate) / (1000 * 60 * 60 * 24)) * formData.car.dailyRate).toFixed(2)}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography variant="body2">
+                          Taxes (10%):
+                        </Typography>
+                        <Typography variant="body2">
+                          ${(Math.ceil((formData.endDate - formData.startDate) / (1000 * 60 * 60 * 24)) * formData.car.dailyRate * 0.1).toFixed(2)}
+                        </Typography>
+                      </Box>
+                      <Divider sx={{ my: 1 }} />
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body1" fontWeight="medium">
+                          Total Amount:
+                        </Typography>
+                        <Typography variant="body1" fontWeight="bold" color="primary.main">
+                          ${(Math.ceil((formData.endDate - formData.startDate) / (1000 * 60 * 60 * 24)) * formData.car.dailyRate * 1.1).toFixed(2)}
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
+
+              {/* Pickup Location */}
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>
+                  Pickup Location
+                </Typography>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Location Name"
+                  value={formData.pickupLocation.name}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    pickupLocation: { ...formData.pickupLocation, name: e.target.value }
+                  })}
+                  disabled={dialogMode === 'view'}
+                  error={!!formErrors.pickupLocationName}
+                  helperText={formErrors.pickupLocationName}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Street Address"
+                  value={formData.pickupLocation.address.street}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    pickupLocation: {
+                      ...formData.pickupLocation,
+                      address: { ...formData.pickupLocation.address, street: e.target.value }
+                    }
+                  })}
+                  disabled={dialogMode === 'view'}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="City"
+                  value={formData.pickupLocation.address.city}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    pickupLocation: {
+                      ...formData.pickupLocation,
+                      address: { ...formData.pickupLocation.address, city: e.target.value }
+                    }
+                  })}
+                  disabled={dialogMode === 'view'}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="State"
+                  value={formData.pickupLocation.address.state}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    pickupLocation: {
+                      ...formData.pickupLocation,
+                      address: { ...formData.pickupLocation.address, state: e.target.value }
+                    }
+                  })}
+                  disabled={dialogMode === 'view'}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Country"
+                  value={formData.pickupLocation.address.country}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    pickupLocation: {
+                      ...formData.pickupLocation,
+                      address: { ...formData.pickupLocation.address, country: e.target.value }
+                    }
+                  })}
+                  disabled={dialogMode === 'view'}
+                />
+              </Grid>
+
+              {/* Dropoff Location */}
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>
+                  Dropoff Location
+                </Typography>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Location Name"
+                  value={formData.dropoffLocation.name}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    dropoffLocation: { ...formData.dropoffLocation, name: e.target.value }
+                  })}
+                  disabled={dialogMode === 'view'}
+                  error={!!formErrors.dropoffLocationName}
+                  helperText={formErrors.dropoffLocationName}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Street Address"
+                  value={formData.dropoffLocation.address.street}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    dropoffLocation: {
+                      ...formData.dropoffLocation,
+                      address: { ...formData.dropoffLocation.address, street: e.target.value }
+                    }
+                  })}
+                  disabled={dialogMode === 'view'}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="City"
+                  value={formData.dropoffLocation.address.city}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    dropoffLocation: {
+                      ...formData.dropoffLocation,
+                      address: { ...formData.dropoffLocation.address, city: e.target.value }
+                    }
+                  })}
+                  disabled={dialogMode === 'view'}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="State"
+                  value={formData.dropoffLocation.address.state}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    dropoffLocation: {
+                      ...formData.dropoffLocation,
+                      address: { ...formData.dropoffLocation.address, state: e.target.value }
+                    }
+                  })}
+                  disabled={dialogMode === 'view'}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Country"
+                  value={formData.dropoffLocation.address.country}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    dropoffLocation: {
+                      ...formData.dropoffLocation,
+                      address: { ...formData.dropoffLocation.address, country: e.target.value }
+                    }
+                  })}
+                  disabled={dialogMode === 'view'}
+                />
+              </Grid>
+
+              {/* Status (for edit mode) */}
+              {dialogMode === 'edit' && (
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Status</InputLabel>
+                    <Select
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      label="Status"
+                    >
+                      <MenuItem value="pending">Pending</MenuItem>
+                      <MenuItem value="confirmed">Confirmed</MenuItem>
+                      <MenuItem value="ongoing">Ongoing</MenuItem>
+                      <MenuItem value="completed">Completed</MenuItem>
+                      <MenuItem value="cancelled">Cancelled</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )}
+
+              {/* Special Requests */}
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Special Requests"
+                  multiline
+                  rows={3}
+                  value={formData.specialRequests}
+                  onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
+                  disabled={dialogMode === 'view'}
+                />
+              </Grid>
+            </Grid>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>
+            {dialogMode === 'view' ? 'Close' : 'Cancel'}
+          </Button>
+          {dialogMode !== 'view' && (
+            <Button
+              onClick={handleSubmit}
+              variant="contained"
+              disabled={creating || updating}
+            >
+              {creating || updating ? <CircularProgress size={20} /> : 
+               dialogMode === 'create' ? 'Create Reservation' : 'Update Reservation'}
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+    </Box>
+  )
+}
+
+export default Reservations 
