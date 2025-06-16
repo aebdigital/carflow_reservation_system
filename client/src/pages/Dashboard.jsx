@@ -25,19 +25,20 @@ import {
   Visibility as ViewIcon,
 } from '@mui/icons-material'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { t } from '../utils/translations'
 
 // Mock data for demo
 const statsData = [
   {
-    title: 'Total Revenue',
-    value: '$127,580',
+    title: t('monthlyRevenue'),
+    value: '127 580 €',
     change: '+12.5%',
     icon: <RevenueIcon sx={{ fontSize: 40 }} />,
     color: '#4caf50',
     bgColor: '#e8f5e8',
   },
   {
-    title: 'Active Reservations',
+    title: t('activeReservations'),
     value: '23',
     change: '+5.2%',
     icon: <ReservationIcon sx={{ fontSize: 40 }} />,
@@ -45,7 +46,7 @@ const statsData = [
     bgColor: '#e3f2fd',
   },
   {
-    title: 'Available Cars',
+    title: t('available'),
     value: '45',
     change: '-2.1%',
     icon: <CarIcon sx={{ fontSize: 40 }} />,
@@ -53,7 +54,7 @@ const statsData = [
     bgColor: '#fff3e0',
   },
   {
-    title: 'Total Customers',
+    title: t('totalCustomers'),
     value: '1,234',
     change: '+8.7%',
     icon: <CustomerIcon sx={{ fontSize: 40 }} />,
@@ -67,15 +68,15 @@ const revenueData = [
   { month: 'Feb', revenue: 59000 },
   { month: 'Mar', revenue: 80000 },
   { month: 'Apr', revenue: 81000 },
-  { month: 'May', revenue: 56000 },
-  { month: 'Jun', revenue: 87000 },
+  { month: 'Máj', revenue: 56000 },
+  { month: 'Jún', revenue: 87000 },
 ]
 
 const fleetData = [
-  { name: 'Available', value: 45, color: '#4caf50' },
-  { name: 'Rented', value: 23, color: '#2196f3' },
-  { name: 'Maintenance', value: 7, color: '#ff9800' },
-  { name: 'Out of Service', value: 3, color: '#f44336' },
+  { name: t('available'), value: 45, color: '#4caf50' },
+  { name: t('booked'), value: 23, color: '#2196f3' },
+  { name: t('maintenance'), value: 7, color: '#ff9800' },
+  { name: t('outOfService'), value: 3, color: '#f44336' },
 ]
 
 const recentReservations = [
@@ -86,7 +87,7 @@ const recentReservations = [
     startDate: '2024-01-15',
     endDate: '2024-01-20',
     status: 'confirmed',
-    amount: '$380',
+    amount: '380 €',
   },
   {
     id: 'RES001235',
@@ -95,7 +96,7 @@ const recentReservations = [
     startDate: '2024-01-16',
     endDate: '2024-01-18',
     status: 'ongoing',
-    amount: '$240',
+    amount: '240 €',
   },
   {
     id: 'RES001236',
@@ -104,7 +105,7 @@ const recentReservations = [
     startDate: '2024-01-17',
     endDate: '2024-01-22',
     status: 'pending',
-    amount: '$950',
+    amount: '950 €',
   },
   {
     id: 'RES001237',
@@ -113,7 +114,7 @@ const recentReservations = [
     startDate: '2024-01-18',
     endDate: '2024-01-25',
     status: 'confirmed',
-    amount: '$1,260',
+    amount: '1 260 €',
   },
 ]
 
@@ -132,14 +133,29 @@ const getStatusColor = (status) => {
   }
 }
 
+const getStatusText = (status) => {
+  switch (status) {
+    case 'confirmed':
+      return t('confirmed')
+    case 'ongoing':
+      return t('active')
+    case 'pending':
+      return t('pending')
+    case 'cancelled':
+      return t('cancelled')
+    default:
+      return status
+  }
+}
+
 function Dashboard() {
   return (
     <Box>
       <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
-        Dashboard
+        {t('dashboard')}
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        Welcome back! Here's what's happening with your car rental business today.
+        Vitajte späť! Tu je to, co sa deje s vaším prenájmom áut dnes.
       </Typography>
 
       {/* Stats Cards */}
@@ -191,7 +207,7 @@ function Dashboard() {
                     {stat.change}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>
-                    vs last month
+                    vs minulý mesiac
                   </Typography>
                 </Box>
               </CardContent>
@@ -200,22 +216,23 @@ function Dashboard() {
         ))}
       </Grid>
 
+      {/* Charts */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {/* Revenue Chart */}
         <Grid item xs={12} md={8}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                Monthly Revenue
+                {t('monthlyRevenue')}
               </Typography>
-              <Box sx={{ height: 300 }}>
+              <Box sx={{ height: 300, mt: 2 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={revenueData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
-                    <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']} />
-                    <Bar dataKey="revenue" fill="#1976d2" radius={[4, 4, 0, 0]} />
+                    <Tooltip formatter={(value) => [`${value} €`, 'Tržby']} />
+                    <Bar dataKey="revenue" fill="#1976d2" />
                   </BarChart>
                 </ResponsiveContainer>
               </Box>
@@ -223,23 +240,23 @@ function Dashboard() {
           </Card>
         </Grid>
 
-        {/* Fleet Status */}
+        {/* Fleet Overview */}
         <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                Fleet Status
+                {t('fleetOverview')}
               </Typography>
-              <Box sx={{ height: 250, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Box sx={{ height: 300, mt: 2 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={fleetData}
                       cx="50%"
                       cy="50%"
-                      outerRadius={80}
+                      innerRadius={60}
+                      outerRadius={100}
                       dataKey="value"
-                      label={({ name, value }) => `${name}: ${value}`}
                     >
                       {fleetData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
@@ -248,6 +265,27 @@ function Dashboard() {
                     <Tooltip />
                   </PieChart>
                 </ResponsiveContainer>
+              </Box>
+              <Box sx={{ mt: 2 }}>
+                {fleetData.map((item, index) => (
+                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <Box
+                      sx={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
+                        backgroundColor: item.color,
+                        mr: 1,
+                      }}
+                    />
+                    <Typography variant="body2" sx={{ flex: 1 }}>
+                      {item.name}
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {item.value}
+                    </Typography>
+                  </Box>
+                ))}
               </Box>
             </CardContent>
           </Card>
@@ -259,51 +297,59 @@ function Dashboard() {
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Recent Reservations
+              {t('recentReservations')}
             </Typography>
-            <Chip label="View All" clickable color="primary" size="small" />
+            <Typography 
+              variant="body2" 
+              color="primary" 
+              sx={{ cursor: 'pointer', fontWeight: 500 }}
+            >
+              {t('viewAll')}
+            </Typography>
           </Box>
-          
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Reservation ID</TableCell>
-                  <TableCell>Customer</TableCell>
-                  <TableCell>Vehicle</TableCell>
-                  <TableCell>Dates</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Amount</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('reservationId')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('customerName')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('carDetails')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('dateRange')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('status')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('amount')}</TableCell>
+                  <TableCell></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {recentReservations.map((reservation) => (
-                  <TableRow key={reservation.id} hover>
-                    <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                      {reservation.id}
+                  <TableRow key={reservation.id}>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {reservation.id}
+                      </Typography>
                     </TableCell>
                     <TableCell>{reservation.customer}</TableCell>
                     <TableCell>{reservation.car}</TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {reservation.startDate} to {reservation.endDate}
+                        {reservation.startDate} - {reservation.endDate}
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={reservation.status} 
-                        color={getStatusColor(reservation.status)}
+                      <Chip
+                        label={getStatusText(reservation.status)}
                         size="small"
-                        sx={{ textTransform: 'capitalize' }}
+                        color={getStatusColor(reservation.status)}
                       />
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>
-                      {reservation.amount}
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {reservation.amount}
+                      </Typography>
                     </TableCell>
                     <TableCell>
-                      <IconButton size="small" color="primary">
-                        <ViewIcon />
+                      <IconButton size="small">
+                        <ViewIcon fontSize="small" />
                       </IconButton>
                     </TableCell>
                   </TableRow>

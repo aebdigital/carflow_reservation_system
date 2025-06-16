@@ -26,25 +26,26 @@ import {
 } from '@mui/icons-material'
 import { useLoginMutation } from '../store/store'
 import { loginSuccess } from '../store/authSlice'
+import { t } from '../utils/translations'
 
 const demoAccounts = [
   {
-    role: 'Admin',
+    role: t('admin'),
     email: 'admin@example.com',
     password: 'admin123',
-    description: 'Full access to all features',
+    description: t('fullAccess'),
   },
   {
-    role: 'Customer - John',
+    role: `${t('customer')} - John`,
     email: 'john@example.com',
     password: 'customer123',
-    description: 'Customer account access',
+    description: t('customerAccess'),
   },
   {
-    role: 'Customer - Jane',
+    role: `${t('customer')} - Jane`,
     email: 'jane@example.com',
     password: 'customer123',
-    description: 'Customer account access',
+    description: t('customerAccess'),
   },
 ]
 
@@ -86,7 +87,7 @@ function Login() {
         }
       }
     } catch (err) {
-      setError(err?.data?.message || 'Login failed. Please try again.')
+      setError(err?.data?.message || t('loginFailed'))
     }
   }
 
@@ -114,10 +115,10 @@ function Login() {
           <Card sx={{ flex: 1, display: { xs: 'none', md: 'block' } }}>
             <CardContent sx={{ p: 4 }}>
               <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
-                Demo Accounts
+                {t('demoAccounts')}
               </Typography>
               <Typography variant="body2" color="text.secondary" paragraph>
-                Click on any account below to auto-fill the login form:
+                {t('clickAccountToFill')}
               </Typography>
               
               {demoAccounts.map((account, index) => (
@@ -153,7 +154,7 @@ function Login() {
               
               <Divider sx={{ my: 2 }} />
               <Typography variant="caption" color="text.secondary">
-                💡 This is a demo application. All data is simulated.
+                {t('demoAppNote')}
               </Typography>
             </CardContent>
           </Card>
@@ -185,10 +186,10 @@ function Login() {
                 <CarIcon fontSize="large" />
               </Box>
               <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
-                Welcome Back
+                {t('welcomeBack')}
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                Sign in to your admin account
+                {t('signInToAdmin')}
               </Typography>
             </Box>
 
@@ -198,12 +199,25 @@ function Login() {
               </Alert>
             )}
 
-            <Box component="form" onSubmit={handleSubmit(onSubmit)}>
+            <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 1 }}>
               <TextField
-                fullWidth
-                label="Email Address"
-                type="email"
                 margin="normal"
+                required
+                fullWidth
+                id="email"
+                label={t('email')}
+                name="email"
+                autoComplete="email"
+                autoFocus
+                {...register('email', {
+                  required: t('required'),
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: t('invalidEmail'),
+                  },
+                })}
+                error={!!errors.email}
+                helperText={errors.email?.message}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -211,22 +225,25 @@ function Login() {
                     </InputAdornment>
                   ),
                 }}
-                {...register('email', {
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Invalid email address',
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="password"
+                label={t('password')}
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                autoComplete="current-password"
+                {...register('password', {
+                  required: t('required'),
+                  minLength: {
+                    value: 6,
+                    message: t('passwordTooShort'),
                   },
                 })}
-                error={!!errors.email}
-                helperText={errors.email?.message}
-              />
-
-              <TextField
-                fullWidth
-                label="Password"
-                type={showPassword ? 'text' : 'password'}
-                margin="normal"
+                error={!!errors.password}
+                helperText={errors.password?.message}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -235,62 +252,30 @@ function Login() {
                   ),
                   endAdornment: (
                     <InputAdornment position="end">
-                      <IconButton onClick={togglePasswordVisibility} edge="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={togglePasswordVisibility}
+                        edge="end"
+                      >
                         {showPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
                     </InputAdornment>
                   ),
                 }}
-                {...register('password', {
-                  required: 'Password is required',
-                  minLength: {
-                    value: 6,
-                    message: 'Password must be at least 6 characters',
-                  },
-                })}
-                error={!!errors.password}
-                helperText={errors.password?.message}
               />
-
               <Button
                 type="submit"
                 fullWidth
                 variant="contained"
+                sx={{ mt: 3, mb: 2, py: 1.5 }}
                 disabled={isLoading}
-                sx={{
-                  mt: 3,
-                  mb: 2,
-                  py: 1.5,
-                  fontSize: '1rem',
-                  fontWeight: 600,
-                  borderRadius: 2,
-                }}
               >
                 {isLoading ? (
                   <CircularProgress size={24} color="inherit" />
                 ) : (
-                  'Sign In'
+                  t('signIn')
                 )}
               </Button>
-            </Box>
-
-            {/* Mobile Demo Accounts */}
-            <Box sx={{ display: { xs: 'block', md: 'none' }, mt: 3 }}>
-              <Divider sx={{ mb: 2 }} />
-              <Typography variant="subtitle2" gutterBottom>
-                Demo Accounts:
-              </Typography>
-              {demoAccounts.map((account, index) => (
-                <Button
-                  key={index}
-                  fullWidth
-                  variant="outlined"
-                  onClick={() => handleDemoLogin(account.email, account.password)}
-                  sx={{ mb: 1, justifyContent: 'flex-start' }}
-                >
-                  {account.role} - {account.email}
-                </Button>
-              ))}
             </Box>
           </Paper>
         </Box>

@@ -31,17 +31,18 @@ import {
   AccountCircle as AccountIcon,
 } from '@mui/icons-material'
 import { selectCurrentUser, logout } from '../store/authSlice'
+import { t } from '../utils/translations'
 
 const drawerWidth = 280
 
 const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-  { text: 'Reservations', icon: <ReservationsIcon />, path: '/reservations' },
-  { text: 'Fleet Management', icon: <CarsIcon />, path: '/cars' },
-  { text: 'Customers', icon: <CustomersIcon />, path: '/customers' },
-  { text: 'Calendar', icon: <CalendarIcon />, path: '/calendar' },
-  { text: 'Payments', icon: <PaymentsIcon />, path: '/payments' },
-  { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
+  { text: t('dashboard'), icon: <DashboardIcon />, path: '/' },
+  { text: t('reservations'), icon: <ReservationsIcon />, path: '/reservations' },
+  { text: t('fleetManagement'), icon: <CarsIcon />, path: '/cars' },
+  { text: t('customers'), icon: <CustomersIcon />, path: '/customers' },
+  { text: t('calendar'), icon: <CalendarIcon />, path: '/calendar' },
+  { text: t('payments'), icon: <PaymentsIcon />, path: '/payments' },
+  { text: t('settings'), icon: <SettingsIcon />, path: '/settings' },
 ]
 
 function Layout() {
@@ -93,10 +94,10 @@ function Layout() {
     <Box>
       <Box sx={{ p: 3, textAlign: 'center', borderBottom: 1, borderColor: 'divider' }}>
         <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-          Car Rental Admin
+          {t('carRentalAdmin')}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Management Panel
+          {t('managementPanel')}
         </Typography>
       </Box>
       
@@ -172,7 +173,7 @@ function Layout() {
                     {user.email}
                   </Typography>
                   <Chip 
-                    label={user.role?.toUpperCase()} 
+                    label={t(user.role?.toLowerCase() || 'customer').toUpperCase()} 
                     size="small" 
                     color={getRoleColor(user.role)}
                     sx={{ height: 20, fontSize: '0.7rem' }}
@@ -203,14 +204,14 @@ function Layout() {
           <ListItemIcon>
             <AccountIcon fontSize="small" />
           </ListItemIcon>
-          Profile
+          {t('profile')}
         </MenuItem>
         <Divider />
         <MenuItem onClick={handleLogout}>
           <ListItemIcon>
             <LogoutIcon fontSize="small" />
           </ListItemIcon>
-          Logout
+          {t('logout')}
         </MenuItem>
       </Menu>
 
