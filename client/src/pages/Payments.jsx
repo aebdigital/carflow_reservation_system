@@ -29,7 +29,8 @@ import {
   Tab,
   IconButton,
   Tooltip,
-  Autocomplete
+  Autocomplete,
+  Snackbar
 } from '@mui/material'
 import {
   Payment as PaymentIcon,
@@ -49,7 +50,6 @@ import {
   useProcessRefundMutation
 } from '../store/store'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { message } from 'antd'
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -75,6 +75,7 @@ function Payments() {
   const [dialogMode, setDialogMode] = useState('create') // 'create', 'view', 'refund'
   const [selectedPayment, setSelectedPayment] = useState(null)
   const [selectedReservation, setSelectedReservation] = useState(null)
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
   // Form state for creating invoices/payments
   const [formData, setFormData] = useState({
@@ -264,10 +265,10 @@ function Payments() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
-      message.success('Invoice downloaded successfully');
+      setSnackbar({ open: true, message: 'Invoice downloaded successfully', severity: 'success' });
     } catch (error) {
       console.error('Error downloading invoice:', error);
-      message.error('Failed to download invoice');
+      setSnackbar({ open: true, message: 'Failed to download invoice', severity: 'error' });
     }
   };
 
@@ -291,7 +292,7 @@ function Payments() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error previewing invoice:', error);
-      message.error('Failed to preview invoice');
+      setSnackbar({ open: true, message: 'Failed to preview invoice', severity: 'error' });
     }
   };
 
@@ -924,6 +925,21 @@ function Payments() {
           </Dialog>
         </>
       )}
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert 
+          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }
