@@ -49,6 +49,7 @@ import {
   useProcessRefundMutation
 } from '../store/store'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { message } from 'antd'
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -241,17 +242,17 @@ function Payments() {
   // Handle downloading PDF invoice
   const handleDownloadPDF = async (paymentId) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-backend.onrender.com/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
+      const token = localStorage.getItem('token');
+      
       const response = await fetch(`${apiUrl}/payments/${paymentId}/invoice`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+          'Authorization': `Bearer ${token}`,
+        },
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to download invoice');
-      }
-      
+
+      if (!response.ok) throw new Error('Failed to download invoice');
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -262,37 +263,35 @@ function Payments() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      
+      message.success('Invoice downloaded successfully');
     } catch (error) {
-      console.error('Error downloading PDF:', error);
-      alert('Error downloading invoice. Please try again.');
+      console.error('Error downloading invoice:', error);
+      message.error('Failed to download invoice');
     }
   };
 
   // Handle previewing PDF invoice
   const handlePreviewPDF = async (paymentId) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-backend.onrender.com/api';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
+      const token = localStorage.getItem('token');
+      
       const response = await fetch(`${apiUrl}/payments/${paymentId}/invoice?preview=true`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+          'Authorization': `Bearer ${token}`,
+        },
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to preview invoice');
-      }
-      
+
+      if (!response.ok) throw new Error('Failed to generate invoice');
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       window.open(url, '_blank');
-      
-      // Clean up the URL after a delay
-      setTimeout(() => {
-        window.URL.revokeObjectURL(url);
-      }, 1000);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error previewing PDF:', error);
-      alert('Error previewing invoice. Please try again.');
+      console.error('Error previewing invoice:', error);
+      message.error('Failed to preview invoice');
     }
   };
 

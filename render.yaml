@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: carflow-reservation-backend
+    name: carflow-reservation-system
     env: node
     plan: free
     buildCommand: cd server && npm install
@@ -9,5 +9,5 @@ services:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 5000
+        value: 10000
     healthCheckPath: /api/health 
