@@ -1,7 +1,7 @@
 const translations = {
   sk: {
     // Navigation and Layout
-    dashboard: 'Nástenka',
+    dashboard: 'Domov',
     reservations: 'Rezervácie', 
     fleetManagement: 'Správa vozového parku',
     customers: 'Zákazníci',
@@ -132,6 +132,8 @@ const translations = {
     cancelled: 'Zrušené',
     completed: 'Dokončené',
     active: 'Aktívne',
+    rentalPeriod: 'Obdobie prenájmu',
+    duration: 'Trvanie',
     
     // Customers Page
     addCustomer: 'Pridať zákazníka',
@@ -176,6 +178,36 @@ const translations = {
     week: 'Týždeň',
     today: 'Dnes',
     
+    // Settings Page
+    systemSettings: 'Systémové nastavenia',
+    configureSettings: 'Konfigurovať systémové nastavenia, obchodné pravidlá a predvoľby aplikácie.',
+    businessHours: 'Pracovné hodiny a prevádzkové nastavenia',
+    pricingRules: 'Cenové pravidlá a konfigurácia daní',
+    notifications: 'Predvoľby oznámení',
+    userRoles: 'Používateľské role a oprávnenia',
+    underDevelopment: 'Táto stránka bude obsahovať možnosti konfigurácie systému vrátane:',
+    
+    // Customer Portal
+    welcomeUser: 'Vitajte, {name}!',
+    customerPortal: 'Zákaznícky portál',
+    myReservations: 'Moje rezervácie',
+    viewManageReservations: 'Zobraziť a spravovať vaše rezervácie áut',
+    rentalHistory: 'História prenájmov',
+    viewPastRentals: 'Zobraziť vaše minulé prenájmy áut',
+    profileSettings: 'Nastavenia profilu',
+    updatePersonalInfo: 'Aktualizovať vaše osobné údaje',
+    paymentMethods: 'Spôsoby platby',
+    managePaymentMethods: 'Spravovať vaše spôsoby platby',
+    comingSoon: 'Už čoskoro',
+    accessFeature: 'Prístup k funkcii',
+    customerPortalDev: 'Zákaznícky portál v štádiu vývoja',
+    demoApplication: 'Toto je demo aplikácia prezentujúca riadenie prístupu podľa rolí. Funkcie zákazníckeho portálu sú momentálne vo vývoji.',
+    yourAccountDetails: 'Detaily vášho účtu',
+    accountStatus: 'Stav účtu',
+    accountActive: 'Aktívny',
+    accountInactive: 'Neaktívny',
+    roleLabel: 'Rola',
+    
     // Common Actions
     save: 'Uložiť',
     cancel: 'Zrušiť',
@@ -205,6 +237,19 @@ const translations = {
     invalidDate: 'Neplatný dátum',
     passwordTooShort: 'Heslo musí mať aspoň 6 znakov',
     passwordsDoNotMatch: 'Heslá sa nezhodujú',
+    startDateRequired: 'Dátum začiatku je povinný',
+    endDateRequired: 'Dátum ukončenia je povinný',
+    endDateAfterStart: 'Dátum ukončenia musí byť po dátume začiatku',
+    startDateNotPast: 'Dátum začiatku nemôže byť v minulosti',
+    customer_required: 'Zákazník je povinný',
+    car_required: 'Auto je povinné',
+    start_date_required: 'Dátum začiatku je povinný',
+    end_date_required: 'Dátum ukončenia je povinný',
+    end_date_must_be_after_start_date: 'Dátum ukončenia musí byť po dátume začiatku',
+    pickup_location_required: 'Miesto vyzdvihnutia je povinné',
+    dropoff_location_required: 'Miesto vrátenia je povinné',
+    start_date_cannot_be_in_the_past: 'Dátum začiatku nemôže byť v minulosti',
+    an_error_occurred_while_saving_the_reservation_please_check_the_console_for_details: 'Vyskytla sa chyba pri ukladaní rezervácie. Skontrolujte konzolu pre podrobnosti.',
     
     // Status Messages
     success: 'Úspech',
@@ -220,26 +265,10 @@ const translations = {
     confirmCancel: 'Ste si istí, že chcete zrušiť? Všetky neuložené zmeny budú stratené.',
     unsavedChanges: 'Máte neuložené zmeny. Chcete pokračovať?',
     
-    // Settings Page
-    systemSettings: 'Systémové nastavenia',
-    configureSettings: 'Konfigurovať systémové nastavenia, obchodné pravidlá a predvoľby aplikácie.',
-    businessHours: '• Pracovné hodiny a prevádzkové nastavenia',
-    pricingRules: '• Cenové pravidlá a konfigurácia daní',
-    notifications: '• Predvoľby oznámení',
-    userRoles: '• Používateľské role a oprávnenia',
-    
-    // Customer Portal
-    welcomeUser: 'Vitajte, {name}!',
-    customerPortal: 'Zákaznícky portál',
-    myReservations: 'Moje rezervácie',
-    viewManageReservations: 'Zobraziť a spravovať vaše rezervácie áut',
-    rentalHistory: 'História prenájmov',
-    viewPastRentals: 'Zobraziť vaše minulé prenájmy áut',
-    profileSettings: 'Nastavenia profilu',
-    updatePersonalInfo: 'Aktualizovať vaše osobné údaje',
-    paymentMethods: 'Spôsoby platby',
-    managePaymentMethods: 'Spravovať vaše spôsoby platby',
-    comingSoon: 'Už čoskoro',
+    // Dashboard specific messages
+    welcomeBackMessage: 'Vitajte späť! Tu je to, čo sa deje s vaším prenájmom áut dnes.',
+    vsLastMonth: 'vs minulý mesiac',
+    revenue: 'Tržby',
     
     // Time and Date
     days: 'dní',

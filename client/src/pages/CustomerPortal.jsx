@@ -17,38 +17,39 @@ import {
   History as HistoryIcon,
   Payment as PaymentIcon,
 } from '@mui/icons-material'
+import { t } from '../utils/translations'
 
 function CustomerPortal() {
   const { user } = useSelector((state) => state.auth)
 
   const customerFeatures = [
     {
-      title: 'My Reservations',
-      description: 'View and manage your car reservations',
+      title: t('myReservations'),
+      description: t('viewManageReservations'),
       icon: <CarIcon fontSize="large" />,
       color: 'primary.main',
-      status: 'Coming Soon',
+      status: t('comingSoon'),
     },
     {
-      title: 'Rental History',
-      description: 'View your past car rentals',
+      title: t('rentalHistory'),
+      description: t('viewPastRentals'),
       icon: <HistoryIcon fontSize="large" />,
       color: 'secondary.main',
-      status: 'Coming Soon',
+      status: t('comingSoon'),
     },
     {
-      title: 'Profile Settings',
-      description: 'Update your personal information',
+      title: t('profileSettings'),
+      description: t('updatePersonalInfo'),
       icon: <AccountIcon fontSize="large" />,
       color: 'success.main',
-      status: 'Coming Soon',
+      status: t('comingSoon'),
     },
     {
-      title: 'Payment Methods',
-      description: 'Manage your payment methods',
+      title: t('paymentMethods'),
+      description: t('managePaymentMethods'),
       icon: <PaymentIcon fontSize="large" />,
       color: 'warning.main',
-      status: 'Coming Soon',
+      status: t('comingSoon'),
     },
   ]
 
@@ -69,13 +70,13 @@ function CustomerPortal() {
             {user?.firstName?.[0]}{user?.lastName?.[0]}
           </Avatar>
           <Typography variant="h3" gutterBottom sx={{ fontWeight: 600 }}>
-            Welcome, {user?.firstName}!
+            {t('welcomeUser', 'sk', { name: user?.firstName })}
           </Typography>
           <Typography variant="h6" color="text.secondary" paragraph>
-            Customer Portal
+            {t('customerPortal')}
           </Typography>
           <Chip 
-            label={`Role: ${user?.role?.toUpperCase()}`} 
+            label={`${t('roleLabel')}: ${t(user?.role?.toLowerCase() || 'customer').toUpperCase()}`} 
             color="primary" 
             variant="outlined"
             sx={{ mb: 2 }}
@@ -132,7 +133,7 @@ function CustomerPortal() {
                     disabled
                     sx={{ mt: 'auto' }}
                   >
-                    Access Feature
+                    {t('accessFeature')}
                   </Button>
                 </CardContent>
               </Card>
@@ -143,17 +144,16 @@ function CustomerPortal() {
         {/* Info Section */}
         <Card sx={{ mt: 4, p: 3, textAlign: 'center' }}>
           <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
-            🚧 Customer Portal Under Development
+            🚧 {t('customerPortalDev')}
           </Typography>
           <Typography variant="body1" color="text.secondary" paragraph>
-            This is a demo application showcasing role-based access control. 
-            The customer portal features are currently under development.
+            {t('demoApplication')}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            <strong>Your Account Details:</strong><br />
-            Email: {user?.email}<br />
-            Phone: {user?.phone}<br />
-            Account Status: {user?.isActive ? 'Active' : 'Inactive'}
+            <strong>{t('yourAccountDetails')}:</strong><br />
+            {t('email')}: {user?.email}<br />
+            {t('phone')}: {user?.phone}<br />
+            {t('accountStatus')}: {user?.isActive ? t('accountActive') : t('accountInactive')}
           </Typography>
         </Card>
       </Container>

@@ -155,7 +155,7 @@ function Dashboard() {
         {t('dashboard')}
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        Vitajte späť! Tu je to, co sa deje s vaším prenájmom áut dnes.
+        {t('welcomeBackMessage')}
       </Typography>
 
       {/* Stats Cards */}
@@ -207,7 +207,7 @@ function Dashboard() {
                     {stat.change}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>
-                    vs minulý mesiac
+                    {t('vsLastMonth')}
                   </Typography>
                 </Box>
               </CardContent>
@@ -231,7 +231,7 @@ function Dashboard() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
-                    <Tooltip formatter={(value) => [`${value} €`, 'Tržby']} />
+                    <Tooltip formatter={(value) => [`${value} €`, t('revenue')]} />
                     <Bar dataKey="revenue" fill="#1976d2" />
                   </BarChart>
                 </ResponsiveContainer>

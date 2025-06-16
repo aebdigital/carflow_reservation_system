@@ -54,6 +54,7 @@ import {
   useGetPaymentsQuery
 } from '../store/store'
 import { useNavigate } from 'react-router-dom'
+import { t } from '../utils/translations'
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -163,19 +164,19 @@ function Reservations() {
   const validateForm = () => {
     const errors = {}
     
-    if (!formData.customer) errors.customer = 'Customer is required'
-    if (!formData.car) errors.car = 'Car is required'
-    if (!formData.startDate) errors.startDate = 'Start date is required'
-    if (!formData.endDate) errors.endDate = 'End date is required'
+    if (!formData.customer) errors.customer = t('customer_required')
+    if (!formData.car) errors.car = t('car_required')
+    if (!formData.startDate) errors.startDate = t('start_date_required')
+    if (!formData.endDate) errors.endDate = t('end_date_required')
     if (formData.startDate && formData.endDate && formData.endDate <= formData.startDate) {
-      errors.endDate = 'End date must be after start date'
+      errors.endDate = t('end_date_must_be_after_start_date')
     }
-    if (!formData.pickupLocation.name) errors.pickupLocationName = 'Pickup location is required'
-    if (!formData.dropoffLocation.name) errors.dropoffLocationName = 'Dropoff location is required'
+    if (!formData.pickupLocation.name) errors.pickupLocationName = t('pickup_location_required')
+    if (!formData.dropoffLocation.name) errors.dropoffLocationName = t('dropoff_location_required')
 
     // Additional validation
     if (formData.startDate && formData.startDate < new Date()) {
-      errors.startDate = 'Start date cannot be in the past'
+      errors.startDate = t('start_date_cannot_be_in_the_past')
     }
 
     setFormErrors(errors)
@@ -219,7 +220,7 @@ function Reservations() {
       if (error.data && error.data.message) {
         alert(`Error: ${error.data.message}`)
       } else {
-        alert('An error occurred while saving the reservation. Please check the console for details.')
+        alert(t('an_error_occurred_while_saving_the_reservation_please_check_the_console_for_details'))
       }
     }
   }
@@ -339,10 +340,10 @@ function Reservations() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
-            Reservations
+            Reservácie
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Manage all car rental reservations, bookings, and customer requests.
+            Spravujte všetky nájomné rezervácie, rezervácie a požiadavky zákazníkov.
           </Typography>
         </Box>
         <Button
@@ -351,17 +352,17 @@ function Reservations() {
           onClick={() => handleOpenDialog('create')}
           size="large"
         >
-          New Reservation
+          Nová rezervácia
         </Button>
       </Box>
 
       <Card>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
-            <Tab label="All Reservations" />
-            <Tab label="Active" />
-            <Tab label="Pending" />
-            <Tab label="Completed" />
+            <Tab label="Všetky rezervácie" />
+            <Tab label="Aktívne" />
+            <Tab label="Čakajúce" />
+            <Tab label="Dokončené" />
           </Tabs>
         </Box>
 
@@ -379,14 +380,14 @@ function Reservations() {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Reservation #</TableCell>
-                    <TableCell>Customer</TableCell>
-                    <TableCell>Car</TableCell>
-                    <TableCell>Start Date</TableCell>
-                    <TableCell>End Date</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Total</TableCell>
-                    <TableCell>Actions</TableCell>
+                    <TableCell>Rezervácia #</TableCell>
+                    <TableCell>Zákazník</TableCell>
+                    <TableCell>Auto</TableCell>
+                    <TableCell>{t('startDate')}</TableCell>
+                    <TableCell>{t('endDate')}</TableCell>
+                    <TableCell>{t('status')}</TableCell>
+                    <TableCell>Celkom</TableCell>
+                    <TableCell>Akcie</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -524,14 +525,14 @@ function Reservations() {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Reservation #</TableCell>
-                    <TableCell>Customer</TableCell>
-                    <TableCell>Car</TableCell>
-                    <TableCell>Start Date</TableCell>
-                    <TableCell>End Date</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Total</TableCell>
-                    <TableCell>Actions</TableCell>
+                    <TableCell>Rezervácia #</TableCell>
+                    <TableCell>Zákazník</TableCell>
+                    <TableCell>Auto</TableCell>
+                    <TableCell>{t('startDate')}</TableCell>
+                    <TableCell>{t('endDate')}</TableCell>
+                    <TableCell>{t('status')}</TableCell>
+                    <TableCell>Celkom</TableCell>
+                    <TableCell>Akcie</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -623,14 +624,14 @@ function Reservations() {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Reservation #</TableCell>
-                    <TableCell>Customer</TableCell>
-                    <TableCell>Car</TableCell>
-                    <TableCell>Start Date</TableCell>
-                    <TableCell>End Date</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Total</TableCell>
-                    <TableCell>Actions</TableCell>
+                    <TableCell>Rezervácia #</TableCell>
+                    <TableCell>Zákazník</TableCell>
+                    <TableCell>Auto</TableCell>
+                    <TableCell>{t('startDate')}</TableCell>
+                    <TableCell>{t('endDate')}</TableCell>
+                    <TableCell>{t('status')}</TableCell>
+                    <TableCell>Celkom</TableCell>
+                    <TableCell>Akcie</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -730,14 +731,14 @@ function Reservations() {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Reservation #</TableCell>
-                    <TableCell>Customer</TableCell>
-                    <TableCell>Car</TableCell>
-                    <TableCell>Start Date</TableCell>
-                    <TableCell>End Date</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Total</TableCell>
-                    <TableCell>Actions</TableCell>
+                    <TableCell>Rezervácia #</TableCell>
+                    <TableCell>Zákazník</TableCell>
+                    <TableCell>Auto</TableCell>
+                    <TableCell>{t('startDate')}</TableCell>
+                    <TableCell>{t('endDate')}</TableCell>
+                    <TableCell>{t('status')}</TableCell>
+                    <TableCell>Celkom</TableCell>
+                    <TableCell>Akcie</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -915,20 +916,20 @@ function Reservations() {
                   <Card variant="outlined">
                     <CardContent>
                       <Typography variant="h6" gutterBottom color="primary">
-                        Rental Period
+                        {t('rentalPeriod')}
                       </Typography>
                       <Typography variant="body2" gutterBottom>
-                        <strong>Start Date:</strong> {new Date(selectedReservation.startDate).toLocaleDateString('en-US', { 
+                        <strong>{t('startDate')}:</strong> {new Date(selectedReservation.startDate).toLocaleDateString('sk-SK', { 
                           weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
                         })}
                       </Typography>
                       <Typography variant="body2" gutterBottom>
-                        <strong>End Date:</strong> {new Date(selectedReservation.endDate).toLocaleDateString('en-US', { 
+                        <strong>{t('endDate')}:</strong> {new Date(selectedReservation.endDate).toLocaleDateString('sk-SK', { 
                           weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
                         })}
                       </Typography>
                       <Typography variant="body2" color="primary" fontWeight="medium">
-                        Duration: {Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24))} days
+                        {t('duration')}: {Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24))} {t('days')}
                       </Typography>
                       
                       {/* Status Timeline */}
@@ -1454,7 +1455,7 @@ function Reservations() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Start Date"
+                  label={t('startDate')}
                   type="date"
                   value={formData.startDate ? formData.startDate.toISOString().split('T')[0] : ''}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value ? new Date(e.target.value) : null })}
@@ -1471,7 +1472,7 @@ function Reservations() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="End Date"
+                  label={t('endDate')}
                   type="date"
                   value={formData.endDate ? formData.endDate.toISOString().split('T')[0] : ''}
                   onChange={(e) => setFormData({ ...formData, endDate: e.target.value ? new Date(e.target.value) : null })}
@@ -1494,39 +1495,39 @@ function Reservations() {
                   <Card sx={{ bgcolor: 'primary.50', border: '1px solid', borderColor: 'primary.200' }}>
                     <CardContent sx={{ py: 2 }}>
                       <Typography variant="h6" color="primary.main" gutterBottom>
-                        Pricing Estimate
+                        Cenový odhad
                       </Typography>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                         <Typography variant="body2">
-                          Rental Period: {Math.ceil((formData.endDate - formData.startDate) / (1000 * 60 * 60 * 24))} days
+                          {t('rentalPeriod')}: {Math.ceil((formData.endDate - formData.startDate) / (1000 * 60 * 60 * 24))} {t('days')}
                         </Typography>
                         <Typography variant="body2">
-                          Daily Rate: ${formData.car.dailyRate}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                        <Typography variant="body2">
-                          Subtotal:
-                        </Typography>
-                        <Typography variant="body2">
-                          ${(Math.ceil((formData.endDate - formData.startDate) / (1000 * 60 * 60 * 24)) * formData.car.dailyRate).toFixed(2)}
+                          Denná sadzba: {formData.car.dailyRate} €
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                         <Typography variant="body2">
-                          Taxes (10%):
+                          {t('subtotal')}:
                         </Typography>
                         <Typography variant="body2">
-                          ${(Math.ceil((formData.endDate - formData.startDate) / (1000 * 60 * 60 * 24)) * formData.car.dailyRate * 0.1).toFixed(2)}
+                          {(Math.ceil((formData.endDate - formData.startDate) / (1000 * 60 * 60 * 24)) * formData.car.dailyRate).toFixed(2)} €
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography variant="body2">
+                          Dane (10%):
+                        </Typography>
+                        <Typography variant="body2">
+                          {(Math.ceil((formData.endDate - formData.startDate) / (1000 * 60 * 60 * 24)) * formData.car.dailyRate * 0.1).toFixed(2)} €
                         </Typography>
                       </Box>
                       <Divider sx={{ my: 1 }} />
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography variant="body1" fontWeight="medium">
-                          Total Amount:
+                          {t('totalAmount')}:
                         </Typography>
                         <Typography variant="body1" fontWeight="bold" color="primary.main">
-                          ${(Math.ceil((formData.endDate - formData.startDate) / (1000 * 60 * 60 * 24)) * formData.car.dailyRate * 1.1).toFixed(2)}
+                          {(Math.ceil((formData.endDate - formData.startDate) / (1000 * 60 * 60 * 24)) * formData.car.dailyRate * 1.1).toFixed(2)} €
                         </Typography>
                       </Box>
                     </CardContent>
@@ -1537,13 +1538,13 @@ function Reservations() {
               {/* Pickup Location */}
               <Grid item xs={12}>
                 <Typography variant="h6" gutterBottom>
-                  Pickup Location
+                  {t('pickupLocation')}
                 </Typography>
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Location Name"
+                  label={t('locationName')}
                   value={formData.pickupLocation.name}
                   onChange={(e) => setFormData({
                     ...formData,
@@ -1558,7 +1559,7 @@ function Reservations() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Street Address"
+                  label={t('street')}
                   value={formData.pickupLocation.address.street}
                   onChange={(e) => setFormData({
                     ...formData,
@@ -1573,7 +1574,7 @@ function Reservations() {
               <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
-                  label="City"
+                  label={t('city')}
                   value={formData.pickupLocation.address.city}
                   onChange={(e) => setFormData({
                     ...formData,
@@ -1588,7 +1589,7 @@ function Reservations() {
               <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
-                  label="State"
+                  label={t('state')}
                   value={formData.pickupLocation.address.state}
                   onChange={(e) => setFormData({
                     ...formData,
@@ -1603,7 +1604,7 @@ function Reservations() {
               <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
-                  label="Country"
+                  label={t('country')}
                   value={formData.pickupLocation.address.country}
                   onChange={(e) => setFormData({
                     ...formData,
@@ -1619,13 +1620,13 @@ function Reservations() {
               {/* Dropoff Location */}
               <Grid item xs={12}>
                 <Typography variant="h6" gutterBottom>
-                  Dropoff Location
+                  {t('dropoffLocation')}
                 </Typography>
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Location Name"
+                  label={t('locationName')}
                   value={formData.dropoffLocation.name}
                   onChange={(e) => setFormData({
                     ...formData,
@@ -1640,7 +1641,7 @@ function Reservations() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Street Address"
+                  label={t('street')}
                   value={formData.dropoffLocation.address.street}
                   onChange={(e) => setFormData({
                     ...formData,
@@ -1655,7 +1656,7 @@ function Reservations() {
               <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
-                  label="City"
+                  label={t('city')}
                   value={formData.dropoffLocation.address.city}
                   onChange={(e) => setFormData({
                     ...formData,
@@ -1670,7 +1671,7 @@ function Reservations() {
               <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
-                  label="State"
+                  label={t('state')}
                   value={formData.dropoffLocation.address.state}
                   onChange={(e) => setFormData({
                     ...formData,
@@ -1685,7 +1686,7 @@ function Reservations() {
               <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
-                  label="Country"
+                  label={t('country')}
                   value={formData.dropoffLocation.address.country}
                   onChange={(e) => setFormData({
                     ...formData,

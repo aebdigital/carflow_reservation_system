@@ -42,6 +42,7 @@ import {
   useGetCarsQuery,
   useGetReservationsQuery
 } from '../store/store'
+import { t } from '../utils/translations'
 
 function Calendar() {
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -220,110 +221,127 @@ function Calendar() {
 
   return (
     <Box>
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box>
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
-            Calendar View
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Track car allocations, reservations, and maintenance schedules.
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            variant={viewMode === 'month' ? 'contained' : 'outlined'}
-            startIcon={<MonthIcon />}
-            onClick={() => setViewMode('month')}
-            size="small"
-          >
-            Month
-          </Button>
-          <Button
-            variant={viewMode === 'week' ? 'contained' : 'outlined'}
-            startIcon={<WeekIcon />}
-            onClick={() => setViewMode('week')}
-            size="small"
-          >
-            Week
-          </Button>
-        </Box>
-      </Box>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
+        {t('calendar')}
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+        {t('trackAllocations')}
+      </Typography>
 
-      {/* Filters and Navigation */}
+      {/* Calendar Controls */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Grid container spacing={3} alignItems="center">
-            {/* Calendar Navigation */}
-            <Grid item xs={12} md={4}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={6}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <IconButton onClick={() => navigateCalendar(-1)}>
                   <PrevIcon />
                 </IconButton>
-                <Box sx={{ minWidth: 180, textAlign: 'center' }}>
-                  <Typography variant="h6">
-                    {selectedDate.toLocaleDateString('en-US', { 
-                      month: 'long', 
-                      year: 'numeric',
-                      ...(viewMode === 'week' && { day: 'numeric' })
-                    })}
-                  </Typography>
-                </Box>
+                
+                <Typography variant="h6" sx={{ fontWeight: 600, minWidth: 200, textAlign: 'center' }}>
+                  {selectedDate.toLocaleDateString('sk-SK', { 
+                    year: 'numeric',
+                    month: 'long',
+                    ...(viewMode === 'week' && { day: 'numeric' })
+                  })}
+                </Typography>
+                
                 <IconButton onClick={() => navigateCalendar(1)}>
                   <NextIcon />
                 </IconButton>
+                
                 <Button
                   variant="outlined"
-                  size="small"
-                  startIcon={<TodayIcon />}
                   onClick={goToToday}
+                  startIcon={<TodayIcon />}
+                  size="small"
                 >
-                  Today
+                  {t('today')}
                 </Button>
               </Box>
             </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                {/* View Mode Toggle */}
+                <Box sx={{ display: 'flex', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                  <Button
+                    variant={viewMode === 'month' ? 'contained' : 'text'}
+                    onClick={() => setViewMode('month')}
+                    startIcon={<MonthIcon />}
+                    size="small"
+                    sx={{ borderRadius: 0 }}
+                  >
+                    {t('month')}
+                  </Button>
+                  <Button
+                    variant={viewMode === 'week' ? 'contained' : 'text'}
+                    onClick={() => setViewMode('week')}
+                    startIcon={<WeekIcon />}
+                    size="small"
+                    sx={{ borderRadius: 0 }}
+                  >
+                    {t('week')}
+                  </Button>
+                </Box>
+              </Box>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
-            {/* Filters */}
-            <Grid item xs={12} md={8}>
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                <FilterIcon color="action" />
-                <FormControl size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel>Status</InputLabel>
+      {/* Filters */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item>
+              <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <FilterIcon />
+                Filtre
+              </Typography>
+            </Grid>
+            
+            <Grid item xs>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel>{t('status')}</InputLabel>
                   <Select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    label="Status"
+                    label={t('status')}
                   >
-                    <MenuItem value="all">All Status</MenuItem>
-                    <MenuItem value="available">Available</MenuItem>
-                    <MenuItem value="booked">Booked</MenuItem>
-                    <MenuItem value="maintenance">Maintenance</MenuItem>
-                    <MenuItem value="out-of-service">Out of Service</MenuItem>
+                    <MenuItem value="all">Všetky stavy</MenuItem>
+                    <MenuItem value="available">{t('available')}</MenuItem>
+                    <MenuItem value="booked">{t('booked')}</MenuItem>
+                    <MenuItem value="maintenance">{t('maintenance')}</MenuItem>
+                    <MenuItem value="out-of-service">{t('outOfService')}</MenuItem>
                   </Select>
                 </FormControl>
-                <FormControl size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel>Car Type</InputLabel>
+
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel>{t('category')}</InputLabel>
                   <Select
                     value={filterCarType}
                     onChange={(e) => setFilterCarType(e.target.value)}
-                    label="Car Type"
+                    label={t('category')}
                   >
-                    <MenuItem value="all">All Types</MenuItem>
+                    <MenuItem value="all">Všetky kategórie</MenuItem>
                     {carCategories.map(category => (
                       <MenuItem key={category} value={category}>
-                        {category}
+                        {t(category.toLowerCase())}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
+
                 <FormControl size="small" sx={{ minWidth: 150 }}>
-                  <InputLabel>Car</InputLabel>
+                  <InputLabel>Auto</InputLabel>
                   <Select
                     value={filterCar}
                     onChange={(e) => setFilterCar(e.target.value)}
-                    label="Car"
+                    label="Auto"
                   >
-                    <MenuItem value="all">All Cars</MenuItem>
+                    <MenuItem value="all">Všetky autá</MenuItem>
                     {cars.map(car => (
                       <MenuItem key={car._id} value={car._id}>
                         {car.brand} {car.model} ({car.registrationNumber})
@@ -341,13 +359,13 @@ function Calendar() {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
-            Status Legend
+            Legenda stavov
           </Typography>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Chip label="Available" color="success" size="small" />
-            <Chip label="Reserved" color="primary" size="small" />
-            <Chip label="Maintenance" color="warning" size="small" />
-            <Chip label="Out of Service" color="error" size="small" />
+            <Chip label={t('available')} color="success" size="small" />
+            <Chip label="Rezervované" color="primary" size="small" />
+            <Chip label={t('maintenance')} color="warning" size="small" />
+            <Chip label={t('outOfService')} color="error" size="small" />
           </Box>
         </CardContent>
       </Card>
@@ -361,7 +379,7 @@ function Calendar() {
 
       {(carsError || reservationsError) && (
         <Alert severity="error" sx={{ mb: 3 }}>
-          Error loading data: {carsError?.message || reservationsError?.message}
+          Chyba pri načítaní údajov: {carsError?.message || reservationsError?.message}
         </Alert>
       )}
 
@@ -380,7 +398,7 @@ function Calendar() {
                   borderColor: 'divider',
                   backgroundColor: 'grey.50'
                 }}>
-                  {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
+                  {['Nedeľa', 'Pondelok', 'Utorok', 'Streda', 'Štvrtok', 'Piatok', 'Sobota'].map(day => (
                     <Box key={day} sx={{ p: 2, textAlign: 'center', borderRight: 1, borderColor: 'divider' }}>
                       <Typography 
                         variant="subtitle2" 
@@ -484,13 +502,13 @@ function Calendar() {
                                       {reservation.car?.brand} {reservation.car?.model}
                                     </Typography>
                                     <Typography variant="caption" display="block">
-                                      Customer: {reservation.customer?.firstName} {reservation.customer?.lastName}
+                                      Zákazník: {reservation.customer?.firstName} {reservation.customer?.lastName}
                                     </Typography>
                                     <Typography variant="caption" display="block">
-                                      {startDate.toLocaleDateString()} - {endDate.toLocaleDateString()}
+                                      {startDate.toLocaleDateString('sk-SK')} - {endDate.toLocaleDateString('sk-SK')}
                                     </Typography>
                                     <Typography variant="caption" display="block">
-                                      Status: {reservation.status}
+                                      Stav: {t(reservation.status)}
                                     </Typography>
                                   </Box>
                                 }
@@ -518,59 +536,20 @@ function Calendar() {
                                     borderBottomLeftRadius: isStartDay || !isMultiDay ? 1 : 0,
                                     borderTopRightRadius: isEndDay || !isMultiDay ? 1 : 0,
                                     borderBottomRightRadius: isEndDay || !isMultiDay ? 1 : 0,
-                                    '&::before': isMultiDay && !isStartDay ? {
-                                      content: '""',
-                                      position: 'absolute',
-                                      left: -1,
-                                      top: 0,
-                                      bottom: 0,
-                                      width: 3,
-                                      backgroundColor: 'currentColor',
-                                      opacity: 0.7
-                                    } : {},
-                                    '&::after': isMultiDay && !isEndDay ? {
-                                      content: '""',
-                                      position: 'absolute',
-                                      right: -1,
-                                      top: 0,
-                                      bottom: 0,
-                                      width: 3,
-                                      backgroundColor: 'currentColor',
-                                      opacity: 0.7
-                                    } : {}
                                   }}
                                 >
-                                  <Typography 
-                                    variant="caption" 
-                                    sx={{ 
-                                      fontSize: '0.65rem',
-                                      fontWeight: 500,
-                                      display: 'block',
-                                      whiteSpace: 'nowrap',
-                                      overflow: 'hidden',
-                                      textOverflow: 'ellipsis'
-                                    }}
-                                  >
-                                    {isStartDay || !isMultiDay 
-                                      ? `${reservation.car?.brand} ${reservation.car?.model}`
-                                      : `↪ ${reservation.car?.brand} ${reservation.car?.model}`
-                                    }
+                                  <Typography variant="caption" sx={{ color: 'white', fontSize: '0.7rem' }}>
+                                    {reservation.car?.brand} {reservation.car?.model}
                                   </Typography>
                                 </Box>
                               </Tooltip>
                             )
                           })}
+                          
+                          {/* Show "X more" if there are more reservations */}
                           {reservationsForDay.length > 4 && (
-                            <Typography 
-                              variant="caption" 
-                              sx={{ 
-                                color: 'text.secondary',
-                                fontSize: '0.6rem',
-                                pl: 0.5,
-                                fontWeight: 500
-                              }}
-                            >
-                              +{reservationsForDay.length - 4} more
+                            <Typography variant="caption" sx={{ color: 'text.secondary', pl: 0.75 }}>
+                              +{reservationsForDay.length - 4} ďalších
                             </Typography>
                           )}
                         </Stack>

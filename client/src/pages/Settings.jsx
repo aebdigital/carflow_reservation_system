@@ -1,38 +1,39 @@
 import React from 'react'
 import { Box, Typography, Card, CardContent } from '@mui/material'
 import { Settings as SettingsIcon } from '@mui/icons-material'
+import { t } from '../utils/translations'
 
 function Settings() {
   return (
     <Box>
       <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
-        Settings
+        {t('settings')}
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        Configure system settings, business rules, and application preferences.
+        {t('configureSettings')}
       </Typography>
 
       <Card>
         <CardContent sx={{ textAlign: 'center', py: 8 }}>
           <SettingsIcon sx={{ fontSize: 100, color: 'primary.main', mb: 2 }} />
           <Typography variant="h5" gutterBottom>
-            System Settings
+            {t('systemSettings')}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            This page will contain system configuration options including:
+            {t('underDevelopment')}
           </Typography>
           <Box sx={{ mt: 2 }}>
             <Typography variant="body2" color="text.secondary">
-              • Business hours and operational settings
+              • {t('businessHours')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              • Pricing rules and tax configuration
+              • {t('pricingRules')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              • Notification preferences
+              • {t('notifications')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              • User roles and permissions
+              • {t('userRoles')}
             </Typography>
           </Box>
         </CardContent>
