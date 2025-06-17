@@ -50,6 +50,7 @@ import {
   useProcessRefundMutation
 } from '../store/store'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { t } from '../utils/translations'
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -194,7 +195,7 @@ function Payments() {
         description: formData.description,
         paymentMethod: formData.paymentMethod,
         dueDate: formData.dueDate,
-        currency: 'USD'
+        currency: 'EUR'
       }
 
       const result = await createPaymentIntent(paymentData).unwrap()
@@ -324,10 +325,10 @@ function Payments() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
-            Payments & Invoices
+            {t('paymentsManagement')}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Manage payments, process refunds, and generate invoices for customers.
+            {t('managePaymentsInvoices')}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -337,7 +338,7 @@ function Payments() {
             onClick={refetchPayments}
             disabled={paymentsLoading}
           >
-            Refresh
+            {t('refresh')}
           </Button>
           <Button
             variant="contained"
@@ -345,7 +346,7 @@ function Payments() {
             onClick={() => handleOpenDialog('create')}
             disabled={reservationsLoading || paymentsLoading}
           >
-            Create Invoice
+            {t('createPayment')}
           </Button>
         </Box>
       </Box>
@@ -355,7 +356,7 @@ function Payments() {
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
           <CircularProgress />
           <Typography variant="body2" sx={{ ml: 2 }}>
-            Loading payment and reservation data...
+            {t('loading')}
           </Typography>
         </Box>
       )}
@@ -365,7 +366,7 @@ function Payments() {
         <>
           {paymentsError && (
             <Alert severity="error" sx={{ mb: 3 }}>
-              Error loading payments: {paymentsError.message || 'Unknown error'}
+              {t('error')}: {paymentsError.message || t('error')}
             </Alert>
           )}
         </>
@@ -383,13 +384,13 @@ function Payments() {
                     <MoneyIcon color="primary" sx={{ fontSize: 40 }} />
                     <Box>
                       <Typography variant="h6">
-                        ${payments
+                        {payments
                           .filter(p => p.status === 'succeeded')
                           .reduce((sum, p) => sum + (p.amount || 0), 0)
-                          .toFixed(2)}
+                          .toLocaleString('sk-SK', { style: 'currency', currency: 'EUR' })}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Total Revenue
+                        {t('revenue')}
                       </Typography>
                     </Box>
                   </Box>
@@ -406,7 +407,7 @@ function Payments() {
                         {getFilteredPayments('succeeded').length}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Successful Payments
+                        Úspešné platby
                       </Typography>
                     </Box>
                   </Box>
@@ -423,7 +424,7 @@ function Payments() {
                         {getFilteredPayments('pending').length}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Pending Payments
+                        Čakajúce platby
                       </Typography>
                     </Box>
                   </Box>
@@ -440,7 +441,7 @@ function Payments() {
                         {payments.filter(p => p.invoice?.invoiceNumber).length}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Invoices Generated
+                        Vygenerované faktúry
                       </Typography>
                     </Box>
                   </Box>
@@ -452,11 +453,11 @@ function Payments() {
           <Card>
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
-                <Tab label={`All Payments (${payments.length})`} />
-                <Tab label={`Successful (${getFilteredPayments('succeeded').length})`} />
-                <Tab label={`Pending (${getFilteredPayments('pending').length})`} />
-                <Tab label={`Failed (${getFilteredPayments('failed').length})`} />
-                <Tab label={`Refunded (${getFilteredPayments('refunded').length + getFilteredPayments('partially_refunded').length})`} />
+                <Tab label={`Všetky platby (${payments.length})`} />
+                <Tab label={`Úspešné (${getFilteredPayments('succeeded').length})`} />
+                <Tab label={`Čakajúce (${getFilteredPayments('pending').length})`} />
+                <Tab label={`Neúspešné (${getFilteredPayments('failed').length})`} />
+                <Tab label={`Vrátené (${getFilteredPayments('refunded').length + getFilteredPayments('partially_refunded').length})`} />
               </Tabs>
             </Box>
 
@@ -466,14 +467,14 @@ function Payments() {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Payment ID</TableCell>
-                      <TableCell>Invoice #</TableCell>
-                      <TableCell>Customer</TableCell>
-                      <TableCell>Reservation</TableCell>
-                      <TableCell>Amount</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Actions</TableCell>
+                      <TableCell>ID platby</TableCell>
+                      <TableCell>Faktúra č.</TableCell>
+                      <TableCell>Zákazník</TableCell>
+                      <TableCell>Rezervácia</TableCell>
+                      <TableCell>Suma</TableCell>
+                      <TableCell>Stav</TableCell>
+                      <TableCell>Dátum</TableCell>
+                      <TableCell>Akcie</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -509,7 +510,7 @@ function Payments() {
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2" fontWeight="medium">
-                            ${payment.amount.toFixed(2)}
+                            {payment.amount.toLocaleString('sk-SK', { style: 'currency', currency: 'EUR' })}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -521,12 +522,12 @@ function Payments() {
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2">
-                            {new Date(payment.createdAt).toLocaleDateString()}
+                            {new Date(payment.createdAt).toLocaleDateString('sk-SK')}
                           </Typography>
                         </TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', gap: 0.5 }}>
-                            <Tooltip title="View Details">
+                            <Tooltip title={t('viewDetails')}>
                               <IconButton
                                 size="small"
                                 onClick={() => handleOpenDialog('view', payment)}
@@ -536,7 +537,7 @@ function Payments() {
                             </Tooltip>
                             {payment.invoice?.invoiceNumber && (
                               <>
-                                <Tooltip title="Preview Invoice">
+                                <Tooltip title={t('previewInvoice')}>
                                   <IconButton
                                     size="small"
                                     onClick={() => handlePreviewPDF(payment._id)}
@@ -544,7 +545,7 @@ function Payments() {
                                     <VisibilityIcon fontSize="small" />
                                   </IconButton>
                                 </Tooltip>
-                                <Tooltip title="Download Invoice">
+                                <Tooltip title={t('downloadInvoice')}>
                                   <IconButton
                                     size="small"
                                     onClick={() => handleDownloadPDF(payment._id)}
@@ -555,7 +556,7 @@ function Payments() {
                               </>
                             )}
                             {payment.status === 'pending' && (
-                              <Tooltip title="Confirm Payment">
+                              <Tooltip title={t('confirmPayment')}>
                                 <IconButton
                                   size="small"
                                   onClick={() => handleConfirmPayment(payment.stripePaymentIntentId)}
@@ -566,7 +567,7 @@ function Payments() {
                               </Tooltip>
                             )}
                             {payment.status === 'succeeded' && payment.canBeRefunded && (
-                              <Tooltip title="Process Refund">
+                              <Tooltip title={t('processRefund')}>
                                 <IconButton
                                   size="small"
                                   onClick={() => handleOpenDialog('refund', payment)}
@@ -592,12 +593,12 @@ function Payments() {
                   <Table>
                     <TableHead>
                       <TableRow>
-                        <TableCell>Payment ID</TableCell>
-                        <TableCell>Invoice #</TableCell>
-                        <TableCell>Customer</TableCell>
-                        <TableCell>Amount</TableCell>
-                        <TableCell>Date</TableCell>
-                        <TableCell>Actions</TableCell>
+                        <TableCell>ID platby</TableCell>
+                        <TableCell>Faktúra č.</TableCell>
+                        <TableCell>Zákazník</TableCell>
+                        <TableCell>Suma</TableCell>
+                        <TableCell>Dátum</TableCell>
+                        <TableCell>Akcie</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -611,8 +612,8 @@ function Payments() {
                           <TableCell>
                             {payment.customer?.firstName} {payment.customer?.lastName}
                           </TableCell>
-                          <TableCell>${payment.amount.toFixed(2)}</TableCell>
-                          <TableCell>{new Date(payment.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell>{payment.amount.toLocaleString('sk-SK', { style: 'currency', currency: 'EUR' })}</TableCell>
+                          <TableCell>{new Date(payment.createdAt).toLocaleDateString('sk-SK')}</TableCell>
                           <TableCell>
                             <Box sx={{ display: 'flex', gap: 0.5 }}>
                               <IconButton
@@ -623,7 +624,7 @@ function Payments() {
                               </IconButton>
                               {payment.invoice?.invoiceNumber && (
                                 <>
-                                  <Tooltip title="Preview Invoice">
+                                  <Tooltip title={t('previewInvoice')}>
                                     <IconButton
                                       size="small"
                                       onClick={() => handlePreviewPDF(payment._id)}
@@ -631,7 +632,7 @@ function Payments() {
                                       <VisibilityIcon fontSize="small" />
                                     </IconButton>
                                   </Tooltip>
-                                  <Tooltip title="Download Invoice">
+                                  <Tooltip title={t('downloadInvoice')}>
                                     <IconButton
                                       size="small"
                                       onClick={() => handleDownloadPDF(payment._id)}
@@ -660,8 +661,8 @@ function Payments() {
             fullWidth
           >
             <DialogTitle>
-              {dialogMode === 'create' ? 'Create Invoice/Payment' : 
-               dialogMode === 'view' ? 'Payment Details' : 'Process Refund'}
+              {dialogMode === 'create' ? t('createInvoicePayment') : 
+               dialogMode === 'view' ? t('paymentDetails') : t('processRefund')}
             </DialogTitle>
             <DialogContent>
               <Grid container spacing={3} sx={{ mt: 1 }}>
@@ -785,7 +786,7 @@ function Payments() {
                       <TextField
                         fullWidth
                         label="Amount"
-                        value={`$${selectedPayment.amount.toFixed(2)}`}
+                        value={`${selectedPayment.amount.toFixed(2)}`}
                         disabled
                       />
                     </Grid>

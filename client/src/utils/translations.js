@@ -136,10 +136,28 @@ const translations = {
     duration: 'Trvanie',
     
     // Customers Page
+    customerManagement: 'Správa zákazníkov',
+    manageCustomerAccounts: 'Správa zákazníckych účtov, prezeranie histórie rezervácií a riešenie zákazníckej podpory.',
     addCustomer: 'Pridať zákazníka',
     editCustomer: 'Upraviť zákazníka',
     deleteCustomer: 'Vymazať zákazníka',
     customerInformation: 'Informácie o zákazníkovi',
+    customer: 'Zákazník',
+    contact: 'Kontakt',
+    license: 'Preukaz',
+    reservations: 'Rezervácie',
+    joined: 'Pripojený',
+    actions: 'Akcie',
+    viewDetails: 'Zobraziť detaily',
+    edit: 'Upraviť',
+    blacklist: 'Čierna listina',
+    searchCustomersPlaceholder: 'Hľadať zákazníkov podľa mena, e-mailu, telefónu alebo čísla preukazu...',
+    allCustomers: 'Všetci zákazníci',
+    activeCustomers: 'Aktívni zákazníci',
+    inactiveCustomers: 'Neaktívni zákazníci',
+    blacklistedCustomers: 'Zákazníci na čiernej listine',
+    notProvided: 'Nie je zadané',
+    bookings: 'rezervácií',
     firstName: 'Meno',
     lastName: 'Priezvisko',
     phone: 'Telefón',
@@ -155,7 +173,14 @@ const translations = {
     licenseExpiry: 'Platnosť preukazu',
     emergencyContact: 'Núdzový kontakt',
     
+    // Customer Status
+    active: 'Aktívny',
+    inactive: 'Neaktívny',
+    blacklisted: 'Čierna listina',
+    
     // Payments Page
+    paymentsManagement: 'Správa platieb',
+    managePaymentsInvoices: 'Správa platieb, faktúr a finančných transakcií.',
     createPayment: 'Vytvoriť platbu',
     paymentDetails: 'Detaily platby',
     paymentAmount: 'Suma platby',
@@ -167,9 +192,25 @@ const translations = {
     downloadInvoice: 'Stiahnuť faktúru',
     previewInvoice: 'Náhľad faktúry',
     confirmPayment: 'Potvrdiť platbu',
+    processRefund: 'Spracovať refundáciu',
+    paymentId: 'ID platby',
+    invoiceNumber: 'Číslo faktúry',
+    dueDate: 'Dátum splatnosti',
+    createInvoicePayment: 'Vytvoriť faktúru/platbu',
+    selectReservation: 'Vybrať rezerváciu',
+    loadingReservations: 'Načítavajú sa rezervácie...',
+    noReservationsAvailable: 'Žiadne potvrdené alebo čakajúce rezervácie bez platieb nie sú k dispozícii',
+    chooseReservation: 'Vyberte potvrdenú alebo čakajúcu rezerváciu bez platby',
     paid: 'Zaplatené',
     unpaid: 'Nezaplatené',
     refunded: 'Vrátené',
+    
+    // Payment Status
+    pending: 'Čakajúce',
+    processing: 'Spracováva sa',
+    succeeded: 'Úspešné',
+    failed: 'Neúspešné',
+    partially_refunded: 'Čiastočne vrátené',
     
     // Calendar Page
     calendarView: 'Kalendárový pohľad',
@@ -250,6 +291,15 @@ const translations = {
     dropoff_location_required: 'Miesto vrátenia je povinné',
     start_date_cannot_be_in_the_past: 'Dátum začiatku nemôže byť v minulosti',
     an_error_occurred_while_saving_the_reservation_please_check_the_console_for_details: 'Vyskytla sa chyba pri ukladaní rezervácie. Skontrolujte konzolu pre podrobnosti.',
+    firstNameRequired: 'Meno je povinné',
+    lastNameRequired: 'Priezvisko je povinné',
+    emailRequired: 'E-mail je povinný',
+    emailInvalid: 'E-mail je neplatný',
+    phoneRequired: 'Telefónne číslo je povinné',
+    phoneInvalid: 'Telefónne číslo musí začínať číslom 1-9, obsahovať iba číslice a mať maximálne 16 znakov (napr. +1234567890 alebo 1234567890)',
+    errorSavingCustomer: 'Chyba pri ukladaní zákazníka',
+    failedToSaveCustomer: 'Nepodarilo sa uložiť zákazníka',
+    errorLoadingCustomers: 'Chyba pri načítavaní zákazníkov',
     
     // Status Messages
     success: 'Úspech',
@@ -304,6 +354,8 @@ const translations = {
     dragDropFiles: 'Pretiahnite súbory sem alebo kliknite pre výber',
     supportedFormats: 'Podporované formáty',
     maxFileSize: 'Maximálna veľkosť súboru',
+    maxImagesNote: 'Maximálne môžete nahrať 10 obrázkov',
+    images: 'Obrázky',
     
     // Roles
     role: 'Rola',

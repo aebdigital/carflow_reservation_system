@@ -52,6 +52,7 @@ import {
   useBlacklistUserMutation,
   useGetReservationsQuery
 } from '../store/store'
+import { t } from '../utils/translations'
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -193,16 +194,16 @@ function Customers() {
   const validateForm = () => {
     const errors = {}
     
-    if (!formData.firstName.trim()) errors.firstName = 'First name is required'
-    if (!formData.lastName.trim()) errors.lastName = 'Last name is required'
-    if (!formData.email.trim()) errors.email = 'Email is required'
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = 'Email is invalid'
+    if (!formData.firstName.trim()) errors.firstName = t('firstNameRequired')
+    if (!formData.lastName.trim()) errors.lastName = t('lastNameRequired')
+    if (!formData.email.trim()) errors.email = t('emailRequired')
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = t('emailInvalid')
     
     // Phone number validation to match server regex: /^[\+]?[1-9][\d]{0,15}$/
     if (!formData.phone.trim()) {
-      errors.phone = 'Phone number is required'
+      errors.phone = t('phoneRequired')
     } else if (!/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.trim())) {
-      errors.phone = 'Phone number must start with 1-9, contain only digits, and be max 16 characters (e.g., +1234567890 or 1234567890)'
+      errors.phone = t('phoneInvalid')
     }
     
     // Password is required for new users
@@ -274,7 +275,8 @@ function Customers() {
       handleCloseDialog()
     } catch (error) {
       console.error('Error saving customer:', error)
-      alert(`Error: ${error.data?.message || error.message || 'Failed to save customer'}`)
+      const errorMessage = error?.data?.message || error?.message || t('failedToSaveCustomer')
+      alert(`${t('errorSavingCustomer')}: ${errorMessage}`)
     }
   }
 
@@ -337,13 +339,13 @@ function Customers() {
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell>Customer</TableCell>
-            <TableCell>Contact</TableCell>
-            <TableCell>License</TableCell>
-            <TableCell>Reservations</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Joined</TableCell>
-            <TableCell>Actions</TableCell>
+            <TableCell>{t('customer')}</TableCell>
+            <TableCell>{t('contact')}</TableCell>
+            <TableCell>{t('license')}</TableCell>
+            <TableCell>{t('reservations')}</TableCell>
+            <TableCell>{t('status')}</TableCell>
+            <TableCell>{t('joined')}</TableCell>
+            <TableCell>{t('actions')}</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -386,13 +388,13 @@ function Customers() {
                   </Box>
                 ) : (
                   <Typography variant="body2" color="text.secondary">
-                    Not provided
+                    {t('notProvided')}
                   </Typography>
                 )}
               </TableCell>
               <TableCell>
                 <Chip
-                  label={`${getCustomerReservationCount(customer._id)} bookings`}
+                  label={`${getCustomerReservationCount(customer._id)} ${t('bookings')}`}
                   size="small"
                   variant="outlined"
                 />
@@ -409,7 +411,7 @@ function Customers() {
               </TableCell>
               <TableCell>
                 <Box sx={{ display: 'flex', gap: 0.5 }}>
-                  <Tooltip title="View Details">
+                  <Tooltip title={t('viewDetails')}>
                     <IconButton
                       size="small"
                       onClick={() => handleOpenDialog('view', customer)}
@@ -417,7 +419,7 @@ function Customers() {
                       <ViewIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Edit">
+                  <Tooltip title={t('edit')}>
                     <IconButton
                       size="small"
                       onClick={() => handleOpenDialog('edit', customer)}
@@ -427,7 +429,7 @@ function Customers() {
                     </IconButton>
                   </Tooltip>
                   {customer.status !== 'blacklisted' && (
-                    <Tooltip title="Blacklist">
+                    <Tooltip title={t('blacklist')}>
                       <IconButton
                         size="small"
                         onClick={() => handleBlacklist(customer)}
@@ -451,10 +453,10 @@ function Customers() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
-            Customer Management
+            {t('customerManagement')}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Manage customer accounts, view booking history, and handle customer support.
+            {t('manageCustomerAccounts')}
           </Typography>
         </Box>
         <Button
@@ -463,7 +465,7 @@ function Customers() {
           onClick={() => handleOpenDialog('create')}
           size="large"
         >
-          Add Customer
+          {t('addCustomer')}
         </Button>
       </Box>
 
@@ -472,7 +474,7 @@ function Customers() {
         <CardContent>
           <TextField
             fullWidth
-            placeholder="Search customers by name, email, phone, or license number..."
+            placeholder={t('searchCustomersPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             InputProps={{
@@ -496,10 +498,10 @@ function Customers() {
       <Card>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
-            <Tab label={`All Customers (${getCustomersByStatus('all').length})`} />
-            <Tab label={`Active (${getCustomersByStatus('active').length})`} />
-            <Tab label={`Inactive (${getCustomersByStatus('inactive').length})`} />
-            <Tab label={`Blacklisted (${getCustomersByStatus('blacklisted').length})`} />
+            <Tab label={`${t('allCustomers')} (${getCustomersByStatus('all').length})`} />
+            <Tab label={`${t('activeCustomers')} (${getCustomersByStatus('active').length})`} />
+            <Tab label={`${t('inactiveCustomers')} (${getCustomersByStatus('inactive').length})`} />
+            <Tab label={`${t('blacklistedCustomers')} (${getCustomersByStatus('blacklisted').length})`} />
           </Tabs>
         </Box>
 
@@ -510,7 +512,7 @@ function Customers() {
             </Box>
           ) : usersError ? (
             <Alert severity="error" sx={{ m: 2 }}>
-              Error loading customers: {usersError.message}
+              {t('errorLoadingCustomers')}: {usersError.message}
             </Alert>
           ) : (
             renderCustomerTable(getCustomersByStatus('all'))

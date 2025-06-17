@@ -290,6 +290,7 @@ function Cars() {
     try {
       setDialogMode(mode)
       setSelectedCar(car)
+      setTabValue(0) // Reset to first tab when opening dialog
       
       if (mode === 'create') {
         setFormData(initialFormState)
@@ -389,6 +390,7 @@ function Cars() {
       
       setOpenDialog(true)
       setFormErrors({})
+      console.log(`🚗 Car dialog opened in ${mode} mode. Tab value: ${tabValue}`)
     } catch (error) {
       console.error('Error opening dialog:', error)
     }
@@ -410,7 +412,39 @@ function Cars() {
 
     try {
       if (dialogMode === 'create') {
-        const result = await createCar(formData).unwrap()
+        // Create FormData for file upload
+        const formDataToSend = new FormData()
+        
+        // Append all form fields
+        Object.keys(formData).forEach(key => {
+          if (key === 'location' || key === 'maintenance' || key === 'insurance') {
+            // Handle nested objects
+            Object.keys(formData[key]).forEach(nestedKey => {
+              if (key === 'location' && nestedKey === 'address') {
+                // Handle nested address object
+                Object.keys(formData[key][nestedKey]).forEach(addressKey => {
+                  formDataToSend.append(`${key}[${nestedKey}][${addressKey}]`, formData[key][nestedKey][addressKey])
+                })
+              } else {
+                formDataToSend.append(`${key}[${nestedKey}]`, formData[key][nestedKey])
+              }
+            })
+          } else if (key === 'features') {
+            // Handle array
+            formData[key].forEach(feature => {
+              formDataToSend.append('features[]', feature)
+            })
+          } else {
+            formDataToSend.append(key, formData[key])
+          }
+        })
+        
+        // Append image files
+        selectedImages.forEach(image => {
+          formDataToSend.append('images', image)
+        })
+        
+        const result = await createCar(formDataToSend).unwrap()
         console.log('Car created successfully:', result)
       } else if (dialogMode === 'edit' && selectedCar) {
         const result = await updateCar({ 
@@ -584,8 +618,17 @@ function Cars() {
             <Tab label={t('features')} />
             <Tab label={t('maintenance')} />
             <Tab label={t('insurance')} />
-            {dialogMode !== 'create' && <Tab label={t('images')} />}
+            <Tab 
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <ImageIcon />
+                  {t('images')}
+                </Box>
+              } 
+            />
           </Tabs>
+          
+          {console.log(`🔧 Current tab value: ${tabValue}, Dialog mode: ${dialogMode}`)}
 
           {/* Basic Information Tab */}
           {tabValue === 0 && (
@@ -1069,40 +1112,124 @@ function Cars() {
           )}
 
           {/* Images Tab */}
-          {tabValue === 5 && dialogMode !== 'create' && (
+          {tabValue === 5 && (
             <Box>
               <Typography variant="h6" gutterBottom>
-                {t('images')}
+                {t('images')} 🖼️
               </Typography>
-              {selectedCar?.images && selectedCar.images.length > 0 ? (
-                <ImageList sx={{ width: '100%' }} cols={3} rowHeight={164}>
-                  {selectedCar.images.map((image, index) => (
-                    <ImageListItem key={index}>
-                      <img
-                        src={image.urls?.medium || image.url}
-                        alt={image.description || `${t('images')} ${index + 1}`}
-                        loading="lazy"
-                        style={{ objectFit: 'cover' }}
+              
+              {console.log(`🖼️ Images tab rendered. DialogMode: ${dialogMode}, TabValue: ${tabValue}`)}
+              
+              {dialogMode === 'create' ? (
+                <Box>
+                  {/* Image Upload Section for New Cars */}
+                  <Box sx={{ mb: 3, p: 2, border: '2px dashed #ccc', borderRadius: 2 }}>
+                    <Button
+                      variant="outlined"
+                      component="label"
+                      startIcon={<UploadIcon />}
+                      fullWidth
+                      sx={{ mb: 2, py: 2 }}
+                      color="primary"
+                    >
+                      {t('uploadImages')} 📷
+                      <input
+                        type="file"
+                        hidden
+                        multiple
+                        accept="image/*"
+                        onChange={handleImageChange}
                       />
-                      <ImageListItemBar
-                        title={image.isPrimary ? `${t('images')} (Primárny)` : `${t('images')} ${index + 1}`}
-                        subtitle={image.description}
-                        actionIcon={
-                          <IconButton
-                            sx={{ color: 'rgba(255, 255, 255, 0.54)' }}
-                            aria-label="info"
-                          >
-                            {image.isPrimary ? <StarIcon /> : <StarBorderIcon />}
-                          </IconButton>
-                        }
-                      />
-                    </ImageListItem>
-                  ))}
-                </ImageList>
+                    </Button>
+                    <Typography variant="body2" color="text.secondary" align="center">
+                      {t('maxImagesNote')} (10 obrázkov)
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" align="center" display="block" sx={{ mt: 1 }}>
+                      Podporované formáty: JPG, PNG, WEBP, GIF
+                    </Typography>
+                  </Box>
+
+                  {/* Image Previews */}
+                  {imagePreviewUrls.length > 0 && (
+                    <Box>
+                      <Typography variant="subtitle1" gutterBottom>
+                        Náhľad obrázkov ({imagePreviewUrls.length})
+                      </Typography>
+                      <ImageList sx={{ width: '100%' }} cols={3} rowHeight={164}>
+                        {imagePreviewUrls.map((url, index) => (
+                          <ImageListItem key={index}>
+                            <img
+                              src={url}
+                              alt={`Náhľad ${index + 1}`}
+                              loading="lazy"
+                              style={{ objectFit: 'cover' }}
+                            />
+                            <ImageListItemBar
+                              title={`Obrázok ${index + 1}`}
+                              subtitle={index === 0 ? '(Primárny)' : ''}
+                              actionIcon={
+                                <Tooltip title="Odstrániť obrázok">
+                                  <IconButton
+                                    sx={{ color: 'rgba(255, 255, 255, 0.54)' }}
+                                    onClick={() => removeImage(index)}
+                                  >
+                                    <CloseIcon />
+                                  </IconButton>
+                                </Tooltip>
+                              }
+                            />
+                          </ImageListItem>
+                        ))}
+                      </ImageList>
+                    </Box>
+                  )}
+                  
+                  {imagePreviewUrls.length === 0 && (
+                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                      <ImageIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                      <Typography variant="body1" color="text.secondary">
+                        Zatiaľ neboli pridané žiadne obrázky
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
               ) : (
-                <Typography variant="body2" color="text.secondary">
-                  Žiadne obrázky nie sú dostupné.
-                </Typography>
+                <Box>
+                  {/* Existing Images for Edit/View Mode */}
+                  {selectedCar?.images && selectedCar.images.length > 0 ? (
+                    <ImageList sx={{ width: '100%' }} cols={3} rowHeight={164}>
+                      {selectedCar.images.map((image, index) => (
+                        <ImageListItem key={index}>
+                          <img
+                            src={image.urls?.medium || image.url}
+                            alt={image.description || `${t('images')} ${index + 1}`}
+                            loading="lazy"
+                            style={{ objectFit: 'cover' }}
+                          />
+                          <ImageListItemBar
+                            title={image.isPrimary ? `${t('images')} (Primárny)` : `${t('images')} ${index + 1}`}
+                            subtitle={image.description}
+                            actionIcon={
+                              <IconButton
+                                sx={{ color: 'rgba(255, 255, 255, 0.54)' }}
+                                aria-label="info"
+                              >
+                                {image.isPrimary ? <StarIcon /> : <StarBorderIcon />}
+                              </IconButton>
+                            }
+                          />
+                        </ImageListItem>
+                      ))}
+                    </ImageList>
+                  ) : (
+                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                      <ImageIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        Žiadne obrázky nie sú dostupné.
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
               )}
             </Box>
           )}
