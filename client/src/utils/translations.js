@@ -350,6 +350,7 @@ const translations = {
     
     // File Upload
     uploadImages: 'Nahrať obrázky',
+    addMoreImages: 'Pridať ďalšie obrázky',
     selectFiles: 'Vybrať súbory',
     dragDropFiles: 'Pretiahnite súbory sem alebo kliknite pre výber',
     supportedFormats: 'Podporované formáty',

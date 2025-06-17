@@ -447,11 +447,53 @@ function Cars() {
         const result = await createCar(formDataToSend).unwrap()
         console.log('Car created successfully:', result)
       } else if (dialogMode === 'edit' && selectedCar) {
-        const result = await updateCar({ 
-          id: selectedCar._id, 
-          updates: formData 
-        }).unwrap()
-        console.log('Car updated successfully:', result)
+        // Check if there are new images to upload
+        if (selectedImages.length > 0) {
+          // Use FormData when there are new images
+          const formDataToSend = new FormData()
+          
+          // Append all form fields
+          Object.keys(formData).forEach(key => {
+            if (key === 'location' || key === 'maintenance' || key === 'insurance') {
+              // Handle nested objects
+              Object.keys(formData[key]).forEach(nestedKey => {
+                if (key === 'location' && nestedKey === 'address') {
+                  // Handle nested address object
+                  Object.keys(formData[key][nestedKey]).forEach(addressKey => {
+                    formDataToSend.append(`${key}[${nestedKey}][${addressKey}]`, formData[key][nestedKey][addressKey])
+                  })
+                } else {
+                  formDataToSend.append(`${key}[${nestedKey}]`, formData[key][nestedKey])
+                }
+              })
+            } else if (key === 'features') {
+              // Handle array
+              formData[key].forEach(feature => {
+                formDataToSend.append('features[]', feature)
+              })
+            } else {
+              formDataToSend.append(key, formData[key])
+            }
+          })
+          
+          // Append the car ID for the update
+          formDataToSend.append('id', selectedCar._id)
+          
+          // Append new image files
+          selectedImages.forEach(image => {
+            formDataToSend.append('images', image)
+          })
+          
+          const result = await updateCar(formDataToSend).unwrap()
+          console.log('Car updated with new images successfully:', result)
+        } else {
+          // Regular update without images
+          const result = await updateCar({ 
+            id: selectedCar._id, 
+            updates: formData 
+          }).unwrap()
+          console.log('Car updated successfully:', result)
+        }
       }
       
       handleCloseDialog()
@@ -1195,11 +1237,83 @@ function Cars() {
                 </Box>
               ) : (
                 <Box>
+                  {/* Image Upload Section for Existing Cars in Edit Mode */}
+                  {dialogMode === 'edit' && (
+                    <Box sx={{ mb: 3 }}>
+                      <Typography variant="subtitle1" gutterBottom>
+                        {t('addMoreImages')} 
+                      </Typography>
+                      <Box sx={{ mb: 3, p: 2, border: '2px dashed #ccc', borderRadius: 2 }}>
+                        <Button
+                          variant="outlined"
+                          component="label"
+                          startIcon={<UploadIcon />}
+                          fullWidth
+                          sx={{ mb: 2, py: 2 }}
+                          color="primary"
+                        >
+                          {t('uploadImages')} 📷
+                          <input
+                            type="file"
+                            hidden
+                            multiple
+                            accept="image/*"
+                            onChange={handleImageChange}
+                          />
+                        </Button>
+                        <Typography variant="body2" color="text.secondary" align="center">
+                          {t('maxImagesNote')} (10 obrázkov celkovo)
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" align="center" display="block" sx={{ mt: 1 }}>
+                          Podporované formáty: JPG, PNG, WEBP, GIF
+                        </Typography>
+                      </Box>
+
+                      {/* New Image Previews */}
+                      {imagePreviewUrls.length > 0 && (
+                        <Box sx={{ mb: 3 }}>
+                          <Typography variant="subtitle2" gutterBottom>
+                            Nové obrázky na pridanie ({imagePreviewUrls.length})
+                          </Typography>
+                          <ImageList sx={{ width: '100%' }} cols={3} rowHeight={164}>
+                            {imagePreviewUrls.map((url, index) => (
+                              <ImageListItem key={`new-${index}`}>
+                                <img
+                                  src={url}
+                                  alt={`Nový obrázok ${index + 1}`}
+                                  loading="lazy"
+                                  style={{ objectFit: 'cover' }}
+                                />
+                                <ImageListItemBar
+                                  title={`Nový obrázok ${index + 1}`}
+                                  subtitle="(Pridať)"
+                                  actionIcon={
+                                    <Tooltip title="Odstrániť obrázok">
+                                      <IconButton
+                                        sx={{ color: 'rgba(255, 255, 255, 0.54)' }}
+                                        onClick={() => removeImage(index)}
+                                      >
+                                        <CloseIcon />
+                                      </IconButton>
+                                    </Tooltip>
+                                  }
+                                />
+                              </ImageListItem>
+                            ))}
+                          </ImageList>
+                        </Box>
+                      )}
+                    </Box>
+                  )}
+
                   {/* Existing Images for Edit/View Mode */}
+                  <Typography variant="subtitle1" gutterBottom>
+                    {dialogMode === 'edit' ? 'Existujúce obrázky' : t('images')}
+                  </Typography>
                   {selectedCar?.images && selectedCar.images.length > 0 ? (
                     <ImageList sx={{ width: '100%' }} cols={3} rowHeight={164}>
                       {selectedCar.images.map((image, index) => (
-                        <ImageListItem key={index}>
+                        <ImageListItem key={`existing-${index}`}>
                           <img
                             src={image.urls?.medium || image.url}
                             alt={image.description || `${t('images')} ${index + 1}`}
@@ -1225,7 +1339,7 @@ function Cars() {
                     <Box sx={{ textAlign: 'center', py: 4 }}>
                       <ImageIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
                       <Typography variant="body2" color="text.secondary">
-                        Žiadne obrázky nie sú dostupné.
+                        {dialogMode === 'edit' ? 'Žiadne existujúce obrázky. Pridajte nové vyššie.' : 'Žiadne obrázky nie sú dostupné.'}
                       </Typography>
                     </Box>
                   )}
