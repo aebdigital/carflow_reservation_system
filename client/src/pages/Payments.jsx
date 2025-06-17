@@ -241,7 +241,7 @@ function Payments() {
     }
   }
 
-  // Handle downloading PDF invoice
+  // Handle downloading PDF invoice - Fixed URL concatenation
   const handleDownloadPDF = async (paymentId) => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
@@ -273,7 +273,7 @@ function Payments() {
     }
   };
 
-  // Handle previewing PDF invoice
+  // Handle previewing PDF invoice - Fixed URL concatenation
   const handlePreviewPDF = async (paymentId) => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';

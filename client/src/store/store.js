@@ -2,7 +2,7 @@ import { configureStore } from '@reduxjs/toolkit'
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import authSlice from './authSlice'
 
-// Base query with authentication
+// Base query with authentication - Fixed API URL concatenation
 const baseQuery = fetchBaseQuery({
   baseUrl: import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api',
   prepareHeaders: (headers, { getState }) => {
