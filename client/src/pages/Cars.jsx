@@ -168,7 +168,35 @@ function Cars() {
     { value: 'backup-camera', label: t('backupCamera') },
     { value: 'cruise-control', label: t('cruiseControl') },
     { value: 'usb-ports', label: t('usbPorts') },
-    { value: 'wifi', label: t('wifi') }
+    { value: 'wifi', label: t('wifi') },
+    { value: 'parking-sensors', label: t('parkingSensors') },
+    { value: 'blind-spot-monitoring', label: t('blindSpotMonitoring') },
+    { value: 'lane-assist', label: t('laneAssist') },
+    { value: 'adaptive-cruise-control', label: t('adaptiveCruiseControl') },
+    { value: 'keyless-entry', label: t('keylessEntry') },
+    { value: 'start-stop-system', label: t('startStopSystem') },
+    { value: 'hill-assist', label: t('hillAssist') },
+    { value: 'traction-control', label: t('tractionControl') },
+    { value: 'stability-control', label: t('stabilityControl') },
+    { value: 'abs', label: t('abs') },
+    { value: 'airbags', label: t('airbags') },
+    { value: 'child-safety', label: t('childSafety') },
+    { value: 'fog-lights', label: t('fogLights') },
+    { value: 'xenon-headlights', label: t('xenonHeadlights') },
+    { value: 'led-headlights', label: t('ledHeadlights') },
+    { value: 'automatic-lights', label: t('automaticLights') },
+    { value: 'rain-sensor', label: t('rainSensor') },
+    { value: 'electric-windows', label: t('electricWindows') },
+    { value: 'central-locking', label: t('centralLocking') },
+    { value: 'power-steering', label: t('powerSteering') },
+    { value: 'adjustable-seats', label: t('adjustableSeats') },
+    { value: 'heated-mirrors', label: t('heatedMirrors') },
+    { value: 'electric-mirrors', label: t('electricMirrors') },
+    { value: 'folding-mirrors', label: t('foldingMirrors') },
+    { value: 'roof-rails', label: t('roofRails') },
+    { value: 'tow-bar', label: t('towBar') },
+    { value: 'alloy-wheels', label: t('alloyWheels') },
+    { value: 'spare-tire', label: t('spareTire') }
   ]
 
   // Status color mapping
@@ -564,7 +592,7 @@ function Cars() {
           </Box>
           
           <Typography variant="h6" color="primary" sx={{ fontWeight: 600, mt: 1 }}>
-            {car.dailyRate}€/{t('days').slice(0, -1)}
+            {car.dailyRate}€/{t('den')}
           </Typography>
           
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>

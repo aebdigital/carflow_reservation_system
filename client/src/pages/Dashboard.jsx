@@ -31,7 +31,7 @@ import { t } from '../utils/translations'
 const statsData = [
   {
     title: t('monthlyRevenue'),
-    value: '127 580 €',
+    value: '127 580€',
     change: '+12.5%',
     icon: <RevenueIcon sx={{ fontSize: 40 }} />,
     color: '#4caf50',
@@ -87,7 +87,7 @@ const recentReservations = [
     startDate: '2024-01-15',
     endDate: '2024-01-20',
     status: 'confirmed',
-    amount: '380 €',
+    amount: '380€',
   },
   {
     id: 'RES001235',
@@ -96,7 +96,7 @@ const recentReservations = [
     startDate: '2024-01-16',
     endDate: '2024-01-18',
     status: 'ongoing',
-    amount: '240 €',
+    amount: '240€',
   },
   {
     id: 'RES001236',
@@ -105,7 +105,7 @@ const recentReservations = [
     startDate: '2024-01-17',
     endDate: '2024-01-22',
     status: 'pending',
-    amount: '950 €',
+    amount: '950€',
   },
   {
     id: 'RES001237',
@@ -114,7 +114,7 @@ const recentReservations = [
     startDate: '2024-01-18',
     endDate: '2024-01-25',
     status: 'confirmed',
-    amount: '1 260 €',
+    amount: '1 260€',
   },
 ]
 
@@ -155,7 +155,7 @@ function Dashboard() {
         {t('dashboard')}
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        {t('welcomeBackMessage')}
+        Vitajte späť!
       </Typography>
 
       {/* Stats Cards */}
@@ -231,7 +231,7 @@ function Dashboard() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
-                    <Tooltip formatter={(value) => [`${value} €`, t('revenue')]} />
+                    <Tooltip formatter={(value) => [`${value}€`, t('revenue')]} />
                     <Bar dataKey="revenue" fill="#1976d2" />
                   </BarChart>
                 </ResponsiveContainer>

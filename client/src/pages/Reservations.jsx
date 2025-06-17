@@ -160,6 +160,19 @@ function Reservations() {
     return colors[status] || 'default'
   }
 
+  // Status text mapping
+  const getStatusText = (status) => {
+    const statusTexts = {
+      pending: t('pending'),
+      confirmed: t('confirmed'),
+      ongoing: t('ongoing'),
+      completed: t('completed'),
+      cancelled: t('cancelled'),
+      'no-show': 'Neprišiel'
+    }
+    return statusTexts[status] || status
+  }
+
   // Form validation
   const validateForm = () => {
     const errors = {}
@@ -429,13 +442,13 @@ function Reservations() {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={reservation.status}
+                          label={getStatusText(reservation.status)}
                           color={getStatusColor(reservation.status)}
                           size="small"
                         />
                       </TableCell>
                       <TableCell>
-                        ${reservation.pricing?.totalAmount?.toFixed(2) || '0.00'}
+                        {(reservation.pricing?.totalAmount?.toFixed(2) || '0.00')}€
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -574,13 +587,13 @@ function Reservations() {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={reservation.status}
+                          label={getStatusText(reservation.status)}
                           color={getStatusColor(reservation.status)}
                           size="small"
                         />
                       </TableCell>
                       <TableCell>
-                        ${reservation.pricing?.totalAmount?.toFixed(2) || '0.00'}
+                        {(reservation.pricing?.totalAmount?.toFixed(2) || '0.00')}€
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -673,13 +686,13 @@ function Reservations() {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={reservation.status}
+                          label={getStatusText(reservation.status)}
                           color={getStatusColor(reservation.status)}
                           size="small"
                         />
                       </TableCell>
                       <TableCell>
-                        ${reservation.pricing?.totalAmount?.toFixed(2) || '0.00'}
+                        {(reservation.pricing?.totalAmount?.toFixed(2) || '0.00')}€
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -780,13 +793,13 @@ function Reservations() {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={reservation.status}
+                          label={getStatusText(reservation.status)}
                           color={getStatusColor(reservation.status)}
                           size="small"
                         />
                       </TableCell>
                       <TableCell>
-                        ${reservation.pricing?.totalAmount?.toFixed(2) || '0.00'}
+                        {(reservation.pricing?.totalAmount?.toFixed(2) || '0.00')}€
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -839,7 +852,7 @@ function Reservations() {
                   </Typography>
                 </Box>
                 <Chip
-                  label={selectedReservation.status}
+                  label={getStatusText(selectedReservation.status)}
                   color={getStatusColor(selectedReservation.status)}
                   size="large"
                   sx={{ fontSize: '1rem', px: 2, py: 1 }}
@@ -885,7 +898,7 @@ function Reservations() {
                   <Card variant="outlined">
                     <CardContent>
                       <Typography variant="h6" gutterBottom color="primary">
-                        Vehicle Information
+                        {t('vehicleInfo')}
                       </Typography>
                       {selectedReservation.car ? (
                         <>
@@ -893,18 +906,18 @@ function Reservations() {
                             {selectedReservation.car.brand} {selectedReservation.car.model} ({selectedReservation.car.year})
                           </Typography>
                           <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Registration: {selectedReservation.car.registrationNumber}
+                            Evidenčné číslo: {selectedReservation.car.registrationNumber}
                           </Typography>
                           <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Category: {selectedReservation.car.category}
+                            Kategória: {selectedReservation.car.category}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            Daily Rate: ${selectedReservation.car.dailyRate}
+                            Denná sadzba: {selectedReservation.car.dailyRate}€
                           </Typography>
                         </>
                       ) : (
                         <Typography variant="body2" color="text.secondary">
-                          Vehicle information not available
+                          Informácie o vozidle nie sú dostupné
                         </Typography>
                       )}
                     </CardContent>
@@ -979,35 +992,35 @@ function Reservations() {
                   <Card variant="outlined">
                     <CardContent>
                       <Typography variant="h6" gutterBottom color="primary">
-                        Pricing Details
+                        Podrobnosti o cenách
                       </Typography>
                       {selectedReservation.pricing ? (
                         <>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                            <Typography variant="body2">Subtotal:</Typography>
-                            <Typography variant="body2">${selectedReservation.pricing.subtotal?.toFixed(2) || '0.00'}</Typography>
+                            <Typography variant="body2">{t('subtotal')}:</Typography>
+                            <Typography variant="body2">{selectedReservation.pricing.subtotal?.toFixed(2) || '0.00'}€</Typography>
                           </Box>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                            <Typography variant="body2">Taxes:</Typography>
-                            <Typography variant="body2">${selectedReservation.pricing.taxes?.toFixed(2) || '0.00'}</Typography>
+                            <Typography variant="body2">{t('tax')}:</Typography>
+                            <Typography variant="body2">{selectedReservation.pricing.taxes?.toFixed(2) || '0.00'}€</Typography>
                           </Box>
                           {selectedReservation.pricing.fees && selectedReservation.pricing.fees.length > 0 && (
                             selectedReservation.pricing.fees.map((fee, index) => (
                               <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                                 <Typography variant="body2">{fee.name}:</Typography>
-                                <Typography variant="body2">${fee.amount?.toFixed(2) || '0.00'}</Typography>
+                                <Typography variant="body2">{fee.amount?.toFixed(2) || '0.00'}€</Typography>
                               </Box>
                             ))
                           )}
                           <Divider sx={{ my: 1 }} />
                           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography variant="body1" fontWeight="bold">Total Amount:</Typography>
-                            <Typography variant="body1" fontWeight="bold" color="primary">${selectedReservation.pricing.totalAmount?.toFixed(2) || '0.00'}</Typography>
+                            <Typography variant="body1" fontWeight="bold">{t('totalAmount')}:</Typography>
+                            <Typography variant="body1" fontWeight="bold" color="primary">{selectedReservation.pricing.totalAmount?.toFixed(2) || '0.00'}€</Typography>
                           </Box>
                         </>
                       ) : (
                         <Typography variant="body2" color="text.secondary">
-                          Pricing information not available
+                          Informácie o cenách nie sú dostupné
                         </Typography>
                       )}
                     </CardContent>
@@ -1391,13 +1404,13 @@ function Reservations() {
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Select Customer"
+                      label={t('selectCustomer')}
                       error={!!formErrors.customer}
-                      helperText={formErrors.customer || (users.length === 0 ? 'No customers available' : `${users.length} customers available`)}
+                      helperText={formErrors.customer || (users.length === 0 ? 'Žiadni zákazníci nie sú dostupní' : `${users.length} zákazníkov dostupných`)}
                       required
                     />
                   )}
-                  noOptionsText={usersLoading ? "Loading customers..." : "No customers found"}
+                  noOptionsText={usersLoading ? "Načítavajú sa zákazníci..." : "Žiadni zákazníci neboli nájdení"}
                 />
               </Grid>
 
@@ -1406,7 +1419,7 @@ function Reservations() {
                 <Autocomplete
                   options={cars}
                   getOptionLabel={(option) => 
-                    `${option.brand} ${option.model} (${option.year}) - $${option.dailyRate}/day`
+                    `${option.brand} ${option.model} (${option.year}) - ${option.dailyRate}€/deň`
                   }
                   isOptionEqualToValue={(option, value) => option._id === value?._id}
                   value={formData.car}
@@ -1422,7 +1435,7 @@ function Reservations() {
                             {option.brand} {option.model} ({option.year})
                           </Typography>
                           <Typography variant="body2" color="primary.main" fontWeight="medium">
-                            ${option.dailyRate}/day
+                            {option.dailyRate}€/deň
                           </Typography>
                         </Box>
                         <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
@@ -1441,13 +1454,13 @@ function Reservations() {
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Select Car"
+                      label={t('selectCar')}
                       error={!!formErrors.car}
-                      helperText={formErrors.car || (cars.length === 0 ? 'No available cars' : `${cars.length} cars available`)}
+                      helperText={formErrors.car || (cars.length === 0 ? 'Žiadne dostupné autá' : `${cars.length} áut dostupných`)}
                       required
                     />
                   )}
-                  noOptionsText={carsLoading ? "Loading cars..." : "No available cars"}
+                  noOptionsText={carsLoading ? "Načítavajú sa autá..." : "Žiadne dostupné autá"}
                 />
               </Grid>
 
@@ -1703,17 +1716,17 @@ function Reservations() {
               {dialogMode === 'edit' && (
                 <Grid item xs={12} md={6}>
                   <FormControl fullWidth>
-                    <InputLabel>Status</InputLabel>
+                    <InputLabel>{t('status')}</InputLabel>
                     <Select
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      label="Status"
+                      label={t('status')}
                     >
-                      <MenuItem value="pending">Pending</MenuItem>
-                      <MenuItem value="confirmed">Confirmed</MenuItem>
-                      <MenuItem value="ongoing">Ongoing</MenuItem>
-                      <MenuItem value="completed">Completed</MenuItem>
-                      <MenuItem value="cancelled">Cancelled</MenuItem>
+                      <MenuItem value="pending">{t('pending')}</MenuItem>
+                      <MenuItem value="confirmed">{t('confirmed')}</MenuItem>
+                      <MenuItem value="ongoing">{t('ongoing')}</MenuItem>
+                      <MenuItem value="completed">{t('completed')}</MenuItem>
+                      <MenuItem value="cancelled">{t('cancelled')}</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
@@ -1723,7 +1736,7 @@ function Reservations() {
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Special Requests"
+                  label="Špeciálne požiadavky"
                   multiline
                   rows={3}
                   value={formData.specialRequests}
@@ -1736,7 +1749,7 @@ function Reservations() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>
-            {dialogMode === 'view' ? 'Close' : 'Cancel'}
+            {dialogMode === 'view' ? t('close') : t('cancel')}
           </Button>
           {dialogMode !== 'view' && (
             <Button
@@ -1745,7 +1758,7 @@ function Reservations() {
               disabled={creating || updating}
             >
               {creating || updating ? <CircularProgress size={20} /> : 
-               dialogMode === 'create' ? 'Create Reservation' : 'Update Reservation'}
+               dialogMode === 'create' ? 'Vytvoriť rezerváciu' : 'Aktualizovať rezerváciu'}
             </Button>
           )}
         </DialogActions>

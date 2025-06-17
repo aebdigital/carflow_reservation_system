@@ -190,6 +190,17 @@ function Customers() {
     return colors[status] || 'default'
   }
 
+  // Status text mapping
+  const getStatusText = (status) => {
+    const statusTexts = {
+      active: t('active'),
+      inactive: t('inactive'),
+      blacklisted: t('blacklisted'),
+      pending: t('pending')
+    }
+    return statusTexts[status] || status
+  }
+
   // Form validation
   const validateForm = () => {
     const errors = {}
@@ -401,7 +412,7 @@ function Customers() {
               </TableCell>
               <TableCell>
                 <Chip
-                  label={customer.status || 'active'}
+                  label={getStatusText(customer.status)}
                   color={getStatusColor(customer.status)}
                   size="small"
                 />
@@ -574,7 +585,7 @@ function Customers() {
                       {selectedCustomer.firstName} {selectedCustomer.lastName}
                     </Typography>
                     <Chip
-                      label={selectedCustomer.status || 'active'}
+                      label={getStatusText(selectedCustomer.status)}
                       color={getStatusColor(selectedCustomer.status)}
                       size="small"
                     />

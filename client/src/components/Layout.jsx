@@ -29,6 +29,8 @@ import {
   Settings as SettingsIcon,
   Logout as LogoutIcon,
   AccountCircle as AccountIcon,
+  Campaign as CampaignIcon,
+  Description as ContractIcon,
 } from '@mui/icons-material'
 import { selectCurrentUser, logout } from '../store/authSlice'
 import { t } from '../utils/translations'
@@ -42,6 +44,8 @@ const menuItems = [
   { text: t('customers'), icon: <CustomersIcon />, path: '/customers' },
   { text: t('calendar'), icon: <CalendarIcon />, path: '/calendar' },
   { text: t('payments'), icon: <PaymentsIcon />, path: '/payments' },
+  { text: t('campaigns'), icon: <CampaignIcon />, path: '/campaigns' },
+  { text: t('contracts'), icon: <ContractIcon />, path: '/contracts' },
   { text: t('settings'), icon: <SettingsIcon />, path: '/settings' },
 ]
 
@@ -93,11 +97,27 @@ function Layout() {
   const drawer = (
     <Box>
       <Box sx={{ p: 3, textAlign: 'center', borderBottom: 1, borderColor: 'divider' }}>
-        <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-          {t('carRentalAdmin')}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {t('managementPanel')}
+        {/* Logo placeholder - assets/logo.png will be added here */}
+        <Box 
+          sx={{ 
+            width: '120px',
+            height: '60px',
+            mx: 'auto',
+            mb: 1,
+            backgroundColor: 'primary.light',
+            borderRadius: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '12px',
+            color: 'white',
+            fontWeight: 'bold'
+          }}
+        >
+          LOGO
+        </Box>
+        <Typography variant="caption" color="text.secondary">
+          CarFlow - Rezervačný systém
         </Typography>
       </Box>
       
