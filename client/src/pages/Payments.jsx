@@ -244,10 +244,10 @@ function Payments() {
   // Handle downloading PDF invoice - Fixed URL concatenation
   const handleDownloadPDF = async (paymentId) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
+      const baseApiUrl = (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, '');
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`${apiUrl}/payments/${paymentId}/invoice`, {
+      const response = await fetch(`${baseApiUrl}/payments/${paymentId}/invoice`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -276,10 +276,10 @@ function Payments() {
   // Handle previewing PDF invoice - Fixed URL concatenation
   const handlePreviewPDF = async (paymentId) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
+      const baseApiUrl = (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, '');
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`${apiUrl}/payments/${paymentId}/invoice?preview=true`, {
+      const response = await fetch(`${baseApiUrl}/payments/${paymentId}/invoice?preview=true`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
