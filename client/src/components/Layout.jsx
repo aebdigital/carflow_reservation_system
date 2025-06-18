@@ -97,7 +97,7 @@ function Layout() {
 
   const drawer = (
     <Box>
-      <Box sx={{ p: 1.5, textAlign: 'center', borderBottom: 1, borderColor: 'divider' }}>
+      <Box sx={{ p: '25px', textAlign: 'center', borderBottom: 1, borderColor: 'divider' }}>
         <Box
           sx={{
             display: 'flex',
@@ -109,8 +109,8 @@ function Layout() {
             src={logo} 
             alt="CarFlow Logo" 
             style={{ 
-              maxWidth: '260px',
-              maxHeight: '140px',
+              maxWidth: '200px',
+              maxHeight: '100px',
               width: 'auto',
               height: 'auto',
               objectFit: 'contain'
