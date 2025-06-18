@@ -34,7 +34,7 @@ import {
 } from '@mui/icons-material'
 import { selectCurrentUser, logout } from '../store/authSlice'
 import { t } from '../utils/translations'
-import logo from '../assets/logo.png'
+import logo from '../assets/images/logo.png'
 
 const drawerWidth = 280
 
