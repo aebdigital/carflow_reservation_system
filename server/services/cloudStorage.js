@@ -9,33 +9,71 @@ class CloudStorageService {
     this.storage = null;
     this.bucket = null;
     this.bucketName = null;
+    this.connectionTested = false;
 
     try {
       // Check if Google Cloud Storage is configured
+      console.log('🔧 Checking Google Cloud Storage configuration...');
+      console.log('📋 Environment variables:');
+      console.log('   GCS_PROJECT_ID:', process.env.GCS_PROJECT_ID ? '✅ Set' : '❌ Missing');
+      console.log('   GCS_BUCKET_NAME:', process.env.GCS_BUCKET_NAME ? '✅ Set' : '❌ Missing');
+      console.log('   GCS_CREDENTIALS:', process.env.GCS_CREDENTIALS ? '✅ Set' : '❌ Missing');
+      console.log('   GCS_KEY_FILENAME:', process.env.GCS_KEY_FILENAME ? '✅ Set' : '❌ Missing');
+      
       if (!process.env.GCS_PROJECT_ID || !process.env.GCS_BUCKET_NAME) {
         console.warn('⚠️  Google Cloud Storage not configured. Image uploads will be disabled.');
-        console.warn('   Add GCS_PROJECT_ID and GCS_BUCKET_NAME to your .env file');
+        console.warn('   Add GCS_PROJECT_ID and GCS_BUCKET_NAME to your environment variables');
+        console.warn('   For Render deployment, also set GCS_CREDENTIALS=/etc/secrets/google-credentials.json');
         return;
       }
 
       // Initialize Google Cloud Storage
-      const credentials = process.env.GCS_CREDENTIALS 
-        ? JSON.parse(Buffer.from(process.env.GCS_CREDENTIALS, 'base64').toString())
-        : process.env.GCS_KEY_FILENAME
-          ? require(path.resolve(process.env.GCS_KEY_FILENAME))
-          : undefined;
+      let credentials = null;
+      let storageConfig = {
+        projectId: process.env.GCS_PROJECT_ID
+      };
 
-      this.storage = new Storage({
-        projectId: process.env.GCS_PROJECT_ID,
-        keyFilename: process.env.GCS_KEY_FILENAME,
-        credentials: credentials
-      });
+      // Handle different credential scenarios
+      if (process.env.GCS_CREDENTIALS) {
+        try {
+          // For Render deployment with file mount at /etc/secrets/google-credentials.json
+          if (process.env.GCS_CREDENTIALS === '/etc/secrets/google-credentials.json') {
+            const fs = require('fs');
+            if (fs.existsSync('/etc/secrets/google-credentials.json')) {
+              console.log('📁 Loading GCS credentials from Render secrets file mount');
+              storageConfig.keyFilename = '/etc/secrets/google-credentials.json';
+            } else {
+              throw new Error('GCS credentials file not found at /etc/secrets/google-credentials.json');
+            }
+          } else {
+            // For other deployments with base64 encoded credentials
+            console.log('🔐 Loading GCS credentials from base64 environment variable');
+            credentials = JSON.parse(Buffer.from(process.env.GCS_CREDENTIALS, 'base64').toString());
+            storageConfig.credentials = credentials;
+          }
+        } catch (error) {
+          console.error('Failed to parse GCS_CREDENTIALS:', error.message);
+          throw error;
+        }
+      } else if (process.env.GCS_KEY_FILENAME) {
+        // For local development with key file
+        console.log('📁 Loading GCS credentials from local key file');
+        storageConfig.keyFilename = process.env.GCS_KEY_FILENAME;
+        if (require('fs').existsSync(path.resolve(process.env.GCS_KEY_FILENAME))) {
+          credentials = require(path.resolve(process.env.GCS_KEY_FILENAME));
+        }
+      } else {
+        throw new Error('No GCS credentials configuration found. Set GCS_CREDENTIALS or GCS_KEY_FILENAME');
+      }
+
+      this.storage = new Storage(storageConfig);
 
       this.bucketName = process.env.GCS_BUCKET_NAME;
       this.bucket = this.storage.bucket(this.bucketName);
       this.isConfigured = true;
 
-      console.log('✅ Google Cloud Storage configured successfully');
+      console.log('✅ Google Cloud Storage initialized successfully');
+      console.log('📁 GCS Bucket name:', this.bucketName);
     } catch (error) {
       console.warn('⚠️  Google Cloud Storage configuration failed:', error.message);
       console.warn('   Server will continue without image upload functionality');
@@ -59,9 +97,31 @@ class CloudStorageService {
   /**
    * Check if Google Cloud Storage is properly configured
    */
-  checkConfiguration() {
+  async checkConfiguration() {
     if (!this.isConfigured) {
-      throw new Error('Google Cloud Storage is not configured. Please set up your credentials and environment variables.');
+      const errorMsg = 'Google Cloud Storage is not configured. Please set up your credentials and environment variables.';
+      console.error('❌', errorMsg);
+      console.error('📋 Required environment variables:');
+      console.error('   - GCS_PROJECT_ID');
+      console.error('   - GCS_BUCKET_NAME');
+      console.error('   - GCS_CREDENTIALS (set to /etc/secrets/google-credentials.json for Render)');
+      throw new Error(errorMsg);
+    }
+
+    // Test connection on first use
+    if (!this.connectionTested) {
+      console.log('🧪 Testing Google Cloud Storage connection...');
+      try {
+        const [exists] = await this.bucket.exists();
+        if (!exists) {
+          throw new Error(`Bucket '${this.bucketName}' does not exist`);
+        }
+        console.log('✅ Google Cloud Storage connection verified successfully');
+        this.connectionTested = true;
+      } catch (error) {
+        console.error('❌ Google Cloud Storage connection test failed:', error.message);
+        throw new Error(`GCS connection failed: ${error.message}`);
+      }
     }
   }
 
@@ -74,7 +134,7 @@ class CloudStorageService {
    * @returns {Promise<Object>} Upload result with URLs
    */
   async uploadCarImage(fileBuffer, originalName, carId, description = '') {
-    this.checkConfiguration();
+    await this.checkConfiguration();
 
     try {
       // Validate file type
@@ -216,7 +276,7 @@ class CloudStorageService {
    * @param {string} filename - Specific filename to delete (optional)
    */
   async deleteCarImages(carId, filename = null) {
-    this.checkConfiguration();
+    await this.checkConfiguration();
 
     try {
       const folderPath = `cars/${carId}/`;
