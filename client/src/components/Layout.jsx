@@ -34,6 +34,7 @@ import {
 } from '@mui/icons-material'
 import { selectCurrentUser, logout } from '../store/authSlice'
 import { t } from '../utils/translations'
+import logo from '../assets/logo.png'
 
 const drawerWidth = 280
 
@@ -97,24 +98,25 @@ function Layout() {
   const drawer = (
     <Box>
       <Box sx={{ p: 3, textAlign: 'center', borderBottom: 1, borderColor: 'divider' }}>
-        {/* Logo placeholder - assets/logo.png will be added here */}
-        <Box 
-          sx={{ 
-            width: '120px',
-            height: '60px',
-            mx: 'auto',
-            mb: 1,
-            backgroundColor: 'primary.light',
-            borderRadius: 1,
+        <Box
+          sx={{
             display: 'flex',
-            alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '12px',
-            color: 'white',
-            fontWeight: 'bold'
+            alignItems: 'center',
+            mb: 1,
           }}
         >
-          LOGO
+          <img 
+            src={logo} 
+            alt="CarFlow Logo" 
+            style={{ 
+              maxWidth: '120px',
+              maxHeight: '60px',
+              width: 'auto',
+              height: 'auto',
+              objectFit: 'contain'
+            }} 
+          />
         </Box>
         <Typography variant="caption" color="text.secondary">
           CarFlow - Rezervačný systém
