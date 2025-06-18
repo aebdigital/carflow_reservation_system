@@ -146,6 +146,20 @@ function Payments() {
     return colors[status] || 'default'
   }
 
+  // Status text mapping to Slovak
+  const getStatusText = (status) => {
+    const statusTexts = {
+      pending: 'Čakajúce',
+      processing: 'Spracováva sa',
+      succeeded: 'Úspešné',
+      failed: 'Neúspešné',
+      cancelled: 'Zrušené',
+      refunded: 'Vrátené',
+      partially_refunded: 'Čiastočne vrátené'
+    }
+    return statusTexts[status] || status
+  }
+
   // Handle dialog operations
   const handleOpenDialog = (mode, payment = null, reservation = null) => {
     setDialogMode(mode)
@@ -156,7 +170,7 @@ function Payments() {
       setFormData({
         reservation: reservation._id,
         amount: reservation.totalAmount || 0,
-        description: `Payment for reservation ${reservation.reservationNumber}`,
+        description: `Platba za rezerváciu ${reservation.reservationNumber}`,
         paymentMethod: 'card',
         dueDate: new Date().toISOString().split('T')[0]
       })
@@ -515,7 +529,7 @@ function Payments() {
                         </TableCell>
                         <TableCell>
                           <Chip
-                            label={payment.status}
+                            label={getStatusText(payment.status)}
                             color={getStatusColor(payment.status)}
                             size="small"
                           />
@@ -680,20 +694,20 @@ function Payments() {
                             ...formData,
                             reservation: value?._id || '',
                             amount: value?.pricing?.totalAmount || 0,
-                            description: value ? `Payment for reservation ${value.reservationNumber}` : ''
+                            description: value ? `Platba za rezerváciu ${value.reservationNumber}` : ''
                           })
                         }}
                         renderInput={(params) => (
                           <TextField
                             {...params}
-                            label="Select Reservation"
+                            label="Vybrať rezerváciu"
                             required
                             helperText={
                               reservationsLoading 
-                                ? "Loading reservations..." 
+                                ? "Načítavajú sa rezervácie..." 
                                 : getUnpaidReservations().length === 0 
-                                  ? "No confirmed or pending reservations without payments available" 
-                                  : "Choose a confirmed or pending reservation without payment"
+                                  ? "Žiadne potvrdené alebo čakajúce rezervácie bez platieb nie sú dostupné" 
+                                  : "Vyberte potvrdenú alebo čakajúcu rezerváciu bez platby"
                             }
                           />
                         )}
@@ -701,12 +715,12 @@ function Payments() {
                         isOptionEqualToValue={(option, value) => option._id === value?._id}
                         noOptionsText={
                           reservationsLoading 
-                            ? "Loading reservations..." 
+                            ? "Načítavajú sa rezervácie..." 
                             : reservations.length === 0 
-                              ? "No reservations found" 
+                              ? "Žiadne rezervácie neboli nájdené" 
                               : reservations.filter(r => ['confirmed', 'pending'].includes(r.status)).length === 0
-                                ? "No confirmed or pending reservations available"
-                                : "All eligible reservations already have payments"
+                                ? "Žiadne potvrdené alebo čakajúce rezervácie nie sú dostupné"
+                                : "Všetky oprávnené rezervácie už majú platby"
                         }
                         loading={reservationsLoading}
                       />
@@ -714,7 +728,7 @@ function Payments() {
                     <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
-                        label="Amount ($)"
+                        label="Suma (€)"
                         type="number"
                         value={formData.amount}
                         onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
@@ -725,16 +739,16 @@ function Payments() {
                     </Grid>
                     <Grid item xs={12} md={6}>
                       <FormControl fullWidth>
-                        <InputLabel>Payment Method</InputLabel>
+                        <InputLabel>Spôsob platby</InputLabel>
                         <Select
                           value={formData.paymentMethod}
                           onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
                           disabled={dialogMode === 'view'}
-                          label="Payment Method"
+                          label="Spôsob platby"
                         >
-                          <MenuItem value="card">Credit Card</MenuItem>
-                          <MenuItem value="bank_transfer">Bank Transfer</MenuItem>
-                          <MenuItem value="cash">Cash</MenuItem>
+                          <MenuItem value="card">Kreditná karta</MenuItem>
+                          <MenuItem value="bank_transfer">Bankový prevod</MenuItem>
+                          <MenuItem value="cash">Hotovosť</MenuItem>
                           <MenuItem value="paypal">PayPal</MenuItem>
                         </Select>
                       </FormControl>
@@ -742,7 +756,7 @@ function Payments() {
                     <Grid item xs={12}>
                       <TextField
                         fullWidth
-                        label="Description"
+                        label="Popis"
                         multiline
                         rows={3}
                         value={formData.description}
@@ -753,7 +767,7 @@ function Payments() {
                     <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
-                        label="Due Date"
+                        label="Dátum splatnosti"
                         type="date"
                         value={formData.dueDate}
                         onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
@@ -769,7 +783,7 @@ function Payments() {
                     <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
-                        label="Payment ID"
+                        label="ID platby"
                         value={selectedPayment.paymentId}
                         disabled
                       />
@@ -777,7 +791,7 @@ function Payments() {
                     <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
-                        label="Invoice Number"
+                        label="Číslo faktúry"
                         value={selectedPayment.invoice?.invoiceNumber || 'N/A'}
                         disabled
                       />
@@ -785,23 +799,23 @@ function Payments() {
                     <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
-                        label="Amount"
-                        value={`${selectedPayment.amount.toFixed(2)}`}
+                        label="Suma"
+                        value={`${selectedPayment.amount.toLocaleString('sk-SK', { style: 'currency', currency: 'EUR' })}`}
                         disabled
                       />
                     </Grid>
                     <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
-                        label="Status"
-                        value={selectedPayment.status}
+                        label="Stav"
+                        value={getStatusText(selectedPayment.status)}
                         disabled
                       />
                     </Grid>
                     <Grid item xs={12}>
                       <TextField
                         fullWidth
-                        label="Customer"
+                        label="Zákazník"
                         value={`${selectedPayment.customer?.firstName} ${selectedPayment.customer?.lastName} (${selectedPayment.customer?.email})`}
                         disabled
                       />
@@ -809,10 +823,10 @@ function Payments() {
                     <Grid item xs={12}>
                       <TextField
                         fullWidth
-                        label="Description"
+                        label="Popis"
                         multiline
                         rows={3}
-                        value={selectedPayment.description || 'No description'}
+                        value={selectedPayment.description || 'Žiadny popis'}
                         disabled
                       />
                     </Grid>
@@ -825,7 +839,7 @@ function Payments() {
                             startIcon={<VisibilityIcon />}
                             sx={{ mr: 1 }}
                           >
-                            Preview Invoice
+                            Náhľad faktúry
                           </Button>
                         </Grid>
                         <Grid item xs={12} md={6}>
@@ -834,7 +848,7 @@ function Payments() {
                             variant="contained"
                             startIcon={<DownloadIcon />}
                           >
-                            Download Invoice
+                            Stiahnuť faktúru
                           </Button>
                         </Grid>
                       </>
@@ -846,14 +860,14 @@ function Payments() {
                   <>
                     <Grid item xs={12}>
                       <Alert severity="info" sx={{ mb: 2 }}>
-                        Processing refund for payment {selectedPayment.paymentId}. 
-                        Maximum refundable amount: ${selectedPayment.getRefundableAmount?.() || selectedPayment.amount}
+                        Spracovanie vrátenia platby {selectedPayment.paymentId}. 
+                        Maximálna suma na vrátenie: {(selectedPayment.getRefundableAmount?.() || selectedPayment.amount).toLocaleString('sk-SK', { style: 'currency', currency: 'EUR' })}
                       </Alert>
                     </Grid>
                     <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
-                        label="Refund Amount ($)"
+                        label="Suma na vrátenie (€)"
                         type="number"
                         value={formData.amount}
                         onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
@@ -868,7 +882,7 @@ function Payments() {
                     <Grid item xs={12}>
                       <TextField
                         fullWidth
-                        label="Refund Reason"
+                        label="Dôvod vrátenia"
                         multiline
                         rows={3}
                         value={formData.description}
@@ -882,7 +896,7 @@ function Payments() {
             </DialogContent>
             <DialogActions>
               <Button onClick={handleCloseDialog}>
-                Cancel
+                Zrušiť
               </Button>
               {dialogMode === 'create' && (
                 <Button
@@ -890,7 +904,7 @@ function Payments() {
                   variant="contained"
                   disabled={creating || !formData.reservation}
                 >
-                  {creating ? <CircularProgress size={20} /> : 'Create Invoice'}
+                  {creating ? <CircularProgress size={20} /> : 'Vytvoriť faktúru'}
                 </Button>
               )}
               {dialogMode === 'view' && selectedPayment?.invoice?.invoiceNumber && (
@@ -901,14 +915,14 @@ function Payments() {
                     startIcon={<VisibilityIcon />}
                     sx={{ mr: 1 }}
                   >
-                    Preview Invoice
+                    Náhľad faktúry
                   </Button>
                   <Button
                     onClick={() => handleDownloadPDF(selectedPayment._id)}
                     variant="contained"
                     startIcon={<DownloadIcon />}
                   >
-                    Download Invoice
+                    Stiahnuť faktúru
                   </Button>
                 </>
               )}
@@ -919,7 +933,7 @@ function Payments() {
                   color="warning"
                   disabled={refunding || !formData.amount || !formData.description}
                 >
-                  {refunding ? <CircularProgress size={20} /> : 'Process Refund'}
+                  {refunding ? <CircularProgress size={20} /> : 'Spracovať vrátenie'}
                 </Button>
               )}
             </DialogActions>
