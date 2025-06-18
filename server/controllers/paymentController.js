@@ -418,12 +418,19 @@ const generateInvoice = asyncHandler(async (req, res, next) => {
       return next(new AppError('Invoice not generated for this payment', 400));
     }
 
-    // Create PDF
-    const doc = new PDFDocument({ margin: 50 });
+    // Create PDF with proper encoding
+    const doc = new PDFDocument({ 
+      margin: 50,
+      info: {
+        Title: 'Faktura',
+        Author: 'CarFlow',
+        Subject: 'Faktura za prenajom vozidla'
+      }
+    });
     
     // Set response headers based on preview mode
     const isPreview = req.query.preview === 'true';
-    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Type', 'application/pdf; charset=utf-8');
     
     if (isPreview) {
       // For preview, display inline in browser
