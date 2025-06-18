@@ -40,7 +40,9 @@ import {
   CheckCircle as CheckInIcon,
   ExitToApp as CheckOutIcon,
   Visibility as ViewIcon,
-  Receipt as ReceiptIcon
+  Receipt as ReceiptIcon,
+  Download as DownloadIcon,
+  Description as ContractIcon
 } from '@mui/icons-material'
 import {
   useGetReservationsQuery,
@@ -348,6 +350,59 @@ function Reservations() {
     })
   }
 
+  // Handle downloading reservation contract PDF
+  const handleDownloadContract = async (reservationId) => {
+    try {
+      const baseApiUrl = (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, '');
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${baseApiUrl}/reservations/${reservationId}/contract`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to download contract');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `zmluva-${reservationId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading contract:', error);
+      alert('Chyba pri sťahovaní zmluvy');
+    }
+  };
+
+  // Handle previewing reservation contract PDF
+  const handlePreviewContract = async (reservationId) => {
+    try {
+      const baseApiUrl = (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, '');
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${baseApiUrl}/reservations/${reservationId}/contract?preview=true`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to generate contract');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error previewing contract:', error);
+      alert('Chyba pri náhľade zmluvy');
+    }
+  };
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -522,6 +577,24 @@ function Reservations() {
                               </IconButton>
                             </Tooltip>
                           )}
+                          <Tooltip title="Náhľad zmluvy">
+                            <IconButton
+                              size="small"
+                              onClick={() => handlePreviewContract(reservation._id)}
+                              color="primary"
+                            >
+                              <ContractIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Stiahnuť zmluvu">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDownloadContract(reservation._id)}
+                              color="secondary"
+                            >
+                              <DownloadIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -630,6 +703,24 @@ function Reservations() {
                               color="success"
                             >
                               <CheckOutIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Náhľad zmluvy">
+                            <IconButton
+                              size="small"
+                              onClick={() => handlePreviewContract(reservation._id)}
+                              color="primary"
+                            >
+                              <ContractIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Stiahnuť zmluvu">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDownloadContract(reservation._id)}
+                              color="secondary"
+                            >
+                              <DownloadIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         </Box>
@@ -748,6 +839,24 @@ function Reservations() {
                               <CancelIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          <Tooltip title="Náhľad zmluvy">
+                            <IconButton
+                              size="small"
+                              onClick={() => handlePreviewContract(reservation._id)}
+                              color="primary"
+                            >
+                              <ContractIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Stiahnuť zmluvu">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDownloadContract(reservation._id)}
+                              color="secondary"
+                            >
+                              <DownloadIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -845,6 +954,24 @@ function Reservations() {
                               onClick={() => handleOpenDialog('view', reservation)}
                             >
                               <ViewIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Náhľad zmluvy">
+                            <IconButton
+                              size="small"
+                              onClick={() => handlePreviewContract(reservation._id)}
+                              color="primary"
+                            >
+                              <ContractIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Stiahnuť zmluvu">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDownloadContract(reservation._id)}
+                              color="secondary"
+                            >
+                              <DownloadIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         </Box>

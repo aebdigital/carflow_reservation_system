@@ -3,6 +3,7 @@ const Car = require('../models/Car');
 const User = require('../models/User');
 const Payment = require('../models/Payment');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
+const PDFDocument = require('pdfkit');
 
 // @desc    Get all reservations
 // @route   GET /api/reservations
@@ -504,6 +505,192 @@ const getReservationStats = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Generate reservation contract PDF
+// @route   GET /api/reservations/:id/contract
+// @access  Private
+const generateReservationContract = asyncHandler(async (req, res, next) => {
+  try {
+    const reservation = await Reservation.findById(req.params.id)
+      .populate('customer', 'firstName lastName email phone address licenseNumber')
+      .populate('car', 'brand model year registrationNumber category mileage vin fuelType transmission')
+      .populate('createdBy', 'firstName lastName');
+
+    if (!reservation) {
+      return next(new AppError(`Reservation not found with id of ${req.params.id}`, 404));
+    }
+
+    // Check authorization
+    if (req.user.role === 'customer' && reservation.customer._id.toString() !== req.user._id.toString()) {
+      return next(new AppError('Not authorized to access this contract', 403));
+    }
+
+    // Create PDF with proper encoding
+    const doc = new PDFDocument({ 
+      margin: 50,
+      info: {
+        Title: 'Zmluva o prenájme vozidla',
+        Author: 'CarFlow',
+        Subject: 'Zmluva o prenájme vozidla'
+      }
+    });
+    
+    // Set response headers based on preview mode
+    const isPreview = req.query.preview === 'true';
+    res.setHeader('Content-Type', 'application/pdf; charset=utf-8');
+    
+    if (isPreview) {
+      res.setHeader('Content-Disposition', `inline; filename="zmluva-${reservation.reservationNumber}.pdf"`);
+    } else {
+      res.setHeader('Content-Disposition', `attachment; filename="zmluva-${reservation.reservationNumber}.pdf"`);
+    }
+
+    // Pipe PDF to response
+    doc.pipe(res);
+
+    // Header with company info and barcode area
+    doc.fontSize(8).fillColor('#000000')
+       .text('Objednávka číslo: ' + (reservation.reservationNumber || ''), 50, 20)
+       .text('Zmluva číslo: ZML' + (reservation.reservationNumber || ''), 50, 32);
+
+    // Company logo area (right side)
+    doc.fontSize(20).fillColor('#000000').text('CARFLOW', 450, 20);
+    doc.fontSize(10).text('RENTAL SERVICES', 450, 45);
+
+    // Main title
+    doc.fontSize(16).fillColor('#000000').text('Objednávka / rezervácia požičovne', 200, 65, { align: 'center' });
+
+    // Company details section
+    doc.fontSize(12).fillColor('#000000').text('Dodávateľ:', 50, 110);
+    doc.fontSize(10).fillColor('#666666')
+       .text('Lemi s.r.o.', 50, 125)
+       .text('Ferská 1142/50 940 01 Nitra', 50, 140);
+
+    doc.text('IČO:', 50, 160)
+       .text('DIČ:', 50, 175)
+       .text('IČ DPH:', 50, 190);
+
+    doc.fillColor('#000000')
+       .text('50 524 196', 120, 160);
+
+    // Contact section
+    doc.fontSize(12).fillColor('#000000').text('Kontaktná osoba', 50, 270);
+    doc.fontSize(10).fillColor('#666666');
+    
+    if (reservation.customer) {
+      doc.text('Odberateľ:', 50, 290)
+         .text('Telefón:', 50, 305)
+         .text('E-mail:', 50, 320);
+
+      doc.fillColor('#000000')
+         .text(`${reservation.customer.firstName} ${reservation.customer.lastName}`, 120, 290)
+         .text(reservation.customer.phone || '+421 908 907 131', 120, 305)
+         .text(reservation.customer.email || 'peter.samuel.bobak@gmail.com', 120, 320);
+    }
+
+    // Address section
+    doc.fillColor('#666666');
+    doc.text('Adresa:', 50, 340)
+       .text('Mesto:', 50, 355)
+       .text('PSČ:', 50, 370)
+       .text('Krajina:', 50, 385);
+
+    doc.fillColor('#000000')
+       .text('Andreja Mráza 15', 120, 340)
+       .text('Bratislava', 120, 355)
+       .text('821 09', 120, 370)
+       .text('Slovensko', 120, 385);
+
+    // Pickup and return locations
+    doc.fontSize(12).fillColor('#000000').text('Miesto odovzdania', 343, 270);
+    doc.fontSize(10).fillColor('#000000').text(reservation.pickupLocation?.name || 'Nitra', 343, 290);
+
+    doc.fontSize(12).fillColor('#000000').text('Miesto vrátenia', 343, 315);
+    doc.fontSize(10).fillColor('#000000').text(reservation.dropoffLocation?.name || 'Nitra', 343, 335);
+
+    // Rental dates
+    doc.fillColor('#666666');
+    doc.text('Dátum vyhotovenia:', 50, 410)
+       .text('Spôsob úhrady:', 50, 425);
+
+    doc.fillColor('#000000');
+    const createdDate = reservation.createdAt ? new Date(reservation.createdAt) : new Date();
+    doc.text(`${createdDate.getDate()}. ${createdDate.toLocaleDateString('sk-SK', { month: 'long' })} ${createdDate.getFullYear()} ${createdDate.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}`, 150, 410)
+       .text('Hotovosť Blackrent', 150, 425);
+
+    // Vehicle details section
+    let yPos = 490;
+    doc.fontSize(12).fillColor('#000000').text('Predmet:', 50, yPos);
+    
+    if (reservation.car) {
+      const car = reservation.car;
+      doc.fontSize(10).fillColor('#000000')
+         .text(`${car.brand} ${car.model} ${car.category || 'xDrive'}`, 120, yPos);
+      
+      yPos += 20;
+      doc.fillColor('#666666').text('Počet dní:', 50, yPos);
+      const duration = Math.ceil((new Date(reservation.endDate) - new Date(reservation.startDate)) / (1000 * 60 * 60 * 24));
+      doc.fillColor('#000000').text(`${duration} Dni`, 120, yPos);
+
+      yPos += 15;
+      doc.fillColor('#666666').text('Dátum od:', 50, yPos);
+      const startDate = new Date(reservation.startDate);
+      doc.fillColor('#000000').text(`${startDate.getDate()}.${(startDate.getMonth() + 1).toString().padStart(2, '0')}.${startDate.getFullYear()}, ${startDate.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}`, 120, yPos);
+
+      yPos += 15;
+      doc.fillColor('#666666').text('Dátum do:', 50, yPos);
+      const endDate = new Date(reservation.endDate);
+      doc.fillColor('#000000').text(`${endDate.getDate()}.${(endDate.getMonth() + 1).toString().padStart(2, '0')}.${endDate.getFullYear()}, ${endDate.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}`, 120, yPos);
+
+      // Vehicle specifications
+      yPos += 30;
+      doc.fillColor('#666666');
+      doc.text('VIN:', 343, yPos - 45);
+      doc.text('SPZ:', 343, yPos - 30);
+      doc.text('Typ:', 343, yPos - 15);
+      doc.text('Model:', 343, yPos);
+
+      doc.fillColor('#000000');
+      doc.text(car.vin || 'WBAJB51006B372269', 400, yPos - 45);
+      doc.text(car.registrationNumber || 'AA348BQ', 400, yPos - 30);
+      doc.text('Sedan', 400, yPos - 15);
+      doc.text(`${car.model} ${car.category || 'xDrive'}`, 400, yPos);
+    }
+
+    // Pricing section
+    yPos += 40;
+    doc.fontSize(12).fillColor('#000000').text('Denný limit:', 50, yPos);
+    doc.text('Limit celkom:', 50, yPos + 15);
+    doc.text('Cena za prík. kmíti:', 50, yPos + 30);
+    doc.text('Záloha:', 50, yPos + 45);
+
+    const dailyLimit = 250;
+    const duration = Math.ceil((new Date(reservation.endDate) - new Date(reservation.startDate)) / (1000 * 60 * 60 * 24));
+    const totalLimit = dailyLimit * duration;
+    
+    doc.text(`${dailyLimit} km`, 150, yPos);
+    doc.text(`${totalLimit} km`, 150, yPos + 15);
+    doc.text('0,25 € / km', 150, yPos + 30);
+    doc.text('1 000,00 €', 150, yPos + 45);
+
+    // Total amount (large)
+    doc.fontSize(18).fillColor('#000000').text('Suma k úhrade:', 343, yPos + 20);
+    doc.fontSize(24).fillColor('#000000').text(`${(reservation.pricing?.totalAmount || 270).toFixed(2)} €`, 343, yPos + 45);
+
+    // Footer
+    doc.fontSize(8).fillColor('#999999')
+       .text('Informačný systém', 50, doc.page.height - 40)
+       .text('CarFlow™', 50, doc.page.height - 28);
+
+    doc.text('Vygenerované: ' + new Date().toLocaleDateString('sk-SK') + ' ' + new Date().toLocaleTimeString('sk-SK'), 400, doc.page.height - 40);
+
+    // Finalize PDF
+    doc.end();
+  } catch (error) {
+    console.error('Reservation PDF Generation Error:', error);
+    return next(new AppError('Error generating reservation contract PDF', 500));
+  }
+});
+
 module.exports = {
   getReservations,
   getReservation,
@@ -512,5 +699,6 @@ module.exports = {
   cancelReservation,
   checkInReservation,
   checkOutReservation,
-  getReservationStats
+  getReservationStats,
+  generateReservationContract
 }; 

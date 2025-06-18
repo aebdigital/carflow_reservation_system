@@ -7,7 +7,8 @@ const {
   cancelReservation,
   checkInReservation,
   checkOutReservation,
-  getReservationStats
+  getReservationStats,
+  generateReservationContract
 } = require('../controllers/reservationController');
 
 const { protect, requireStaff } = require('../middleware/authMiddleware');
@@ -30,5 +31,8 @@ router.route('/:id')
 router.put('/:id/cancel', protect, cancelReservation);
 router.put('/:id/checkin', protect, requireStaff, checkInReservation);
 router.put('/:id/checkout', protect, requireStaff, checkOutReservation);
+
+// PDF generation
+router.get('/:id/contract', protect, generateReservationContract);
 
 module.exports = router; 
