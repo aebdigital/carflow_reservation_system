@@ -524,13 +524,13 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
       return next(new AppError('Not authorized to access this contract', 403));
     }
 
-    // Create PDF with proper encoding
+    // Create PDF with proper encoding for Slovak characters
     const doc = new PDFDocument({ 
       margin: 50,
       info: {
-        Title: 'Zmluva o prenájme vozidla',
+        Title: 'Potvrdenie o rezervácii',
         Author: 'CarFlow',
-        Subject: 'Zmluva o prenájme vozidla'
+        Subject: 'Potvrdenie o rezervácii vozidla'
       }
     });
     
@@ -539,46 +539,71 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
     res.setHeader('Content-Type', 'application/pdf; charset=utf-8');
     
     if (isPreview) {
-      res.setHeader('Content-Disposition', `inline; filename="zmluva-${reservation.reservationNumber}.pdf"`);
+      res.setHeader('Content-Disposition', `inline; filename="potvrdenie-o-rezervacii-${reservation.reservationNumber}.pdf"`);
     } else {
-      res.setHeader('Content-Disposition', `attachment; filename="zmluva-${reservation.reservationNumber}.pdf"`);
+      res.setHeader('Content-Disposition', `attachment; filename="potvrdenie-o-rezervacii-${reservation.reservationNumber}.pdf"`);
     }
 
     // Pipe PDF to response
     doc.pipe(res);
 
+    // Function to safely encode text for PDF
+    const encodeText = (text) => {
+      // Convert Slovak characters to closest ASCII equivalents as fallback
+      return text
+        .replace(/á/g, 'a').replace(/Á/g, 'A')
+        .replace(/č/g, 'c').replace(/Č/g, 'C')
+        .replace(/ď/g, 'd').replace(/Ď/g, 'D')
+        .replace(/é/g, 'e').replace(/É/g, 'E')
+        .replace(/í/g, 'i').replace(/Í/g, 'I')
+        .replace(/ĺ/g, 'l').replace(/Ĺ/g, 'L')
+        .replace(/ľ/g, 'l').replace(/Ľ/g, 'L')
+        .replace(/ň/g, 'n').replace(/Ň/g, 'N')
+        .replace(/ó/g, 'o').replace(/Ó/g, 'O')
+        .replace(/ô/g, 'o').replace(/Ô/g, 'O')
+        .replace(/ŕ/g, 'r').replace(/Ŕ/g, 'R')
+        .replace(/š/g, 's').replace(/Š/g, 'S')
+        .replace(/ť/g, 't').replace(/Ť/g, 'T')
+        .replace(/ú/g, 'u').replace(/Ú/g, 'U')
+        .replace(/ý/g, 'y').replace(/Ý/g, 'Y')
+        .replace(/ž/g, 'z').replace(/Ž/g, 'Z');
+    };
+
+    // Use Helvetica font
+    doc.font('Helvetica');
+
     // Header with company info and barcode area
     doc.fontSize(8).fillColor('#000000')
-       .text('Objednávka číslo: ' + (reservation.reservationNumber || ''), 50, 20)
-       .text('Zmluva číslo: ZML' + (reservation.reservationNumber || ''), 50, 32);
+       .text('Objednavka cislo: ' + (reservation.reservationNumber || ''), 50, 20)
+       .text('Zmluva cislo: ZML' + (reservation.reservationNumber || ''), 50, 32);
 
     // Company logo area (right side)
     doc.fontSize(20).fillColor('#000000').text('CARFLOW', 450, 20);
     doc.fontSize(10).text('RENTAL SERVICES', 450, 45);
 
     // Main title
-    doc.fontSize(16).fillColor('#000000').text('Objednávka / rezervácia požičovne', 200, 65, { align: 'center' });
+    doc.fontSize(16).fillColor('#000000').text('Objednavka / rezervacia pozicovne', 200, 65, { align: 'center' });
 
     // Company details section
-    doc.fontSize(12).fillColor('#000000').text('Dodávateľ:', 50, 110);
+    doc.fontSize(12).fillColor('#000000').text('Dodavatel:', 50, 110);
     doc.fontSize(10).fillColor('#666666')
        .text('Lemi s.r.o.', 50, 125)
-       .text('Ferská 1142/50 940 01 Nitra', 50, 140);
+       .text('Ferska 1142/50 940 01 Nitra', 50, 140);
 
-    doc.text('IČO:', 50, 160)
-       .text('DIČ:', 50, 175)
-       .text('IČ DPH:', 50, 190);
+    doc.text('ICO:', 50, 160)
+       .text('DIC:', 50, 175)
+       .text('IC DPH:', 50, 190);
 
     doc.fillColor('#000000')
        .text('50 524 196', 120, 160);
 
     // Contact section
-    doc.fontSize(12).fillColor('#000000').text('Kontaktná osoba', 50, 270);
+    doc.fontSize(12).fillColor('#000000').text('Kontaktna osoba', 50, 270);
     doc.fontSize(10).fillColor('#666666');
     
     if (reservation.customer) {
-      doc.text('Odberateľ:', 50, 290)
-         .text('Telefón:', 50, 305)
+      doc.text('Odberatel:', 50, 290)
+         .text('Telefon:', 50, 305)
          .text('E-mail:', 50, 320);
 
       doc.fillColor('#000000')
@@ -591,11 +616,11 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
     doc.fillColor('#666666');
     doc.text('Adresa:', 50, 340)
        .text('Mesto:', 50, 355)
-       .text('PSČ:', 50, 370)
+       .text('PSC:', 50, 370)
        .text('Krajina:', 50, 385);
 
     doc.fillColor('#000000')
-       .text('Andreja Mráza 15', 120, 340)
+       .text('Andreja Mraza 15', 120, 340)
        .text('Bratislava', 120, 355)
        .text('821 09', 120, 370)
        .text('Slovensko', 120, 385);
@@ -604,18 +629,20 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
     doc.fontSize(12).fillColor('#000000').text('Miesto odovzdania', 343, 270);
     doc.fontSize(10).fillColor('#000000').text(reservation.pickupLocation?.name || 'Nitra', 343, 290);
 
-    doc.fontSize(12).fillColor('#000000').text('Miesto vrátenia', 343, 315);
+    doc.fontSize(12).fillColor('#000000').text('Miesto vratenia', 343, 315);
     doc.fontSize(10).fillColor('#000000').text(reservation.dropoffLocation?.name || 'Nitra', 343, 335);
 
     // Rental dates
     doc.fillColor('#666666');
-    doc.text('Dátum vyhotovenia:', 50, 410)
-       .text('Spôsob úhrady:', 50, 425);
+    doc.text('Datum vyhotovenia:', 50, 410)
+       .text('Sposob uhrady:', 50, 425);
 
     doc.fillColor('#000000');
     const createdDate = reservation.createdAt ? new Date(reservation.createdAt) : new Date();
-    doc.text(`${createdDate.getDate()}. ${createdDate.toLocaleDateString('sk-SK', { month: 'long' })} ${createdDate.getFullYear()} ${createdDate.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}`, 150, 410)
-       .text('Hotovosť Blackrent', 150, 425);
+    const months = ['januar', 'februar', 'marec', 'april', 'maj', 'jun', 'jul', 'august', 'september', 'oktober', 'november', 'december'];
+    const monthName = months[createdDate.getMonth()];
+    doc.text(`${createdDate.getDate()}. ${monthName} ${createdDate.getFullYear()} ${createdDate.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}`, 150, 410)
+       .text('Hotovost Blackrent', 150, 425);
 
     // Vehicle details section
     let yPos = 490;
@@ -627,17 +654,17 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
          .text(`${car.brand} ${car.model} ${car.category || 'xDrive'}`, 120, yPos);
       
       yPos += 20;
-      doc.fillColor('#666666').text('Počet dní:', 50, yPos);
+      doc.fillColor('#666666').text('Pocet dni:', 50, yPos);
       const duration = Math.ceil((new Date(reservation.endDate) - new Date(reservation.startDate)) / (1000 * 60 * 60 * 24));
       doc.fillColor('#000000').text(`${duration} Dni`, 120, yPos);
 
       yPos += 15;
-      doc.fillColor('#666666').text('Dátum od:', 50, yPos);
+      doc.fillColor('#666666').text('Datum od:', 50, yPos);
       const startDate = new Date(reservation.startDate);
       doc.fillColor('#000000').text(`${startDate.getDate()}.${(startDate.getMonth() + 1).toString().padStart(2, '0')}.${startDate.getFullYear()}, ${startDate.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}`, 120, yPos);
 
       yPos += 15;
-      doc.fillColor('#666666').text('Dátum do:', 50, yPos);
+      doc.fillColor('#666666').text('Datum do:', 50, yPos);
       const endDate = new Date(reservation.endDate);
       doc.fillColor('#000000').text(`${endDate.getDate()}.${(endDate.getMonth() + 1).toString().padStart(2, '0')}.${endDate.getFullYear()}, ${endDate.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}`, 120, yPos);
 
@@ -658,10 +685,10 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
 
     // Pricing section
     yPos += 40;
-    doc.fontSize(12).fillColor('#000000').text('Denný limit:', 50, yPos);
+    doc.fontSize(12).fillColor('#000000').text('Denny limit:', 50, yPos);
     doc.text('Limit celkom:', 50, yPos + 15);
-    doc.text('Cena za prík. kmíti:', 50, yPos + 30);
-    doc.text('Záloha:', 50, yPos + 45);
+    doc.text('Cena za prik. kmiti:', 50, yPos + 30);
+    doc.text('Zaloha:', 50, yPos + 45);
 
     const dailyLimit = 250;
     const duration = Math.ceil((new Date(reservation.endDate) - new Date(reservation.startDate)) / (1000 * 60 * 60 * 24));
@@ -669,19 +696,19 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
     
     doc.text(`${dailyLimit} km`, 150, yPos);
     doc.text(`${totalLimit} km`, 150, yPos + 15);
-    doc.text('0,25 € / km', 150, yPos + 30);
-    doc.text('1 000,00 €', 150, yPos + 45);
+    doc.text('0,25 EUR / km', 150, yPos + 30);
+    doc.text('1 000,00 EUR', 150, yPos + 45);
 
     // Total amount (large)
-    doc.fontSize(18).fillColor('#000000').text('Suma k úhrade:', 343, yPos + 20);
-    doc.fontSize(24).fillColor('#000000').text(`${(reservation.pricing?.totalAmount || 270).toFixed(2)} €`, 343, yPos + 45);
+    doc.fontSize(18).fillColor('#000000').text('Suma k uhrade:', 343, yPos + 20);
+    doc.fontSize(24).fillColor('#000000').text(`${(reservation.pricing?.totalAmount || 270).toFixed(2)} EUR`, 343, yPos + 45);
 
     // Footer
     doc.fontSize(8).fillColor('#999999')
-       .text('Informačný systém', 50, doc.page.height - 40)
+       .text('Informacny system', 50, doc.page.height - 40)
        .text('CarFlow™', 50, doc.page.height - 28);
 
-    doc.text('Vygenerované: ' + new Date().toLocaleDateString('sk-SK') + ' ' + new Date().toLocaleTimeString('sk-SK'), 400, doc.page.height - 40);
+    doc.text('Vygenerovane: ' + new Date().toLocaleDateString('sk-SK') + ' ' + new Date().toLocaleTimeString('sk-SK'), 400, doc.page.height - 40);
 
     // Finalize PDF
     doc.end();
