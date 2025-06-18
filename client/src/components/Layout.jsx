@@ -110,17 +110,14 @@ function Layout() {
             src={logo} 
             alt="CarFlow Logo" 
             style={{ 
-              maxWidth: '120px',
-              maxHeight: '60px',
+              maxWidth: '240px',
+              maxHeight: '120px',
               width: 'auto',
               height: 'auto',
               objectFit: 'contain'
             }} 
           />
         </Box>
-        <Typography variant="caption" color="text.secondary">
-          CarFlow - Rezervačný systém
-        </Typography>
       </Box>
       
       <List sx={{ px: 2, py: 1 }}>
