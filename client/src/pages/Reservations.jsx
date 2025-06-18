@@ -353,10 +353,10 @@ function Reservations() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
-            Reservácie
+            Rezervácie
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Spravujte všetky nájomné rezervácie, rezervácie a požiadavky zákazníkov.
+            Spravujte všetky rezervácie a požiadavky zákazníkov.
           </Typography>
         </Box>
         <Button
@@ -396,6 +396,7 @@ function Reservations() {
                     <TableCell>Rezervácia #</TableCell>
                     <TableCell>Zákazník</TableCell>
                     <TableCell>Auto</TableCell>
+                    <TableCell>Vytvorené</TableCell>
                     <TableCell>{t('startDate')}</TableCell>
                     <TableCell>{t('endDate')}</TableCell>
                     <TableCell>{t('status')}</TableCell>
@@ -433,6 +434,14 @@ function Reservations() {
                         ) : (
                           'N/A'
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {new Date(reservation.createdAt).toLocaleDateString('sk-SK')}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(reservation.createdAt).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}
+                        </Typography>
                       </TableCell>
                       <TableCell>
                         {new Date(reservation.startDate).toLocaleDateString()}
@@ -541,6 +550,7 @@ function Reservations() {
                     <TableCell>Rezervácia #</TableCell>
                     <TableCell>Zákazník</TableCell>
                     <TableCell>Auto</TableCell>
+                    <TableCell>Vytvorené</TableCell>
                     <TableCell>{t('startDate')}</TableCell>
                     <TableCell>{t('endDate')}</TableCell>
                     <TableCell>{t('status')}</TableCell>
@@ -578,6 +588,14 @@ function Reservations() {
                         ) : (
                           'N/A'
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {new Date(reservation.createdAt).toLocaleDateString('sk-SK')}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(reservation.createdAt).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}
+                        </Typography>
                       </TableCell>
                       <TableCell>
                         {new Date(reservation.startDate).toLocaleDateString()}
@@ -640,6 +658,7 @@ function Reservations() {
                     <TableCell>Rezervácia #</TableCell>
                     <TableCell>Zákazník</TableCell>
                     <TableCell>Auto</TableCell>
+                    <TableCell>Vytvorené</TableCell>
                     <TableCell>{t('startDate')}</TableCell>
                     <TableCell>{t('endDate')}</TableCell>
                     <TableCell>{t('status')}</TableCell>
@@ -677,6 +696,14 @@ function Reservations() {
                         ) : (
                           'N/A'
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {new Date(reservation.createdAt).toLocaleDateString('sk-SK')}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(reservation.createdAt).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}
+                        </Typography>
                       </TableCell>
                       <TableCell>
                         {new Date(reservation.startDate).toLocaleDateString()}
@@ -749,6 +776,7 @@ function Reservations() {
                     <TableCell>Auto</TableCell>
                     <TableCell>{t('startDate')}</TableCell>
                     <TableCell>{t('endDate')}</TableCell>
+                    <TableCell>Vytvorené</TableCell>
                     <TableCell>{t('status')}</TableCell>
                     <TableCell>Celkom</TableCell>
                     <TableCell>Akcie</TableCell>
@@ -790,6 +818,14 @@ function Reservations() {
                       </TableCell>
                       <TableCell>
                         {new Date(reservation.endDate).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {new Date(reservation.createdAt).toLocaleDateString('sk-SK')}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(reservation.createdAt).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}
+                        </Typography>
                       </TableCell>
                       <TableCell>
                         <Chip
