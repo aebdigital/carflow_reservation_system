@@ -434,14 +434,23 @@ function Cars() {
   }
 
   const handleSubmit = async () => {
+    console.log('🚗 Submit button clicked, starting validation...');
+    
     if (!validateForm()) {
-      return
+      console.log('❌ Form validation failed:', formErrors);
+      return;
     }
+
+    console.log('✅ Form validation passed, proceeding with submission...');
+    console.log('📋 Form data:', formData);
+    console.log('🖼️ Selected images:', selectedImages);
 
     try {
       if (dialogMode === 'create') {
+        console.log('🆕 Creating new car...');
+        
         // Create FormData for file upload
-        const formDataToSend = new FormData()
+        const formDataToSend = new FormData();
         
         // Append all form fields
         Object.keys(formData).forEach(key => {
@@ -451,36 +460,46 @@ function Cars() {
               if (key === 'location' && nestedKey === 'address') {
                 // Handle nested address object
                 Object.keys(formData[key][nestedKey]).forEach(addressKey => {
-                  formDataToSend.append(`${key}[${nestedKey}][${addressKey}]`, formData[key][nestedKey][addressKey])
-                })
+                  formDataToSend.append(`${key}[${nestedKey}][${addressKey}]`, formData[key][nestedKey][addressKey]);
+                });
               } else {
-                formDataToSend.append(`${key}[${nestedKey}]`, formData[key][nestedKey])
+                formDataToSend.append(`${key}[${nestedKey}]`, formData[key][nestedKey]);
               }
-            })
+            });
           } else if (key === 'features') {
             // Handle array
             formData[key].forEach(feature => {
-              formDataToSend.append('features[]', feature)
-            })
+              formDataToSend.append('features[]', feature);
+            });
           } else {
-            formDataToSend.append(key, formData[key])
+            formDataToSend.append(key, formData[key]);
           }
-        })
+        });
         
         // Append image files
         selectedImages.forEach(image => {
-          formDataToSend.append('images', image)
-        })
+          formDataToSend.append('images', image);
+        });
         
-        const result = await createCar(formDataToSend).unwrap()
-        console.log('Car created successfully:', result)
-      } else if (dialogMode === 'edit' && selectedCar) {
-        // Check if there are new images to upload
+        console.log('📤 Sending FormData to API...');
+        
+        // Log FormData contents for debugging
+        for (let [key, value] of formDataToSend.entries()) {
+          console.log(`FormData[${key}]:`, value);
+        }
+        
+        const result = await createCar(formDataToSend).unwrap();
+        console.log('✅ Car created successfully:', result);
+        alert('Auto bolo úspešne vytvorené!');
+        
+      } else {
+        console.log('✏️ Updating existing car...');
+        
         if (selectedImages.length > 0) {
-          // Use FormData when there are new images
-          const formDataToSend = new FormData()
+          // Update with images
+          const formDataToSend = new FormData();
+          formDataToSend.append('id', selectedCar._id);
           
-          // Append all form fields
           Object.keys(formData).forEach(key => {
             if (key === 'location' || key === 'maintenance' || key === 'insurance') {
               // Handle nested objects
@@ -488,47 +507,58 @@ function Cars() {
                 if (key === 'location' && nestedKey === 'address') {
                   // Handle nested address object
                   Object.keys(formData[key][nestedKey]).forEach(addressKey => {
-                    formDataToSend.append(`${key}[${nestedKey}][${addressKey}]`, formData[key][nestedKey][addressKey])
-                  })
+                    formDataToSend.append(`${key}[${nestedKey}][${addressKey}]`, formData[key][nestedKey][addressKey]);
+                  });
                 } else {
-                  formDataToSend.append(`${key}[${nestedKey}]`, formData[key][nestedKey])
+                  formDataToSend.append(`${key}[${nestedKey}]`, formData[key][nestedKey]);
                 }
-              })
+              });
             } else if (key === 'features') {
               // Handle array
               formData[key].forEach(feature => {
-                formDataToSend.append('features[]', feature)
-              })
+                formDataToSend.append('features[]', feature);
+              });
             } else {
-              formDataToSend.append(key, formData[key])
+              formDataToSend.append(key, formData[key]);
             }
-          })
+          });
           
-          // Append the car ID for the update
-          formDataToSend.append('id', selectedCar._id)
-          
-          // Append new image files
           selectedImages.forEach(image => {
-            formDataToSend.append('images', image)
-          })
+            formDataToSend.append('images', image);
+          });
           
-          const result = await updateCar(formDataToSend).unwrap()
-          console.log('Car updated with new images successfully:', result)
+          const result = await updateCar(formDataToSend).unwrap();
+          console.log('✅ Car updated successfully:', result);
+          alert('Auto bolo úspešne aktualizované!');
+          
         } else {
           // Regular update without images
           const result = await updateCar({ 
             id: selectedCar._id, 
             updates: formData 
-          }).unwrap()
-          console.log('Car updated successfully:', result)
+          }).unwrap();
+          console.log('✅ Car updated successfully:', result);
+          alert('Auto bolo úspešne aktualizované!');
         }
       }
       
-      handleCloseDialog()
+      handleCloseDialog();
     } catch (error) {
-      console.error('Error saving car:', error)
+      console.error('❌ Error saving car:', error);
+      
+      // More detailed error logging
+      if (error.data) {
+        console.error('📋 Error details:', error.data);
+      }
+      if (error.status) {
+        console.error('🔢 HTTP Status:', error.status);
+      }
+      
+      // User-friendly error message
+      const errorMessage = error.data?.message || error.message || 'Neznáma chyba pri ukladaní auta';
+      alert(`Chyba pri ukladaní auta: ${errorMessage}`);
     }
-  }
+  };
 
   const handleDelete = async (carId) => {
     if (window.confirm(t('confirmDelete'))) {
