@@ -437,84 +437,84 @@ const generateInvoice = asyncHandler(async (req, res, next) => {
     doc.pipe(res);
 
     // Company Header
-    doc.fontSize(24).fillColor('#2563eb').text('Car Rental Company', 50, 50);
+    doc.fontSize(24).fillColor('#2563eb').text('CarFlow - Prenajom vozidiel', 50, 50);
     doc.fontSize(10).fillColor('#666666')
-       .text('123 Business Street', 50, 80)
-       .text('City, State 12345', 50, 95)
-       .text('Phone: (555) 123-4567', 50, 110)
-       .text('Email: info@carrental.com', 50, 125);
+       .text('Hlavna ulica 123', 50, 80)
+       .text('Bratislava 81000, Slovensko', 50, 95)
+       .text('Telefon: +421 2 1234 5678', 50, 110)
+       .text('Email: info@carflow.sk', 50, 125);
 
     // Invoice Title
-    doc.fontSize(20).fillColor('#000000').text('INVOICE', 400, 50);
+    doc.fontSize(20).fillColor('#000000').text('FAKTURA', 400, 50);
     
     // Invoice details box
     doc.rect(400, 70, 150, 100).stroke();
     doc.fontSize(10).fillColor('#666666')
-       .text(`Invoice #: ${payment.invoice.invoiceNumber || 'N/A'}`, 410, 80)
-       .text(`Issue Date: ${payment.invoice.issuedAt?.toLocaleDateString() || new Date().toLocaleDateString()}`, 410, 95)
-       .text(`Due Date: ${payment.invoice.dueAt?.toLocaleDateString() || 'Upon receipt'}`, 410, 110)
-       .text(`Payment Date: ${payment.invoice.paidAt?.toLocaleDateString() || 'Pending'}`, 410, 125)
-       .text(`Status: ${(payment.status || 'pending').toUpperCase()}`, 410, 140);
+       .text(`Faktura c.: ${payment.invoice.invoiceNumber || 'N/A'}`, 410, 80)
+       .text(`Datum vystavenia: ${payment.invoice.issuedAt?.toLocaleDateString('sk-SK') || new Date().toLocaleDateString('sk-SK')}`, 410, 95)
+       .text(`Datum splatnosti: ${payment.invoice.dueAt?.toLocaleDateString('sk-SK') || 'Pri obdrzani'}`, 410, 110)
+       .text(`Datum platby: ${payment.invoice.paidAt?.toLocaleDateString('sk-SK') || 'Caka sa'}`, 410, 125)
+       .text(`Stav: ${(payment.status || 'pending') === 'pending' ? 'CAKA SA' : (payment.status || 'pending') === 'succeeded' ? 'ZAPLATENE' : (payment.status || 'CAKA SA').toUpperCase()}`, 410, 140);
 
     // Customer details
-    doc.fontSize(12).fillColor('#000000').text('Bill To:', 50, 200);
+    doc.fontSize(12).fillColor('#000000').text('Odberatel:', 50, 200);
     doc.fontSize(10).fillColor('#666666')
        .text(`${payment.customer?.firstName || ''} ${payment.customer?.lastName || ''}`, 50, 220)
        .text(`${payment.customer?.email || 'N/A'}`, 50, 235);
     
     if (payment.customer?.phone) {
-      doc.text(`Phone: ${payment.customer.phone}`, 50, 250);
+      doc.text(`Telefon: ${payment.customer.phone}`, 50, 250);
     }
 
     // Reservation details
     if (payment.reservation) {
-      doc.fontSize(12).fillColor('#000000').text('Reservation Details:', 50, 290);
+      doc.fontSize(12).fillColor('#000000').text('Detaily rezervacie:', 50, 290);
       doc.fontSize(10).fillColor('#666666')
-         .text(`Reservation #: ${payment.reservation.reservationNumber || 'N/A'}`, 50, 310);
+         .text(`Rezervacia c.: ${payment.reservation.reservationNumber || 'N/A'}`, 50, 310);
       
       if (payment.reservation.startDate && payment.reservation.endDate) {
-        doc.text(`Rental Period: ${new Date(payment.reservation.startDate).toLocaleDateString()} - ${new Date(payment.reservation.endDate).toLocaleDateString()}`, 50, 325);
+        doc.text(`Obdobie prenajmu: ${new Date(payment.reservation.startDate).toLocaleDateString('sk-SK')} - ${new Date(payment.reservation.endDate).toLocaleDateString('sk-SK')}`, 50, 325);
       }
       
       if (payment.reservation.car) {
         const car = payment.reservation.car;
-        doc.text(`Vehicle: ${car.year || ''} ${car.brand || ''} ${car.model || ''}`, 50, 340)
-           .text(`Registration: ${car.registrationNumber || 'N/A'}`, 50, 355)
-           .text(`Category: ${car.category || 'N/A'}`, 50, 370);
+        doc.text(`Vozidlo: ${car.year || ''} ${car.brand || ''} ${car.model || ''}`, 50, 340)
+           .text(`SPZ: ${car.registrationNumber || 'N/A'}`, 50, 355)
+           .text(`Kategoria: ${car.category || 'N/A'}`, 50, 370);
       }
 
       if (payment.reservation.pickupLocation?.name) {
-        doc.text(`Pickup: ${payment.reservation.pickupLocation.name}`, 50, 385);
+        doc.text(`Miesto prevzatia: ${payment.reservation.pickupLocation.name}`, 50, 385);
       }
       if (payment.reservation.dropoffLocation?.name) {
-        doc.text(`Dropoff: ${payment.reservation.dropoffLocation.name}`, 50, 400);
+        doc.text(`Miesto odovzdania: ${payment.reservation.dropoffLocation.name}`, 50, 400);
       }
     }
 
     // Payment breakdown table
     const tableTop = 450;
-    doc.fontSize(12).fillColor('#000000').text('Payment Breakdown:', 50, tableTop);
+    doc.fontSize(12).fillColor('#000000').text('Rozpis platby:', 50, tableTop);
     
     // Table headers
     doc.rect(50, tableTop + 20, 500, 25).fillAndStroke('#f3f4f6', '#e5e7eb');
     doc.fontSize(10).fillColor('#000000')
-       .text('Description', 60, tableTop + 30)
-       .text('Amount', 450, tableTop + 30);
+       .text('Popis', 60, tableTop + 30)
+       .text('Suma', 450, tableTop + 30);
 
     let yPosition = tableTop + 50;
 
     // Subtotal
     doc.rect(50, yPosition, 500, 20).stroke('#e5e7eb');
-    doc.text('Subtotal', 60, yPosition + 5)
-       .text(`$${(payment.breakdown?.subtotal || payment.amount || 0).toFixed(2)}`, 450, yPosition + 5);
+    doc.text('Medzisucet', 60, yPosition + 5)
+       .text(`${(payment.breakdown?.subtotal || payment.amount || 0).toFixed(2)} EUR`, 450, yPosition + 5);
     yPosition += 20;
 
     // Taxes
     if (payment.breakdown?.taxes && payment.breakdown.taxes.length > 0) {
       payment.breakdown.taxes.forEach((tax) => {
         doc.rect(50, yPosition, 500, 20).stroke('#e5e7eb');
-        doc.text(`${tax.name || 'Tax'} (${((tax.rate || 0) * 100).toFixed(1)}%)`, 60, yPosition + 5)
-           .text(`$${(tax.amount || 0).toFixed(2)}`, 450, yPosition + 5);
+        doc.text(`${tax.name || 'DPH'} (${((tax.rate || 0) * 100).toFixed(1)}%)`, 60, yPosition + 5)
+           .text(`${(tax.amount || 0).toFixed(2)} EUR`, 450, yPosition + 5);
         yPosition += 20;
       });
     }
@@ -523,8 +523,8 @@ const generateInvoice = asyncHandler(async (req, res, next) => {
     if (payment.breakdown?.fees && payment.breakdown.fees.length > 0) {
       payment.breakdown.fees.forEach((fee) => {
         doc.rect(50, yPosition, 500, 20).stroke('#e5e7eb');
-        doc.text(`${fee.name || 'Fee'}`, 60, yPosition + 5)
-           .text(`$${(fee.amount || 0).toFixed(2)}`, 450, yPosition + 5);
+        doc.text(`${fee.name || 'Poplatok'}`, 60, yPosition + 5)
+           .text(`${(fee.amount || 0).toFixed(2)} EUR`, 450, yPosition + 5);
         yPosition += 20;
       });
     }
@@ -533,8 +533,8 @@ const generateInvoice = asyncHandler(async (req, res, next) => {
     if (payment.breakdown?.discounts && payment.breakdown.discounts.length > 0) {
       payment.breakdown.discounts.forEach((discount) => {
         doc.rect(50, yPosition, 500, 20).stroke('#e5e7eb');
-        doc.fillColor('#dc2626').text(`${discount.name || 'Discount'} (${discount.percentage ? discount.percentage + '%' : 'Fixed'})`, 60, yPosition + 5)
-           .text(`-$${(discount.amount || 0).toFixed(2)}`, 450, yPosition + 5);
+        doc.fillColor('#dc2626').text(`${discount.name || 'Zlava'} (${discount.percentage ? discount.percentage + '%' : 'Fixna'})`, 60, yPosition + 5)
+           .text(`-${(discount.amount || 0).toFixed(2)} EUR`, 450, yPosition + 5);
         yPosition += 20;
       });
     }
@@ -542,27 +542,35 @@ const generateInvoice = asyncHandler(async (req, res, next) => {
     // Total
     doc.rect(50, yPosition, 500, 25).fillAndStroke('#1f2937', '#374151');
     doc.fontSize(12).fillColor('#ffffff')
-       .text('Total Amount', 60, yPosition + 8)
-       .text(`$${(payment.amount || 0).toFixed(2)}`, 450, yPosition + 8);
+       .text('Celkova suma', 60, yPosition + 8)
+       .text(`${(payment.amount || 0).toFixed(2)} EUR`, 450, yPosition + 8);
 
     // Payment method
     yPosition += 50;
     const paymentMethodType = payment.paymentMethod?.type || 'unknown';
+    const paymentMethodSlovak = {
+      'card': 'Platobna karta',
+      'bank_transfer': 'Bankovy prevod', 
+      'cash': 'Hotovost',
+      'paypal': 'PayPal',
+      'unknown': 'Neznamy'
+    };
+    
     doc.fontSize(10).fillColor('#666666')
-       .text(`Payment Method: ${paymentMethodType.charAt(0).toUpperCase() + paymentMethodType.slice(1)}`, 50, yPosition);
+       .text(`Sposob platby: ${paymentMethodSlovak[paymentMethodType] || paymentMethodSlovak['unknown']}`, 50, yPosition);
 
     if (payment.paymentMethod?.card) {
       const card = payment.paymentMethod.card;
-      const cardBrand = (card.brand && typeof card.brand === 'string') ? card.brand.toUpperCase() : 'CARD';
+      const cardBrand = (card.brand && typeof card.brand === 'string') ? card.brand.toUpperCase() : 'KARTA';
       const last4 = card.last4 || '****';
-      doc.text(`Card: **** **** **** ${last4} (${cardBrand})`, 50, yPosition + 15);
+      doc.text(`Karta: **** **** **** ${last4} (${cardBrand})`, 50, yPosition + 15);
     }
 
     // Footer
     doc.fontSize(8).fillColor('#999999')
-       .text('Thank you for your business!', 50, doc.page.height - 100)
-       .text('For questions about this invoice, please contact us at billing@carrental.com', 50, doc.page.height - 85)
-       .text('This is a computer-generated invoice and does not require a signature.', 50, doc.page.height - 70);
+       .text('Dakujeme za vase podnikanie s nami!', 50, doc.page.height - 100)
+       .text('Pre otazky ohladom tejto faktury nas kontaktujte na billing@carflow.sk', 50, doc.page.height - 85)
+       .text('Toto je pocitacom vygenerovana faktura a nevyzaduje podpis.', 50, doc.page.height - 70);
 
     // Finalize PDF
     doc.end();
