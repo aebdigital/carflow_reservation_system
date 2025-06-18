@@ -369,13 +369,13 @@ function Reservations() {
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-      a.download = `potvrdenie-o-rezervacii-${reservationId}.pdf`;
+      a.download = `potvrdenie-objednavky-${reservationId}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error downloading contract:', error);
-      alert('Chyba pri sťahovaní zmluvy');
+      alert('Chyba pri sťahovaní potvrdenia objednávky');
     }
   };
 
@@ -399,7 +399,7 @@ function Reservations() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error previewing contract:', error);
-      alert('Chyba pri náhľade zmluvy');
+      alert('Chyba pri náhľade potvrdenia objednávky');
     }
   };
 
@@ -577,7 +577,7 @@ function Reservations() {
                               </IconButton>
                             </Tooltip>
                           )}
-                          <Tooltip title="Náhľad zmluvy">
+                          <Tooltip title="Náhľad potvrdenia objednávky">
                             <IconButton
                               size="small"
                               onClick={() => handlePreviewContract(reservation._id)}
@@ -586,7 +586,7 @@ function Reservations() {
                               <ContractIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Stiahnuť zmluvu">
+                          <Tooltip title="Stiahnuť potvrdenie objednávky">
                             <IconButton
                               size="small"
                               onClick={() => handleDownloadContract(reservation._id)}
@@ -705,7 +705,7 @@ function Reservations() {
                               <CheckOutIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Náhľad zmluvy">
+                          <Tooltip title="Náhľad potvrdenia objednávky">
                             <IconButton
                               size="small"
                               onClick={() => handlePreviewContract(reservation._id)}
@@ -714,7 +714,7 @@ function Reservations() {
                               <ContractIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Stiahnuť zmluvu">
+                          <Tooltip title="Stiahnuť potvrdenie objednávky">
                             <IconButton
                               size="small"
                               onClick={() => handleDownloadContract(reservation._id)}
@@ -839,7 +839,7 @@ function Reservations() {
                               <CancelIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Náhľad zmluvy">
+                          <Tooltip title="Náhľad potvrdenia objednávky">
                             <IconButton
                               size="small"
                               onClick={() => handlePreviewContract(reservation._id)}
@@ -848,7 +848,7 @@ function Reservations() {
                               <ContractIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Stiahnuť zmluvu">
+                          <Tooltip title="Stiahnuť potvrdenie objednávky">
                             <IconButton
                               size="small"
                               onClick={() => handleDownloadContract(reservation._id)}
@@ -956,7 +956,7 @@ function Reservations() {
                               <ViewIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Náhľad zmluvy">
+                          <Tooltip title="Náhľad potvrdenia objednávky">
                             <IconButton
                               size="small"
                               onClick={() => handlePreviewContract(reservation._id)}
@@ -965,7 +965,7 @@ function Reservations() {
                               <ContractIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Stiahnuť zmluvu">
+                          <Tooltip title="Stiahnuť potvrdenie objednávky">
                             <IconButton
                               size="small"
                               onClick={() => handleDownloadContract(reservation._id)}

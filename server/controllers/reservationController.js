@@ -512,8 +512,9 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
   try {
     const reservation = await Reservation.findById(req.params.id)
       .populate('customer', 'firstName lastName email phone address licenseNumber')
-      .populate('car', 'brand model year registrationNumber category mileage vin fuelType transmission')
-      .populate('createdBy', 'firstName lastName');
+      .populate('car', 'brand model year registrationNumber category mileage vin fuelType transmission features dailyRate')
+      .populate('createdBy', 'firstName lastName')
+      .populate('payment', 'status amount paymentMethod');
 
     if (!reservation) {
       return next(new AppError(`Reservation not found with id of ${req.params.id}`, 404));
@@ -524,191 +525,267 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
       return next(new AppError('Not authorized to access this contract', 403));
     }
 
-    // Create PDF with proper encoding for Slovak characters
+    // Create PDF document
     const doc = new PDFDocument({ 
-      margin: 50,
+      margin: 40,
+      size: 'A4',
       info: {
-        Title: 'Potvrdenie o rezervácii',
-        Author: 'CarFlow',
-        Subject: 'Potvrdenie o rezervácii vozidla'
+        Title: 'Potvrdenie objednávky - CarFlow',
+        Author: 'CarFlow Rental System',
+        Subject: 'Potvrdenie rezervácie vozidla',
+        Keywords: 'rezervacia, auto, prenajom'
       }
     });
     
-    // Set response headers based on preview mode
+    // Set response headers
     const isPreview = req.query.preview === 'true';
     res.setHeader('Content-Type', 'application/pdf; charset=utf-8');
     
     if (isPreview) {
-      res.setHeader('Content-Disposition', `inline; filename="potvrdenie-o-rezervacii-${reservation.reservationNumber}.pdf"`);
+      res.setHeader('Content-Disposition', `inline; filename="potvrdenie-objednavky-${reservation.reservationNumber}.pdf"`);
     } else {
-      res.setHeader('Content-Disposition', `attachment; filename="potvrdenie-o-rezervacii-${reservation.reservationNumber}.pdf"`);
+      res.setHeader('Content-Disposition', `attachment; filename="potvrdenie-objednavky-${reservation.reservationNumber}.pdf"`);
     }
 
-    // Pipe PDF to response
     doc.pipe(res);
 
-    // Function to safely encode text for PDF
-    const encodeText = (text) => {
-      // Convert Slovak characters to closest ASCII equivalents as fallback
-      return text
-        .replace(/á/g, 'a').replace(/Á/g, 'A')
-        .replace(/č/g, 'c').replace(/Č/g, 'C')
-        .replace(/ď/g, 'd').replace(/Ď/g, 'D')
-        .replace(/é/g, 'e').replace(/É/g, 'E')
-        .replace(/í/g, 'i').replace(/Í/g, 'I')
-        .replace(/ĺ/g, 'l').replace(/Ĺ/g, 'L')
-        .replace(/ľ/g, 'l').replace(/Ľ/g, 'L')
-        .replace(/ň/g, 'n').replace(/Ň/g, 'N')
-        .replace(/ó/g, 'o').replace(/Ó/g, 'O')
-        .replace(/ô/g, 'o').replace(/Ô/g, 'O')
-        .replace(/ŕ/g, 'r').replace(/Ŕ/g, 'R')
-        .replace(/š/g, 's').replace(/Š/g, 'S')
-        .replace(/ť/g, 't').replace(/Ť/g, 'T')
-        .replace(/ú/g, 'u').replace(/Ú/g, 'U')
-        .replace(/ý/g, 'y').replace(/Ý/g, 'Y')
-        .replace(/ž/g, 'z').replace(/Ž/g, 'Z');
+    // Helper functions
+    const addLine = (x1, y1, x2, y2, color = '#E0E0E0') => {
+      doc.strokeColor(color).lineWidth(0.5).moveTo(x1, y1).lineTo(x2, y2).stroke();
     };
 
-    // Use Helvetica font
-    doc.font('Helvetica');
+    const addBox = (x, y, width, height, fillColor = '#F8F9FA', strokeColor = '#E0E0E0') => {
+      doc.rect(x, y, width, height).fillAndStroke(fillColor, strokeColor);
+    };
 
-    // Header with company info and barcode area
-    doc.fontSize(8).fillColor('#000000')
-       .text('Objednavka cislo: ' + (reservation.reservationNumber || ''), 50, 20)
-       .text('Zmluva cislo: ZML' + (reservation.reservationNumber || ''), 50, 32);
+    // Document setup
+    let yPos = 40;
+    const pageWidth = doc.page.width;
+    const margin = 40;
+    const contentWidth = pageWidth - (margin * 2);
 
-    // Company logo area (right side)
-    doc.fontSize(20).fillColor('#000000').text('CARFLOW', 450, 20);
-    doc.fontSize(10).text('RENTAL SERVICES', 450, 45);
-
-    // Main title
-    doc.fontSize(16).fillColor('#000000').text('Objednavka / rezervacia pozicovne', 200, 65, { align: 'center' });
-
-    // Company details section
-    doc.fontSize(12).fillColor('#000000').text('Dodavatel:', 50, 110);
-    doc.fontSize(10).fillColor('#666666')
-       .text('Lemi s.r.o.', 50, 125)
-       .text('Ferska 1142/50 940 01 Nitra', 50, 140);
-
-    doc.text('ICO:', 50, 160)
-       .text('DIC:', 50, 175)
-       .text('IC DPH:', 50, 190);
-
-    doc.fillColor('#000000')
-       .text('50 524 196', 120, 160);
-
-    // Contact section
-    doc.fontSize(12).fillColor('#000000').text('Kontaktna osoba', 50, 270);
-    doc.fontSize(10).fillColor('#666666');
+    // HEADER SECTION
+    // Company logo and branding
+    doc.fontSize(28).font('Helvetica-Bold').fillColor('#1976D2').text('CarFlow', margin, yPos);
+    doc.fontSize(12).font('Helvetica').fillColor('#666666').text('Rental Management System', margin, yPos + 35);
     
-    if (reservation.customer) {
-      doc.text('Odberatel:', 50, 290)
-         .text('Telefon:', 50, 305)
-         .text('E-mail:', 50, 320);
+    // Document title
+    doc.fontSize(24).font('Helvetica-Bold').fillColor('#333333').text('POTVRDENIE OBJEDNAVKY', pageWidth - 300, yPos, { align: 'right' });
+    doc.fontSize(10).font('Helvetica').fillColor('#666666').text(`Cislo objednavky: ${reservation.reservationNumber}`, pageWidth - 300, yPos + 30, { align: 'right' });
+    doc.text(`Datum vytvorenia: ${new Date(reservation.createdAt).toLocaleDateString('sk-SK')}`, pageWidth - 300, yPos + 45, { align: 'right' });
 
-      doc.fillColor('#000000')
-         .text(`${reservation.customer.firstName} ${reservation.customer.lastName}`, 120, 290)
-         .text(reservation.customer.phone || '+421 908 907 131', 120, 305)
-         .text(reservation.customer.email || 'peter.samuel.bobak@gmail.com', 120, 320);
+    yPos += 80;
+    addLine(margin, yPos, pageWidth - margin, yPos, '#1976D2');
+    yPos += 20;
+
+    // CUSTOMER INFORMATION SECTION
+    doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('INFORMACIE O ZAKAZNIKOVI', margin, yPos);
+    yPos += 25;
+
+    if (reservation.customer) {
+      const customer = reservation.customer;
+      
+      // Customer details box
+      addBox(margin, yPos, contentWidth / 2 - 10, 120, '#F8F9FA', '#E0E0E0');
+      
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Meno a priezvisko:', margin + 15, yPos + 15);
+      doc.fontSize(11).font('Helvetica').fillColor('#666666').text(`${customer.firstName} ${customer.lastName}`, margin + 15, yPos + 30);
+      
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Email:', margin + 15, yPos + 50);
+      doc.fontSize(11).font('Helvetica').fillColor('#666666').text(customer.email, margin + 15, yPos + 65);
+      
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Telefon:', margin + 15, yPos + 85);
+      doc.fontSize(11).font('Helvetica').fillColor('#666666').text(customer.phone || 'Neuvedene', margin + 15, yPos + 100);
+      
+      // License info
+      if (customer.licenseNumber) {
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Vodicsky preukaz:', margin + contentWidth / 2 + 10, yPos + 15);
+        doc.fontSize(11).font('Helvetica').fillColor('#666666').text(customer.licenseNumber, margin + contentWidth / 2 + 10, yPos + 30);
+      }
     }
 
-    // Address section
-    doc.fillColor('#666666');
-    doc.text('Adresa:', 50, 340)
-       .text('Mesto:', 50, 355)
-       .text('PSC:', 50, 370)
-       .text('Krajina:', 50, 385);
+    yPos += 140;
 
-    doc.fillColor('#000000')
-       .text('Andreja Mraza 15', 120, 340)
-       .text('Bratislava', 120, 355)
-       .text('821 09', 120, 370)
-       .text('Slovensko', 120, 385);
+    // VEHICLE INFORMATION SECTION
+    doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('INFORMACIE O VOZIDLE', margin, yPos);
+    yPos += 25;
 
-    // Pickup and return locations
-    doc.fontSize(12).fillColor('#000000').text('Miesto odovzdania', 343, 270);
-    doc.fontSize(10).fillColor('#000000').text(reservation.pickupLocation?.name || 'Nitra', 343, 290);
-
-    doc.fontSize(12).fillColor('#000000').text('Miesto vratenia', 343, 315);
-    doc.fontSize(10).fillColor('#000000').text(reservation.dropoffLocation?.name || 'Nitra', 343, 335);
-
-    // Rental dates
-    doc.fillColor('#666666');
-    doc.text('Datum vyhotovenia:', 50, 410)
-       .text('Sposob uhrady:', 50, 425);
-
-    doc.fillColor('#000000');
-    const createdDate = reservation.createdAt ? new Date(reservation.createdAt) : new Date();
-    const months = ['januar', 'februar', 'marec', 'april', 'maj', 'jun', 'jul', 'august', 'september', 'oktober', 'november', 'december'];
-    const monthName = months[createdDate.getMonth()];
-    doc.text(`${createdDate.getDate()}. ${monthName} ${createdDate.getFullYear()} ${createdDate.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}`, 150, 410)
-       .text('Hotovost Blackrent', 150, 425);
-
-    // Vehicle details section
-    let yPos = 490;
-    doc.fontSize(12).fillColor('#000000').text('Predmet:', 50, yPos);
-    
     if (reservation.car) {
       const car = reservation.car;
-      doc.fontSize(10).fillColor('#000000')
-         .text(`${car.brand} ${car.model} ${car.category || 'xDrive'}`, 120, yPos);
       
-      yPos += 20;
-      doc.fillColor('#666666').text('Pocet dni:', 50, yPos);
-      const duration = Math.ceil((new Date(reservation.endDate) - new Date(reservation.startDate)) / (1000 * 60 * 60 * 24));
-      doc.fillColor('#000000').text(`${duration} Dni`, 120, yPos);
-
-      yPos += 15;
-      doc.fillColor('#666666').text('Datum od:', 50, yPos);
-      const startDate = new Date(reservation.startDate);
-      doc.fillColor('#000000').text(`${startDate.getDate()}.${(startDate.getMonth() + 1).toString().padStart(2, '0')}.${startDate.getFullYear()}, ${startDate.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}`, 120, yPos);
-
-      yPos += 15;
-      doc.fillColor('#666666').text('Datum do:', 50, yPos);
-      const endDate = new Date(reservation.endDate);
-      doc.fillColor('#000000').text(`${endDate.getDate()}.${(endDate.getMonth() + 1).toString().padStart(2, '0')}.${endDate.getFullYear()}, ${endDate.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}`, 120, yPos);
-
-      // Vehicle specifications
-      yPos += 30;
-      doc.fillColor('#666666');
-      doc.text('VIN:', 343, yPos - 45);
-      doc.text('SPZ:', 343, yPos - 30);
-      doc.text('Typ:', 343, yPos - 15);
-      doc.text('Model:', 343, yPos);
-
-      doc.fillColor('#000000');
-      doc.text(car.vin || 'WBAJB51006B372269', 400, yPos - 45);
-      doc.text(car.registrationNumber || 'AA348BQ', 400, yPos - 30);
-      doc.text('Sedan', 400, yPos - 15);
-      doc.text(`${car.model} ${car.category || 'xDrive'}`, 400, yPos);
+      // Vehicle details box
+      addBox(margin, yPos, contentWidth, 140, '#F8F9FA', '#E0E0E0');
+      
+      // Left column
+      doc.fontSize(14).font('Helvetica-Bold').fillColor('#333333').text(`${car.brand} ${car.model} (${car.year})`, margin + 15, yPos + 15);
+      
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Kategoria:', margin + 15, yPos + 40);
+      doc.fontSize(11).font('Helvetica').fillColor('#666666').text(car.category || 'Neuvedena', margin + 15, yPos + 55);
+      
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Evidencne cislo:', margin + 15, yPos + 75);
+      doc.fontSize(11).font('Helvetica').fillColor('#666666').text(car.registrationNumber || 'Neuvedene', margin + 15, yPos + 90);
+      
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Denna sadzba:', margin + 15, yPos + 110);
+      doc.fontSize(11).font('Helvetica').fillColor('#1976D2').text(`${car.dailyRate} EUR/den`, margin + 15, yPos + 125);
+      
+      // Right column
+      if (car.vin) {
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('VIN:', margin + contentWidth / 2, yPos + 40);
+        doc.fontSize(11).font('Helvetica').fillColor('#666666').text(car.vin, margin + contentWidth / 2, yPos + 55);
+      }
+      
+      if (car.fuelType) {
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Typ paliva:', margin + contentWidth / 2, yPos + 75);
+        doc.fontSize(11).font('Helvetica').fillColor('#666666').text(car.fuelType, margin + contentWidth / 2, yPos + 90);
+      }
+      
+      if (car.transmission) {
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Prevodovka:', margin + contentWidth / 2, yPos + 110);
+        doc.fontSize(11).font('Helvetica').fillColor('#666666').text(car.transmission, margin + contentWidth / 2, yPos + 125);
+      }
     }
 
-    // Pricing section
-    yPos += 40;
-    doc.fontSize(12).fillColor('#000000').text('Denny limit:', 50, yPos);
-    doc.text('Limit celkom:', 50, yPos + 15);
-    doc.text('Cena za prik. kmiti:', 50, yPos + 30);
-    doc.text('Zaloha:', 50, yPos + 45);
+    yPos += 160;
 
-    const dailyLimit = 250;
-    const duration = Math.ceil((new Date(reservation.endDate) - new Date(reservation.startDate)) / (1000 * 60 * 60 * 24));
-    const totalLimit = dailyLimit * duration;
+    // RESERVATION DETAILS SECTION
+    doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('DETAILY REZERVACIE', margin, yPos);
+    yPos += 25;
+
+    // Dates and duration
+    addBox(margin, yPos, contentWidth, 100, '#F8F9FA', '#E0E0E0');
     
-    doc.text(`${dailyLimit} km`, 150, yPos);
-    doc.text(`${totalLimit} km`, 150, yPos + 15);
-    doc.text('0,25 EUR / km', 150, yPos + 30);
-    doc.text('1 000,00 EUR', 150, yPos + 45);
+    const startDate = new Date(reservation.startDate);
+    const endDate = new Date(reservation.endDate);
+    const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+    
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Datum prevzatia:', margin + 15, yPos + 15);
+    doc.fontSize(11).font('Helvetica').fillColor('#666666').text(startDate.toLocaleDateString('sk-SK', { 
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    }), margin + 15, yPos + 30);
+    
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Datum vratenia:', margin + 15, yPos + 55);
+    doc.fontSize(11).font('Helvetica').fillColor('#666666').text(endDate.toLocaleDateString('sk-SK', { 
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    }), margin + 15, yPos + 70);
+    
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Doba prenajmu:', margin + contentWidth / 2, yPos + 15);
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1976D2').text(`${duration} dni`, margin + contentWidth / 2, yPos + 35);
+    
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Status rezervacie:', margin + contentWidth / 2, yPos + 65);
+    const statusColors = { pending: '#FF9800', confirmed: '#2196F3', ongoing: '#4CAF50', completed: '#8BC34A', cancelled: '#F44336' };
+    const statusTexts = { pending: 'Cakajuca', confirmed: 'Potvrdena', ongoing: 'Prebieha', completed: 'Dokoncena', cancelled: 'Zrusena' };
+    doc.fontSize(11).font('Helvetica-Bold').fillColor(statusColors[reservation.status] || '#666666').text(statusTexts[reservation.status] || reservation.status, margin + contentWidth / 2, yPos + 80);
 
-    // Total amount (large)
-    doc.fontSize(18).fillColor('#000000').text('Suma k uhrade:', 343, yPos + 20);
-    doc.fontSize(24).fillColor('#000000').text(`${(reservation.pricing?.totalAmount || 270).toFixed(2)} EUR`, 343, yPos + 45);
+    yPos += 120;
 
-    // Footer
-    doc.fontSize(8).fillColor('#999999')
-       .text('Informacny system', 50, doc.page.height - 40)
-       .text('CarFlow™', 50, doc.page.height - 28);
+    // PICKUP AND RETURN LOCATIONS
+    doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('MIESTA PREVZATIA A VRATENIA', margin, yPos);
+    yPos += 25;
 
-    doc.text('Vygenerovane: ' + new Date().toLocaleDateString('sk-SK') + ' ' + new Date().toLocaleTimeString('sk-SK'), 400, doc.page.height - 40);
+    addBox(margin, yPos, contentWidth / 2 - 10, 80, '#E8F5E8', '#4CAF50');
+    addBox(margin + contentWidth / 2 + 10, yPos, contentWidth / 2 - 10, 80, '#FFF3E0', '#FF9800');
+    
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#2E7D32').text('MIESTO PREVZATIA', margin + 15, yPos + 15);
+    doc.fontSize(11).font('Helvetica').fillColor('#333333').text(reservation.pickupLocation?.name || 'Neuvedene', margin + 15, yPos + 35);
+    if (reservation.pickupLocation?.address) {
+      const addr = reservation.pickupLocation.address;
+      doc.fontSize(10).font('Helvetica').fillColor('#666666').text(`${addr.street || ''} ${addr.city || ''} ${addr.zipCode || ''}`.trim(), margin + 15, yPos + 50);
+    }
+    
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#E65100').text('MIESTO VRATENIA', margin + contentWidth / 2 + 25, yPos + 15);
+    doc.fontSize(11).font('Helvetica').fillColor('#333333').text(reservation.dropoffLocation?.name || 'Neuvedene', margin + contentWidth / 2 + 25, yPos + 35);
+    if (reservation.dropoffLocation?.address) {
+      const addr = reservation.dropoffLocation.address;
+      doc.fontSize(10).font('Helvetica').fillColor('#666666').text(`${addr.street || ''} ${addr.city || ''} ${addr.zipCode || ''}`.trim(), margin + contentWidth / 2 + 25, yPos + 50);
+    }
+
+    yPos += 100;
+
+    // PRICING BREAKDOWN
+    doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('CENOVE UDAJE', margin, yPos);
+    yPos += 25;
+
+    if (reservation.pricing) {
+      addBox(margin, yPos, contentWidth, 120, '#F8F9FA', '#E0E0E0');
+      
+      const pricing = reservation.pricing;
+      
+      doc.fontSize(12).font('Helvetica').fillColor('#333333').text('Zakladna cena:', margin + 15, yPos + 15);
+      doc.fontSize(12).font('Helvetica').fillColor('#333333').text(`${(pricing.subtotal || 0).toFixed(2)} EUR`, pageWidth - margin - 100, yPos + 15);
+      
+      doc.fontSize(12).font('Helvetica').fillColor('#333333').text('DPH (20%):', margin + 15, yPos + 35);
+      doc.fontSize(12).font('Helvetica').fillColor('#333333').text(`${(pricing.taxes || 0).toFixed(2)} EUR`, pageWidth - margin - 100, yPos + 35);
+      
+      if (pricing.fees && pricing.fees.length > 0) {
+        pricing.fees.forEach((fee, index) => {
+          doc.fontSize(12).font('Helvetica').fillColor('#333333').text(`${fee.name}:`, margin + 15, yPos + 55 + (index * 20));
+          doc.fontSize(12).font('Helvetica').fillColor('#333333').text(`${(fee.amount || 0).toFixed(2)} EUR`, pageWidth - margin - 100, yPos + 55 + (index * 20));
+        });
+      }
+      
+      addLine(margin + 15, yPos + 85, pageWidth - margin - 15, yPos + 85, '#1976D2');
+      
+      doc.fontSize(14).font('Helvetica-Bold').fillColor('#1976D2').text('CELKOVA SUMA:', margin + 15, yPos + 95);
+      doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text(`${(pricing.totalAmount || 0).toFixed(2)} EUR`, pageWidth - margin - 100, yPos + 95);
+    }
+
+    yPos += 140;
+
+    // PAYMENT INFORMATION
+    if (reservation.payment) {
+      doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('INFORMACIE O PLATBE', margin, yPos);
+      yPos += 25;
+      
+      addBox(margin, yPos, contentWidth, 60, '#F8F9FA', '#E0E0E0');
+      
+      const payment = reservation.payment;
+      const paymentStatusColors = { pending: '#FF9800', succeeded: '#4CAF50', failed: '#F44336' };
+      const paymentStatusTexts = { pending: 'Cakajuca', succeeded: 'Uspesna', failed: 'Neuspesna' };
+      
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Status platby:', margin + 15, yPos + 15);
+      doc.fontSize(11).font('Helvetica-Bold').fillColor(paymentStatusColors[payment.status] || '#666666').text(paymentStatusTexts[payment.status] || payment.status, margin + 15, yPos + 30);
+      
+      if (payment.paymentMethod?.type) {
+        const methodTexts = { card: 'Platobna karta', bank_transfer: 'Bankovy prevod', cash: 'Hotovost' };
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Sposob platby:', margin + contentWidth / 2, yPos + 15);
+        doc.fontSize(11).font('Helvetica').fillColor('#666666').text(methodTexts[payment.paymentMethod.type] || payment.paymentMethod.type, margin + contentWidth / 2, yPos + 30);
+      }
+      
+      yPos += 80;
+    }
+
+    // ADDITIONAL INFORMATION
+    if (reservation.specialRequests || (reservation.additionalDrivers && reservation.additionalDrivers.length > 0)) {
+      doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('DOPLNUJUCE INFORMACIE', margin, yPos);
+      yPos += 25;
+      
+      if (reservation.specialRequests) {
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Specialne poziadavky:', margin, yPos);
+        yPos += 15;
+        doc.fontSize(11).font('Helvetica').fillColor('#666666').text(reservation.specialRequests, margin, yPos, { width: contentWidth });
+        yPos += 30;
+      }
+      
+      if (reservation.additionalDrivers && reservation.additionalDrivers.length > 0) {
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Doplnkovi vodicii:', margin, yPos);
+        yPos += 15;
+        reservation.additionalDrivers.forEach((driver, index) => {
+          doc.fontSize(11).font('Helvetica').fillColor('#666666').text(`${index + 1}. ${driver.firstName} ${driver.lastName} (${driver.licenseNumber || 'bez udajov'})`, margin, yPos);
+          yPos += 15;
+        });
+        yPos += 15;
+      }
+    }
+
+    // FOOTER
+    yPos = doc.page.height - 100;
+    addLine(margin, yPos, pageWidth - margin, yPos, '#1976D2');
+    yPos += 15;
+    
+    doc.fontSize(10).font('Helvetica').fillColor('#666666').text('CarFlow Rental Management System', margin, yPos);
+    doc.text('Email: info@carflow.sk | Tel: +421 123 456 789', margin, yPos + 15);
+    doc.text(`Vygenerovane: ${new Date().toLocaleDateString('sk-SK')} ${new Date().toLocaleTimeString('sk-SK')}`, pageWidth - 200, yPos, { align: 'right' });
+    doc.text('Dakujeme za vasu objednavku!', pageWidth - 200, yPos + 15, { align: 'right' });
 
     // Finalize PDF
     doc.end();
