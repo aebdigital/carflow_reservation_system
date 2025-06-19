@@ -350,57 +350,16 @@ function Reservations() {
     })
   }
 
-  // Handle downloading reservation contract PDF
+  // Handle downloading reservation contract PDF - TEMPORARILY DISABLED
   const handleDownloadContract = async (reservationId) => {
-    try {
-      const baseApiUrl = (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, '');
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`${baseApiUrl}/reservations/${reservationId}/contract`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) throw new Error('Failed to download contract');
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `potvrdenie-objednavky-${reservationId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error downloading contract:', error);
-      alert('Chyba pri sťahovaní potvrdenia objednávky');
-    }
+    // Temporarily disabled - PDF generation will be customized according to template
+    console.log('PDF download temporarily disabled');
   };
 
-  // Handle previewing reservation contract PDF
+  // Handle previewing reservation contract PDF - TEMPORARILY DISABLED
   const handlePreviewContract = async (reservationId) => {
-    try {
-      const baseApiUrl = (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, '');
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`${baseApiUrl}/reservations/${reservationId}/contract?preview=true`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) throw new Error('Failed to generate contract');
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error previewing contract:', error);
-      alert('Chyba pri náhľade potvrdenia objednávky');
-    }
+    // Temporarily disabled - PDF generation will be customized according to template
+    console.log('PDF preview temporarily disabled');
   };
 
   return (
@@ -577,23 +536,29 @@ function Reservations() {
                               </IconButton>
                             </Tooltip>
                           )}
-                          <Tooltip title="Náhľad potvrdenia objednávky">
-                            <IconButton
-                              size="small"
-                              onClick={() => handlePreviewContract(reservation._id)}
-                              color="primary"
-                            >
-                              <ContractIcon fontSize="small" />
-                            </IconButton>
+                          <Tooltip title="Generovanie PDF bude dostupné a prispôsobené podľa Vašej predlohy">
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handlePreviewContract(reservation._id)}
+                                color="primary"
+                                disabled={true}
+                              >
+                                <ContractIcon fontSize="small" />
+                              </IconButton>
+                            </span>
                           </Tooltip>
-                          <Tooltip title="Stiahnuť potvrdenie objednávky">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDownloadContract(reservation._id)}
-                              color="secondary"
-                            >
-                              <DownloadIcon fontSize="small" />
-                            </IconButton>
+                          <Tooltip title="Generovanie PDF bude dostupné a prispôsobené podľa Vašej predlohy">
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDownloadContract(reservation._id)}
+                                color="secondary"
+                                disabled={true}
+                              >
+                                <DownloadIcon fontSize="small" />
+                              </IconButton>
+                            </span>
                           </Tooltip>
                         </Box>
                       </TableCell>
@@ -705,23 +670,29 @@ function Reservations() {
                               <CheckOutIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Náhľad potvrdenia objednávky">
-                            <IconButton
-                              size="small"
-                              onClick={() => handlePreviewContract(reservation._id)}
-                              color="primary"
-                            >
-                              <ContractIcon fontSize="small" />
-                            </IconButton>
+                          <Tooltip title="Generovanie PDF bude dostupné a prispôsobené podľa Vašej predlohy">
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handlePreviewContract(reservation._id)}
+                                color="primary"
+                                disabled={true}
+                              >
+                                <ContractIcon fontSize="small" />
+                              </IconButton>
+                            </span>
                           </Tooltip>
-                          <Tooltip title="Stiahnuť potvrdenie objednávky">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDownloadContract(reservation._id)}
-                              color="secondary"
-                            >
-                              <DownloadIcon fontSize="small" />
-                            </IconButton>
+                          <Tooltip title="Generovanie PDF bude dostupné a prispôsobené podľa Vašej predlohy">
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDownloadContract(reservation._id)}
+                                color="secondary"
+                                disabled={true}
+                              >
+                                <DownloadIcon fontSize="small" />
+                              </IconButton>
+                            </span>
                           </Tooltip>
                         </Box>
                       </TableCell>
@@ -839,23 +810,29 @@ function Reservations() {
                               <CancelIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Náhľad potvrdenia objednávky">
-                            <IconButton
-                              size="small"
-                              onClick={() => handlePreviewContract(reservation._id)}
-                              color="primary"
-                            >
-                              <ContractIcon fontSize="small" />
-                            </IconButton>
+                          <Tooltip title="Generovanie PDF bude dostupné a prispôsobené podľa Vašej predlohy">
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handlePreviewContract(reservation._id)}
+                                color="primary"
+                                disabled={true}
+                              >
+                                <ContractIcon fontSize="small" />
+                              </IconButton>
+                            </span>
                           </Tooltip>
-                          <Tooltip title="Stiahnuť potvrdenie objednávky">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDownloadContract(reservation._id)}
-                              color="secondary"
-                            >
-                              <DownloadIcon fontSize="small" />
-                            </IconButton>
+                          <Tooltip title="Generovanie PDF bude dostupné a prispôsobené podľa Vašej predlohy">
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDownloadContract(reservation._id)}
+                                color="secondary"
+                                disabled={true}
+                              >
+                                <DownloadIcon fontSize="small" />
+                              </IconButton>
+                            </span>
                           </Tooltip>
                         </Box>
                       </TableCell>
@@ -956,23 +933,29 @@ function Reservations() {
                               <ViewIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Náhľad potvrdenia objednávky">
-                            <IconButton
-                              size="small"
-                              onClick={() => handlePreviewContract(reservation._id)}
-                              color="primary"
-                            >
-                              <ContractIcon fontSize="small" />
-                            </IconButton>
+                          <Tooltip title="Generovanie PDF bude dostupné a prispôsobené podľa Vašej predlohy">
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handlePreviewContract(reservation._id)}
+                                color="primary"
+                                disabled={true}
+                              >
+                                <ContractIcon fontSize="small" />
+                              </IconButton>
+                            </span>
                           </Tooltip>
-                          <Tooltip title="Stiahnuť potvrdenie objednávky">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDownloadContract(reservation._id)}
-                              color="secondary"
-                            >
-                              <DownloadIcon fontSize="small" />
-                            </IconButton>
+                          <Tooltip title="Generovanie PDF bude dostupné a prispôsobené podľa Vašej predlohy">
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDownloadContract(reservation._id)}
+                                color="secondary"
+                                disabled={true}
+                              >
+                                <DownloadIcon fontSize="small" />
+                              </IconButton>
+                            </span>
                           </Tooltip>
                         </Box>
                       </TableCell>
