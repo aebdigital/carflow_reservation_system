@@ -113,12 +113,12 @@ const getReservation = asyncHandler(async (req, res, next) => {
     .populate('checkOut.staffMember', 'firstName lastName');
 
   if (!reservation) {
-    return next(new AppError(`Reservation not found with id of ${req.params.id}`, 404));
+    return next(new AppError(`Rezervácia s ID ${req.params.id} nebola nájdená`, 404));
   }
 
   // Check if user owns the reservation or is staff
   if (req.user.role === 'customer' && reservation.customer._id.toString() !== req.user._id.toString()) {
-    return next(new AppError('Not authorized to access this reservation', 403));
+    return next(new AppError('Nemáte oprávnenie na prístup k tejto rezervácii', 403));
   }
 
   res.status(200).json({
@@ -145,17 +145,17 @@ const createReservation = asyncHandler(async (req, res, next) => {
   // Validate car exists and is available
   const carDoc = await Car.findById(car);
   if (!carDoc) {
-    return next(new AppError('Car not found', 404));
+    return next(new AppError('Vozidlo nebolo nájdené', 404));
   }
 
   if (!carDoc.isAvailableForBooking()) {
-    return next(new AppError('Car is not available for booking', 400));
+    return next(new AppError('Vozidlo nie je dostupné na rezerváciu', 400));
   }
 
   // Validate customer exists
   const customerDoc = await User.findById(customer);
   if (!customerDoc) {
-    return next(new AppError('Customer not found', 404));
+    return next(new AppError('Zákazník nebol nájdený', 404));
   }
 
   // Check for overlapping reservations
@@ -164,7 +164,7 @@ const createReservation = asyncHandler(async (req, res, next) => {
   
   const overlappingReservations = await Reservation.findOverlapping(car, start, end);
   if (overlappingReservations.length > 0) {
-    return next(new AppError('Car is not available for the selected dates', 400));
+    return next(new AppError('Vozidlo nie je dostupné pre vybrané dátumy', 400));
   }
 
   // Calculate pricing
@@ -227,12 +227,12 @@ const updateReservation = asyncHandler(async (req, res, next) => {
   let reservation = await Reservation.findById(req.params.id);
 
   if (!reservation) {
-    return next(new AppError(`Reservation not found with id of ${req.params.id}`, 404));
+    return next(new AppError(`Rezervácia s ID ${req.params.id} nebola nájdená`, 404));
   }
 
   // Check authorization
   if (req.user.role === 'customer' && reservation.customer.toString() !== req.user._id.toString()) {
-    return next(new AppError('Not authorized to update this reservation', 403));
+    return next(new AppError('Nemáte oprávnenie na aktualizáciu tejto rezervácie', 403));
   }
 
   // Validate date changes if provided
@@ -241,7 +241,7 @@ const updateReservation = asyncHandler(async (req, res, next) => {
     const newEndDate = req.body.endDate ? new Date(req.body.endDate) : reservation.endDate;
 
     if (newStartDate >= newEndDate) {
-      return next(new AppError('End date must be after start date', 400));
+      return next(new AppError('Dátum ukončenia musí byť po dátume začatia', 400));
     }
 
     // Check for overlapping reservations (excluding current reservation)
@@ -253,7 +253,7 @@ const updateReservation = asyncHandler(async (req, res, next) => {
     );
 
     if (overlappingReservations.length > 0) {
-      return next(new AppError('Car is not available for the new dates', 400));
+      return next(new AppError('Vozidlo nie je dostupné pre vybrané dátumy', 400));
     }
 
     // Recalculate pricing if dates changed
@@ -298,22 +298,22 @@ const cancelReservation = asyncHandler(async (req, res, next) => {
   const reservation = await Reservation.findById(req.params.id);
 
   if (!reservation) {
-    return next(new AppError(`Reservation not found with id of ${req.params.id}`, 404));
+    return next(new AppError(`Rezervácia s ID ${req.params.id} nebola nájdená`, 404));
   }
 
   // Check authorization
   if (req.user.role === 'customer' && reservation.customer.toString() !== req.user._id.toString()) {
-    return next(new AppError('Not authorized to cancel this reservation', 403));
+    return next(new AppError('Nemáte oprávnenie na zrušenie tejto rezervácie', 403));
   }
 
   if (!reservation.canBeCancelled()) {
-    return next(new AppError('Reservation cannot be cancelled', 400));
+    return next(new AppError('Rezervácia nemôže byť zrušená', 400));
   }
 
   // Update reservation status
   reservation.status = 'cancelled';
   reservation.lastModifiedBy = req.user._id;
-  reservation.notes = req.body.reason || 'Cancelled by user';
+  reservation.notes = req.body.reason || 'Zrušená uživateľom';
   await reservation.save();
 
   // Update car status back to available
@@ -328,7 +328,7 @@ const cancelReservation = asyncHandler(async (req, res, next) => {
       payment.refunds.push({
         refundId: `demo-refund-${Date.now()}`,
         amount: payment.amount,
-        reason: 'Reservation cancelled',
+        reason: 'Rezervácia zrušená',
         status: 'succeeded',
         processedAt: new Date()
       });
@@ -349,11 +349,11 @@ const checkInReservation = asyncHandler(async (req, res, next) => {
   const reservation = await Reservation.findById(req.params.id);
 
   if (!reservation) {
-    return next(new AppError(`Reservation not found with id of ${req.params.id}`, 404));
+    return next(new AppError(`Rezervácia s ID ${req.params.id} nebola nájdená`, 404));
   }
 
   if (reservation.status !== 'confirmed') {
-    return next(new AppError('Only confirmed reservations can be checked in', 400));
+    return next(new AppError('Len potvrdené rezervácie je možné overiť', 400));
   }
 
   const { mileage, fuelLevel, condition, notes, photos } = req.body;
@@ -386,11 +386,11 @@ const checkOutReservation = asyncHandler(async (req, res, next) => {
   const reservation = await Reservation.findById(req.params.id);
 
   if (!reservation) {
-    return next(new AppError(`Reservation not found with id of ${req.params.id}`, 404));
+    return next(new AppError(`Rezervácia s ID ${req.params.id} nebola nájdená`, 404));
   }
 
   if (reservation.status !== 'ongoing') {
-    return next(new AppError('Only ongoing reservations can be checked out', 400));
+    return next(new AppError('Len prebiehajúce rezervácie je možné overiť', 400));
   }
 
   const { mileage, fuelLevel, condition, notes, photos, additionalCharges } = req.body;
@@ -517,12 +517,12 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
       .populate('payment', 'status amount paymentMethod');
 
     if (!reservation) {
-      return next(new AppError(`Reservation not found with id of ${req.params.id}`, 404));
+      return next(new AppError(`Rezervácia s ID ${req.params.id} nebola nájdená`, 404));
     }
 
     // Check authorization
     if (req.user.role === 'customer' && reservation.customer._id.toString() !== req.user._id.toString()) {
-      return next(new AppError('Not authorized to access this contract', 403));
+      return next(new AppError('Nemáte oprávnenie na prístup k tomuto potvrdeniu', 403));
     }
 
     // Create PDF document
@@ -533,7 +533,7 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
         Title: 'Potvrdenie objednávky - CarFlow',
         Author: 'CarFlow Rental System',
         Subject: 'Potvrdenie rezervácie vozidla',
-        Keywords: 'rezervacia, auto, prenajom'
+        Keywords: 'rezervácia, auto, prenájom'
       }
     });
     
@@ -564,29 +564,29 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
     const margin = 40;
     const contentWidth = pageWidth - (margin * 2);
 
-    // HEADER SECTION
+    // HEADER SECTION - Fixed layout
     // Company logo and branding
     doc.fontSize(28).font('Helvetica-Bold').fillColor('#1976D2').text('CarFlow', margin, yPos);
-    doc.fontSize(12).font('Helvetica').fillColor('#666666').text('Rental Management System', margin, yPos + 35);
+    doc.fontSize(12).font('Helvetica').fillColor('#666666').text('Systém správy prenájmu vozidiel', margin, yPos + 35);
     
-    // Document title
-    doc.fontSize(24).font('Helvetica-Bold').fillColor('#333333').text('POTVRDENIE OBJEDNAVKY', pageWidth - 300, yPos, { align: 'right' });
-    doc.fontSize(10).font('Helvetica').fillColor('#666666').text(`Cislo objednavky: ${reservation.reservationNumber}`, pageWidth - 300, yPos + 30, { align: 'right' });
-    doc.text(`Datum vytvorenia: ${new Date(reservation.createdAt).toLocaleDateString('sk-SK')}`, pageWidth - 300, yPos + 45, { align: 'right' });
+    // Document title and info - properly positioned
+    doc.fontSize(20).font('Helvetica-Bold').fillColor('#333333').text('POTVRDENIE OBJEDNÁVKY', margin + 250, yPos);
+    doc.fontSize(10).font('Helvetica').fillColor('#666666').text(`Číslo objednávky: ${reservation.reservationNumber}`, margin + 250, yPos + 25);
+    doc.text(`Dátum vytvorenia: ${new Date(reservation.createdAt).toLocaleDateString('sk-SK')}`, margin + 250, yPos + 40);
 
-    yPos += 80;
+    yPos += 70;
     addLine(margin, yPos, pageWidth - margin, yPos, '#1976D2');
     yPos += 20;
 
     // CUSTOMER INFORMATION SECTION
-    doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('INFORMACIE O ZAKAZNIKOVI', margin, yPos);
+    doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('INFORMÁCIE O ZÁKAZNÍKOVI', margin, yPos);
     yPos += 25;
 
     if (reservation.customer) {
       const customer = reservation.customer;
       
       // Customer details box
-      addBox(margin, yPos, contentWidth / 2 - 10, 120, '#F8F9FA', '#E0E0E0');
+      addBox(margin, yPos, contentWidth / 2 - 10, 100, '#F8F9FA', '#E0E0E0');
       
       doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Meno a priezvisko:', margin + 15, yPos + 15);
       doc.fontSize(11).font('Helvetica').fillColor('#666666').text(`${customer.firstName} ${customer.lastName}`, margin + 15, yPos + 30);
@@ -594,39 +594,39 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
       doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Email:', margin + 15, yPos + 50);
       doc.fontSize(11).font('Helvetica').fillColor('#666666').text(customer.email, margin + 15, yPos + 65);
       
-      doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Telefon:', margin + 15, yPos + 85);
-      doc.fontSize(11).font('Helvetica').fillColor('#666666').text(customer.phone || 'Neuvedene', margin + 15, yPos + 100);
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Telefón:', margin + 15, yPos + 80);
+      doc.fontSize(11).font('Helvetica').fillColor('#666666').text(customer.phone || 'Neuvedené', margin + 15, yPos + 95);
       
       // License info
       if (customer.licenseNumber) {
-        doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Vodicsky preukaz:', margin + contentWidth / 2 + 10, yPos + 15);
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Vodičský preukaz:', margin + contentWidth / 2 + 10, yPos + 15);
         doc.fontSize(11).font('Helvetica').fillColor('#666666').text(customer.licenseNumber, margin + contentWidth / 2 + 10, yPos + 30);
       }
     }
 
-    yPos += 140;
+    yPos += 120;
 
     // VEHICLE INFORMATION SECTION
-    doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('INFORMACIE O VOZIDLE', margin, yPos);
+    doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('INFORMÁCIE O VOZIDLE', margin, yPos);
     yPos += 25;
 
     if (reservation.car) {
       const car = reservation.car;
       
       // Vehicle details box
-      addBox(margin, yPos, contentWidth, 140, '#F8F9FA', '#E0E0E0');
+      addBox(margin, yPos, contentWidth, 120, '#F8F9FA', '#E0E0E0');
       
       // Left column
       doc.fontSize(14).font('Helvetica-Bold').fillColor('#333333').text(`${car.brand} ${car.model} (${car.year})`, margin + 15, yPos + 15);
       
-      doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Kategoria:', margin + 15, yPos + 40);
-      doc.fontSize(11).font('Helvetica').fillColor('#666666').text(car.category || 'Neuvedena', margin + 15, yPos + 55);
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Kategória:', margin + 15, yPos + 40);
+      doc.fontSize(11).font('Helvetica').fillColor('#666666').text(car.category || 'Neuvedená', margin + 15, yPos + 55);
       
-      doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Evidencne cislo:', margin + 15, yPos + 75);
-      doc.fontSize(11).font('Helvetica').fillColor('#666666').text(car.registrationNumber || 'Neuvedene', margin + 15, yPos + 90);
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Evidenčné číslo:', margin + 15, yPos + 75);
+      doc.fontSize(11).font('Helvetica').fillColor('#666666').text(car.registrationNumber || 'Neuvedené', margin + 15, yPos + 90);
       
-      doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Denna sadzba:', margin + 15, yPos + 110);
-      doc.fontSize(11).font('Helvetica').fillColor('#1976D2').text(`${car.dailyRate} EUR/den`, margin + 15, yPos + 125);
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Denná sadzba:', margin + 15, yPos + 105);
+      doc.fontSize(11).font('Helvetica').fillColor('#1976D2').text(`${car.dailyRate} EUR/deň`, margin + 15, yPos + 120);
       
       // Right column
       if (car.vin) {
@@ -640,137 +640,142 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
       }
       
       if (car.transmission) {
-        doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Prevodovka:', margin + contentWidth / 2, yPos + 110);
-        doc.fontSize(11).font('Helvetica').fillColor('#666666').text(car.transmission, margin + contentWidth / 2, yPos + 125);
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Prevodovka:', margin + contentWidth / 2, yPos + 105);
+        doc.fontSize(11).font('Helvetica').fillColor('#666666').text(car.transmission, margin + contentWidth / 2, yPos + 120);
       }
     }
 
-    yPos += 160;
+    yPos += 140;
 
     // RESERVATION DETAILS SECTION
-    doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('DETAILY REZERVACIE', margin, yPos);
+    doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('DETAILY REZERVÁCIE', margin, yPos);
     yPos += 25;
 
     // Dates and duration
-    addBox(margin, yPos, contentWidth, 100, '#F8F9FA', '#E0E0E0');
+    addBox(margin, yPos, contentWidth, 80, '#F8F9FA', '#E0E0E0');
     
     const startDate = new Date(reservation.startDate);
     const endDate = new Date(reservation.endDate);
     const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
     
-    doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Datum prevzatia:', margin + 15, yPos + 15);
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Dátum prevzatia:', margin + 15, yPos + 15);
     doc.fontSize(11).font('Helvetica').fillColor('#666666').text(startDate.toLocaleDateString('sk-SK', { 
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     }), margin + 15, yPos + 30);
     
-    doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Datum vratenia:', margin + 15, yPos + 55);
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Dátum vrátenia:', margin + 15, yPos + 50);
     doc.fontSize(11).font('Helvetica').fillColor('#666666').text(endDate.toLocaleDateString('sk-SK', { 
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-    }), margin + 15, yPos + 70);
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    }), margin + 15, yPos + 65);
     
-    doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Doba prenajmu:', margin + contentWidth / 2, yPos + 15);
-    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1976D2').text(`${duration} dni`, margin + contentWidth / 2, yPos + 35);
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Doba prenájmu:', margin + contentWidth / 2, yPos + 15);
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1976D2').text(`${duration} ${duration === 1 ? 'deň' : duration < 5 ? 'dni' : 'dní'}`, margin + contentWidth / 2, yPos + 35);
     
-    doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Status rezervacie:', margin + contentWidth / 2, yPos + 65);
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Stav rezervácie:', margin + contentWidth / 2, yPos + 55);
     const statusColors = { pending: '#FF9800', confirmed: '#2196F3', ongoing: '#4CAF50', completed: '#8BC34A', cancelled: '#F44336' };
-    const statusTexts = { pending: 'Cakajuca', confirmed: 'Potvrdena', ongoing: 'Prebieha', completed: 'Dokoncena', cancelled: 'Zrusena' };
-    doc.fontSize(11).font('Helvetica-Bold').fillColor(statusColors[reservation.status] || '#666666').text(statusTexts[reservation.status] || reservation.status, margin + contentWidth / 2, yPos + 80);
+    const statusTexts = { pending: 'Čakajúca', confirmed: 'Potvrdená', ongoing: 'Prebieha', completed: 'Dokončená', cancelled: 'Zrušená' };
+    doc.fontSize(11).font('Helvetica-Bold').fillColor(statusColors[reservation.status] || '#666666').text(statusTexts[reservation.status] || reservation.status, margin + contentWidth / 2, yPos + 70);
 
-    yPos += 120;
+    yPos += 100;
 
     // PICKUP AND RETURN LOCATIONS
-    doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('MIESTA PREVZATIA A VRATENIA', margin, yPos);
+    doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('MIESTA PREVZATIA A VRÁTENIA', margin, yPos);
     yPos += 25;
 
-    addBox(margin, yPos, contentWidth / 2 - 10, 80, '#E8F5E8', '#4CAF50');
-    addBox(margin + contentWidth / 2 + 10, yPos, contentWidth / 2 - 10, 80, '#FFF3E0', '#FF9800');
+    addBox(margin, yPos, contentWidth / 2 - 10, 70, '#E8F5E8', '#4CAF50');
+    addBox(margin + contentWidth / 2 + 10, yPos, contentWidth / 2 - 10, 70, '#FFF3E0', '#FF9800');
     
     doc.fontSize(12).font('Helvetica-Bold').fillColor('#2E7D32').text('MIESTO PREVZATIA', margin + 15, yPos + 15);
-    doc.fontSize(11).font('Helvetica').fillColor('#333333').text(reservation.pickupLocation?.name || 'Neuvedene', margin + 15, yPos + 35);
+    doc.fontSize(11).font('Helvetica').fillColor('#333333').text(reservation.pickupLocation?.name || 'Neuvedené', margin + 15, yPos + 35);
     if (reservation.pickupLocation?.address) {
       const addr = reservation.pickupLocation.address;
       doc.fontSize(10).font('Helvetica').fillColor('#666666').text(`${addr.street || ''} ${addr.city || ''} ${addr.zipCode || ''}`.trim(), margin + 15, yPos + 50);
     }
     
-    doc.fontSize(12).font('Helvetica-Bold').fillColor('#E65100').text('MIESTO VRATENIA', margin + contentWidth / 2 + 25, yPos + 15);
-    doc.fontSize(11).font('Helvetica').fillColor('#333333').text(reservation.dropoffLocation?.name || 'Neuvedene', margin + contentWidth / 2 + 25, yPos + 35);
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#E65100').text('MIESTO VRÁTENIA', margin + contentWidth / 2 + 25, yPos + 15);
+    doc.fontSize(11).font('Helvetica').fillColor('#333333').text(reservation.dropoffLocation?.name || 'Neuvedené', margin + contentWidth / 2 + 25, yPos + 35);
     if (reservation.dropoffLocation?.address) {
       const addr = reservation.dropoffLocation.address;
       doc.fontSize(10).font('Helvetica').fillColor('#666666').text(`${addr.street || ''} ${addr.city || ''} ${addr.zipCode || ''}`.trim(), margin + contentWidth / 2 + 25, yPos + 50);
     }
 
-    yPos += 100;
+    yPos += 90;
 
-    // PRICING BREAKDOWN
-    doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('CENOVE UDAJE', margin, yPos);
+    // PRICING BREAKDOWN - Fixed to stay on one page
+    doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('CENOVÉ ÚDAJE', margin, yPos);
     yPos += 25;
 
     if (reservation.pricing) {
-      addBox(margin, yPos, contentWidth, 120, '#F8F9FA', '#E0E0E0');
+      const pricingHeight = 100; // Fixed height for pricing section
+      addBox(margin, yPos, contentWidth, pricingHeight, '#F8F9FA', '#E0E0E0');
       
       const pricing = reservation.pricing;
       
-      doc.fontSize(12).font('Helvetica').fillColor('#333333').text('Zakladna cena:', margin + 15, yPos + 15);
+      doc.fontSize(12).font('Helvetica').fillColor('#333333').text('Základná cena:', margin + 15, yPos + 15);
       doc.fontSize(12).font('Helvetica').fillColor('#333333').text(`${(pricing.subtotal || 0).toFixed(2)} EUR`, pageWidth - margin - 100, yPos + 15);
       
       doc.fontSize(12).font('Helvetica').fillColor('#333333').text('DPH (20%):', margin + 15, yPos + 35);
       doc.fontSize(12).font('Helvetica').fillColor('#333333').text(`${(pricing.taxes || 0).toFixed(2)} EUR`, pageWidth - margin - 100, yPos + 35);
       
       if (pricing.fees && pricing.fees.length > 0) {
+        let feeYPos = yPos + 55;
         pricing.fees.forEach((fee, index) => {
-          doc.fontSize(12).font('Helvetica').fillColor('#333333').text(`${fee.name}:`, margin + 15, yPos + 55 + (index * 20));
-          doc.fontSize(12).font('Helvetica').fillColor('#333333').text(`${(fee.amount || 0).toFixed(2)} EUR`, pageWidth - margin - 100, yPos + 55 + (index * 20));
+          if (feeYPos < yPos + 75) { // Ensure fees don't overflow the box
+            doc.fontSize(12).font('Helvetica').fillColor('#333333').text(`${fee.name}:`, margin + 15, feeYPos);
+            doc.fontSize(12).font('Helvetica').fillColor('#333333').text(`${(fee.amount || 0).toFixed(2)} EUR`, pageWidth - margin - 100, feeYPos);
+            feeYPos += 20;
+          }
         });
       }
       
-      addLine(margin + 15, yPos + 85, pageWidth - margin - 15, yPos + 85, '#1976D2');
+      addLine(margin + 15, yPos + 75, pageWidth - margin - 15, yPos + 75, '#1976D2');
       
-      doc.fontSize(14).font('Helvetica-Bold').fillColor('#1976D2').text('CELKOVA SUMA:', margin + 15, yPos + 95);
-      doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text(`${(pricing.totalAmount || 0).toFixed(2)} EUR`, pageWidth - margin - 100, yPos + 95);
+      doc.fontSize(14).font('Helvetica-Bold').fillColor('#1976D2').text('CELKOVÁ SUMA:', margin + 15, yPos + 85);
+      doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text(`${(pricing.totalAmount || 0).toFixed(2)} EUR`, pageWidth - margin - 100, yPos + 85);
+      
+      yPos += pricingHeight + 20;
     }
-
-    yPos += 140;
 
     // PAYMENT INFORMATION
     if (reservation.payment) {
-      doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('INFORMACIE O PLATBE', margin, yPos);
+      doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('INFORMÁCIE O PLATBE', margin, yPos);
       yPos += 25;
       
-      addBox(margin, yPos, contentWidth, 60, '#F8F9FA', '#E0E0E0');
+      addBox(margin, yPos, contentWidth, 50, '#F8F9FA', '#E0E0E0');
       
       const payment = reservation.payment;
       const paymentStatusColors = { pending: '#FF9800', succeeded: '#4CAF50', failed: '#F44336' };
-      const paymentStatusTexts = { pending: 'Cakajuca', succeeded: 'Uspesna', failed: 'Neuspesna' };
+      const paymentStatusTexts = { pending: 'Čakajúca', succeeded: 'Úspešná', failed: 'Neúspešná' };
       
-      doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Status platby:', margin + 15, yPos + 15);
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Stav platby:', margin + 15, yPos + 15);
       doc.fontSize(11).font('Helvetica-Bold').fillColor(paymentStatusColors[payment.status] || '#666666').text(paymentStatusTexts[payment.status] || payment.status, margin + 15, yPos + 30);
       
       if (payment.paymentMethod?.type) {
-        const methodTexts = { card: 'Platobna karta', bank_transfer: 'Bankovy prevod', cash: 'Hotovost' };
-        doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Sposob platby:', margin + contentWidth / 2, yPos + 15);
+        const methodTexts = { card: 'Platobná karta', bank_transfer: 'Bankový prevod', cash: 'Hotovosť' };
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Spôsob platby:', margin + contentWidth / 2, yPos + 15);
         doc.fontSize(11).font('Helvetica').fillColor('#666666').text(methodTexts[payment.paymentMethod.type] || payment.paymentMethod.type, margin + contentWidth / 2, yPos + 30);
       }
       
-      yPos += 80;
+      yPos += 70;
     }
 
     // ADDITIONAL INFORMATION
     if (reservation.specialRequests || (reservation.additionalDrivers && reservation.additionalDrivers.length > 0)) {
-      doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('DOPLNUJUCE INFORMACIE', margin, yPos);
+      doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('DOPLŇUJÚCE INFORMÁCIE', margin, yPos);
       yPos += 25;
       
       if (reservation.specialRequests) {
-        doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Specialne poziadavky:', margin, yPos);
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Špeciálne požiadavky:', margin, yPos);
         yPos += 15;
         doc.fontSize(11).font('Helvetica').fillColor('#666666').text(reservation.specialRequests, margin, yPos, { width: contentWidth });
         yPos += 30;
       }
       
       if (reservation.additionalDrivers && reservation.additionalDrivers.length > 0) {
-        doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Doplnkovi vodicii:', margin, yPos);
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Doplnkoví vodiči:', margin, yPos);
         yPos += 15;
         reservation.additionalDrivers.forEach((driver, index) => {
-          doc.fontSize(11).font('Helvetica').fillColor('#666666').text(`${index + 1}. ${driver.firstName} ${driver.lastName} (${driver.licenseNumber || 'bez udajov'})`, margin, yPos);
+          doc.fontSize(11).font('Helvetica').fillColor('#666666').text(`${index + 1}. ${driver.firstName} ${driver.lastName} (${driver.licenseNumber || 'bez údajov'})`, margin, yPos);
           yPos += 15;
         });
         yPos += 15;
@@ -778,20 +783,20 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
     }
 
     // FOOTER
-    yPos = doc.page.height - 100;
+    yPos = doc.page.height - 80;
     addLine(margin, yPos, pageWidth - margin, yPos, '#1976D2');
     yPos += 15;
     
-    doc.fontSize(10).font('Helvetica').fillColor('#666666').text('CarFlow Rental Management System', margin, yPos);
+    doc.fontSize(10).font('Helvetica').fillColor('#666666').text('CarFlow - Systém správy prenájmu vozidiel', margin, yPos);
     doc.text('Email: info@carflow.sk | Tel: +421 123 456 789', margin, yPos + 15);
-    doc.text(`Vygenerovane: ${new Date().toLocaleDateString('sk-SK')} ${new Date().toLocaleTimeString('sk-SK')}`, pageWidth - 200, yPos, { align: 'right' });
-    doc.text('Dakujeme za vasu objednavku!', pageWidth - 200, yPos + 15, { align: 'right' });
+    doc.text(`Vygenerované: ${new Date().toLocaleDateString('sk-SK')} ${new Date().toLocaleTimeString('sk-SK')}`, pageWidth - 200, yPos, { align: 'right' });
+    doc.text('Ďakujeme za vašu objednávku!', pageWidth - 200, yPos + 15, { align: 'right' });
 
     // Finalize PDF
     doc.end();
   } catch (error) {
-    console.error('Reservation PDF Generation Error:', error);
-    return next(new AppError('Error generating reservation contract PDF', 500));
+    console.error('Chyba pri generovaní PDF potvrdenia rezervácie:', error);
+    return next(new AppError('Chyba pri generovaní PDF potvrdenia rezervácie', 500));
   }
 });
 
