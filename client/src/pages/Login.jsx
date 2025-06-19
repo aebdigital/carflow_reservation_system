@@ -35,18 +35,6 @@ const demoAccounts = [
     password: 'admin123',
     description: t('fullAccess'),
   },
-  {
-    role: `${t('customer')} - John`,
-    email: 'john@example.com',
-    password: 'customer123',
-    description: t('customerAccess'),
-  },
-  {
-    role: `${t('customer')} - Jane`,
-    email: 'jane@example.com',
-    password: 'customer123',
-    description: t('customerAccess'),
-  },
 ]
 
 function Login() {

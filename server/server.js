@@ -40,6 +40,7 @@ const publicLimiter = rateLimit({
 const allowedOrigins = [
   'https://carflow-reservation-admin.netlify.app',
   'https://carflowdemowebsite.netlify.app',
+  'https://admindemo.carflow.sk',
   'http://localhost:5173',
   'http://localhost:3000',
   'http://localhost:3005'
