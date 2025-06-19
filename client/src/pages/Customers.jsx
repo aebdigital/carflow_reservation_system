@@ -205,30 +205,30 @@ function Customers() {
   const validateForm = () => {
     const errors = {}
     
-    if (!formData.firstName.trim()) errors.firstName = t('firstNameRequired')
-    if (!formData.lastName.trim()) errors.lastName = t('lastNameRequired')
-    if (!formData.email.trim()) errors.email = t('emailRequired')
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = t('emailInvalid')
+    if (!formData.firstName.trim()) errors.firstName = 'Meno je povinné'
+    if (!formData.lastName.trim()) errors.lastName = 'Priezvisko je povinné'
+    if (!formData.email.trim()) errors.email = 'Email je povinný'
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = 'Neplatný email formát'
     
     // Phone number validation to match server regex: /^[\+]?[1-9][\d]{0,15}$/
     if (!formData.phone.trim()) {
-      errors.phone = t('phoneRequired')
+      errors.phone = 'Telefónne číslo je povinné'
     } else if (!/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.trim())) {
-      errors.phone = t('phoneInvalid')
+      errors.phone = 'Neplatný formát telefónneho čísla'
     }
     
     // Password is required for new users
     if (dialogMode === 'create' && !formData.password.trim()) {
-      errors.password = 'Password is required'
+      errors.password = 'Heslo je povinné'
     } else if (formData.password && formData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters'
+      errors.password = 'Heslo musí mať aspoň 6 znakov'
     }
     
     // Customer-specific validations
     if (formData.role === 'customer') {
-      if (!formData.licenseNumber.trim()) errors.licenseNumber = 'License number is required for customers'
-      if (!formData.licenseExpiry) errors.licenseExpiry = 'License expiry date is required for customers'
-      if (!formData.dateOfBirth) errors.dateOfBirth = 'Date of birth is required for customers'
+      if (!formData.licenseNumber.trim()) errors.licenseNumber = 'Číslo vodičského preukazu je povinné pre zákazníkov'
+      if (!formData.licenseExpiry) errors.licenseExpiry = 'Platnosť vodičského preukazu je povinná pre zákazníkov'
+      if (!formData.dateOfBirth) errors.dateOfBirth = 'Dátum narodenia je povinný pre zákazníkov'
     }
 
     setFormErrors(errors)
@@ -262,13 +262,13 @@ function Customers() {
       // For customers, ensure required fields are present
       if (customerData.role === 'customer') {
         if (!customerData.dateOfBirth) {
-          throw new Error('Date of birth is required for customers')
+          throw new Error('Dátum narodenia je povinný pre zákazníkov')
         }
         if (!customerData.licenseExpiry) {
-          throw new Error('License expiry is required for customers')
+          throw new Error('Platnosť vodičského preukazu je povinná pre zákazníkov')
         }
         if (!customerData.licenseNumber) {
-          throw new Error('License number is required for customers')
+          throw new Error('Číslo vodičského preukazu je povinné pre zákazníkov')
         }
       }
 
@@ -331,7 +331,7 @@ function Customers() {
 
   // Action handlers
   const handleBlacklist = async (customer) => {
-    const reason = prompt('Enter reason for blacklisting this customer:')
+    const reason = prompt('Zadajte dôvod zaradenia tohto zákazníka na čiernu listinu:')
     if (reason) {
       try {
         await blacklistUser({ 
@@ -340,7 +340,7 @@ function Customers() {
         }).unwrap()
       } catch (error) {
         console.error('Error blacklisting customer:', error)
-        alert('Failed to blacklist customer')
+        alert('Nepodarilo sa zaradiť zákazníka na čiernu listinu')
       }
     }
   }
@@ -569,54 +569,40 @@ function Customers() {
         fullWidth
       >
         <DialogTitle>
-          {dialogMode === 'create' ? 'Add New Customer' : 
-           dialogMode === 'edit' ? 'Edit Customer' : 'Customer Details'}
+          {dialogMode === 'create' ? 'Pridať nového zákazníka' :
+           dialogMode === 'edit' ? 'Upraviť zákazníka' : 'Detaily zákazníka'}
         </DialogTitle>
         <DialogContent>
           {dialogMode === 'view' && selectedCustomer ? (
             <Grid container spacing={3} sx={{ mt: 1 }}>
-              <Grid item xs={12}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                  <Avatar sx={{ bgcolor: 'primary.main', width: 64, height: 64, fontSize: '1.5rem' }}>
-                    {selectedCustomer.firstName?.[0]}{selectedCustomer.lastName?.[0]}
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h5">
-                      {selectedCustomer.firstName} {selectedCustomer.lastName}
-                    </Typography>
-                    <Chip
-                      label={getStatusText(selectedCustomer.status)}
-                      color={getStatusColor(selectedCustomer.status)}
-                      size="small"
-                    />
-                  </Box>
-                </Box>
-              </Grid>
               <Grid item xs={12} md={6}>
-                <Typography variant="h6" gutterBottom>Contact Information</Typography>
+                <Typography variant="h6" gutterBottom>Osobné informácie</Typography>
+                <Typography variant="body1" fontWeight="medium" gutterBottom>
+                  {selectedCustomer.firstName} {selectedCustomer.lastName}
+                </Typography>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
                   Email: {selectedCustomer.email}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Phone: {selectedCustomer.phone || 'Not provided'}
+                  Telefón: {selectedCustomer.phone || 'Neuvedené'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Member since: {selectedCustomer.createdAt ? new Date(selectedCustomer.createdAt).toLocaleDateString() : 'N/A'}
+                  Člen od: {selectedCustomer.createdAt ? new Date(selectedCustomer.createdAt).toLocaleDateString() : 'N/A'}
                 </Typography>
               </Grid>
               <Grid item xs={12} md={6}>
-                <Typography variant="h6" gutterBottom>License Information</Typography>
+                <Typography variant="h6" gutterBottom>Informácie o vodičskom preukaze</Typography>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
-                  License Number: {selectedCustomer.licenseNumber || 'Not provided'}
+                  Číslo preukazu: {selectedCustomer.licenseNumber || 'Neuvedené'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  License Expiry: {selectedCustomer.licenseExpiry ? new Date(selectedCustomer.licenseExpiry).toLocaleDateString() : 'Not provided'}
+                  Platnosť preukazu: {selectedCustomer.licenseExpiry ? new Date(selectedCustomer.licenseExpiry).toLocaleDateString() : 'Neuvedené'}
                 </Typography>
               </Grid>
               <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom>Booking Statistics</Typography>
+                <Typography variant="h6" gutterBottom>Štatistiky rezervácií</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Total Reservations: {getCustomerReservationCount(selectedCustomer._id)}
+                  Celkom rezervácií: {getCustomerReservationCount(selectedCustomer._id)}
                 </Typography>
               </Grid>
             </Grid>
@@ -625,13 +611,13 @@ function Customers() {
               {/* Personal Information */}
               <Grid item xs={12}>
                 <Typography variant="h6" gutterBottom>
-                  Personal Information
+                  Osobné informácie
                 </Typography>
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="First Name"
+                  label="Meno"
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                   disabled={dialogMode === 'view'}
@@ -643,7 +629,7 @@ function Customers() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Last Name"
+                  label="Priezvisko"
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                   disabled={dialogMode === 'view'}
@@ -668,13 +654,13 @@ function Customers() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Phone Number"
-                  placeholder="e.g., +1234567890 or 1234567890"
+                  label="Telefónne číslo"
+                  placeholder="napr., +421123456789 alebo 0901123456"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: formatPhoneNumber(e.target.value) })}
                   disabled={dialogMode === 'view'}
                   error={!!formErrors.phone}
-                  helperText={formErrors.phone || 'Format: +1234567890 or 1234567890 (no spaces/dashes)'}
+                  helperText={formErrors.phone || 'Formát: +421123456789 alebo 0901123456 (bez medzier/pomlčiek)'}
                   required
                 />
               </Grid>
@@ -682,7 +668,7 @@ function Customers() {
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
-                    label="Password"
+                    label="Heslo"
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -696,7 +682,7 @@ function Customers() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Date of Birth"
+                  label="Dátum narodenia"
                   type="date"
                   value={formData.dateOfBirth || ''}
                   onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
@@ -711,17 +697,17 @@ function Customers() {
               </Grid>
               <Grid item xs={12} md={6}>
                 <FormControl fullWidth>
-                  <InputLabel>Status</InputLabel>
+                  <InputLabel>Stav</InputLabel>
                   <Select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                     disabled={dialogMode === 'view'}
-                    label="Status"
+                    label="Stav"
                   >
-                    <MenuItem value="active">Active</MenuItem>
-                    <MenuItem value="inactive">Inactive</MenuItem>
-                    <MenuItem value="pending">Pending</MenuItem>
-                    <MenuItem value="blacklisted">Blacklisted</MenuItem>
+                    <MenuItem value="active">Aktívny</MenuItem>
+                    <MenuItem value="inactive">Neaktívny</MenuItem>
+                    <MenuItem value="pending">Čakajúci</MenuItem>
+                    <MenuItem value="blacklisted">Na čiernej listine</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
@@ -729,13 +715,13 @@ function Customers() {
               {/* License Information */}
               <Grid item xs={12}>
                 <Typography variant="h6" gutterBottom>
-                  License Information
+                  Informácie o vodičskom preukaze
                 </Typography>
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="License Number"
+                  label="Číslo vodičského preukazu"
                   value={formData.licenseNumber}
                   onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
                   disabled={dialogMode === 'view'}
@@ -747,7 +733,7 @@ function Customers() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="License Expiry"
+                  label="Platnosť preukazu"
                   type="date"
                   value={formData.licenseExpiry || ''}
                   onChange={(e) => setFormData({ ...formData, licenseExpiry: e.target.value })}
@@ -764,13 +750,13 @@ function Customers() {
               {/* Address Information */}
               <Grid item xs={12}>
                 <Typography variant="h6" gutterBottom>
-                  Address Information
+                  Adresa
                 </Typography>
               </Grid>
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Street Address"
+                  label="Ulica a číslo"
                   value={formData.address.street}
                   onChange={(e) => setFormData({
                     ...formData,
@@ -782,7 +768,7 @@ function Customers() {
               <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
-                  label="City"
+                  label="Mesto"
                   value={formData.address.city}
                   onChange={(e) => setFormData({
                     ...formData,
@@ -794,7 +780,7 @@ function Customers() {
               <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
-                  label="State"
+                  label="Región/Kraj"
                   value={formData.address.state}
                   onChange={(e) => setFormData({
                     ...formData,
@@ -806,7 +792,7 @@ function Customers() {
               <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
-                  label="Country"
+                  label="Krajina"
                   value={formData.address.country}
                   onChange={(e) => setFormData({
                     ...formData,
@@ -819,13 +805,13 @@ function Customers() {
               {/* Emergency Contact */}
               <Grid item xs={12}>
                 <Typography variant="h6" gutterBottom>
-                  Emergency Contact
+                  Núdzový kontakt
                 </Typography>
               </Grid>
               <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
-                  label="Emergency Contact Name"
+                  label="Meno núdzového kontaktu"
                   value={formData.emergencyContact.name}
                   onChange={(e) => setFormData({
                     ...formData,
@@ -837,7 +823,7 @@ function Customers() {
               <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
-                  label="Relationship"
+                  label="Vzťah"
                   value={formData.emergencyContact.relationship}
                   onChange={(e) => setFormData({
                     ...formData,
@@ -849,7 +835,7 @@ function Customers() {
               <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
-                  label="Emergency Contact Phone"
+                  label="Telefón núdzového kontaktu"
                   value={formData.emergencyContact.phone}
                   onChange={(e) => setFormData({
                     ...formData,
@@ -863,7 +849,7 @@ function Customers() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>
-            {dialogMode === 'view' ? 'Close' : 'Cancel'}
+            {dialogMode === 'view' ? 'Zavrieť' : 'Zrušiť'}
           </Button>
           {dialogMode !== 'view' && (
             <Button
@@ -872,7 +858,7 @@ function Customers() {
               disabled={creating || updating}
             >
               {creating || updating ? <CircularProgress size={20} /> : 
-               dialogMode === 'create' ? 'Add Customer' : 'Update Customer'}
+               dialogMode === 'create' ? 'Pridať zákazníka' : 'Aktualizovať zákazníka'}
             </Button>
           )}
         </DialogActions>
