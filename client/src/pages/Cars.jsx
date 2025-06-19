@@ -244,6 +244,70 @@ function Cars() {
     setImagePreviewUrls(prev => prev.filter((_, i) => i !== index))
   }
 
+  // Handle deleting existing car images
+  const handleDeleteExistingImage = async (imageIndex) => {
+    if (!selectedCar || !selectedCar._id) return
+    
+    try {
+      await deleteCarImage({ 
+        carId: selectedCar._id, 
+        imageIndex: imageIndex 
+      }).unwrap()
+      
+      // Update the selected car's images in the local state
+      setSelectedCar(prev => ({
+        ...prev,
+        images: prev.images.filter((_, index) => index !== imageIndex)
+      }))
+      
+      // Also update the form data if we're editing
+      if (dialogMode === 'edit') {
+        setFormData(prev => ({
+          ...prev,
+          images: prev.images ? prev.images.filter((_, index) => index !== imageIndex) : []
+        }))
+      }
+    } catch (error) {
+      console.error('Error deleting image:', error)
+      alert('Chyba pri mazaní obrázka. Skúste to znova.')
+    }
+  }
+
+  // Handle setting primary image
+  const handleSetPrimaryImage = async (imageIndex) => {
+    if (!selectedCar || !selectedCar._id) return
+    
+    try {
+      await setPrimaryCarImage({ 
+        carId: selectedCar._id, 
+        imageIndex: imageIndex 
+      }).unwrap()
+      
+      // Update the selected car's images in the local state
+      setSelectedCar(prev => ({
+        ...prev,
+        images: prev.images.map((img, index) => ({
+          ...img,
+          isPrimary: index === imageIndex
+        }))
+      }))
+      
+      // Also update the form data if we're editing
+      if (dialogMode === 'edit') {
+        setFormData(prev => ({
+          ...prev,
+          images: prev.images ? prev.images.map((img, index) => ({
+            ...img,
+            isPrimary: index === imageIndex
+          })) : []
+        }))
+      }
+    } catch (error) {
+      console.error('Error setting primary image:', error)
+      alert('Chyba pri nastavovaní primárneho obrázka. Skúste to znova.')
+    }
+  }
+
   // Form validation
   const validateForm = () => {
     const errors = {}
@@ -1337,6 +1401,11 @@ function Cars() {
                   {/* Existing Images for Edit/View Mode */}
                   <Typography variant="subtitle1" gutterBottom>
                     {dialogMode === 'edit' ? 'Existujúce obrázky' : t('images')}
+                    {selectedCar?.images && selectedCar.images.length > 0 && (
+                      <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                        ({selectedCar.images.length}/10)
+                      </Typography>
+                    )}
                   </Typography>
                   {selectedCar?.images && selectedCar.images.length > 0 ? (
                     <ImageList sx={{ width: '100%' }} cols={3} rowHeight={164}>
@@ -1352,12 +1421,47 @@ function Cars() {
                             title={image.isPrimary ? `${t('images')} (Primárny)` : `${t('images')} ${index + 1}`}
                             subtitle={image.description}
                             actionIcon={
-                              <IconButton
-                                sx={{ color: 'rgba(255, 255, 255, 0.54)' }}
-                                aria-label="info"
-                              >
-                                {image.isPrimary ? <StarIcon /> : <StarBorderIcon />}
-                              </IconButton>
+                              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                {dialogMode === 'edit' && (
+                                  <>
+                                    <Tooltip title={image.isPrimary ? "Už je primárny" : "Nastaviť ako primárny"}>
+                                      <IconButton
+                                        sx={{ 
+                                          color: image.isPrimary ? '#ffc107' : 'rgba(255, 255, 255, 0.54)',
+                                          '&:hover': { color: '#ffc107' }
+                                        }}
+                                        onClick={() => !image.isPrimary && handleSetPrimaryImage(index)}
+                                        disabled={image.isPrimary}
+                                      >
+                                        <StarIcon />
+                                      </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="Odstrániť obrázok">
+                                      <IconButton
+                                        sx={{ 
+                                          color: 'rgba(255, 255, 255, 0.54)',
+                                          '&:hover': { color: '#f44336' }
+                                        }}
+                                        onClick={() => {
+                                          if (window.confirm('Naozaj chcete odstrániť tento obrázok?')) {
+                                            handleDeleteExistingImage(index)
+                                          }
+                                        }}
+                                      >
+                                        <DeleteIcon />
+                                      </IconButton>
+                                    </Tooltip>
+                                  </>
+                                )}
+                                {dialogMode === 'view' && (
+                                  <IconButton
+                                    sx={{ color: image.isPrimary ? '#ffc107' : 'rgba(255, 255, 255, 0.54)' }}
+                                    disabled
+                                  >
+                                    {image.isPrimary ? <StarIcon /> : <StarBorderIcon />}
+                                  </IconButton>
+                                )}
+                              </Box>
                             }
                           />
                         </ImageListItem>

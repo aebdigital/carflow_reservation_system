@@ -36,8 +36,8 @@ router.route('/:id')
 router.get('/:id/availability', protect, getCarAvailability);
 
 // Image management routes
-router.post('/:id/images', protect, requireAdmin, uploadMultipleCarImages, handleMulterError, uploadCarImages);
-router.delete('/:id/images/:imageIndex', protect, requireAdmin, deleteCarImage);
-router.put('/:id/images/:imageIndex/primary', protect, requireAdmin, setPrimaryImage);
+router.post('/:id/images', protect, requireStaff, uploadMultipleCarImages, handleMulterError, uploadCarImages);
+router.delete('/:id/images/:imageIndex', protect, requireStaff, deleteCarImage);
+router.put('/:id/images/:imageIndex/primary', protect, requireStaff, setPrimaryImage);
 
 module.exports = router; 
