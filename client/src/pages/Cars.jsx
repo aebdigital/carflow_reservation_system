@@ -532,7 +532,7 @@ function Cars() {
         if (selectedImages.length > 0) {
           // Update with images
           const formDataToSend = new FormData();
-          formDataToSend.append('id', selectedCar._id);
+          formDataToSend.append('id', selectedCar._id); // Add ID to FormData
           
           Object.keys(formData).forEach(key => {
             if (key === 'location' || key === 'maintenance' || key === 'insurance') {
@@ -566,11 +566,34 @@ function Cars() {
           alert('Auto bolo úspešne aktualizované!');
           
         } else {
-          // Regular update without images
-          const result = await updateCar({ 
-            id: selectedCar._id, 
-            updates: formData 
-          }).unwrap();
+          // Regular update without images - use FormData for consistency
+          const formDataToSend = new FormData();
+          formDataToSend.append('id', selectedCar._id); // Add ID to FormData
+          
+          Object.keys(formData).forEach(key => {
+            if (key === 'location' || key === 'maintenance' || key === 'insurance') {
+              // Handle nested objects
+              Object.keys(formData[key]).forEach(nestedKey => {
+                if (key === 'location' && nestedKey === 'address') {
+                  // Handle nested address object
+                  Object.keys(formData[key][nestedKey]).forEach(addressKey => {
+                    formDataToSend.append(`${key}[${nestedKey}][${addressKey}]`, formData[key][nestedKey][addressKey]);
+                  });
+                } else {
+                  formDataToSend.append(`${key}[${nestedKey}]`, formData[key][nestedKey]);
+                }
+              });
+            } else if (key === 'features') {
+              // Handle array
+              formData[key].forEach(feature => {
+                formDataToSend.append('features[]', feature);
+              });
+            } else {
+              formDataToSend.append(key, formData[key]);
+            }
+          });
+          
+          const result = await updateCar(formDataToSend).unwrap();
           console.log('✅ Car updated successfully:', result);
           alert('Auto bolo úspešne aktualizované!');
         }
