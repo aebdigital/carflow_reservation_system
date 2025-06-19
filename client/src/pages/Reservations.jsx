@@ -411,8 +411,8 @@ function Reservations() {
                     <TableCell>Zákazník</TableCell>
                     <TableCell>Auto</TableCell>
                     <TableCell>Vytvorené</TableCell>
-                    <TableCell>{t('startDate')}</TableCell>
-                    <TableCell>{t('endDate')}</TableCell>
+                    <TableCell>Začiatok prenájmu</TableCell>
+                    <TableCell>Koniec prenájmu</TableCell>
                     <TableCell>{t('status')}</TableCell>
                     <TableCell>Celkom</TableCell>
                     <TableCell>Akcie</TableCell>
@@ -589,8 +589,8 @@ function Reservations() {
                     <TableCell>Zákazník</TableCell>
                     <TableCell>Auto</TableCell>
                     <TableCell>Vytvorené</TableCell>
-                    <TableCell>{t('startDate')}</TableCell>
-                    <TableCell>{t('endDate')}</TableCell>
+                    <TableCell>Začiatok prenájmu</TableCell>
+                    <TableCell>Koniec prenájmu</TableCell>
                     <TableCell>{t('status')}</TableCell>
                     <TableCell>Celkom</TableCell>
                     <TableCell>Akcie</TableCell>
@@ -721,8 +721,8 @@ function Reservations() {
                     <TableCell>Zákazník</TableCell>
                     <TableCell>Auto</TableCell>
                     <TableCell>Vytvorené</TableCell>
-                    <TableCell>{t('startDate')}</TableCell>
-                    <TableCell>{t('endDate')}</TableCell>
+                    <TableCell>Začiatok prenájmu</TableCell>
+                    <TableCell>Koniec prenájmu</TableCell>
                     <TableCell>{t('status')}</TableCell>
                     <TableCell>Celkom</TableCell>
                     <TableCell>Akcie</TableCell>
@@ -860,9 +860,9 @@ function Reservations() {
                     <TableCell>Rezervácia #</TableCell>
                     <TableCell>Zákazník</TableCell>
                     <TableCell>Auto</TableCell>
-                    <TableCell>{t('startDate')}</TableCell>
-                    <TableCell>{t('endDate')}</TableCell>
                     <TableCell>Vytvorené</TableCell>
+                    <TableCell>Začiatok prenájmu</TableCell>
+                    <TableCell>Koniec prenájmu</TableCell>
                     <TableCell>{t('status')}</TableCell>
                     <TableCell>Celkom</TableCell>
                     <TableCell>Akcie</TableCell>
@@ -1058,7 +1058,7 @@ function Reservations() {
                             Kategória: {selectedReservation.car.category}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            Denná sadzba: {selectedReservation.car.dailyRate}€
+                            Denná sadzba: {selectedReservation.car.dailyRate}€/deň
                           </Typography>
                         </>
                       ) : (
@@ -1078,12 +1078,12 @@ function Reservations() {
                         {t('rentalPeriod')}
                       </Typography>
                       <Typography variant="body2" gutterBottom>
-                        <strong>{t('startDate')}:</strong> {new Date(selectedReservation.startDate).toLocaleDateString('sk-SK', { 
+                        <strong>Začiatok prenájmu:</strong> {new Date(selectedReservation.startDate).toLocaleDateString('sk-SK', { 
                           weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
                         })}
                       </Typography>
                       <Typography variant="body2" gutterBottom>
-                        <strong>{t('endDate')}:</strong> {new Date(selectedReservation.endDate).toLocaleDateString('sk-SK', { 
+                        <strong>Koniec prenájmu:</strong> {new Date(selectedReservation.endDate).toLocaleDateString('sk-SK', { 
                           weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
                         })}
                       </Typography>
@@ -1614,7 +1614,7 @@ function Reservations() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label={t('startDate')}
+                  label="Začiatok prenájmu"
                   type="date"
                   value={formData.startDate ? formData.startDate.toISOString().split('T')[0] : ''}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value ? new Date(e.target.value) : null })}
@@ -1631,7 +1631,7 @@ function Reservations() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label={t('endDate')}
+                  label="Koniec prenájmu"
                   type="date"
                   value={formData.endDate ? formData.endDate.toISOString().split('T')[0] : ''}
                   onChange={(e) => setFormData({ ...formData, endDate: e.target.value ? new Date(e.target.value) : null })}
