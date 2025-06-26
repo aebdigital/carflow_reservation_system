@@ -1,9 +1,14 @@
 const mongoose = require('mongoose');
 
 const reservationSchema = new mongoose.Schema({
+  // Tenant separation - each reservation belongs to a specific tenant
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    index: true
+  },
   reservationNumber: {
     type: String,
-    unique: true,
     required: true
   },
   customer: {
@@ -196,34 +201,18 @@ const reservationSchema = new mongoose.Schema({
 });
 
 // Indexes for better performance
-reservationSchema.index({ reservationNumber: 1 });
-reservationSchema.index({ customer: 1 });
-reservationSchema.index({ car: 1 });
-reservationSchema.index({ status: 1 });
-reservationSchema.index({ startDate: 1, endDate: 1 });
+reservationSchema.index({ tenantId: 1, reservationNumber: 1 }, { unique: true });
+reservationSchema.index({ tenantId: 1, customer: 1 });
+reservationSchema.index({ tenantId: 1, car: 1 });
+reservationSchema.index({ tenantId: 1, status: 1 });
+reservationSchema.index({ tenantId: 1, startDate: 1, endDate: 1 });
+reservationSchema.index({ tenantId: 1, createdAt: 1 });
 
-// Pre-save middleware to generate reservation number
-reservationSchema.pre('validate', async function(next) {
-  if (!this.reservationNumber) {
-    try {
-      // Use timestamp + random number for uniqueness
-      const timestamp = Date.now().toString().slice(-6);
-      const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-      this.reservationNumber = `RES${timestamp}${random}`;
-      
-      // Check if this number already exists and regenerate if needed
-      const existing = await this.constructor.findOne({ reservationNumber: this.reservationNumber });
-      if (existing) {
-        // Very unlikely, but regenerate if collision occurs
-        const newRandom = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-        this.reservationNumber = `RES${timestamp}${newRandom}`;
-      }
-    } catch (error) {
-      console.error('Error generating reservation number:', error);
-      // Fallback to simple counter
-      const count = await this.constructor.countDocuments();
-      this.reservationNumber = `RES${String(count + 1).padStart(6, '0')}`;
-    }
+// Generate unique reservation number scoped to tenant
+reservationSchema.pre('save', async function(next) {
+  if (this.isNew && !this.reservationNumber) {
+    const count = await this.constructor.countDocuments({ tenantId: this.tenantId });
+    this.reservationNumber = `${this.tenantId.toString().slice(-6).toUpperCase()}-${(count + 1).toString().padStart(6, '0')}`;
   }
   next();
 });

@@ -38,6 +38,19 @@ const userSchema = new mongoose.Schema({
     enum: ['customer', 'admin', 'staff'],
     default: 'customer'
   },
+  // Tenant separation - each user belongs to a tenant organization
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    index: true
+  },
+  // Storage folder path for user-specific files
+  storageFolder: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true
+  },
   licenseNumber: {
     type: String,
     required: function() { return this.role === 'customer'; },
@@ -86,9 +99,28 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ email: 1 });
 userSchema.index({ licenseNumber: 1 });
 userSchema.index({ role: 1 });
+// Compound index for tenant-based queries
+userSchema.index({ tenantId: 1, role: 1 });
+userSchema.index({ tenantId: 1, isActive: 1 });
 
-// Hash password before saving
+// Generate unique storage folder path before saving
 userSchema.pre('save', async function(next) {
+  // Generate tenantId and storageFolder for new users
+  if (this.isNew) {
+    // For admin users, they become their own tenant
+    if (this.role === 'admin') {
+      this.tenantId = this._id;
+    } else {
+      // For other users, assign them to an existing tenant or create new one
+      // For now, each user gets their own tenant for complete separation
+      this.tenantId = this._id;
+    }
+    
+    // Generate unique storage folder path
+    this.storageFolder = `tenant-${this.tenantId}/user-${this._id}`;
+  }
+  
+  // Hash password if modified
   if (!this.isModified('password')) return next();
   
   try {
@@ -109,6 +141,11 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 userSchema.virtual('fullName').get(function() {
   return `${this.firstName} ${this.lastName}`;
 });
+
+// Get tenant-scoped query filter
+userSchema.methods.getTenantFilter = function() {
+  return { tenantId: this.tenantId };
+};
 
 // Transform output
 userSchema.methods.toJSON = function() {

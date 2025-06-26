@@ -98,8 +98,8 @@ function Layout() {
   const drawer = (
     <Box>
       <Box sx={{ p: '25px', textAlign: 'center', borderBottom: 1, borderColor: 'divider' }}>
-        <Box
-          sx={{
+        <Box 
+          sx={{ 
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
@@ -114,7 +114,7 @@ function Layout() {
               width: 'auto',
               height: 'auto',
               objectFit: 'contain'
-            }} 
+          }}
           />
         </Box>
       </Box>

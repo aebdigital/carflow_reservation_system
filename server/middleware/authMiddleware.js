@@ -55,63 +55,65 @@ const protect = async (req, res, next) => {
   }
 };
 
-// Check if user has specific role
-const authorize = (...roles) => {
-  return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Access denied. Not authenticated.'
-      });
-    }
-
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: `Access denied. Role '${req.user.role}' is not authorized to access this resource.`
-      });
-    }
-
-    next();
-  };
-};
-
-// Check if user is admin
-const requireAdmin = authorize('admin');
-
-// Check if user is admin or staff
-const requireStaff = authorize('admin', 'staff');
-
-// Optional authentication (doesn't fail if no token)
-const optionalAuth = async (req, res, next) => {
-  try {
-    let token;
-
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
-    }
-
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production');
-        const user = await User.findById(decoded.id).select('-password');
-        
-        if (user && user.isActive) {
-          req.user = user;
-        }
-      } catch (error) {
-        // Invalid token, but continue without user
-        console.log('Invalid token in optional auth:', error.message);
-      }
-    }
-
-    next();
-  } catch (error) {
-    next();
+// Check if user has admin role
+const requireAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Access denied. Not authenticated.'
+    });
   }
+
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Admin privileges required.'
+    });
+  }
+
+  next();
 };
 
-// Check if user owns the resource or is admin/staff
+// Check if user has staff or admin role
+const requireStaff = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Access denied. Not authenticated.'
+    });
+  }
+
+  if (!['admin', 'staff'].includes(req.user.role)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Staff privileges required.'
+    });
+  }
+
+  next();
+};
+
+// Add tenant filter to query for complete data separation
+const addTenantFilter = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Access denied. Not authenticated.'
+    });
+  }
+
+  // Add tenant filter to all database queries
+  req.tenantFilter = { tenantId: req.user.tenantId };
+  
+  // Store original query methods if not already done
+  if (!req.originalQuery) {
+    req.originalQuery = req.query;
+  }
+
+  next();
+};
+
+// Check if user owns the resource or is admin/staff within the same tenant
 const requireOwnershipOrStaff = (resourceUserField = 'user') => {
   return (req, res, next) => {
     if (!req.user) {
@@ -121,7 +123,7 @@ const requireOwnershipOrStaff = (resourceUserField = 'user') => {
       });
     }
 
-    // Admin and staff can access any resource
+    // Admin and staff can access any resource within their tenant
     if (['admin', 'staff'].includes(req.user.role)) {
       return next();
     }
@@ -140,47 +142,80 @@ const requireOwnershipOrStaff = (resourceUserField = 'user') => {
   };
 };
 
-// Rate limiting per user
-const createUserRateLimit = (windowMs = 15 * 60 * 1000, max = 100) => {
-  const userRequests = new Map();
+// Tenant-aware rate limiting
+const tenantRateLimit = (maxRequests = 100, windowMinutes = 15) => {
+  const tenantRequests = new Map();
 
   return (req, res, next) => {
-    if (!req.user) return next();
-
-    const userId = req.user._id.toString();
-    const now = Date.now();
-    const windowStart = now - windowMs;
-
-    // Clean old requests
-    if (userRequests.has(userId)) {
-      const requests = userRequests.get(userId).filter(time => time > windowStart);
-      userRequests.set(userId, requests);
-    } else {
-      userRequests.set(userId, []);
+    if (!req.user) {
+      return next();
     }
 
-    const userRequestCount = userRequests.get(userId).length;
+    const tenantId = req.user.tenantId.toString();
+    const now = Date.now();
+    const windowStart = now - (windowMinutes * 60 * 1000);
 
-    if (userRequestCount >= max) {
+    if (tenantRequests.has(tenantId)) {
+      const requests = tenantRequests.get(tenantId).filter(time => time > windowStart);
+      tenantRequests.set(tenantId, requests);
+    } else {
+      tenantRequests.set(tenantId, []);
+    }
+
+    const tenantRequestCount = tenantRequests.get(tenantId).length;
+
+    if (tenantRequestCount >= maxRequests) {
       return res.status(429).json({
         success: false,
-        message: 'Too many requests. Please try again later.',
-        retryAfter: Math.ceil(windowMs / 1000)
+        message: `Rate limit exceeded. Maximum ${maxRequests} requests per ${windowMinutes} minutes per tenant.`,
+        retryAfter: windowMinutes * 60
       });
     }
 
-    // Add current request
-    userRequests.get(userId).push(now);
+    tenantRequests.get(tenantId).push(now);
     next();
+  };
+};
+
+// Ensure resource belongs to user's tenant
+const validateTenantAccess = (Model) => {
+  return async (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Access denied. Not authenticated.'
+      });
+    }
+
+    try {
+      const resourceId = req.params.id;
+      if (resourceId) {
+        const resource = await Model.findById(resourceId);
+        
+        if (resource && resource.tenantId && resource.tenantId.toString() !== req.user.tenantId.toString()) {
+          return res.status(404).json({
+            success: false,
+            message: 'Resource not found.'
+          });
+        }
+      }
+      
+      next();
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: 'Server error validating tenant access.'
+      });
+    }
   };
 };
 
 module.exports = {
   protect,
-  authorize,
   requireAdmin,
   requireStaff,
-  optionalAuth,
   requireOwnershipOrStaff,
-  createUserRateLimit
+  addTenantFilter,
+  tenantRateLimit,
+  validateTenantAccess
 }; 

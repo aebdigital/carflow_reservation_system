@@ -578,8 +578,8 @@ function Customers() {
               <Grid item xs={12} md={6}>
                 <Typography variant="h6" gutterBottom>Osobné informácie</Typography>
                 <Typography variant="body1" fontWeight="medium" gutterBottom>
-                  {selectedCustomer.firstName} {selectedCustomer.lastName}
-                </Typography>
+                      {selectedCustomer.firstName} {selectedCustomer.lastName}
+                    </Typography>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
                   Email: {selectedCustomer.email}
                 </Typography>

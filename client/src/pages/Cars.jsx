@@ -1448,7 +1448,7 @@ function Cars() {
                                 {dialogMode === 'edit' && (
                                   <>
                                     <Tooltip title={image.isPrimary ? "Už je primárny" : "Nastaviť ako primárny"}>
-                                      <IconButton
+                              <IconButton
                                         sx={{ 
                                           color: image.isPrimary ? '#ffc107' : 'rgba(255, 255, 255, 0.54)',
                                           '&:hover': { color: '#ffc107' }
@@ -1480,9 +1480,9 @@ function Cars() {
                                   <IconButton
                                     sx={{ color: image.isPrimary ? '#ffc107' : 'rgba(255, 255, 255, 0.54)' }}
                                     disabled
-                                  >
-                                    {image.isPrimary ? <StarIcon /> : <StarBorderIcon />}
-                                  </IconButton>
+                              >
+                                {image.isPrimary ? <StarIcon /> : <StarBorderIcon />}
+                              </IconButton>
                                 )}
                               </Box>
                             }

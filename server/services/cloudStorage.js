@@ -126,14 +126,15 @@ class CloudStorageService {
   }
 
   /**
-   * Upload and process car image
+   * Upload and process car image with tenant/user separation
    * @param {Buffer} fileBuffer - Image file buffer
    * @param {string} originalName - Original filename
    * @param {string} carId - Car ID for folder organization
+   * @param {Object} user - User object with tenantId and storageFolder
    * @param {string} description - Image description
    * @returns {Promise<Object>} Upload result with URLs
    */
-  async uploadCarImage(fileBuffer, originalName, carId, description = '') {
+  async uploadCarImage(fileBuffer, originalName, carId, user, description = '') {
     await this.checkConfiguration();
 
     try {
@@ -151,7 +152,9 @@ class CloudStorageService {
       // Generate unique filename
       const fileExtension = path.extname(originalName).toLowerCase();
       const baseFileName = `${uuidv4()}${fileExtension}`;
-      const folderPath = `cars/${carId}`;
+      
+      // Use user-specific folder path for complete tenant separation
+      const folderPath = `${user.storageFolder}/cars/${carId}`;
 
       // Process and upload different sizes
       const uploadPromises = await this.processAndUploadSizes(
@@ -172,12 +175,53 @@ class CloudStorageService {
           large: results[2].url,
           original: results[3].url
         },
-        uploadDate: new Date()
+        uploadDate: new Date(),
+        tenantId: user.tenantId,
+        userId: user._id
       };
 
     } catch (error) {
       console.error('Error uploading image:', error);
       throw new Error(`Failed to upload image: ${error.message}`);
+    }
+  }
+
+  /**
+   * Upload general user file with tenant separation
+   * @param {Buffer} fileBuffer - File buffer
+   * @param {string} originalName - Original filename
+   * @param {Object} user - User object with tenantId and storageFolder
+   * @param {string} subfolder - Subfolder within user's space (e.g., 'documents', 'profiles')
+   * @returns {Promise<Object>} Upload result
+   */
+  async uploadUserFile(fileBuffer, originalName, user, subfolder = 'files') {
+    await this.checkConfiguration();
+
+    try {
+      // Generate unique filename
+      const fileExtension = path.extname(originalName).toLowerCase();
+      const baseFileName = `${uuidv4()}${fileExtension}`;
+      
+      // Use user-specific folder path
+      const folderPath = `${user.storageFolder}/${subfolder}`;
+      const fileName = `${folderPath}/${baseFileName}`;
+
+      // Upload to GCS
+      const result = await this.uploadToGCS(fileBuffer, fileName, 'application/octet-stream');
+
+      return {
+        filename: baseFileName,
+        originalName: originalName,
+        url: result.url,
+        uploadDate: new Date(),
+        tenantId: user.tenantId,
+        userId: user._id,
+        folder: subfolder
+      };
+
+    } catch (error) {
+      console.error('Error uploading user file:', error);
+      throw new Error(`Failed to upload file: ${error.message}`);
     }
   }
 
@@ -271,15 +315,16 @@ class CloudStorageService {
   }
 
   /**
-   * Delete car images from storage
+   * Delete car images from user-specific storage
    * @param {string} carId - Car ID
+   * @param {Object} user - User object with storageFolder
    * @param {string} filename - Specific filename to delete (optional)
    */
-  async deleteCarImages(carId, filename = null) {
+  async deleteCarImages(carId, user, filename = null) {
     await this.checkConfiguration();
 
     try {
-      const folderPath = `cars/${carId}/`;
+      const folderPath = `${user.storageFolder}/cars/${carId}/`;
       
       if (filename) {
         // Delete specific file and its variants
@@ -301,7 +346,7 @@ class CloudStorageService {
           )
         );
       } else {
-        // Delete entire car folder
+        // Delete entire car folder within user's space
         const [files] = await this.bucket.getFiles({ prefix: folderPath });
         await Promise.all(files.map(file => file.delete()));
       }
@@ -310,6 +355,51 @@ class CloudStorageService {
     } catch (error) {
       console.error('Error deleting images:', error);
       throw new Error(`Failed to delete images: ${error.message}`);
+    }
+  }
+
+  /**
+   * Delete all user files (for account deletion)
+   * @param {Object} user - User object with storageFolder
+   */
+  async deleteUserFiles(user) {
+    await this.checkConfiguration();
+
+    try {
+      const folderPath = `${user.storageFolder}/`;
+      
+      // Delete entire user folder
+      const [files] = await this.bucket.getFiles({ prefix: folderPath });
+      await Promise.all(files.map(file => file.delete()));
+
+      return { success: true, message: 'All user files deleted successfully' };
+    } catch (error) {
+      console.error('Error deleting user files:', error);
+      throw new Error(`Failed to delete user files: ${error.message}`);
+    }
+  }
+
+  /**
+   * List user files
+   * @param {Object} user - User object with storageFolder
+   * @param {string} subfolder - Specific subfolder to list (optional)
+   */
+  async listUserFiles(user, subfolder = '') {
+    await this.checkConfiguration();
+
+    try {
+      const prefix = subfolder ? `${user.storageFolder}/${subfolder}/` : `${user.storageFolder}/`;
+      const [files] = await this.bucket.getFiles({ prefix });
+      
+      return files.map(file => ({
+        name: file.name,
+        size: file.metadata.size,
+        updated: file.metadata.updated,
+        url: `https://storage.googleapis.com/${this.bucketName}/${file.name}`
+      }));
+    } catch (error) {
+      console.error('Error listing user files:', error);
+      throw new Error(`Failed to list user files: ${error.message}`);
     }
   }
 

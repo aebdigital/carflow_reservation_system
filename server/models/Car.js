@@ -1,6 +1,18 @@
 const mongoose = require('mongoose');
 
 const carSchema = new mongoose.Schema({
+  // Tenant separation - each car belongs to a specific tenant
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    index: true
+  },
+  // Owner of the car (admin/staff user who added it)
+  owner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   brand: {
     type: String,
     required: [true, 'Brand is required'],
@@ -22,14 +34,12 @@ const carSchema = new mongoose.Schema({
   registrationNumber: {
     type: String,
     required: [true, 'Registration number is required'],
-    unique: true,
     trim: true,
     uppercase: true
   },
   vin: {
     type: String,
     required: [true, 'VIN is required'],
-    unique: true,
     trim: true,
     uppercase: true,
     length: [17, 'VIN must be exactly 17 characters']
@@ -174,10 +184,11 @@ const carSchema = new mongoose.Schema({
 });
 
 // Indexes for better performance
-carSchema.index({ registrationNumber: 1 });
-carSchema.index({ vin: 1 });
-carSchema.index({ status: 1 });
-carSchema.index({ category: 1 });
+carSchema.index({ tenantId: 1, status: 1 });
+carSchema.index({ tenantId: 1, category: 1 });
+carSchema.index({ tenantId: 1, isActive: 1 });
+carSchema.index({ registrationNumber: 1, tenantId: 1 }, { unique: true });
+carSchema.index({ vin: 1, tenantId: 1 }, { unique: true });
 carSchema.index({ 'location.name': 1 });
 
 // Virtual for car display name
