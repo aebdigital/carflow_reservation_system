@@ -43,14 +43,14 @@ async function setupTenantSeparation() {
     // Step 1: Create the rival account
     console.log('\n👤 Step 1: Creating rival account...');
     
-    const existingRival = await User.findOne({ email: 'rival@rental.com' });
+    const existingRival = await User.findOne({ email: 'rival@test.sk' });
     if (existingRival) {
       console.log('⚠️  Rival account already exists');
     } else {
       const rivalUser = await User.create({
         firstName: 'Rival',
         lastName: 'Admin',
-        email: 'rival@rental.com',
+        email: 'rival@test.sk',
         password: 'Rival123', // Will be auto-hashed by the pre-save middleware
         phone: '+421900000000',
         role: 'admin',
@@ -58,7 +58,7 @@ async function setupTenantSeparation() {
       });
 
       console.log('✅ Successfully created rival account:');
-      console.log('   Email: rival@rental.com');
+      console.log('   Email: rival@test.sk');
       console.log('   Password: Rival123 (bcrypt hashed)');
       console.log('   Role: admin');
       console.log('   User ID:', rivalUser._id);
@@ -209,7 +209,7 @@ async function setupTenantSeparation() {
     console.log('   ✅ Role-based access control within tenants');
     
     console.log('\n🚀 Login Credentials:');
-    console.log('   Email: rival@rental.com');
+    console.log('   Email: rival@test.sk');
     console.log('   Password: Rival123');
     console.log('   Role: Admin (Full System Access)');
     

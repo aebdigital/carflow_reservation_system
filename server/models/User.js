@@ -41,14 +41,13 @@ const userSchema = new mongoose.Schema({
   // Tenant separation - each user belongs to a tenant organization
   tenantId: {
     type: mongoose.Schema.Types.ObjectId,
-    required: true,
     index: true
   },
   // Storage folder path for user-specific files
   storageFolder: {
     type: String,
-    required: true,
     unique: true,
+    sparse: true,
     index: true
   },
   licenseNumber: {

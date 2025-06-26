@@ -28,7 +28,7 @@ tenant-{tenantId}/
 ## 🚀 New Account Creation
 
 ### Rival Account Created
-- **Email**: `rival@rental.com`
+- **Email**: `rival@test.sk`
 - **Password**: `Rival123` (bcrypt hashed)
 - **Role**: Admin (Full system access)
 - **Tenant ID**: Auto-generated unique identifier
@@ -36,7 +36,7 @@ tenant-{tenantId}/
 
 ### Login Credentials
 ```
-Email: rival@rental.com
+Email: rival@test.sk
 Password: Rival123
 ```
 
