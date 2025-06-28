@@ -2,8 +2,8 @@ import React, { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { Box, CircularProgress } from '@mui/material'
-import { selectIsAuthenticated, loginSuccess, logout } from './store/authSlice'
-import { useGetMeQuery } from './store/store'
+import { selectIsAuthenticated, loginSuccess, clearStateOnLogout } from './store/authSlice'
+import { useGetMeQuery, api } from './store/store'
 
 // Tenant separation implemented - users now have isolated data
 // Components
@@ -76,7 +76,9 @@ function App() {
     }
     
     if (error && error.status === 401) {
-      dispatch(logout())
+      // Clear RTK Query cache and auth state on authentication error
+      dispatch(api.util.resetApiState())
+      dispatch(clearStateOnLogout())
     }
   }, [userData, error, dispatch])
 

@@ -26,13 +26,21 @@ const authSlice = createSlice({
       localStorage.removeItem('token')
       localStorage.removeItem('refreshToken')
     },
+    clearStateOnLogout: (state) => {
+      // Complete state reset
+      state.user = null
+      state.token = null
+      state.isAuthenticated = false
+      localStorage.removeItem('token')
+      localStorage.removeItem('refreshToken')
+    },
     updateUser: (state, action) => {
       state.user = { ...state.user, ...action.payload }
     },
   },
 })
 
-export const { loginSuccess, logout, updateUser } = authSlice.actions
+export const { loginSuccess, logout, clearStateOnLogout, updateUser } = authSlice.actions
 
 // Selectors
 export const selectCurrentUser = (state) => state.auth.user

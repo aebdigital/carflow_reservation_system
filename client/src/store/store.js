@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
-import authSlice from './authSlice'
+import authSlice, { clearStateOnLogout } from './authSlice'
 
 // Base query with authentication - Fixed API URL concatenation
 const baseQuery = fetchBaseQuery({
@@ -34,6 +34,25 @@ export const api = createApi({
         method: 'POST',
         body: userData,
       }),
+    }),
+    logout: builder.mutation({
+      query: () => ({
+        url: 'auth/logout',
+        method: 'POST',
+      }),
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled
+          // Clear all RTK Query cache on successful logout
+          dispatch(api.util.resetApiState())
+          // Clear auth state
+          dispatch(clearStateOnLogout())
+        } catch (error) {
+          // Even if logout fails on server, clear local state
+          dispatch(api.util.resetApiState())
+          dispatch(clearStateOnLogout())
+        }
+      },
     }),
     getMe: builder.query({
       query: () => 'auth/me',
@@ -276,6 +295,7 @@ export const {
   // Auth hooks
   useLoginMutation,
   useRegisterMutation,
+  useLogoutMutation,
   useGetMeQuery,
   
   // Car hooks

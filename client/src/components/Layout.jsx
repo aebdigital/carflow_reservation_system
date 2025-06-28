@@ -32,7 +32,8 @@ import {
   Campaign as CampaignIcon,
   Description as ContractIcon,
 } from '@mui/icons-material'
-import { selectCurrentUser, logout } from '../store/authSlice'
+import { selectCurrentUser } from '../store/authSlice'
+import { useLogoutMutation } from '../store/store'
 import { t } from '../utils/translations'
 import logo from '../assets/images/logo.png'
 
@@ -53,8 +54,8 @@ const menuItems = [
 function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
-  const dispatch = useDispatch()
   const user = useSelector(selectCurrentUser)
+  const [logoutUser] = useLogoutMutation()
   
   const [mobileOpen, setMobileOpen] = useState(false)
   const [anchorEl, setAnchorEl] = useState(null)
@@ -71,8 +72,14 @@ function Layout() {
     setAnchorEl(null)
   }
 
-  const handleLogout = () => {
-    dispatch(logout())
+  const handleLogout = async () => {
+    try {
+      // This will clear RTK Query cache and auth state automatically
+      await logoutUser().unwrap()
+    } catch (error) {
+      // Even if server logout fails, local state will still be cleared
+      console.log('Logout completed locally')
+    }
     navigate('/login')
     handleProfileMenuClose()
   }
