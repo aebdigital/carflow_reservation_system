@@ -11,28 +11,32 @@ const {
   generateReservationContract
 } = require('../controllers/reservationController');
 
-const { protect, requireStaff } = require('../middleware/authMiddleware');
+const { protect, requireStaff, addTenantFilter } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
+// Apply tenant filtering to all routes
+router.use(protect);
+router.use(addTenantFilter);
+
 // Stats route
-router.get('/stats', protect, requireStaff, getReservationStats);
+router.get('/stats', requireStaff, getReservationStats);
 
 // CRUD routes
 router.route('/')
-  .get(protect, requireStaff, getReservations)
-  .post(protect, createReservation);
+  .get(requireStaff, getReservations)
+  .post(createReservation);
 
 router.route('/:id')
-  .get(protect, getReservation)
-  .put(protect, updateReservation);
+  .get(getReservation)
+  .put(updateReservation);
 
 // Special actions
-router.put('/:id/cancel', protect, cancelReservation);
-router.put('/:id/checkin', protect, requireStaff, checkInReservation);
-router.put('/:id/checkout', protect, requireStaff, checkOutReservation);
+router.put('/:id/cancel', cancelReservation);
+router.put('/:id/checkin', requireStaff, checkInReservation);
+router.put('/:id/checkout', requireStaff, checkOutReservation);
 
 // PDF generation
-router.get('/:id/contract', protect, generateReservationContract);
+router.get('/:id/contract', generateReservationContract);
 
 module.exports = router; 

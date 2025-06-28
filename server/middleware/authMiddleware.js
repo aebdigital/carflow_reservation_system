@@ -57,22 +57,22 @@ const protect = async (req, res, next) => {
 
 // Check if user has admin role
 const requireAdmin = (req, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({
-      success: false,
-      message: 'Access denied. Not authenticated.'
-    });
-  }
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Access denied. Not authenticated.'
+      });
+    }
 
   if (req.user.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
+      return res.status(403).json({
+        success: false,
       message: 'Access denied. Admin privileges required.'
-    });
-  }
+      });
+    }
 
-  next();
-};
+    next();
+  };
 
 // Check if user has staff or admin role
 const requireStaff = (req, res, next) => {
@@ -100,7 +100,7 @@ const addTenantFilter = (req, res, next) => {
       success: false,
       message: 'Access denied. Not authenticated.'
     });
-  }
+    }
 
   // Add tenant filter to all database queries
   req.tenantFilter = { tenantId: req.user.tenantId };
@@ -108,9 +108,9 @@ const addTenantFilter = (req, res, next) => {
   // Store original query methods if not already done
   if (!req.originalQuery) {
     req.originalQuery = req.query;
-  }
+    }
 
-  next();
+    next();
 };
 
 // Check if user owns the resource or is admin/staff within the same tenant

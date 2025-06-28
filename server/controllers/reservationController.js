@@ -5,13 +5,14 @@ const Payment = require('../models/Payment');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const PDFDocument = require('pdfkit');
 
-// @desc    Get all reservations
+// @desc    Get all reservations (tenant-scoped)
 // @route   GET /api/reservations
 // @access  Private/Staff
 const getReservations = asyncHandler(async (req, res, next) => {
-  let query = Reservation.find();
+  // Start with tenant filter
+  const baseQuery = { tenantId: req.user.tenantId };
 
-  // Copy req.query
+  // Copy req.query and merge with tenant filter
   const reqQuery = { ...req.query };
 
   // Fields to exclude from filtering
@@ -19,13 +20,13 @@ const getReservations = asyncHandler(async (req, res, next) => {
   removeFields.forEach(param => delete reqQuery[param]);
 
   // Create query string
-  let queryStr = JSON.stringify(reqQuery);
+  let queryStr = JSON.stringify({ ...baseQuery, ...reqQuery });
 
   // Create operators ($gt, $gte, etc)
   queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
 
-  // Finding resource
-  query = Reservation.find(JSON.parse(queryStr));
+  // Finding resource with tenant filter
+  let query = Reservation.find(JSON.parse(queryStr));
 
   // Select fields
   if (req.query.select) {
@@ -99,11 +100,14 @@ const getReservations = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get single reservation
+// @desc    Get single reservation (tenant-scoped)
 // @route   GET /api/reservations/:id
 // @access  Private
 const getReservation = asyncHandler(async (req, res, next) => {
-  const reservation = await Reservation.findById(req.params.id)
+  const reservation = await Reservation.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  })
     .populate('customer')
     .populate('car')
     .populate('payment')
@@ -127,7 +131,7 @@ const getReservation = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Create new reservation
+// @desc    Create new reservation (tenant-scoped)
 // @route   POST /api/reservations
 // @access  Private
 const createReservation = asyncHandler(async (req, res, next) => {
@@ -142,8 +146,11 @@ const createReservation = asyncHandler(async (req, res, next) => {
     specialRequests
   } = req.body;
 
-  // Validate car exists and is available
-  const carDoc = await Car.findById(car);
+  // Validate car exists and is available (tenant-scoped)
+  const carDoc = await Car.findOne({ 
+    _id: car, 
+    tenantId: req.user.tenantId 
+  });
   if (!carDoc) {
     return next(new AppError('Vozidlo nebolo nájdené', 404));
   }
@@ -152,17 +159,28 @@ const createReservation = asyncHandler(async (req, res, next) => {
     return next(new AppError('Vozidlo nie je dostupné na rezerváciu', 400));
   }
 
-  // Validate customer exists
-  const customerDoc = await User.findById(customer);
+  // Validate customer exists (tenant-scoped)
+  const customerDoc = await User.findOne({ 
+    _id: customer, 
+    tenantId: req.user.tenantId 
+  });
   if (!customerDoc) {
     return next(new AppError('Zákazník nebol nájdený', 404));
   }
 
-  // Check for overlapping reservations
+  // Check for overlapping reservations (tenant-scoped)
   const start = new Date(startDate);
   const end = new Date(endDate);
   
-  const overlappingReservations = await Reservation.findOverlapping(car, start, end);
+  const overlappingReservations = await Reservation.find({
+    car: car,
+    tenantId: req.user.tenantId,
+    $or: [
+      { startDate: { $lte: end }, endDate: { $gte: start } }
+    ],
+    status: { $in: ['pending', 'confirmed', 'ongoing'] }
+  });
+  
   if (overlappingReservations.length > 0) {
     return next(new AppError('Vozidlo nie je dostupné pre vybrané dátumy', 400));
   }
@@ -190,18 +208,22 @@ const createReservation = asyncHandler(async (req, res, next) => {
     },
     additionalDrivers,
     specialRequests,
+    tenantId: req.user.tenantId,
     createdBy: req.user._id
   };
 
   const reservation = await Reservation.create(reservationData);
 
   // Update car stats but don't change status to booked
-  await Car.findByIdAndUpdate(car, {
+  await Car.findOneAndUpdate(
+    { _id: car, tenantId: req.user.tenantId },
+    {
     $inc: { 
       totalBookings: 1,
       totalRevenue: totalAmount
     }
-  });
+    }
+  );
 
   // Update customer stats
   await User.findByIdAndUpdate(customer, {

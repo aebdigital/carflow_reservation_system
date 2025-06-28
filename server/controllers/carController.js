@@ -5,13 +5,14 @@ const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const { deleteFile } = require('../middleware/upload');
 const cloudStorage = require('../services/cloudStorage');
 
-// @desc    Get all cars
+// @desc    Get all cars (tenant-scoped)
 // @route   GET /api/cars
 // @access  Private/Admin
 const getCars = asyncHandler(async (req, res, next) => {
-  let query = Car.find();
+  // Start with tenant filter
+  const baseQuery = { tenantId: req.user.tenantId };
 
-  // Copy req.query
+  // Copy req.query and merge with tenant filter
   const reqQuery = { ...req.query };
 
   // Fields to exclude from filtering
@@ -19,13 +20,13 @@ const getCars = asyncHandler(async (req, res, next) => {
   removeFields.forEach(param => delete reqQuery[param]);
 
   // Create query string
-  let queryStr = JSON.stringify(reqQuery);
+  let queryStr = JSON.stringify({ ...baseQuery, ...reqQuery });
 
   // Create operators ($gt, $gte, etc)
   queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
 
-  // Finding resource
-  query = Car.find(JSON.parse(queryStr));
+  // Finding resource with tenant filter
+  let query = Car.find(JSON.parse(queryStr));
 
   // Select fields
   if (req.query.select) {
@@ -78,11 +79,14 @@ const getCars = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get single car
+// @desc    Get single car (tenant-scoped)
 // @route   GET /api/cars/:id
 // @access  Private
 const getCar = asyncHandler(async (req, res, next) => {
-  const car = await Car.findById(req.params.id);
+  const car = await Car.findOne({ 
+    _id: req.params.id, 
+    tenantId: req.user.tenantId 
+  });
 
   if (!car) {
     return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
@@ -94,7 +98,7 @@ const getCar = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Create new car
+// @desc    Create new car (tenant-scoped)
 // @route   POST /api/cars
 // @access  Private/Admin
 const createCar = asyncHandler(async (req, res, next) => {
@@ -157,7 +161,12 @@ const createCar = asyncHandler(async (req, res, next) => {
     }
   }
 
-  const carData = { ...req.body };
+  // Add tenant information to car data
+  const carData = { 
+    ...req.body,
+    tenantId: req.user.tenantId,
+    owner: req.user._id
+  };
   
   // Create car first to get the ID
   const car = await Car.create(carData);
@@ -170,6 +179,7 @@ const createCar = asyncHandler(async (req, res, next) => {
           file.buffer,
           file.originalname,
           car._id.toString(),
+          req.user, // Pass user for tenant-specific folder
           `Car image ${index + 1}`
         );
 
@@ -214,11 +224,14 @@ const createCar = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Update car
+// @desc    Update car (tenant-scoped)
 // @route   PUT /api/cars/:id
 // @access  Private/Admin
 const updateCar = asyncHandler(async (req, res, next) => {
-  let car = await Car.findById(req.params.id);
+  let car = await Car.findOne({ 
+    _id: req.params.id, 
+    tenantId: req.user.tenantId 
+  });
 
   if (!car) {
     return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
@@ -291,6 +304,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
           file.buffer,
           file.originalname,
           car._id.toString(),
+          req.user, // Pass user for tenant-specific folder
           `Car image ${index + 1}`
         );
 
@@ -329,10 +343,14 @@ const updateCar = asyncHandler(async (req, res, next) => {
     }
   }
 
-  car = await Car.findByIdAndUpdate(req.params.id, req.body, {
+  car = await Car.findOneAndUpdate(
+    { _id: req.params.id, tenantId: req.user.tenantId },
+    req.body,
+    {
     new: true,
     runValidators: true
-  });
+    }
+  );
 
   res.status(200).json({
     success: true,
@@ -340,19 +358,23 @@ const updateCar = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Delete car
+// @desc    Delete car (tenant-scoped)
 // @route   DELETE /api/cars/:id
 // @access  Private/Admin
 const deleteCar = asyncHandler(async (req, res, next) => {
-  const car = await Car.findById(req.params.id);
+  const car = await Car.findOne({ 
+    _id: req.params.id, 
+    tenantId: req.user.tenantId 
+  });
 
   if (!car) {
     return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
   }
 
-  // Check if car has active reservations
+  // Check if car has active reservations (tenant-scoped)
   const activeReservations = await Reservation.find({
     car: req.params.id,
+    tenantId: req.user.tenantId,
     status: { $in: ['pending', 'confirmed', 'ongoing'] }
   });
 
@@ -360,16 +382,19 @@ const deleteCar = asyncHandler(async (req, res, next) => {
     return next(new AppError('Cannot delete car with active reservations', 400));
   }
 
-  // Delete associated images
+  // Delete associated images from tenant-specific storage
   if (car.images && car.images.length > 0) {
-    car.images.forEach(image => {
-      if (image.url && image.url.startsWith('/uploads/')) {
-        deleteFile(path.join(__dirname, '..', image.url));
+    try {
+      await cloudStorage.deleteCarImages(car._id.toString(), req.user);
+    } catch (error) {
+      console.error('Failed to delete car images from cloud storage:', error);
       }
-    });
   }
 
-  await Car.findByIdAndDelete(req.params.id);
+  await Car.findOneAndDelete({ 
+    _id: req.params.id, 
+    tenantId: req.user.tenantId 
+  });
 
   res.status(200).json({
     success: true,
@@ -377,11 +402,14 @@ const deleteCar = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get car availability
+// @desc    Get car availability (tenant-scoped)
 // @route   GET /api/cars/:id/availability
 // @access  Private
 const getCarAvailability = asyncHandler(async (req, res, next) => {
-  const car = await Car.findById(req.params.id);
+  const car = await Car.findOne({ 
+    _id: req.params.id, 
+    tenantId: req.user.tenantId 
+  });
 
   if (!car) {
     return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
@@ -455,6 +483,7 @@ const uploadCarImages = asyncHandler(async (req, res, next) => {
         file.buffer,
         file.originalname,
         car._id.toString(),
+        req.user, // Pass user for tenant-specific folder
         description
       );
 

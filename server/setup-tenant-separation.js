@@ -5,38 +5,12 @@ const Reservation = require('./models/Reservation');
 
 async function setupTenantSeparation() {
   try {
-    // Try different MongoDB connection strings
-    const connectionStrings = [
-      process.env.MONGO_URI,
-      process.env.MONGODB_URI,
-      'mongodb://localhost:27017/car-rental',
-      'mongodb://127.0.0.1:27017/car-rental'
-    ].filter(Boolean);
+    // Use only the cloud MongoDB database
+    const mongoUri = 'mongodb+srv://petersamuelbobak:gclTt7XfDXcSXCAk@rentalsystemcluster.rabsr6f.mongodb.net/car_rental_db?retryWrites=true&w=majority';
 
-    let connected = false;
-    let mongoUri = '';
-
-    for (const uri of connectionStrings) {
-      try {
-        console.log(`🔄 Trying to connect to: ${uri}`);
-        await mongoose.connect(uri);
-        mongoUri = uri;
-        connected = true;
-        console.log('✅ Connected to MongoDB');
-        break;
-      } catch (error) {
-        console.log(`❌ Failed to connect to ${uri}`);
-      }
-    }
-
-    if (!connected) {
-      console.log('❌ Could not connect to MongoDB. Please ensure MongoDB is running.');
-      console.log('💡 To start MongoDB:');
-      console.log('   - macOS: brew services start mongodb-community');
-      console.log('   - Ubuntu: sudo systemctl start mongod');
-      console.log('   - Windows: net start MongoDB');
-      return;
-    }
+    console.log(`🔄 Connecting to cloud database...`);
+    await mongoose.connect(mongoUri);
+    console.log('✅ Connected to MongoDB');
 
     console.log('\n🚀 Starting tenant separation setup...');
 

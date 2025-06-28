@@ -2,13 +2,14 @@ const User = require('../models/User');
 const Reservation = require('../models/Reservation');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 
-// @desc    Get all users
+// @desc    Get all users (tenant-scoped)
 // @route   GET /api/users
 // @access  Private/Staff
 const getUsers = asyncHandler(async (req, res, next) => {
-  let query = User.find();
+  // Start with tenant filter
+  const baseQuery = { tenantId: req.user.tenantId };
 
-  // Copy req.query
+  // Copy req.query and merge with tenant filter
   const reqQuery = { ...req.query };
 
   // Fields to exclude from filtering
@@ -16,13 +17,13 @@ const getUsers = asyncHandler(async (req, res, next) => {
   removeFields.forEach(param => delete reqQuery[param]);
 
   // Create query string
-  let queryStr = JSON.stringify(reqQuery);
+  let queryStr = JSON.stringify({ ...baseQuery, ...reqQuery });
 
   // Create operators ($gt, $gte, etc)
   queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
 
-  // Finding resource
-  query = User.find(JSON.parse(queryStr));
+  // Finding resource with tenant filter
+  let query = User.find(JSON.parse(queryStr));
 
   // Select fields
   if (req.query.select) {
@@ -75,11 +76,14 @@ const getUsers = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get single user
+// @desc    Get single user (tenant-scoped)
 // @route   GET /api/users/:id
 // @access  Private/Staff
 const getUser = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.params.id);
+  const user = await User.findOne({ 
+    _id: req.params.id, 
+    tenantId: req.user.tenantId 
+  });
 
   if (!user) {
     return next(new AppError(`User not found with id of ${req.params.id}`, 404));
@@ -91,7 +95,7 @@ const getUser = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Create user
+// @desc    Create user (tenant-scoped)
 // @route   POST /api/users
 // @access  Private/Admin
 const createUser = asyncHandler(async (req, res, next) => {
@@ -108,20 +112,24 @@ const createUser = asyncHandler(async (req, res, next) => {
     address
   } = req.body;
 
-  // Check if user already exists
-  const existingUser = await User.findOne({ email });
+  // Check if user already exists in this tenant
+  const existingUser = await User.findOne({ 
+    email,
+    tenantId: req.user.tenantId 
+  });
   if (existingUser) {
-    return next(new AppError('User with this email already exists', 400));
+    return next(new AppError('User with this email already exists in this tenant', 400));
   }
 
-  // Create user data
+  // Create user data with tenant information
   const userData = {
     firstName,
     lastName,
     email,
     password,
     phone,
-    role: role || 'customer'
+    role: role || 'customer',
+    tenantId: req.user.tenantId  // Assign to the same tenant as the creator
   };
 
   // Add customer-specific fields if role is customer
@@ -146,17 +154,20 @@ const createUser = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Update user
+// @desc    Update user (tenant-scoped)
 // @route   PUT /api/users/:id
 // @access  Private/Staff
 const updateUser = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.params.id);
+  const user = await User.findOne({ 
+    _id: req.params.id, 
+    tenantId: req.user.tenantId 
+  });
 
   if (!user) {
     return next(new AppError(`User not found with id of ${req.params.id}`, 404));
   }
 
-  // Check authorization - users can only update their own profile, staff can update any
+  // Check authorization - users can only update their own profile, staff can update any in their tenant
   if (req.user.role === 'customer' && req.user._id.toString() !== req.params.id) {
     return next(new AppError('Not authorized to update this user', 403));
   }
@@ -184,10 +195,14 @@ const updateUser = asyncHandler(async (req, res, next) => {
     }
   });
 
-  const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, {
+  const updatedUser = await User.findOneAndUpdate(
+    { _id: req.params.id, tenantId: req.user.tenantId },
+    updateData,
+    {
     new: true,
     runValidators: true
-  });
+    }
+  );
 
   res.status(200).json({
     success: true,
