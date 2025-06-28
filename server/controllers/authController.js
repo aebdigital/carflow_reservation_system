@@ -47,7 +47,9 @@ const sendTokenResponse = (user, statusCode, res) => {
         role: user.role,
         phone: user.phone,
         isActive: user.isActive,
-        lastLogin: user.lastLogin
+        lastLogin: user.lastLogin,
+        tenantId: user.tenantId,
+        storageFolder: user.storageFolder
       }
     });
 };
@@ -159,7 +161,7 @@ const login = asyncHandler(async (req, res, next) => {
 // @route   GET /api/auth/me
 // @access  Private
 const getMe = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.user.id);
+  const user = await User.findById(req.user._id);
 
   res.status(200).json({
     success: true,
@@ -185,7 +187,7 @@ const updateDetails = asyncHandler(async (req, res, next) => {
     }
   });
 
-  const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
+  const user = await User.findByIdAndUpdate(req.user._id, fieldsToUpdate, {
     new: true,
     runValidators: true
   });
@@ -200,7 +202,7 @@ const updateDetails = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/auth/updatepassword
 // @access  Private
 const updatePassword = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.user.id).select('+password');
+  const user = await User.findById(req.user._id).select('+password');
 
   // Check current password
   if (!(await user.comparePassword(req.body.currentPassword))) {
@@ -295,7 +297,7 @@ const refreshToken = asyncHandler(async (req, res, next) => {
 // @access  Private
 const logout = asyncHandler(async (req, res, next) => {
   // Clear refresh token from user
-  await User.findByIdAndUpdate(req.user.id, { refreshToken: null });
+  await User.findByIdAndUpdate(req.user._id, { refreshToken: null });
 
   res
     .status(200)
