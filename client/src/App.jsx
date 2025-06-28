@@ -5,6 +5,7 @@ import { Box, CircularProgress } from '@mui/material'
 import { selectIsAuthenticated, loginSuccess, logout } from './store/authSlice'
 import { useGetMeQuery } from './store/store'
 
+// Tenant separation implemented - users now have isolated data
 // Components
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
