@@ -42,6 +42,7 @@ const allowedOrigins = [
   'https://carflowdemowebsite.netlify.app',
   'https://admindemo.carflow.sk',
   'https://rentaldemo.carflow.sk',
+  'https://rival.carflow.sk',
   'http://localhost:5173',
   'http://localhost:3000',
   'http://localhost:3005',
