@@ -151,7 +151,7 @@ const getStatusText = (status) => {
 function Dashboard() {
   return (
     <Box>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
         {t('dashboard')}
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
@@ -217,7 +217,7 @@ function Dashboard() {
       </Grid>
 
       {/* Charts */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Grid container spacing={3} sx={{ mb: 4, mt: 3 }}>
         {/* Revenue Chart */}
         <Grid item xs={12} md={8}>
           <Card>
@@ -293,9 +293,16 @@ function Dashboard() {
       </Grid>
 
       {/* Recent Reservations */}
-      <Card>
+      <Card sx={{ mt: 3 }}>
         <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: { xs: 'flex-start', sm: 'space-between' }, 
+            alignItems: { xs: 'flex-start', sm: 'center' }, 
+            mb: 2,
+            gap: { xs: 1, sm: 0 }
+          }}>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
               {t('recentReservations')}
             </Typography>
@@ -307,8 +314,29 @@ function Dashboard() {
               {t('viewAll')}
             </Typography>
           </Box>
-          <TableContainer>
-            <Table>
+          <TableContainer sx={{ 
+            overflowX: 'auto',
+            maxWidth: { xs: 'calc(100vw - 64px)', sm: '100%' },
+            width: '100%',
+            '&::-webkit-scrollbar': {
+              height: 8,
+            },
+            '&::-webkit-scrollbar-track': {
+              backgroundColor: '#f1f1f1',
+              borderRadius: 4,
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: '#c1c1c1',
+              borderRadius: 4,
+            },
+            '&::-webkit-scrollbar-thumb:hover': {
+              backgroundColor: '#a8a8a8',
+            },
+          }}>
+            <Table sx={{ 
+              minWidth: { xs: 800, sm: 'auto' },
+              width: { xs: 800, sm: '100%' }
+            }}>
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 600 }}>{t('reservationId')}</TableCell>

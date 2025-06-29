@@ -6,7 +6,7 @@ import { t } from '../utils/translations'
 function Settings() {
   return (
     <Box>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
         {t('settings')}
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>

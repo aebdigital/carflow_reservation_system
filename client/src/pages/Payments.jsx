@@ -336,21 +336,36 @@ function Payments() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: { xs: 'flex-start', sm: 'space-between' }, 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: 3,
+        gap: { xs: 2, sm: 0 }
+      }}>
         <Box>
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
+          <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
             {t('paymentsManagement')}
           </Typography>
           <Typography variant="body1" color="text.secondary">
             {t('managePaymentsInvoices')}
           </Typography>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 1,
+          flexDirection: { xs: 'column', sm: 'row' },
+          alignSelf: { xs: 'flex-start', sm: 'auto' },
+          mt: { xs: 1, sm: 0 },
+          width: { xs: '100%', sm: 'auto' }
+        }}>
           <Button
             variant="outlined"
             startIcon={<RefreshIcon />}
             onClick={refetchPayments}
             disabled={paymentsLoading}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             {t('refresh')}
           </Button>
@@ -359,6 +374,7 @@ function Payments() {
             startIcon={<AddIcon />}
             onClick={() => handleOpenDialog('create')}
             disabled={reservationsLoading || paymentsLoading}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             {t('createPayment')}
           </Button>
@@ -390,7 +406,7 @@ function Payments() {
       {!paymentsLoading && !reservationsLoading && (
         <>
           {/* Statistics Cards */}
-          <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid container spacing={3} sx={{ mb: 4, ml: 0 }}>
             <Grid item xs={12} md={3}>
               <Card>
                 <CardContent>
@@ -464,7 +480,7 @@ function Payments() {
             </Grid>
           </Grid>
 
-          <Card>
+          <Card sx={{ mt: 3 }}>
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
                 <Tab label={`Všetky platby (${payments.length})`} />

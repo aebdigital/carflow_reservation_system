@@ -92,7 +92,7 @@ function Login() {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: 'linear-gradient(to bottom, rgba(248, 250, 252, 0) 0%, rgba(248, 250, 252, 0.8) 50%, rgba(248, 250, 252, 1) 100%), linear-gradient(135deg, rgb(25, 118, 210) 0%, rgb(100, 181, 246) 100%)',
         display: 'flex',
         alignItems: 'center',
       }}
@@ -121,9 +121,10 @@ function Login() {
                       mb: 2,
                       transition: 'all 0.2s',
                       '&:hover': {
-                        backgroundColor: 'primary.main',
+                        background: 'linear-gradient(135deg, rgb(25, 118, 210) 0%, rgb(100, 181, 246) 100%)',
                         color: 'white',
-                        borderColor: 'primary.main',
+                        borderColor: 'transparent',
+                        boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
                       },
                     }}
                   >
@@ -166,14 +167,15 @@ function Login() {
                   width: 60,
                   height: 60,
                   borderRadius: '50%',
-                  backgroundColor: 'primary.main',
+                  background: 'linear-gradient(135deg, rgb(25, 118, 210) 0%, rgb(100, 181, 246) 100%)',
                   color: 'white',
                   mb: 2,
+                  boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
                 }}
               >
                 <CarIcon fontSize="large" />
               </Box>
-              <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
+              <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
                 {t('welcomeBack')}
               </Typography>
               <Typography variant="body1" color="text.secondary">
@@ -255,7 +257,20 @@ function Login() {
                 type="submit"
                 fullWidth
                 variant="contained"
-                sx={{ mt: 3, mb: 2, py: 1.5 }}
+                sx={{ 
+                  mt: 3, 
+                  mb: 2, 
+                  py: 1.5,
+                  background: 'linear-gradient(135deg, rgb(25, 118, 210) 0%, rgb(100, 181, 246) 100%)',
+                  boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, rgb(21, 101, 192) 0%, rgb(79, 172, 254) 100%)',
+                    boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)',
+                  },
+                  '&:active': {
+                    background: 'linear-gradient(135deg, rgb(13, 71, 161) 0%, rgb(66, 165, 245) 100%)',
+                  },
+                }}
                 disabled={isLoading}
               >
                 {isLoading ? (

@@ -103,8 +103,19 @@ function Layout() {
   }
 
   const drawer = (
-    <Box>
-      <Box sx={{ p: '25px', textAlign: 'center', borderBottom: 1, borderColor: 'divider' }}>
+    <Box 
+      sx={{ 
+        height: '100%',
+        backgroundColor: 'white',
+        color: 'text.primary'
+      }}
+    >
+      <Box sx={{ 
+        p: '25px', 
+        textAlign: 'center', 
+        borderBottom: 1,
+        borderColor: 'divider'
+      }}>
         <Box 
           sx={{ 
             display: 'flex',
@@ -136,22 +147,31 @@ function Layout() {
               sx={{
                 borderRadius: 2,
                 mb: 0.5,
-                backgroundColor: isSelected ? 'primary.main' : 'transparent',
-                color: isSelected ? 'white' : 'inherit',
+                background: isSelected ? 'linear-gradient(135deg, rgb(25, 118, 210) 0%, rgb(100, 181, 246) 100%)' : 'transparent',
+                color: isSelected ? 'white' : 'text.primary',
                 cursor: 'pointer',
+                boxShadow: isSelected ? '0 4px 12px rgba(25, 118, 210, 0.3)' : 'none',
                 '&:hover': {
-                  backgroundColor: isSelected ? 'primary.dark' : 'action.hover',
+                  background: isSelected ? 'linear-gradient(135deg, rgb(21, 101, 192) 0%, rgb(79, 172, 254) 100%)' : 'rgba(0, 0, 0, 0.04)',
+                  boxShadow: isSelected ? '0 6px 16px rgba(25, 118, 210, 0.4)' : 'none',
                 },
+                transition: 'all 0.2s ease-in-out',
               }}
             >
-              <ListItemIcon sx={{ color: isSelected ? 'white' : 'inherit', minWidth: 40 }}>
+              <ListItemIcon sx={{ 
+                color: isSelected ? 'white' : 'text.primary', 
+                minWidth: 40,
+                transition: 'color 0.2s ease-in-out',
+              }}>
                 {item.icon}
               </ListItemIcon>
               <ListItemText 
                 primary={item.text} 
                 primaryTypographyProps={{ 
                   fontSize: '0.9rem',
-                  fontWeight: isSelected ? 600 : 400 
+                  fontWeight: isSelected ? 600 : 500,
+                  fontFamily: '"Montserrat", "Roboto", "Helvetica", "Arial", sans-serif',
+                  transition: 'all 0.2s ease-in-out',
                 }}
               />
             </ListItem>
@@ -172,6 +192,7 @@ function Layout() {
           backgroundColor: 'white',
           color: 'text.primary',
           boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+          borderRadius: 0,
         }}
       >
         <Toolbar>
@@ -190,18 +211,28 @@ function Layout() {
           {user && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Box sx={{ textAlign: 'right', display: { xs: 'none', md: 'block' } }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                <Typography variant="subtitle2" sx={{ 
+                  fontWeight: 600,
+                  fontFamily: '"Montserrat", "Roboto", "Helvetica", "Arial", sans-serif'
+                }}>
                   {user.firstName} {user.lastName}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" color="text.secondary" sx={{
+                    fontFamily: '"Montserrat", "Roboto", "Helvetica", "Arial", sans-serif'
+                  }}>
                     {user.email}
                   </Typography>
                   <Chip 
                     label={t(user.role?.toLowerCase() || 'customer').toUpperCase()} 
                     size="small" 
                     color={getRoleColor(user.role)}
-                    sx={{ height: 20, fontSize: '0.7rem' }}
+                    sx={{ 
+                      height: 20, 
+                      fontSize: '0.7rem',
+                      fontFamily: '"Montserrat", "Roboto", "Helvetica", "Arial", sans-serif',
+                      fontWeight: 500
+                    }}
                   />
                 </Box>
               </Box>
@@ -255,7 +286,12 @@ function Layout() {
           }}
           sx={{
             display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            '& .MuiDrawer-paper': { 
+              boxSizing: 'border-box', 
+              width: drawerWidth,
+              backgroundColor: 'white',
+              border: 'none',
+            },
           }}
         >
           {drawer}
@@ -269,7 +305,8 @@ function Layout() {
             '& .MuiDrawer-paper': { 
               boxSizing: 'border-box', 
               width: drawerWidth,
-              borderRight: '1px solid #e0e0e0'
+              backgroundColor: 'white',
+              borderRight: '1px solid #e0e0e0',
             },
           }}
           open

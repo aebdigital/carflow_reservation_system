@@ -221,7 +221,7 @@ function Calendar() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
+              <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
         {t('calendar')}
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
@@ -293,65 +293,59 @@ function Calendar() {
       {/* Filters */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item>
-              <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <FilterIcon />
-                Filtre
-              </Typography>
-            </Grid>
-            
-            <Grid item xs>
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                <FormControl size="small" sx={{ minWidth: 150 }}>
-                  <InputLabel>{t('status')}</InputLabel>
-                  <Select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    label={t('status')}
-                  >
-                    <MenuItem value="all">Všetky stavy</MenuItem>
-                    <MenuItem value="available">{t('available')}</MenuItem>
-                    <MenuItem value="booked">{t('booked')}</MenuItem>
-                    <MenuItem value="maintenance">{t('maintenance')}</MenuItem>
-                    <MenuItem value="out-of-service">{t('outOfService')}</MenuItem>
-                  </Select>
-                </FormControl>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <FilterIcon />
+            Filtre
+          </Typography>
+          
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>{t('status')}</InputLabel>
+              <Select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                label={t('status')}
+              >
+                <MenuItem value="all">Všetky stavy</MenuItem>
+                <MenuItem value="available">{t('available')}</MenuItem>
+                <MenuItem value="booked">{t('booked')}</MenuItem>
+                <MenuItem value="maintenance">{t('maintenance')}</MenuItem>
+                <MenuItem value="out-of-service">{t('outOfService')}</MenuItem>
+              </Select>
+            </FormControl>
 
-                <FormControl size="small" sx={{ minWidth: 150 }}>
-                  <InputLabel>{t('category')}</InputLabel>
-                  <Select
-                    value={filterCarType}
-                    onChange={(e) => setFilterCarType(e.target.value)}
-                    label={t('category')}
-                  >
-                    <MenuItem value="all">Všetky kategórie</MenuItem>
-                    {carCategories.map(category => (
-                      <MenuItem key={category} value={category}>
-                        {t(category.toLowerCase())}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>{t('category')}</InputLabel>
+              <Select
+                value={filterCarType}
+                onChange={(e) => setFilterCarType(e.target.value)}
+                label={t('category')}
+              >
+                <MenuItem value="all">Všetky kategórie</MenuItem>
+                {carCategories.map(category => (
+                  <MenuItem key={category} value={category}>
+                    {t(category.toLowerCase())}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-                <FormControl size="small" sx={{ minWidth: 150 }}>
-                  <InputLabel>Auto</InputLabel>
-                  <Select
-                    value={filterCar}
-                    onChange={(e) => setFilterCar(e.target.value)}
-                    label="Auto"
-                  >
-                    <MenuItem value="all">Všetky autá</MenuItem>
-                    {cars.map(car => (
-                      <MenuItem key={car._id} value={car._id}>
-                        {car.brand} {car.model} ({car.registrationNumber})
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-            </Grid>
-          </Grid>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Auto</InputLabel>
+              <Select
+                value={filterCar}
+                onChange={(e) => setFilterCar(e.target.value)}
+                label="Auto"
+              >
+                <MenuItem value="all">Všetky autá</MenuItem>
+                {cars.map(car => (
+                  <MenuItem key={car._id} value={car._id}>
+                    {car.brand} {car.model} ({car.registrationNumber})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
         </CardContent>
       </Card>
 
@@ -626,7 +620,7 @@ function Calendar() {
       )}
 
       {/* Summary Statistics */}
-      <Grid container spacing={3} sx={{ mt: 3 }}>
+      <Grid container spacing={3} sx={{ mt: 3, ml: 0 }}>
         <Grid item xs={12} md={3}>
           <Card>
             <CardContent>

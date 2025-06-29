@@ -346,8 +346,29 @@ function Customers() {
   }
 
   const renderCustomerTable = (customers) => (
-    <TableContainer>
-      <Table>
+    <TableContainer sx={{ 
+      overflowX: 'auto',
+      maxWidth: { xs: 'calc(100vw - 64px)', sm: '100%' },
+      width: '100%',
+      '&::-webkit-scrollbar': {
+        height: 8,
+      },
+      '&::-webkit-scrollbar-track': {
+        backgroundColor: '#f1f1f1',
+        borderRadius: 4,
+      },
+      '&::-webkit-scrollbar-thumb': {
+        backgroundColor: '#c1c1c1',
+        borderRadius: 4,
+      },
+      '&::-webkit-scrollbar-thumb:hover': {
+        backgroundColor: '#a8a8a8',
+      },
+    }}>
+      <Table sx={{ 
+        minWidth: { xs: 800, sm: 'auto' },
+        width: { xs: 800, sm: '100%' }
+      }}>
         <TableHead>
           <TableRow>
             <TableCell>{t('customer')}</TableCell>
@@ -461,9 +482,16 @@ function Customers() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: { xs: 'flex-start', sm: 'space-between' }, 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: 3,
+        gap: { xs: 2, sm: 0 }
+      }}>
         <Box>
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
+          <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
             {t('customerManagement')}
           </Typography>
           <Typography variant="body1" color="text.secondary">
@@ -475,6 +503,10 @@ function Customers() {
           startIcon={<AddIcon />}
           onClick={() => handleOpenDialog('create')}
           size="large"
+          sx={{ 
+            alignSelf: { xs: 'flex-start', sm: 'auto' },
+            mt: { xs: 1, sm: 0 }
+          }}
         >
           {t('addCustomer')}
         </Button>
