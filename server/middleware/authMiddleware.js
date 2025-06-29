@@ -210,6 +210,41 @@ const validateTenantAccess = (Model) => {
   };
 };
 
+// Restrict rival.carflow.sk domain to only allow rival@test.sk user
+const restrictRivalDomain = async (req, res, next) => {
+  try {
+    const origin = req.headers.origin;
+    
+    // Check if request is from rival.carflow.sk
+    if (origin === 'https://rival.carflow.sk') {
+      // Ensure user is authenticated
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Access denied. Authentication required for rival.carflow.sk domain.'
+        });
+      }
+      
+      // Check if the authenticated user is rival@test.sk
+      if (req.user.email !== 'rival@test.sk') {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. This domain is restricted to rival@test.sk user only.'
+        });
+      }
+      
+      console.log(`✅ Rival domain access granted for user: ${req.user.email}`);
+    }
+    
+    next();
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error in domain restriction check.'
+    });
+  }
+};
+
 module.exports = {
   protect,
   requireAdmin,
@@ -217,5 +252,6 @@ module.exports = {
   requireOwnershipOrStaff,
   addTenantFilter,
   tenantRateLimit,
-  validateTenantAccess
+  validateTenantAccess,
+  restrictRivalDomain
 }; 

@@ -12,12 +12,13 @@ const {
   searchUsers
 } = require('../controllers/userController');
 
-const { protect, requireAdmin, requireStaff, addTenantFilter } = require('../middleware/authMiddleware');
+const { protect, requireAdmin, requireStaff, addTenantFilter, restrictRivalDomain } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-// Apply tenant filtering to all routes
+// Apply protection and tenant filtering to all routes
 router.use(protect);
+router.use(restrictRivalDomain);
 router.use(addTenantFilter);
 
 // Stats and search routes

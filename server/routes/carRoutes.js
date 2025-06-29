@@ -13,13 +13,14 @@ const {
   setPrimaryImage
 } = require('../controllers/carController');
 
-const { protect, requireAdmin, requireStaff, addTenantFilter } = require('../middleware/authMiddleware');
+const { protect, requireAdmin, requireStaff, addTenantFilter, restrictRivalDomain } = require('../middleware/authMiddleware');
 const { uploadMultipleCarImages, handleMulterError } = require('../middleware/imageUpload');
 
 const router = express.Router();
 
 // Apply tenant filtering to all routes
 router.use(protect);
+router.use(restrictRivalDomain);
 router.use(addTenantFilter);
 
 // Public/General routes

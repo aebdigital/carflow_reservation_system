@@ -11,12 +11,13 @@ const {
   generateReservationContract
 } = require('../controllers/reservationController');
 
-const { protect, requireStaff, addTenantFilter } = require('../middleware/authMiddleware');
+const { protect, requireStaff, addTenantFilter, restrictRivalDomain } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
 // Apply tenant filtering to all routes
 router.use(protect);
+router.use(restrictRivalDomain);
 router.use(addTenantFilter);
 
 // Stats route

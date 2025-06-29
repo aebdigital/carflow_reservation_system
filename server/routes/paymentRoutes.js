@@ -9,26 +9,31 @@ const {
   getPaymentStats
 } = require('../controllers/paymentController');
 
-const { protect, requireStaff } = require('../middleware/authMiddleware');
+const { protect, requireStaff, addTenantFilter, restrictRivalDomain } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
+// Apply protection and tenant filtering to all routes
+router.use(protect);
+router.use(restrictRivalDomain);
+router.use(addTenantFilter);
+
 // Stats route
-router.get('/stats', protect, requireStaff, getPaymentStats);
+router.get('/stats', requireStaff, getPaymentStats);
 
 // Payment processing routes
-router.post('/create-payment-intent', protect, createPaymentIntent);
-router.post('/confirm', protect, confirmPayment);
+router.post('/create-payment-intent', createPaymentIntent);
+router.post('/confirm', confirmPayment);
 
 // CRUD routes
 router.route('/')
-  .get(protect, requireStaff, getPayments);
+  .get(requireStaff, getPayments);
 
 router.route('/:id')
-  .get(protect, getPayment);
+  .get(getPayment);
 
 // Special actions
-router.post('/:id/refund', protect, requireStaff, processRefund);
-router.get('/:id/invoice', protect, generateInvoice);
+router.post('/:id/refund', requireStaff, processRefund);
+router.get('/:id/invoice', generateInvoice);
 
 module.exports = router; 
