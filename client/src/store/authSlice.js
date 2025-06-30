@@ -20,19 +20,31 @@ const authSlice = createSlice({
       }
     },
     logout: (state) => {
+      // Complete logout with full state reset
       state.user = null
       state.token = null
       state.isAuthenticated = false
       localStorage.removeItem('token')
       localStorage.removeItem('refreshToken')
+      
+      // Clear any other potential cached data
+      localStorage.removeItem('persist:root')
+      localStorage.removeItem('user')
     },
     clearStateOnLogout: (state) => {
-      // Complete state reset
-      state.user = null
+      // Complete state reset - more thorough than regular logout
+      Object.assign(state, initialState)
       state.token = null
       state.isAuthenticated = false
+      
+      // Clear all localStorage items related to authentication
       localStorage.removeItem('token')
       localStorage.removeItem('refreshToken')
+      localStorage.removeItem('persist:root')
+      localStorage.removeItem('user')
+      
+      // Force a clean slate
+      localStorage.removeItem('redux-state')
     },
     updateUser: (state, action) => {
       state.user = { ...state.user, ...action.payload }

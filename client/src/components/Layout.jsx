@@ -36,6 +36,8 @@ import { selectCurrentUser } from '../store/authSlice'
 import { useLogoutMutation } from '../store/store'
 import { t } from '../utils/translations'
 import logo from '../assets/images/logo.png'
+import { api } from '../store/store'
+import { clearStateOnLogout } from '../store/authSlice'
 
 const drawerWidth = 280
 
@@ -56,6 +58,7 @@ function Layout() {
   const location = useLocation()
   const user = useSelector(selectCurrentUser)
   const [logoutUser] = useLogoutMutation()
+  const dispatch = useDispatch()
   
   const [mobileOpen, setMobileOpen] = useState(false)
   const [anchorEl, setAnchorEl] = useState(null)
@@ -74,14 +77,25 @@ function Layout() {
 
   const handleLogout = async () => {
     try {
-      // This will clear RTK Query cache and auth state automatically
+      // Step 1: Clear RTK Query cache immediately
+      dispatch(api.util.resetApiState())
+      
+      // Step 2: Clear auth state
+      dispatch(clearStateOnLogout())
+      
+      // Step 3: Call server logout (this will also clear cache again)
       await logoutUser().unwrap()
     } catch (error) {
-      // Even if server logout fails, local state will still be cleared
+      // Even if server logout fails, local state is already cleared
       console.log('Logout completed locally')
     }
-    navigate('/login')
+    
+    // Step 4: Force navigation and close menu
+    navigate('/login', { replace: true })
     handleProfileMenuClose()
+    
+    // Step 5: Force page reload as final safeguard (optional - remove if not needed)
+    // setTimeout(() => window.location.reload(), 100)
   }
 
   const handleNavigation = (path) => {

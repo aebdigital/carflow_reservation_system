@@ -27,6 +27,22 @@ export const api = createApi({
         method: 'POST',
         body: credentials,
       }),
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled
+          
+          // Clear all RTK Query cache before setting new user data
+          // This prevents showing previous user's data when switching accounts
+          dispatch(api.util.resetApiState())
+          
+          // Force invalidate all tags to ensure fresh data fetch
+          dispatch(api.util.invalidateTags(['User', 'Car', 'Reservation', 'Payment']))
+          
+        } catch (error) {
+          // Login failed, don't clear cache
+          console.error('Login failed:', error)
+        }
+      },
     }),
     register: builder.mutation({
       query: (userData) => ({

@@ -62,9 +62,12 @@ function App() {
   const dispatch = useDispatch()
   const isAuthenticated = useSelector(selectIsAuthenticated)
   
-  // Get user data if authenticated
-  const { data: userData, error, isLoading } = useGetMeQuery(undefined, {
+  // Get user data if authenticated - force refetch on every authentication change
+  const { data: userData, error, isLoading, refetch } = useGetMeQuery(undefined, {
     skip: !isAuthenticated,
+    // Force refetch when authentication status changes to prevent stale data
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true
   })
 
   useEffect(() => {
@@ -81,6 +84,16 @@ function App() {
       dispatch(clearStateOnLogout())
     }
   }, [userData, error, dispatch])
+
+  // Force refetch user data when authentication status changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Small delay to ensure token is set
+      setTimeout(() => {
+        refetch()
+      }, 100)
+    }
+  }, [isAuthenticated, refetch])
 
   // Show loading spinner while checking authentication
   if (isAuthenticated && isLoading) {
