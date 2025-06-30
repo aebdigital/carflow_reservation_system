@@ -8,7 +8,13 @@ const {
 } = require('../controllers/carController');
 
 const {
-  createPublicReservation
+  createPublicReservation,
+  getCarsByUser,
+  getCarByUser,
+  getCarAvailabilityByUser,
+  getCarsByCategoryAndUser,
+  getAvailableFeaturesByUser,
+  createReservationByUser
 } = require('../controllers/publicController');
 
 const router = express.Router();
@@ -22,5 +28,26 @@ router.get('/cars/location/:locationName', getCarsByLocation); // Get cars by lo
 
 // Public reservation endpoint (no authentication required)
 router.post('/reservations', createPublicReservation); // Create reservation + customer
+
+// === NEW TENANT-AWARE ENDPOINTS ===
+// These endpoints filter by user email to show only that user's tenant cars
+
+// Get cars for a specific user/tenant
+router.get('/users/:email/cars', getCarsByUser);
+
+// Get single car details for a specific user/tenant
+router.get('/users/:email/cars/:carId', getCarByUser);
+
+// Check car availability for specific dates within a user/tenant
+router.get('/users/:email/cars/:carId/availability', getCarAvailabilityByUser);
+
+// Get cars by category for a specific user/tenant
+router.get('/users/:email/cars/category/:category', getCarsByCategoryAndUser);
+
+// Get available features/amenities for a specific user/tenant
+router.get('/users/:email/features', getAvailableFeaturesByUser);
+
+// Create reservation for a specific user/tenant
+router.post('/users/:email/reservations', createReservationByUser);
 
 module.exports = router; 
