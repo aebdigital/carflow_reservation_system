@@ -118,15 +118,130 @@ const createCar = asyncHandler(async (req, res, next) => {
       };
       
       // Clean up the flat keys
-      delete req.body['location[name]'];
-      delete req.body['location[address][street]'];
-      delete req.body['location[address][city]'];
-      delete req.body['location[address][state]'];
-      delete req.body['location[address][zipCode]'];
-      delete req.body['location[address][country]'];
+      Object.keys(req.body).forEach(key => {
+        if (key.startsWith('location[')) {
+          delete req.body[key];
+        }
+      });
     }
 
-    // Handle features array
+    // Handle engine object
+    const engineKeys = Object.keys(req.body).filter(key => key.startsWith('engine['));
+    if (engineKeys.length > 0) {
+      req.body.engine = {};
+      engineKeys.forEach(key => {
+        const fieldName = key.match(/engine\[(.+)\]/)?.[1];
+        if (fieldName) {
+          req.body.engine[fieldName] = req.body[key];
+          delete req.body[key];
+        }
+      });
+    }
+
+    // Handle mileage object
+    const mileageKeys = Object.keys(req.body).filter(key => key.startsWith('mileage['));
+    if (mileageKeys.length > 0) {
+      req.body.mileage = {};
+      mileageKeys.forEach(key => {
+        const fieldName = key.match(/mileage\[(.+)\]/)?.[1];
+        if (fieldName) {
+          req.body.mileage[fieldName] = req.body[key];
+          delete req.body[key];
+        }
+      });
+    }
+
+    // Handle fuelConsumption object
+    const fuelKeys = Object.keys(req.body).filter(key => key.startsWith('fuelConsumption['));
+    if (fuelKeys.length > 0) {
+      req.body.fuelConsumption = {};
+      fuelKeys.forEach(key => {
+        const fieldName = key.match(/fuelConsumption\[(.+)\]/)?.[1];
+        if (fieldName) {
+          req.body.fuelConsumption[fieldName] = req.body[key];
+          delete req.body[key];
+        }
+      });
+    }
+
+    // Handle documentValidity nested object
+    const docKeys = Object.keys(req.body).filter(key => key.startsWith('documentValidity['));
+    if (docKeys.length > 0) {
+      req.body.documentValidity = {};
+      docKeys.forEach(key => {
+        const match = key.match(/documentValidity\[(.+?)\]\[(.+)\]/);
+        if (match) {
+          const [, docType, field] = match;
+          if (!req.body.documentValidity[docType]) {
+            req.body.documentValidity[docType] = {};
+          }
+          req.body.documentValidity[docType][field] = req.body[key];
+          delete req.body[key];
+        }
+      });
+    }
+
+    // Handle pricing object
+    const pricingKeys = Object.keys(req.body).filter(key => key.startsWith('pricing['));
+    if (pricingKeys.length > 0) {
+      req.body.pricing = {};
+      pricingKeys.forEach(key => {
+        const match = key.match(/pricing\[(.+?)\](?:\[(.+)\])?/);
+        if (match) {
+          const [, section, field] = match;
+          if (field) {
+            // Nested object like pricing[rates][1day]
+            if (!req.body.pricing[section]) {
+              req.body.pricing[section] = {};
+            }
+            req.body.pricing[section][field] = req.body[key];
+          } else {
+            // Direct field like pricing[dailyRate]
+            req.body.pricing[section] = req.body[key];
+          }
+          delete req.body[key];
+        }
+      });
+    }
+
+    // Handle mileageLimits object
+    const mileageLimitKeys = Object.keys(req.body).filter(key => key.startsWith('mileageLimits['));
+    if (mileageLimitKeys.length > 0) {
+      req.body.mileageLimits = {};
+      mileageLimitKeys.forEach(key => {
+        const fieldName = key.match(/mileageLimits\[(.+)\]/)?.[1];
+        if (fieldName) {
+          req.body.mileageLimits[fieldName] = req.body[key];
+          delete req.body[key];
+        }
+      });
+    }
+
+    // Handle equipment array
+    if (req.body['equipment[]']) {
+      req.body.equipment = Array.isArray(req.body['equipment[]']) 
+        ? req.body['equipment[]'] 
+        : [req.body['equipment[]']];
+      delete req.body['equipment[]'];
+    }
+
+    // Handle badges array
+    if (req.body['badges[]']) {
+      req.body.badges = Array.isArray(req.body['badges[]']) 
+        ? req.body['badges[]'] 
+        : [req.body['badges[]']];
+      delete req.body['badges[]'];
+    }
+
+    // Handle addons array
+    if (req.body['addons[]']) {
+      req.body.addons = Array.isArray(req.body['addons[]']) 
+        ? req.body['addons[]'] 
+        : [req.body['addons[]']];
+      delete req.body['addons[]'];
+    }
+
+    // Handle features array (legacy)
     if (req.body['features[]']) {
       req.body.features = Array.isArray(req.body['features[]']) 
         ? req.body['features[]'] 
@@ -159,6 +274,32 @@ const createCar = asyncHandler(async (req, res, next) => {
         }
       });
     }
+
+    // Convert string numbers to actual numbers for specific fields
+    const numericFields = [
+      'year', 'seats', 'doors', 'trunkVolume',
+      'engine.displacement', 'engine.power', 'engine.torque', 'engine.cylinders',
+      'fuelConsumption.city', 'fuelConsumption.highway', 'fuelConsumption.combined', 'fuelConsumption.co2Emissions',
+      'pricing.dailyRate', 'pricing.deposit', 'pricing.weeklyRate', 'pricing.monthlyRate',
+      'mileageLimits.dailyLimit', 'mileageLimits.excessKmPrice',
+      'mileage.current'
+    ];
+
+    numericFields.forEach(field => {
+      const keys = field.split('.');
+      let obj = req.body;
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (obj[keys[i]]) {
+          obj = obj[keys[i]];
+        } else {
+          return;
+        }
+      }
+      const finalKey = keys[keys.length - 1];
+      if (obj[finalKey] !== undefined && obj[finalKey] !== '') {
+        obj[finalKey] = Number(obj[finalKey]);
+      }
+    });
   }
 
   // Add tenant information to car data
@@ -167,6 +308,18 @@ const createCar = asyncHandler(async (req, res, next) => {
     tenantId: req.user.tenantId,
     owner: req.user._id
   };
+
+  // Set default category description if not provided
+  if (carData.category && !carData.description) {
+    const Car = require('../models/Car');
+    const tempCar = new Car({ category: carData.category });
+    carData.description = tempCar.getCategoryDescription();
+  }
+
+  // Set mileage updatedBy if mileage is provided
+  if (carData.mileage && carData.mileage.current !== undefined) {
+    carData.mileage.updatedBy = req.user._id;
+  }
   
   // Create car first to get the ID
   const car = await Car.create(carData);
@@ -189,7 +342,8 @@ const createCar = asyncHandler(async (req, res, next) => {
           isPrimary: index === 0,
           filename: result.filename,
           uploadDate: result.uploadDate,
-          urls: result.urls // Store all size variants
+          urls: result.urls, // Store all size variants
+          order: index
         };
       } catch (error) {
         console.error(`Failed to upload image ${index + 1}:`, error);
@@ -200,6 +354,7 @@ const createCar = asyncHandler(async (req, res, next) => {
           isPrimary: index === 0,
           filename: file.originalname,
           uploadDate: new Date(),
+          order: index,
           urls: {
             thumbnail: `/placeholder-car-image-${index + 1}-thumb.jpg`,
             medium: `/placeholder-car-image-${index + 1}-medium.jpg`,
@@ -216,6 +371,13 @@ const createCar = asyncHandler(async (req, res, next) => {
       car.images = uploadedImages;
       await car.save();
     }
+  }
+
+  // Check for document validity notifications
+  const notifications = car.checkDocumentValidity();
+  if (notifications.length > 0) {
+    car.notifications = [...(car.notifications || []), ...notifications];
+    await car.save();
   }
 
   res.status(201).json({
@@ -253,15 +415,130 @@ const updateCar = asyncHandler(async (req, res, next) => {
       };
       
       // Clean up the flat keys
-      delete req.body['location[name]'];
-      delete req.body['location[address][street]'];
-      delete req.body['location[address][city]'];
-      delete req.body['location[address][state]'];
-      delete req.body['location[address][zipCode]'];
-      delete req.body['location[address][country]'];
+      Object.keys(req.body).forEach(key => {
+        if (key.startsWith('location[')) {
+          delete req.body[key];
+        }
+      });
     }
 
-    // Handle features array
+    // Handle engine object
+    const engineKeys = Object.keys(req.body).filter(key => key.startsWith('engine['));
+    if (engineKeys.length > 0) {
+      req.body.engine = {};
+      engineKeys.forEach(key => {
+        const fieldName = key.match(/engine\[(.+)\]/)?.[1];
+        if (fieldName) {
+          req.body.engine[fieldName] = req.body[key];
+          delete req.body[key];
+        }
+      });
+    }
+
+    // Handle mileage object
+    const mileageKeys = Object.keys(req.body).filter(key => key.startsWith('mileage['));
+    if (mileageKeys.length > 0) {
+      req.body.mileage = {};
+      mileageKeys.forEach(key => {
+        const fieldName = key.match(/mileage\[(.+)\]/)?.[1];
+        if (fieldName) {
+          req.body.mileage[fieldName] = req.body[key];
+          delete req.body[key];
+        }
+      });
+    }
+
+    // Handle fuelConsumption object
+    const fuelKeys = Object.keys(req.body).filter(key => key.startsWith('fuelConsumption['));
+    if (fuelKeys.length > 0) {
+      req.body.fuelConsumption = {};
+      fuelKeys.forEach(key => {
+        const fieldName = key.match(/fuelConsumption\[(.+)\]/)?.[1];
+        if (fieldName) {
+          req.body.fuelConsumption[fieldName] = req.body[key];
+          delete req.body[key];
+        }
+      });
+    }
+
+    // Handle documentValidity nested object
+    const docKeys = Object.keys(req.body).filter(key => key.startsWith('documentValidity['));
+    if (docKeys.length > 0) {
+      req.body.documentValidity = {};
+      docKeys.forEach(key => {
+        const match = key.match(/documentValidity\[(.+?)\]\[(.+)\]/);
+        if (match) {
+          const [, docType, field] = match;
+          if (!req.body.documentValidity[docType]) {
+            req.body.documentValidity[docType] = {};
+          }
+          req.body.documentValidity[docType][field] = req.body[key];
+          delete req.body[key];
+        }
+      });
+    }
+
+    // Handle pricing object
+    const pricingKeys = Object.keys(req.body).filter(key => key.startsWith('pricing['));
+    if (pricingKeys.length > 0) {
+      req.body.pricing = {};
+      pricingKeys.forEach(key => {
+        const match = key.match(/pricing\[(.+?)\](?:\[(.+)\])?/);
+        if (match) {
+          const [, section, field] = match;
+          if (field) {
+            // Nested object like pricing[rates][1day]
+            if (!req.body.pricing[section]) {
+              req.body.pricing[section] = {};
+            }
+            req.body.pricing[section][field] = req.body[key];
+          } else {
+            // Direct field like pricing[dailyRate]
+            req.body.pricing[section] = req.body[key];
+          }
+          delete req.body[key];
+        }
+      });
+    }
+
+    // Handle mileageLimits object
+    const mileageLimitKeys = Object.keys(req.body).filter(key => key.startsWith('mileageLimits['));
+    if (mileageLimitKeys.length > 0) {
+      req.body.mileageLimits = {};
+      mileageLimitKeys.forEach(key => {
+        const fieldName = key.match(/mileageLimits\[(.+)\]/)?.[1];
+        if (fieldName) {
+          req.body.mileageLimits[fieldName] = req.body[key];
+          delete req.body[key];
+        }
+      });
+    }
+
+    // Handle equipment array
+    if (req.body['equipment[]']) {
+      req.body.equipment = Array.isArray(req.body['equipment[]']) 
+        ? req.body['equipment[]'] 
+        : [req.body['equipment[]']];
+      delete req.body['equipment[]'];
+    }
+
+    // Handle badges array
+    if (req.body['badges[]']) {
+      req.body.badges = Array.isArray(req.body['badges[]']) 
+        ? req.body['badges[]'] 
+        : [req.body['badges[]']];
+      delete req.body['badges[]'];
+    }
+
+    // Handle addons array
+    if (req.body['addons[]']) {
+      req.body.addons = Array.isArray(req.body['addons[]']) 
+        ? req.body['addons[]'] 
+        : [req.body['addons[]']];
+      delete req.body['addons[]'];
+    }
+
+    // Handle features array (legacy)
     if (req.body['features[]']) {
       req.body.features = Array.isArray(req.body['features[]']) 
         ? req.body['features[]'] 
@@ -294,6 +571,37 @@ const updateCar = asyncHandler(async (req, res, next) => {
         }
       });
     }
+
+    // Convert string numbers to actual numbers for specific fields
+    const numericFields = [
+      'year', 'seats', 'doors', 'trunkVolume',
+      'engine.displacement', 'engine.power', 'engine.torque', 'engine.cylinders',
+      'fuelConsumption.city', 'fuelConsumption.highway', 'fuelConsumption.combined', 'fuelConsumption.co2Emissions',
+      'pricing.dailyRate', 'pricing.deposit', 'pricing.weeklyRate', 'pricing.monthlyRate',
+      'mileageLimits.dailyLimit', 'mileageLimits.excessKmPrice',
+      'mileage.current'
+    ];
+
+    numericFields.forEach(field => {
+      const keys = field.split('.');
+      let obj = req.body;
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (obj[keys[i]]) {
+          obj = obj[keys[i]];
+        } else {
+          return;
+        }
+      }
+      const finalKey = keys[keys.length - 1];
+      if (obj[finalKey] !== undefined && obj[finalKey] !== '') {
+        obj[finalKey] = Number(obj[finalKey]);
+      }
+    });
+  }
+
+  // Set mileage updatedBy if mileage is being updated
+  if (req.body.mileage && req.body.mileage.current !== undefined) {
+    req.body.mileage.updatedBy = req.user._id;
   }
 
   // Handle uploaded images
@@ -314,7 +622,8 @@ const updateCar = asyncHandler(async (req, res, next) => {
           isPrimary: index === 0 && (!car.images || car.images.length === 0),
           filename: result.filename,
           uploadDate: result.uploadDate,
-          urls: result.urls
+          urls: result.urls,
+          order: (car.images?.length || 0) + index
         };
       } catch (error) {
         console.error(`Failed to upload image ${index + 1}:`, error);
@@ -325,6 +634,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
           isPrimary: index === 0 && (!car.images || car.images.length === 0),
           filename: file.originalname,
           uploadDate: new Date(),
+          order: (car.images?.length || 0) + index,
           urls: {
             thumbnail: `/placeholder-car-image-${index + 1}-thumb.jpg`,
             medium: `/placeholder-car-image-${index + 1}-medium.jpg`,
@@ -351,6 +661,25 @@ const updateCar = asyncHandler(async (req, res, next) => {
     runValidators: true
     }
   );
+
+  // Check for document validity notifications after update
+  const notifications = car.checkDocumentValidity();
+  if (notifications.length > 0) {
+    // Add new notifications to existing ones
+    const existingNotifications = car.notifications || [];
+    const newNotifications = notifications.filter(newNotif => 
+      !existingNotifications.some(existing => 
+        existing.type === newNotif.type && 
+        existing.message === newNotif.message &&
+        existing.isActive
+      )
+    );
+    
+    if (newNotifications.length > 0) {
+      car.notifications = [...existingNotifications, ...newNotifications];
+      await car.save();
+    }
+  }
 
   res.status(200).json({
     success: true,
