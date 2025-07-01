@@ -1,6 +1,9 @@
-const User = require('../models/User');
 const Car = require('../models/Car');
+const User = require('../models/User');
 const Reservation = require('../models/Reservation');
+const Website = require('../models/Website');
+const InfoBar = require('../models/InfoBar');
+const Modal = require('../models/Modal');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const bcrypt = require('bcryptjs');
 const { DiscountCode } = require('../models/WebsiteSettings');

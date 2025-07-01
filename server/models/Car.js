@@ -461,9 +461,23 @@ carSchema.pre('save', async function(next) {
     }
   }
   
+  // Handle legacy mileage format migration
+  if (typeof this.mileage === 'number') {
+    // Convert legacy number format to new object format
+    const legacyMileage = this.mileage;
+    this.mileage = {
+      current: legacyMileage,
+      lastUpdated: new Date(),
+      updatedBy: this.owner || null
+    };
+  }
+  
   // Update mileage timestamp if mileage changed
   if (this.isModified('mileage.current')) {
-    this.mileage.lastUpdated = new Date();
+    // Ensure mileage is an object before setting lastUpdated
+    if (this.mileage && typeof this.mileage === 'object') {
+      this.mileage.lastUpdated = new Date();
+    }
   }
   
   next();
