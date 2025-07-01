@@ -461,8 +461,8 @@ carSchema.pre('save', async function(next) {
     }
   }
   
-  // Handle legacy mileage format migration
-  if (typeof this.mileage === 'number') {
+  // Handle legacy mileage format migration - only run this during save operations
+  if (this.mileage !== undefined && typeof this.mileage === 'number') {
     // Convert legacy number format to new object format
     const legacyMileage = this.mileage;
     this.mileage = {
@@ -481,6 +481,25 @@ carSchema.pre('save', async function(next) {
   }
   
   next();
+});
+
+// Add a post-init middleware to handle legacy data when documents are loaded
+carSchema.post('init', function() {
+  // Handle legacy mileage data when documents are loaded from database
+  if (this.mileage !== undefined && typeof this.mileage === 'number') {
+    const legacyMileage = this.mileage;
+    // Use Object.defineProperty to avoid triggering the setter
+    Object.defineProperty(this, 'mileage', {
+      value: {
+        current: legacyMileage,
+        lastUpdated: new Date(),
+        updatedBy: null
+      },
+      writable: true,
+      enumerable: true,
+      configurable: true
+    });
+  }
 });
 
 // Method to check document validity and create notifications
