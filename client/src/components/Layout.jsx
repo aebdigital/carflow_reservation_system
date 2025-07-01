@@ -31,6 +31,7 @@ import {
   AccountCircle as AccountIcon,
   Campaign as CampaignIcon,
   Description as ContractIcon,
+  Language as WebsiteIcon,
 } from '@mui/icons-material'
 import { selectCurrentUser } from '../store/authSlice'
 import { useLogoutMutation } from '../store/store'
@@ -50,6 +51,7 @@ const menuItems = [
   { text: t('payments'), icon: <PaymentsIcon />, path: '/payments' },
   { text: t('campaigns'), icon: <CampaignIcon />, path: '/campaigns' },
   { text: t('contracts'), icon: <ContractIcon />, path: '/contracts' },
+  { text: 'Webstránka', icon: <WebsiteIcon />, path: '/website' },
   { text: t('settings'), icon: <SettingsIcon />, path: '/settings' },
 ]
 

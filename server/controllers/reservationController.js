@@ -2,6 +2,7 @@ const Reservation = require('../models/Reservation');
 const Car = require('../models/Car');
 const User = require('../models/User');
 const Payment = require('../models/Payment');
+const { DiscountCode } = require('../models/WebsiteSettings');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const PDFDocument = require('pdfkit');
 
@@ -143,7 +144,8 @@ const createReservation = asyncHandler(async (req, res, next) => {
     pickupLocation,
     dropoffLocation,
     additionalDrivers,
-    specialRequests
+    specialRequests,
+    discountCode
   } = req.body;
 
   // Validate car exists and is available (tenant-scoped)
@@ -190,7 +192,73 @@ const createReservation = asyncHandler(async (req, res, next) => {
   const dailyRate = carDoc.dailyRate;
   const subtotal = carDoc.calculateRate(days);
   const taxes = subtotal * 0.1; // 10% tax
-  const totalAmount = subtotal + taxes;
+  
+  // Initialize pricing object
+  let pricing = {
+    dailyRate,
+    totalDays: days,
+    subtotal,
+    taxes,
+    discounts: [],
+    totalAmount: subtotal + taxes
+  };
+
+  let appliedDiscountCodes = [];
+
+  // Handle discount code if provided
+  if (discountCode) {
+    const discountCodeDoc = await DiscountCode.findOne({
+      code: discountCode.toUpperCase(),
+      tenantId: req.user.tenantId
+    });
+
+    if (!discountCodeDoc) {
+      return next(new AppError('Neplatný zľavový kód', 400));
+    }
+
+    // Validate discount code
+    if (!discountCodeDoc.isValid()) {
+      return next(new AppError('Zľavový kód je neplatný alebo vypršal', 400));
+    }
+
+    // Check if customer can use this code
+    const canUse = discountCodeDoc.canBeUsedBy(customerDoc);
+    if (!canUse.valid) {
+      return next(new AppError(canUse.reason, 400));
+    }
+
+    // Calculate discount
+    const discountResult = discountCodeDoc.calculateDiscount(
+      subtotal, 
+      days, 
+      carDoc.category
+    );
+
+    if (discountResult.reason) {
+      return next(new AppError(discountResult.reason, 400));
+    }
+
+    // Apply discount
+    const discountAmount = discountResult.discount;
+    
+    pricing.discounts.push({
+      name: `Zľavový kód: ${discountCodeDoc.code}`,
+      amount: discountAmount,
+      percentage: discountCodeDoc.discountType === 'percentage' ? discountCodeDoc.discountValue : null,
+      description: discountCodeDoc.description || `Zľava ${discountCodeDoc.discountValue}${discountCodeDoc.discountType === 'percentage' ? '%' : '€'}`,
+      discountCode: discountCodeDoc._id,
+      code: discountCodeDoc.code
+    });
+
+    appliedDiscountCodes.push({
+      discountCode: discountCodeDoc._id,
+      code: discountCodeDoc.code,
+      discountAmount: discountAmount
+    });
+
+    // Recalculate total amount
+    pricing.totalAmount = subtotal + taxes - discountAmount;
+  }
 
   const reservationData = {
     customer,
@@ -199,13 +267,8 @@ const createReservation = asyncHandler(async (req, res, next) => {
     endDate: end,
     pickupLocation,
     dropoffLocation,
-    pricing: {
-      dailyRate,
-      totalDays: days,
-      subtotal,
-      taxes,
-      totalAmount
-    },
+    pricing,
+    appliedDiscountCodes,
     additionalDrivers,
     specialRequests,
     tenantId: req.user.tenantId,
@@ -214,26 +277,47 @@ const createReservation = asyncHandler(async (req, res, next) => {
 
   const reservation = await Reservation.create(reservationData);
 
+  // Update discount code usage if applied
+  if (appliedDiscountCodes.length > 0) {
+    for (const appliedCode of appliedDiscountCodes) {
+      await DiscountCode.findByIdAndUpdate(
+        appliedCode.discountCode,
+        {
+          $inc: { currentUsageCount: 1 },
+          $push: {
+            usedBy: {
+              customer: customerDoc._id,
+              reservation: reservation._id,
+              discountApplied: appliedCode.discountAmount,
+              usedAt: new Date()
+            }
+          }
+        }
+      );
+    }
+  }
+
   // Update car stats but don't change status to booked
   await Car.findOneAndUpdate(
     { _id: car, tenantId: req.user.tenantId },
     {
     $inc: { 
       totalBookings: 1,
-      totalRevenue: totalAmount
+      totalRevenue: pricing.totalAmount
     }
     }
   );
 
   // Update customer stats
   await User.findByIdAndUpdate(customer, {
-    $inc: { totalBookings: 1, totalSpent: totalAmount }
+    $inc: { totalBookings: 1, totalSpent: pricing.totalAmount }
   });
 
   // Populate the response
   await reservation.populate([
     { path: 'customer', select: 'firstName lastName email phone' },
-    { path: 'car', select: 'brand model year registrationNumber images' }
+    { path: 'car', select: 'brand model year registrationNumber images' },
+    { path: 'appliedDiscountCodes.discountCode', select: 'code description discountType discountValue' }
   ]);
 
   res.status(201).json({

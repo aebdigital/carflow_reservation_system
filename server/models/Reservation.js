@@ -100,7 +100,12 @@ const reservationSchema = new mongoose.Schema({
       name: String,
       amount: Number,
       percentage: Number,
-      description: String
+      description: String,
+      discountCode: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'DiscountCode'
+      },
+      code: String
     }],
     totalAmount: {
       type: Number,
@@ -195,7 +200,26 @@ const reservationSchema = new mongoose.Schema({
   lastModifiedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
-  }
+  },
+  appliedDiscountCodes: [{
+    discountCode: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'DiscountCode',
+      required: true
+    },
+    code: {
+      type: String,
+      required: true
+    },
+    discountAmount: {
+      type: Number,
+      required: true
+    },
+    appliedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true
 });

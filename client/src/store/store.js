@@ -18,7 +18,7 @@ const baseQuery = fetchBaseQuery({
 export const api = createApi({
   reducerPath: 'api',
   baseQuery,
-  tagTypes: ['User', 'Car', 'Reservation', 'Payment'],
+  tagTypes: ['User', 'Car', 'Reservation', 'Payment', 'WebsiteSettings', 'DiscountCode'],
   endpoints: (builder) => ({
     // Auth endpoints
     login: builder.mutation({
@@ -304,6 +304,103 @@ export const api = createApi({
         params,
       }),
     }),
+
+    // Website Settings endpoints
+    getWebsiteSettings: builder.query({
+      query: () => 'website/settings',
+      providesTags: ['WebsiteSettings'],
+    }),
+    updateWebsiteSettings: builder.mutation({
+      query: (settingsData) => ({
+        url: 'website/settings',
+        method: 'PUT',
+        body: settingsData,
+      }),
+      invalidatesTags: ['WebsiteSettings'],
+    }),
+    updateInfoBar: builder.mutation({
+      query: (infoBarData) => ({
+        url: 'website/settings/info-bar',
+        method: 'PUT',
+        body: infoBarData,
+      }),
+      invalidatesTags: ['WebsiteSettings'],
+    }),
+    toggleInfoBar: builder.mutation({
+      query: () => ({
+        url: 'website/settings/info-bar/toggle',
+        method: 'PATCH',
+      }),
+      invalidatesTags: ['WebsiteSettings'],
+    }),
+    updateModal: builder.mutation({
+      query: (modalData) => ({
+        url: 'website/settings/modal',
+        method: 'PUT',
+        body: modalData,
+      }),
+      invalidatesTags: ['WebsiteSettings'],
+    }),
+    toggleModal: builder.mutation({
+      query: () => ({
+        url: 'website/settings/modal/toggle',
+        method: 'PATCH',
+      }),
+      invalidatesTags: ['WebsiteSettings'],
+    }),
+
+    // Discount Codes endpoints
+    getDiscountCodes: builder.query({
+      query: (params = {}) => ({
+        url: 'discount-codes',
+        params,
+      }),
+      providesTags: ['DiscountCode'],
+    }),
+    getDiscountCode: builder.query({
+      query: (id) => `discount-codes/${id}`,
+      providesTags: (result, error, id) => [{ type: 'DiscountCode', id }],
+    }),
+    createDiscountCode: builder.mutation({
+      query: (discountCodeData) => ({
+        url: 'discount-codes',
+        method: 'POST',
+        body: discountCodeData,
+      }),
+      invalidatesTags: ['DiscountCode'],
+    }),
+    updateDiscountCode: builder.mutation({
+      query: ({ id, ...discountCodeData }) => ({
+        url: `discount-codes/${id}`,
+        method: 'PUT',
+        body: discountCodeData,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'DiscountCode', id }, 'DiscountCode'],
+    }),
+    deleteDiscountCode: builder.mutation({
+      query: (id) => ({
+        url: `discount-codes/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['DiscountCode'],
+    }),
+    toggleDiscountCode: builder.mutation({
+      query: (id) => ({
+        url: `discount-codes/${id}/toggle`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: (result, error, id) => [{ type: 'DiscountCode', id }, 'DiscountCode'],
+    }),
+    validateDiscountCode: builder.mutation({
+      query: (validationData) => ({
+        url: 'discount-codes/validate',
+        method: 'POST',
+        body: validationData,
+      }),
+    }),
+    getDiscountCodeStats: builder.query({
+      query: () => 'discount-codes/stats',
+    }),
   }),
 })
 
@@ -349,6 +446,24 @@ export const {
   useConfirmPaymentMutation,
   useProcessRefundMutation,
   useGetPaymentStatsQuery,
+
+  // Website Settings hooks
+  useGetWebsiteSettingsQuery,
+  useUpdateWebsiteSettingsMutation,
+  useUpdateInfoBarMutation,
+  useToggleInfoBarMutation,
+  useUpdateModalMutation,
+  useToggleModalMutation,
+
+  // Discount Codes hooks
+  useGetDiscountCodesQuery,
+  useGetDiscountCodeQuery,
+  useCreateDiscountCodeMutation,
+  useUpdateDiscountCodeMutation,
+  useDeleteDiscountCodeMutation,
+  useToggleDiscountCodeMutation,
+  useValidateDiscountCodeMutation,
+  useGetDiscountCodeStatsQuery,
 } = api
 
 export const store = configureStore({

@@ -17,6 +17,7 @@ import Payments from './pages/Payments'
 import Campaigns from './pages/Campaigns'
 import Contracts from './pages/Contracts'
 import Settings from './pages/Settings'
+import Website from './pages/Website'
 import CustomerPortal from './pages/CustomerPortal'
 import Layout from './components/Layout'
 
@@ -148,6 +149,7 @@ function App() {
         <Route path="payments" element={<Payments />} />
         <Route path="campaigns" element={<Campaigns />} />
         <Route path="contracts" element={<Contracts />} />
+        <Route path="website" element={<Website />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       

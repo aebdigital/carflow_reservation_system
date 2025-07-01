@@ -3,6 +3,7 @@ const Car = require('../models/Car');
 const Reservation = require('../models/Reservation');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const bcrypt = require('bcryptjs');
+const { DiscountCode } = require('../models/WebsiteSettings');
 
 // Helper function to get tenant by user email
 const getTenantByUserEmail = async (email) => {
@@ -223,7 +224,7 @@ const getAvailableFeaturesByUser = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Create a reservation for a specific user/tenant (public)
+// @desc    Create a reservation for a specific user/tenant (auto-create customer if needed)
 // @route   POST /api/public/users/:email/reservations
 // @access  Public
 const createReservationByUser = asyncHandler(async (req, res, next) => {
@@ -247,7 +248,8 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     dropoffLocation,
     additionalDrivers,
     specialRequests,
-    notes
+    notes,
+    discountCode // Add discount code support
   } = req.body;
 
   // Use provided customerEmail or fallback to the email in the URL
@@ -381,7 +383,74 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
 
     // Calculate taxes (assuming 10% tax rate)
     const taxes = subtotal * 0.10;
-    const totalAmount = subtotal + taxes;
+    
+    // Initialize pricing object
+    let pricing = {
+      dailyRate: car.dailyRate,
+      totalDays: durationDays,
+      subtotal: subtotal,
+      taxes: taxes,
+      fees: [],
+      discounts: [],
+      totalAmount: subtotal + taxes
+    };
+
+    let appliedDiscountCodes = [];
+
+    // Handle discount code if provided
+    if (discountCode) {
+      const discountCodeDoc = await DiscountCode.findOne({
+        code: discountCode.toUpperCase(),
+        tenantId
+      });
+
+      if (!discountCodeDoc) {
+        return next(new AppError('Invalid discount code', 400));
+      }
+
+      // Validate discount code
+      if (!discountCodeDoc.isValid()) {
+        return next(new AppError('Discount code has expired or is not active', 400));
+      }
+
+      // Check if customer can use this code
+      const canUse = discountCodeDoc.canBeUsedBy(customer);
+      if (!canUse.valid) {
+        return next(new AppError(canUse.reason, 400));
+      }
+
+      // Calculate discount
+      const discountResult = discountCodeDoc.calculateDiscount(
+        subtotal, 
+        durationDays, 
+        car.category
+      );
+
+      if (discountResult.reason) {
+        return next(new AppError(discountResult.reason, 400));
+      }
+
+      // Apply discount
+      const discountAmount = discountResult.discount;
+      
+      pricing.discounts.push({
+        name: `Discount Code: ${discountCodeDoc.code}`,
+        amount: discountAmount,
+        percentage: discountCodeDoc.discountType === 'percentage' ? discountCodeDoc.discountValue : null,
+        description: discountCodeDoc.description || `${discountCodeDoc.discountValue}${discountCodeDoc.discountType === 'percentage' ? '%' : '€'} discount`,
+        discountCode: discountCodeDoc._id,
+        code: discountCodeDoc.code
+      });
+
+      appliedDiscountCodes.push({
+        discountCode: discountCodeDoc._id,
+        code: discountCodeDoc.code,
+        discountAmount: discountAmount
+      });
+
+      // Recalculate total amount
+      pricing.totalAmount = subtotal + taxes - discountAmount;
+    }
 
     // Default pickup/dropoff locations if not provided
     const defaultPickup = pickupLocation || {
@@ -411,15 +480,8 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       pickupLocation: defaultPickup,
       dropoffLocation: defaultDropoff,
       status: 'pending',
-      pricing: {
-        dailyRate: car.dailyRate,
-        totalDays: durationDays,
-        subtotal: subtotal,
-        taxes: taxes,
-        fees: [],
-        discounts: [],
-        totalAmount: totalAmount
-      },
+      pricing,
+      appliedDiscountCodes,
       additionalDrivers: additionalDrivers || [],
       specialRequests: specialRequests || '',
       notes: notes || '',
@@ -431,18 +493,39 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       }
     });
 
+    // Update discount code usage if applied
+    if (appliedDiscountCodes.length > 0) {
+      for (const appliedCode of appliedDiscountCodes) {
+        await DiscountCode.findByIdAndUpdate(
+          appliedCode.discountCode,
+          {
+            $inc: { currentUsageCount: 1 },
+            $push: {
+              usedBy: {
+                customer: customer._id,
+                reservation: reservation._id,
+                discountApplied: appliedCode.discountAmount,
+                usedAt: new Date()
+              }
+            }
+          }
+        );
+      }
+    }
+
     // Update car stats
     await Car.findByIdAndUpdate(car._id, {
       $inc: { 
         totalBookings: 1,
-        totalRevenue: totalAmount
+        totalRevenue: pricing.totalAmount
       }
     });
 
     // Populate the reservation with customer and car details
     const populatedReservation = await Reservation.findById(reservation._id)
       .populate('customer', 'firstName lastName email phone')
-      .populate('car', 'brand model year registrationNumber dailyRate images');
+      .populate('car', 'brand model year registrationNumber dailyRate images')
+      .populate('appliedDiscountCodes.discountCode', 'code description discountType discountValue');
 
     res.status(201).json({
       success: true,
@@ -461,7 +544,12 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
           email: customer.email,
           defaultPassword: customer.createdAt && new Date() - customer.createdAt < 1000 ? 'customer123' : 'Use your existing password',
           message: 'You can log in to track your reservation status'
-        }
+        },
+        discount: appliedDiscountCodes.length > 0 ? {
+          applied: true,
+          codes: appliedDiscountCodes,
+          totalSaved: appliedDiscountCodes.reduce((sum, code) => sum + code.discountAmount, 0)
+        } : { applied: false }
       }
     });
 
@@ -683,6 +771,267 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Get website settings for tenant by user email (public)
+// @route   GET /api/public/users/:email/website-settings
+// @access  Public
+const getWebsiteSettingsByUser = asyncHandler(async (req, res, next) => {
+  const userEmail = req.params.email;
+  
+  if (!userEmail) {
+    return next(new AppError('User email is required', 400));
+  }
+
+  try {
+    const tenantId = await getTenantByUserEmail(userEmail);
+    
+    if (!tenantId) {
+      return next(new AppError('Tenant not found for this user', 404));
+    }
+
+    const { WebsiteSettings } = require('../models/WebsiteSettings');
+    
+    let settings = await WebsiteSettings.findOne({ tenantId });
+    
+    // If no settings exist, return default empty settings
+    if (!settings) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          infoBar: { isActive: false },
+          modal: { isActive: false }
+        }
+      });
+    }
+
+    // Return only public-relevant settings
+    const publicSettings = {
+      infoBar: settings.infoBar || { isActive: false },
+      modal: settings.modal || { isActive: false },
+      siteName: settings.siteName || 'CarFlow Rental',
+      siteDescription: settings.siteDescription || 'Professional car rental service',
+      contactEmail: settings.contactEmail,
+      contactPhone: settings.contactPhone,
+      socialLinks: settings.socialLinks || {},
+      metaTitle: settings.metaTitle,
+      metaDescription: settings.metaDescription
+    };
+
+    res.status(200).json({
+      success: true,
+      data: publicSettings
+    });
+
+  } catch (error) {
+    console.error('Error fetching website settings:', error);
+    return next(new AppError('Error fetching website settings', 500));
+  }
+});
+
+// @desc    Get active info bar for tenant by user email
+// @route   GET /api/public/users/:email/info-bar
+// @access  Public
+const getInfoBarByUser = asyncHandler(async (req, res, next) => {
+  const userEmail = req.params.email;
+  const currentPage = req.query.page || 'homepage'; // homepage, pricing, all-pages
+  
+  if (!userEmail) {
+    return next(new AppError('User email is required', 400));
+  }
+
+  try {
+    const tenantId = await getTenantByUserEmail(userEmail);
+    
+    if (!tenantId) {
+      return next(new AppError('Tenant not found for this user', 404));
+    }
+
+    const { WebsiteSettings } = require('../models/WebsiteSettings');
+    
+    const settings = await WebsiteSettings.findOne({ tenantId });
+    
+    if (!settings || !settings.infoBar || !settings.infoBar.isActive) {
+      return res.status(200).json({
+        success: true,
+        data: null,
+        message: 'No active info bar found'
+      });
+    }
+
+    const infoBar = settings.infoBar;
+    
+    // Check if info bar should be displayed on current page
+    if (infoBar.displayLocation === 'homepage' && currentPage !== 'homepage') {
+      return res.status(200).json({
+        success: true,
+        data: null,
+        message: 'Info bar not configured for this page'
+      });
+    }
+
+    // Check date restrictions
+    const now = new Date();
+    if (infoBar.startDate && now < new Date(infoBar.startDate)) {
+      return res.status(200).json({
+        success: true,
+        data: null,
+        message: 'Info bar not yet active'
+      });
+    }
+    
+    if (infoBar.endDate && now > new Date(infoBar.endDate)) {
+      return res.status(200).json({
+        success: true,
+        data: null,
+        message: 'Info bar has expired'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        text: infoBar.text,
+        color: infoBar.color,
+        backgroundColor: infoBar.backgroundColor,
+        textColor: infoBar.textColor,
+        displayLocation: infoBar.displayLocation
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching info bar:', error);
+    return next(new AppError('Error fetching info bar', 500));
+  }
+});
+
+// @desc    Get active modal for tenant by user email
+// @route   GET /api/public/users/:email/modal
+// @access  Public
+const getModalByUser = asyncHandler(async (req, res, next) => {
+  const userEmail = req.params.email;
+  const currentPage = req.query.page || 'homepage'; // homepage, pricing, all-pages
+  
+  if (!userEmail) {
+    return next(new AppError('User email is required', 400));
+  }
+
+  try {
+    const tenantId = await getTenantByUserEmail(userEmail);
+    
+    if (!tenantId) {
+      return next(new AppError('Tenant not found for this user', 404));
+    }
+
+    const { WebsiteSettings } = require('../models/WebsiteSettings');
+    
+    const settings = await WebsiteSettings.findOne({ tenantId });
+    
+    if (!settings || !settings.modal || !settings.modal.isActive) {
+      return res.status(200).json({
+        success: true,
+        data: null,
+        message: 'No active modal found'
+      });
+    }
+
+    const modal = settings.modal;
+    
+    // Check if modal should be displayed on current page
+    if (modal.displayLocation === 'homepage' && currentPage !== 'homepage') {
+      return res.status(200).json({
+        success: true,
+        data: null,
+        message: 'Modal not configured for this page'
+      });
+    }
+    
+    if (modal.displayLocation === 'pricing' && currentPage !== 'pricing') {
+      return res.status(200).json({
+        success: true,
+        data: null,
+        message: 'Modal not configured for this page'
+      });
+    }
+
+    // Check date restrictions
+    const now = new Date();
+    if (modal.startDate && now < new Date(modal.startDate)) {
+      return res.status(200).json({
+        success: true,
+        data: null,
+        message: 'Modal not yet active'
+      });
+    }
+    
+    if (modal.endDate && now > new Date(modal.endDate)) {
+      return res.status(200).json({
+        success: true,
+        data: null,
+        message: 'Modal has expired'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        title: modal.title,
+        content: modal.content,
+        type: modal.type,
+        displayLocation: modal.displayLocation,
+        triggerRule: modal.triggerRule,
+        emailPlaceholder: modal.emailPlaceholder,
+        buttonText: modal.buttonText,
+        discountCode: modal.discountCode,
+        discountPercentage: modal.discountPercentage,
+        backgroundColor: modal.backgroundColor,
+        textColor: modal.textColor,
+        buttonColor: modal.buttonColor
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching modal:', error);
+    return next(new AppError('Error fetching modal', 500));
+  }
+});
+
+// @desc    Subscribe to newsletter (public)
+// @route   POST /api/public/users/:email/newsletter
+// @access  Public
+const subscribeToNewsletter = asyncHandler(async (req, res, next) => {
+  const userEmail = req.params.email;
+  const { subscriberEmail, firstName, lastName } = req.body;
+  
+  if (!userEmail || !subscriberEmail) {
+    return next(new AppError('User email and subscriber email are required', 400));
+  }
+
+  try {
+    const tenantId = await getTenantByUserEmail(userEmail);
+    
+    if (!tenantId) {
+      return next(new AppError('Tenant not found for this user', 404));
+    }
+
+    // Here you could save newsletter subscriptions to a Newsletter model
+    // For now, we'll just return success
+    console.log(`Newsletter subscription for tenant ${tenantId}:`, {
+      subscriberEmail,
+      firstName,
+      lastName,
+      subscribedAt: new Date()
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Successfully subscribed to newsletter'
+    });
+
+  } catch (error) {
+    console.error('Error subscribing to newsletter:', error);
+    return next(new AppError('Error subscribing to newsletter', 500));
+  }
+});
+
 module.exports = {
   createPublicReservation,
   getCarsByUser,
@@ -690,5 +1039,9 @@ module.exports = {
   getCarAvailabilityByUser,
   getCarsByCategoryAndUser,
   getAvailableFeaturesByUser,
-  createReservationByUser
+  createReservationByUser,
+  getWebsiteSettingsByUser,
+  getInfoBarByUser,
+  getModalByUser,
+  subscribeToNewsletter
 }; 

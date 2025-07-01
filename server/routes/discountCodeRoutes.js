@@ -1,0 +1,42 @@
+const express = require('express');
+const {
+  getDiscountCodes,
+  getDiscountCode,
+  createDiscountCode,
+  updateDiscountCode,
+  deleteDiscountCode,
+  toggleDiscountCode,
+  validateDiscountCode,
+  getDiscountCodeStats
+} = require('../controllers/discountCodeController');
+
+const router = express.Router();
+
+const { protect, authorize } = require('../middleware/auth');
+
+// Public route for discount code validation (used during reservation)
+router.route('/validate')
+  .post(validateDiscountCode);
+
+// Apply authentication to all other routes
+router.use(protect);
+
+// Stats route (accessible to all authenticated users)
+router.route('/stats')
+  .get(getDiscountCodeStats);
+
+// Main CRUD routes (admin/manager only)
+router.route('/')
+  .get(getDiscountCodes)
+  .post(authorize('admin', 'manager'), createDiscountCode);
+
+router.route('/:id')
+  .get(getDiscountCode)
+  .put(authorize('admin', 'manager'), updateDiscountCode)
+  .delete(authorize('admin', 'manager'), deleteDiscountCode);
+
+// Toggle status route
+router.route('/:id/toggle')
+  .patch(authorize('admin', 'manager'), toggleDiscountCode);
+
+module.exports = router; 

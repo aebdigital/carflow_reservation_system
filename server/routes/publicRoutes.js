@@ -14,7 +14,11 @@ const {
   getCarAvailabilityByUser,
   getCarsByCategoryAndUser,
   getAvailableFeaturesByUser,
-  createReservationByUser
+  createReservationByUser,
+  getWebsiteSettingsByUser,
+  getInfoBarByUser,
+  getModalByUser,
+  subscribeToNewsletter
 } = require('../controllers/publicController');
 
 const router = express.Router();
@@ -49,5 +53,11 @@ router.get('/users/:email/features', getAvailableFeaturesByUser);
 
 // Create reservation for a specific user/tenant
 router.post('/users/:email/reservations', createReservationByUser);
+
+// Website settings routes (tenant-specific)
+router.get('/users/:email/website-settings', getWebsiteSettingsByUser);
+router.get('/users/:email/info-bar', getInfoBarByUser);
+router.get('/users/:email/modal', getModalByUser);
+router.post('/users/:email/newsletter', subscribeToNewsletter);
 
 module.exports = router; 

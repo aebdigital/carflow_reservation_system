@@ -14,6 +14,8 @@ const reservationRoutes = require('./routes/reservationRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const userRoutes = require('./routes/userRoutes');
 const publicRoutes = require('./routes/publicRoutes');
+const websiteRoutes = require('./routes/websiteRoutes');
+const discountCodeRoutes = require('./routes/discountCodeRoutes');
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
@@ -126,6 +128,8 @@ app.use('/api/cars', carRoutes);
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/website', websiteRoutes);
+app.use('/api/discount-codes', discountCodeRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
