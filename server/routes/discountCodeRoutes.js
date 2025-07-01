@@ -12,7 +12,7 @@ const {
 
 const router = express.Router();
 
-const { protect, authorize } = require('../middleware/auth');
+const { protect, requireAdmin, requireStaff } = require('../middleware/authMiddleware');
 
 // Public route for discount code validation (used during reservation)
 router.route('/validate')
@@ -28,15 +28,15 @@ router.route('/stats')
 // Main CRUD routes (admin/manager only)
 router.route('/')
   .get(getDiscountCodes)
-  .post(authorize('admin', 'manager'), createDiscountCode);
+  .post(requireAdmin, createDiscountCode);
 
 router.route('/:id')
   .get(getDiscountCode)
-  .put(authorize('admin', 'manager'), updateDiscountCode)
-  .delete(authorize('admin', 'manager'), deleteDiscountCode);
+  .put(requireAdmin, updateDiscountCode)
+  .delete(requireAdmin, deleteDiscountCode);
 
 // Toggle status route
 router.route('/:id/toggle')
-  .patch(authorize('admin', 'manager'), toggleDiscountCode);
+  .patch(requireAdmin, toggleDiscountCode);
 
 module.exports = router; 

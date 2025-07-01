@@ -10,7 +10,7 @@ const {
 
 const router = express.Router();
 
-const { protect, authorize } = require('../middleware/auth');
+const { protect, requireAdmin, requireStaff } = require('../middleware/authMiddleware');
 
 // Apply authentication to all routes
 router.use(protect);
@@ -18,20 +18,20 @@ router.use(protect);
 // General website settings routes
 router.route('/settings')
   .get(getWebsiteSettings)
-  .put(authorize('admin', 'manager'), updateWebsiteSettings);
+  .put(requireAdmin, updateWebsiteSettings);
 
 // Info bar specific routes
 router.route('/settings/info-bar')
-  .put(authorize('admin', 'manager'), updateInfoBar);
+  .put(requireAdmin, updateInfoBar);
 
 router.route('/settings/info-bar/toggle')
-  .patch(authorize('admin', 'manager'), toggleInfoBar);
+  .patch(requireAdmin, toggleInfoBar);
 
 // Modal specific routes
 router.route('/settings/modal')
-  .put(authorize('admin', 'manager'), updateModal);
+  .put(requireAdmin, updateModal);
 
 router.route('/settings/modal/toggle')
-  .patch(authorize('admin', 'manager'), toggleModal);
+  .patch(requireAdmin, toggleModal);
 
 module.exports = router; 
