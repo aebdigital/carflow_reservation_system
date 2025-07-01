@@ -1,0 +1,640 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Grid,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Typography,
+  Paper,
+  Tabs,
+  Tab,
+  Chip,
+  Button,
+  IconButton,
+  FormControlLabel,
+  Checkbox,
+  Switch,
+  InputAdornment,
+  FormHelperText,
+  Alert,
+  Divider,
+  Card,
+  CardContent,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Tooltip,
+  Badge
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  Warning as WarningIcon,
+  CheckCircle as CheckIcon,
+  Error as ErrorIcon,
+  Info as InfoIcon,
+  ExpandMore as ExpandMoreIcon,
+  Camera as CameraIcon,
+  Star as StarIcon,
+  LocalOffer as TagIcon
+} from '@mui/icons-material';
+
+// Enhanced car form with comprehensive features
+const EnhancedCarForm = ({ 
+  formData, 
+  setFormData, 
+  formErrors, 
+  dialogMode = 'create',
+  onImageChange,
+  onImageRemove,
+  selectedImages = [],
+  imagePreviewUrls = []
+}) => {
+  const [tabValue, setTabValue] = useState(0);
+  const [equipmentDialogOpen, setEquipmentDialogOpen] = useState(false);
+  const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
+
+  // Enhanced options with new categories
+  const categoryOptions = [
+    { value: 'economy', label: 'Ekonomická trieda' },
+    { value: 'compact', label: 'Kompaktné vozidlá' },
+    { value: 'midsize', label: 'Stredná trieda' },
+    { value: 'fullsize', label: 'Vyššia trieda' },
+    { value: 'luxury', label: 'Luxusné vozidlá' },
+    { value: 'suv', label: 'SUV' },
+    { value: 'minivan', label: 'Viacmiestne vozidlá' },
+    { value: 'utility', label: 'Úžitkové vozidlá' },
+    { value: 'caravan', label: 'Karavany' },
+    { value: 'motorcycle', label: 'Motorky' },
+    { value: 'sports', label: 'Športové autá' },
+    { value: 'electric', label: 'Elektromobily' }
+  ];
+
+  const fuelTypeOptions = [
+    { value: 'gasoline', label: 'Benzín' },
+    { value: 'diesel', label: 'Diesel' },
+    { value: 'hybrid', label: 'Hybrid' },
+    { value: 'electric', label: 'Elektro' },
+    { value: 'lpg', label: 'Plyn (LPG)' }
+  ];
+
+  const drivetrainOptions = [
+    { value: 'front', label: 'Predný pohon' },
+    { value: 'rear', label: 'Zadný pohon' },
+    { value: 'awd', label: 'Pohon všetkých kolies' },
+    { value: '4wd', label: '4x4' }
+  ];
+
+  const transmissionOptions = [
+    { value: 'manual', label: 'Manuálna' },
+    { value: 'automatic', label: 'Automatická' },
+    { value: 'cvt', label: 'CVT' }
+  ];
+
+  const statusOptions = [
+    { value: 'active', label: 'Aktívne', color: 'success' },
+    { value: 'unavailable', label: 'Nedostupné', color: 'warning' },
+    { value: 'archived', label: 'Archivované', color: 'error' }
+  ];
+
+  // Tab panel component
+  const TabPanel = ({ children, value, index, ...other }) => (
+    <div role="tabpanel" hidden={value !== index} {...other}>
+      {value === index && <Box sx={{ py: 2 }}>{children}</Box>}
+    </div>
+  );
+
+  // Handle form field changes
+  const handleChange = (field, value, nestedField = null) => {
+    if (nestedField) {
+      setFormData(prev => ({
+        ...prev,
+        [field]: {
+          ...prev[field],
+          [nestedField]: value
+        }
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
+  // Handle deeply nested changes
+  const handleNestedChange = (path, value) => {
+    const keys = path.split('.');
+    setFormData(prev => {
+      const updated = { ...prev };
+      let current = updated;
+      
+      for (let i = 0; i < keys.length - 1; i++) {
+        const key = keys[i];
+        if (!current[key]) current[key] = {};
+        current[key] = { ...current[key] };
+        current = current[key];
+      }
+      
+      current[keys[keys.length - 1]] = value;
+      return updated;
+    });
+  };
+
+  return (
+    <Box sx={{ width: '100%' }}>
+      <Tabs 
+        value={tabValue} 
+        onChange={(e, newValue) => setTabValue(newValue)}
+        variant="scrollable"
+        scrollButtons="auto"
+        sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
+      >
+        <Tab label="Identifikácia" />
+        <Tab label="Technické údaje" />
+        <Tab label="Stav vozidla" />
+        <Tab label="Fotodokumentácia" />
+        <Tab label="Štatistiky" />
+        <Tab label="Cenník a služby" />
+        <Tab label="Výbava a značky" />
+      </Tabs>
+
+      {/* Tab 1: Vehicle Identification */}
+      <TabPanel value={tabValue} index={0}>
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Interné ID sa automaticky vygeneruje (napr. AUTO_001, AUTO_002...)
+            </Alert>
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Značka *"
+              value={formData.brand || ''}
+              onChange={(e) => handleChange('brand', e.target.value)}
+              disabled={dialogMode === 'view'}
+              error={!!formErrors.brand}
+              helperText={formErrors.brand}
+            />
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Model *"
+              value={formData.model || ''}
+              onChange={(e) => handleChange('model', e.target.value)}
+              disabled={dialogMode === 'view'}
+              error={!!formErrors.model}
+              helperText={formErrors.model}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="Rok výroby *"
+              type="number"
+              value={formData.year || new Date().getFullYear()}
+              onChange={(e) => handleChange('year', parseInt(e.target.value))}
+              disabled={dialogMode === 'view'}
+              error={!!formErrors.year}
+              helperText={formErrors.year}
+              inputProps={{ min: 1990, max: new Date().getFullYear() + 1 }}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="EČV / ŠPZ *"
+              value={formData.registrationNumber || ''}
+              onChange={(e) => handleChange('registrationNumber', e.target.value.toUpperCase())}
+              disabled={dialogMode === 'view'}
+              error={!!formErrors.registrationNumber}
+              helperText={formErrors.registrationNumber}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="Farba *"
+              value={formData.color || ''}
+              onChange={(e) => handleChange('color', e.target.value)}
+              disabled={dialogMode === 'view'}
+              error={!!formErrors.color}
+              helperText={formErrors.color}
+            />
+          </Grid>
+
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              label="VIN číslo *"
+              value={formData.vin || ''}
+              onChange={(e) => handleChange('vin', e.target.value.toUpperCase())}
+              disabled={dialogMode === 'view'}
+              error={!!formErrors.vin}
+              helperText={formErrors.vin || "17 znakov - viditeľné iba v admine"}
+              inputProps={{ maxLength: 17 }}
+            />
+          </Grid>
+
+          <Grid item xs={12}>
+            <FormControl fullWidth error={!!formErrors.category}>
+              <InputLabel>Zaradenie vozidla *</InputLabel>
+              <Select
+                value={formData.category || ''}
+                onChange={(e) => handleChange('category', e.target.value)}
+                disabled={dialogMode === 'view'}
+                label="Zaradenie vozidla *"
+              >
+                {categoryOptions.map(option => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+              {formErrors.category && <FormHelperText>{formErrors.category}</FormHelperText>}
+            </FormControl>
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      {/* Tab 2: Technical Data */}
+      <TabPanel value={tabValue} index={1}>
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <Typography variant="h6" gutterBottom>Palivo a motor</Typography>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth error={!!formErrors.fuelType}>
+              <InputLabel>Palivo *</InputLabel>
+              <Select
+                value={formData.fuelType || ''}
+                onChange={(e) => handleChange('fuelType', e.target.value)}
+                disabled={dialogMode === 'view'}
+                label="Palivo *"
+              >
+                {fuelTypeOptions.map(option => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+              {formErrors.fuelType && <FormHelperText>{formErrors.fuelType}</FormHelperText>}
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth>
+              <InputLabel>Pohon</InputLabel>
+              <Select
+                value={formData.drivetrain || 'front'}
+                onChange={(e) => handleChange('drivetrain', e.target.value)}
+                disabled={dialogMode === 'view'}
+                label="Pohon"
+              >
+                {drivetrainOptions.map(option => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12}>
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="h6" gutterBottom>Motor</Typography>
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              label="Objem (cm³)"
+              type="number"
+              value={formData.engine?.displacement || ''}
+              onChange={(e) => handleNestedChange('engine.displacement', parseInt(e.target.value))}
+              disabled={dialogMode === 'view'}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              label="Výkon (kW)"
+              type="number"
+              value={formData.engine?.power || ''}
+              onChange={(e) => handleNestedChange('engine.power', parseInt(e.target.value))}
+              disabled={dialogMode === 'view'}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              label="Krútiaci moment (Nm)"
+              type="number"
+              value={formData.engine?.torque || ''}
+              onChange={(e) => handleNestedChange('engine.torque', parseInt(e.target.value))}
+              disabled={dialogMode === 'view'}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              label="Počet valcov"
+              type="number"
+              value={formData.engine?.cylinders || ''}
+              onChange={(e) => handleNestedChange('engine.cylinders', parseInt(e.target.value))}
+              disabled={dialogMode === 'view'}
+              inputProps={{ min: 1, max: 16 }}
+            />
+          </Grid>
+
+          <Grid item xs={12}>
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="h6" gutterBottom>Základné parametre</Typography>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <FormControl fullWidth error={!!formErrors.transmission}>
+              <InputLabel>Prevodovka *</InputLabel>
+              <Select
+                value={formData.transmission || ''}
+                onChange={(e) => handleChange('transmission', e.target.value)}
+                disabled={dialogMode === 'view'}
+                label="Prevodovka *"
+              >
+                {transmissionOptions.map(option => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+              {formErrors.transmission && <FormHelperText>{formErrors.transmission}</FormHelperText>}
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="Počet miest"
+              type="number"
+              value={formData.seats || 5}
+              onChange={(e) => handleChange('seats', parseInt(e.target.value))}
+              disabled={dialogMode === 'view'}
+              inputProps={{ min: 1, max: 9 }}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="Objem kufra (l)"
+              type="number"
+              value={formData.trunkVolume || ''}
+              onChange={(e) => handleChange('trunkVolume', parseInt(e.target.value))}
+              disabled={dialogMode === 'view'}
+              inputProps={{ min: 0 }}
+            />
+          </Grid>
+
+          <Grid item xs={12}>
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="h6" gutterBottom>Spotreba paliva</Typography>
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              label="Mesto (l/100km)"
+              type="number"
+              step="0.1"
+              value={formData.fuelConsumption?.city || ''}
+              onChange={(e) => handleNestedChange('fuelConsumption.city', parseFloat(e.target.value))}
+              disabled={dialogMode === 'view'}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              label="Diaľnica (l/100km)"
+              type="number"
+              step="0.1"
+              value={formData.fuelConsumption?.highway || ''}
+              onChange={(e) => handleNestedChange('fuelConsumption.highway', parseFloat(e.target.value))}
+              disabled={dialogMode === 'view'}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              label="Kombinovaná (l/100km)"
+              type="number"
+              step="0.1"
+              value={formData.fuelConsumption?.combined || ''}
+              onChange={(e) => handleNestedChange('fuelConsumption.combined', parseFloat(e.target.value))}
+              disabled={dialogMode === 'view'}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              label="CO₂ emisie (g/km)"
+              type="number"
+              value={formData.fuelConsumption?.co2Emissions || ''}
+              onChange={(e) => handleNestedChange('fuelConsumption.co2Emissions', parseInt(e.target.value))}
+              disabled={dialogMode === 'view'}
+            />
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      {/* Tab 3: Vehicle Status */}
+      <TabPanel value={tabValue} index={2}>
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <Typography variant="h6" gutterBottom>Stav vozidla</Typography>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth>
+              <InputLabel>Stav</InputLabel>
+              <Select
+                value={formData.status || 'active'}
+                onChange={(e) => handleChange('status', e.target.value)}
+                disabled={dialogMode === 'view'}
+                label="Stav"
+              >
+                {statusOptions.map(option => (
+                  <MenuItem key={option.value} value={option.value}>
+                    <Chip
+                      label={option.label}
+                      color={option.color}
+                      size="small"
+                      sx={{ mr: 1 }}
+                    />
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Aktuálne kilometre"
+              type="number"
+              value={formData.mileage?.current || 0}
+              onChange={(e) => handleNestedChange('mileage.current', parseInt(e.target.value))}
+              disabled={dialogMode === 'view'}
+              InputProps={{
+                endAdornment: <InputAdornment position="end">km</InputAdornment>,
+              }}
+            />
+          </Grid>
+
+          <Grid item xs={12}>
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="h6" gutterBottom>Platnosť dokumentov</Typography>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Systém automaticky upozorní 30 dní pred expirovaním
+            </Typography>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="Platnosť diaľničnej známky"
+              type="date"
+              value={formData.documentValidity?.highwayTollSticker?.expiryDate?.split('T')[0] || ''}
+              onChange={(e) => handleNestedChange('documentValidity.highwayTollSticker.expiryDate', e.target.value)}
+              disabled={dialogMode === 'view'}
+              InputLabelProps={{ shrink: true }}
+              helperText={
+                <a href="https://eznamka.sk" target="_blank" rel="noopener noreferrer">
+                  Link na eznamka.sk
+                </a>
+              }
+            />
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="Platnosť STK"
+              type="date"
+              value={formData.documentValidity?.technicalInspection?.expiryDate?.split('T')[0] || ''}
+              onChange={(e) => handleNestedChange('documentValidity.technicalInspection.expiryDate', e.target.value)}
+              disabled={dialogMode === 'view'}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="Platnosť EK"
+              type="date"
+              value={formData.documentValidity?.emissionInspection?.expiryDate?.split('T')[0] || ''}
+              onChange={(e) => handleNestedChange('documentValidity.emissionInspection.expiryDate', e.target.value)}
+              disabled={dialogMode === 'view'}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+
+          <Grid item xs={12}>
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="h6" gutterBottom>Poškodenia</Typography>
+          </Grid>
+
+          <Grid item xs={12}>
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              {formData.damages && formData.damages.length > 0 ? (
+                formData.damages.map((damage, index) => (
+                  <Card key={index} sx={{ mb: 2 }}>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                        <Box>
+                          <Typography variant="subtitle1">{damage.description}</Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Závažnosť: {damage.severity} | Miesto: {damage.location}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Nahlásené: {new Date(damage.reportedDate).toLocaleDateString('sk-SK')}
+                          </Typography>
+                          {damage.cost && (
+                            <Typography variant="body2" color="text.secondary">
+                              Náklady: {damage.cost}€
+                            </Typography>
+                          )}
+                        </Box>
+                        <Chip
+                          label={damage.repaired ? 'Opravené' : 'Neopravené'}
+                          color={damage.repaired ? 'success' : 'error'}
+                          size="small"
+                        />
+                      </Box>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <Typography color="text.secondary">
+                  Žiadne poškodenia nezaznamenané
+                </Typography>
+              )}
+              {dialogMode !== 'view' && (
+                <Button
+                  startIcon={<AddIcon />}
+                  onClick={() => {/* Handle add damage */}}
+                  variant="outlined"
+                  size="small"
+                >
+                  Pridať poškodenie
+                </Button>
+              )}
+            </Paper>
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      {/* Additional tabs will continue... */}
+      <TabPanel value={tabValue} index={3}>
+        <Typography variant="h6" gutterBottom>Fotodokumentácia</Typography>
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Ideálne rozmery: 1200x800px, formát JPG/PNG, maximálne 5MB na obrázok
+        </Alert>
+        {/* Image management interface here */}
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={4}>
+        <Typography variant="h6" gutterBottom>Štatistiky vozidla</Typography>
+        {/* Statistics display here */}
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={5}>
+        <Typography variant="h6" gutterBottom>Cenník a služby</Typography>
+        {/* Pricing and services management here */}
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={6}>
+        <Typography variant="h6" gutterBottom>Výbava a značky</Typography>
+        {/* Equipment and badges management here */}
+      </TabPanel>
+    </Box>
+  );
+};
+
+export default EnhancedCarForm; 
