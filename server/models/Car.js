@@ -461,21 +461,17 @@ carSchema.pre('save', async function(next) {
     }
   }
   
-  // Handle legacy mileage format migration - only run this during save operations
-  if (this.mileage !== undefined && typeof this.mileage === 'number') {
-    // Convert legacy number format to new object format
-    const legacyMileage = this.mileage;
-    this.mileage = {
-      current: legacyMileage,
-      lastUpdated: new Date(),
-      updatedBy: this.owner || null
-    };
-  }
-  
-  // Update mileage timestamp if mileage changed
-  if (this.isModified('mileage.current')) {
-    // Ensure mileage is an object before setting lastUpdated
-    if (this.mileage && typeof this.mileage === 'object') {
+  // Simple mileage migration - ensure mileage is always an object
+  if (this.mileage !== undefined) {
+    if (typeof this.mileage === 'number') {
+      // Convert legacy number format to new object format
+      this.mileage = {
+        current: this.mileage,
+        lastUpdated: new Date(),
+        updatedBy: this.owner || null
+      };
+    } else if (this.isModified('mileage.current') && this.mileage && typeof this.mileage === 'object') {
+      // Update timestamp if mileage changed
       this.mileage.lastUpdated = new Date();
     }
   }
@@ -483,22 +479,24 @@ carSchema.pre('save', async function(next) {
   next();
 });
 
-// Add a post-init middleware to handle legacy data when documents are loaded
-carSchema.post('init', function() {
-  // Handle legacy mileage data when documents are loaded from database
-  if (this.mileage !== undefined && typeof this.mileage === 'number') {
-    const legacyMileage = this.mileage;
-    // Use Object.defineProperty to avoid triggering the setter
-    Object.defineProperty(this, 'mileage', {
-      value: {
-        current: legacyMileage,
+// Simple post-find middleware to handle legacy data
+carSchema.post(['find', 'findOne', 'findOneAndUpdate'], function(docs) {
+  if (!docs) return;
+  
+  const handleDoc = (doc) => {
+    if (doc && doc.mileage !== undefined && typeof doc.mileage === 'number') {
+      doc.mileage = {
+        current: doc.mileage,
         lastUpdated: new Date(),
         updatedBy: null
-      },
-      writable: true,
-      enumerable: true,
-      configurable: true
-    });
+      };
+    }
+  };
+  
+  if (Array.isArray(docs)) {
+    docs.forEach(handleDoc);
+  } else {
+    handleDoc(docs);
   }
 });
 
