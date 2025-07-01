@@ -93,9 +93,9 @@ const carSchema = new mongoose.Schema({
   },
   doors: {
     type: Number,
-    required: [true, 'Number of doors is required'],
     min: [2, 'Must have at least 2 doors'],
-    max: [5, 'Cannot have more than 5 doors']
+    max: [5, 'Cannot have more than 5 doors'],
+    default: 4 // Most cars have 4 doors
   },
   trunkVolume: {
     type: Number, // liters
@@ -439,7 +439,12 @@ const carSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
-  }
+  },
+  // Legacy pricing fields for backward compatibility
+  dailyRate: Number,
+  weeklyRate: Number,
+  monthlyRate: Number,
+  deposit: Number
 }, {
   timestamps: true
 });
@@ -557,13 +562,15 @@ carSchema.methods.calculateRate = function(days) {
   if (days >= 11 && days <= 17 && rates['11-17days']) return rates['11-17days'] * days;
   if (days >= 18 && days <= 24 && rates['18-24days']) return rates['18-24days'] * days;
   
-  // Fallback to legacy calculation
+  // Fallback to pricing rates or legacy fields
   const dailyRate = this.pricing?.dailyRate || this.dailyRate || 0;
+  const weeklyRate = this.pricing?.weeklyRate || this.weeklyRate;
+  const monthlyRate = this.pricing?.monthlyRate || this.monthlyRate;
   
-  if (days >= 30 && this.monthlyRate) {
-    return Math.floor(days / 30) * this.monthlyRate + (days % 30) * dailyRate;
-  } else if (days >= 7 && this.weeklyRate) {
-    return Math.floor(days / 7) * this.weeklyRate + (days % 7) * dailyRate;
+  if (days >= 30 && monthlyRate) {
+    return Math.floor(days / 30) * monthlyRate + (days % 30) * dailyRate;
+  } else if (days >= 7 && weeklyRate) {
+    return Math.floor(days / 7) * weeklyRate + (days % 7) * dailyRate;
   }
   
   return days * dailyRate;
