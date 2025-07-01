@@ -610,28 +610,548 @@ const EnhancedCarForm = ({
         </Grid>
       </TabPanel>
 
-      {/* Additional tabs will continue... */}
+      {/* Tab 4: Photo Documentation */}
       <TabPanel value={tabValue} index={3}>
-        <Typography variant="h6" gutterBottom>Fotodokumentácia</Typography>
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Ideálne rozmery: 1200x800px, formát JPG/PNG, maximálne 5MB na obrázok
-        </Alert>
-        {/* Image management interface here */}
+        <Box>
+          <Typography variant="h6" gutterBottom>Fotodokumentácia</Typography>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Ideálne rozmery: 1200x800px, formát JPG/PNG, maximálne 5MB na obrázok
+          </Alert>
+          
+          {dialogMode !== 'view' && (
+            <Box sx={{ mb: 3, p: 2, border: '2px dashed #ccc', borderRadius: 2 }}>
+              <Button
+                variant="outlined"
+                component="label"
+                startIcon={<CameraIcon />}
+                fullWidth
+                sx={{ mb: 2, py: 2 }}
+                color="primary"
+              >
+                Nahrať obrázky
+                <input
+                  type="file"
+                  hidden
+                  multiple
+                  accept="image/*"
+                  onChange={onImageChange}
+                />
+              </Button>
+              <Typography variant="body2" color="text.secondary" align="center">
+                Maximálne 10 obrázkov na vozidlo
+              </Typography>
+              <Typography variant="caption" color="text.secondary" align="center" display="block" sx={{ mt: 1 }}>
+                Podporované formáty: JPG, PNG, WEBP, GIF
+              </Typography>
+            </Box>
+          )}
+
+          {/* Image Previews */}
+          {imagePreviewUrls && imagePreviewUrls.length > 0 && (
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Náhľad obrázkov ({imagePreviewUrls.length})
+              </Typography>
+              <Grid container spacing={2}>
+                {imagePreviewUrls.map((url, index) => (
+                  <Grid item xs={12} sm={6} md={4} key={index}>
+                    <Card>
+                      <CardContent sx={{ p: 1 }}>
+                        <Box sx={{ position: 'relative' }}>
+                          <img
+                            src={url}
+                            alt={`Náhľad ${index + 1}`}
+                            style={{ 
+                              width: '100%', 
+                              height: '120px', 
+                              objectFit: 'cover',
+                              borderRadius: 4
+                            }}
+                          />
+                          {dialogMode !== 'view' && (
+                            <IconButton
+                              sx={{ 
+                                position: 'absolute',
+                                top: 4,
+                                right: 4,
+                                backgroundColor: 'rgba(0,0,0,0.5)',
+                                color: 'white',
+                                '&:hover': { backgroundColor: 'rgba(0,0,0,0.7)' }
+                              }}
+                              size="small"
+                              onClick={() => onImageRemove(index)}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          )}
+                          {index === 0 && (
+                            <Chip
+                              label="Primárny"
+                              color="primary"
+                              size="small"
+                              sx={{ position: 'absolute', bottom: 4, left: 4 }}
+                            />
+                          )}
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          )}
+          
+          {(!imagePreviewUrls || imagePreviewUrls.length === 0) && (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <CameraIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="body1" color="text.secondary">
+                Zatiaľ neboli pridané žiadne obrázky
+              </Typography>
+            </Box>
+          )}
+        </Box>
       </TabPanel>
 
+      {/* Tab 5: Statistics */}
       <TabPanel value={tabValue} index={4}>
-        <Typography variant="h6" gutterBottom>Štatistiky vozidla</Typography>
-        {/* Statistics display here */}
+        <Box>
+          <Typography variant="h6" gutterBottom>Štatistiky vozidla</Typography>
+          
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Rezervácie
+                  </Typography>
+                  <Typography variant="h4" gutterBottom>
+                    {formData.statistics?.totalBookings || 0}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Celkový počet rezervácií
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Tržby
+                  </Typography>
+                  <Typography variant="h4" gutterBottom>
+                    {formData.statistics?.totalRevenue || 0}€
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Celkové tržby
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Dni prenájmu
+                  </Typography>
+                  <Typography variant="h4" gutterBottom>
+                    {formData.statistics?.totalRentalDays || 0}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Celkový počet dní v prenájme
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Priemerná sadzba
+                  </Typography>
+                  <Typography variant="h4" gutterBottom>
+                    {formData.statistics?.averageDailyRate || 0}€
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Priemerná denná sadzba
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {formData.statistics?.nextReservation && (
+              <Grid item xs={12}>
+                <Accordion>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography variant="h6">Ďalšia rezervácia</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Typography>
+                      Dátum: {new Date(formData.statistics.nextReservation.date).toLocaleDateString('sk-SK')}
+                    </Typography>
+                  </AccordionDetails>
+                </Accordion>
+              </Grid>
+            )}
+
+            {formData.statistics?.lastReservation && (
+              <Grid item xs={12}>
+                <Accordion>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography variant="h6">Posledná rezervácia</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Typography>
+                      Dátum: {new Date(formData.statistics.lastReservation.date).toLocaleDateString('sk-SK')}
+                    </Typography>
+                  </AccordionDetails>
+                </Accordion>
+              </Grid>
+            )}
+          </Grid>
+        </Box>
       </TabPanel>
 
+      {/* Tab 6: Pricing & Services */}
       <TabPanel value={tabValue} index={5}>
-        <Typography variant="h6" gutterBottom>Cenník a služby</Typography>
-        {/* Pricing and services management here */}
+        <Box>
+          <Typography variant="h6" gutterBottom>Cenník a služby</Typography>
+          
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>Základné cenníky</Typography>
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Denná sadzba *"
+                type="number"
+                value={formData.pricing?.dailyRate || ''}
+                onChange={(e) => handleNestedChange('pricing.dailyRate', parseFloat(e.target.value))}
+                disabled={dialogMode === 'view'}
+                InputProps={{
+                  endAdornment: <InputAdornment position="end">€</InputAdornment>,
+                }}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Depozit *"
+                type="number"
+                value={formData.pricing?.deposit || ''}
+                onChange={(e) => handleNestedChange('pricing.deposit', parseFloat(e.target.value))}
+                disabled={dialogMode === 'view'}
+                InputProps={{
+                  endAdornment: <InputAdornment position="end">€</InputAdornment>,
+                }}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <Divider sx={{ my: 2 }} />
+              <Typography variant="h6" gutterBottom>Časové sadzby</Typography>
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="1 deň"
+                type="number"
+                value={formData.pricing?.rates?.['1day'] || ''}
+                onChange={(e) => handleNestedChange('pricing.rates.1day', parseFloat(e.target.value))}
+                disabled={dialogMode === 'view'}
+                InputProps={{
+                  endAdornment: <InputAdornment position="end">€</InputAdornment>,
+                }}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="2-3 dni"
+                type="number"
+                value={formData.pricing?.rates?.['2-3days'] || ''}
+                onChange={(e) => handleNestedChange('pricing.rates.2-3days', parseFloat(e.target.value))}
+                disabled={dialogMode === 'view'}
+                InputProps={{
+                  endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                }}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="4-10 dní"
+                type="number"
+                value={formData.pricing?.rates?.['4-10days'] || ''}
+                onChange={(e) => handleNestedChange('pricing.rates.4-10days', parseFloat(e.target.value))}
+                disabled={dialogMode === 'view'}
+                InputProps={{
+                  endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                }}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="11-17 dní"
+                type="number"
+                value={formData.pricing?.rates?.['11-17days'] || ''}
+                onChange={(e) => handleNestedChange('pricing.rates.11-17days', parseFloat(e.target.value))}
+                disabled={dialogMode === 'view'}
+                InputProps={{
+                  endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                }}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="18-24 dní"
+                type="number"
+                value={formData.pricing?.rates?.['18-24days'] || ''}
+                onChange={(e) => handleNestedChange('pricing.rates.18-24days', parseFloat(e.target.value))}
+                disabled={dialogMode === 'view'}
+                InputProps={{
+                  endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                }}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="30+ dní"
+                value="dohoda - volať/písať mail"
+                disabled
+                helperText="Pre dlhodobé prenájmy"
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <Divider sx={{ my: 2 }} />
+              <Typography variant="h6" gutterBottom>Kilometrové limity</Typography>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Denný kilometrový limit"
+                type="number"
+                value={formData.mileageLimits?.dailyLimit === -1 ? '' : formData.mileageLimits?.dailyLimit || ''}
+                onChange={(e) => handleNestedChange('mileageLimits.dailyLimit', e.target.value === '' ? -1 : parseInt(e.target.value))}
+                disabled={dialogMode === 'view'}
+                placeholder="Neobmedzené"
+                helperText="-1 alebo prázdne = neobmedzené"
+                InputProps={{
+                  endAdornment: <InputAdornment position="end">km/deň</InputAdornment>,
+                }}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Cena za nadlimitné km"
+                type="number"
+                step="0.01"
+                value={formData.mileageLimits?.excessKmPrice || ''}
+                onChange={(e) => handleNestedChange('mileageLimits.excessKmPrice', parseFloat(e.target.value))}
+                disabled={dialogMode === 'view'}
+                InputProps={{
+                  endAdornment: <InputAdornment position="end">€/km</InputAdornment>,
+                }}
+              />
+            </Grid>
+          </Grid>
+        </Box>
       </TabPanel>
 
+      {/* Tab 7: Equipment & Badges */}
       <TabPanel value={tabValue} index={6}>
-        <Typography variant="h6" gutterBottom>Výbava a značky</Typography>
-        {/* Equipment and badges management here */}
+        <Box>
+          <Typography variant="h6" gutterBottom>Výbava a značky</Typography>
+          
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>Výbava vozidla</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Označte dostupnú výbavu pre toto vozidlo
+              </Typography>
+              
+              <Box sx={{ mb: 3 }}>
+                <Grid container spacing={1}>
+                  {/* Standard equipment checkboxes */}
+                  {[
+                    { key: 'airConditioning', label: 'Klimatizácia', icon: '❄️' },
+                    { key: 'gps', label: 'GPS navigácia', icon: '🗺️' },
+                    { key: 'bluetooth', label: 'Bluetooth', icon: '📱' },
+                    { key: 'heatedSeats', label: 'Vyhrievané sedadlá', icon: '🔥' },
+                    { key: 'sunroof', label: 'Strešné okno', icon: '☀️' },
+                    { key: 'leatherSeats', label: 'Kožené sedadlá', icon: '🪑' },
+                    { key: 'backupCamera', label: 'Cúvacia kamera', icon: '📹' },
+                    { key: 'cruiseControl', label: 'Tempomat', icon: '🎯' },
+                    { key: 'usbPorts', label: 'USB porty', icon: '🔌' },
+                    { key: 'wifi', label: 'WiFi hotspot', icon: '📶' },
+                  ].map(equipment => (
+                    <Grid item xs={12} sm={6} md={4} key={equipment.key}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={formData.equipment?.some(eq => eq.name === equipment.label) || false}
+                            onChange={(e) => {
+                              const isChecked = e.target.checked;
+                              const newEquipment = formData.equipment || [];
+                              
+                              if (isChecked) {
+                                handleChange('equipment', [
+                                  ...newEquipment,
+                                  {
+                                    name: equipment.label,
+                                    icon: equipment.icon,
+                                    category: 'standard'
+                                  }
+                                ]);
+                              } else {
+                                handleChange('equipment', 
+                                  newEquipment.filter(eq => eq.name !== equipment.label)
+                                );
+                              }
+                            }}
+                            disabled={dialogMode === 'view'}
+                          />
+                        }
+                        label={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <span>{equipment.icon}</span>
+                            <span>{equipment.label}</span>
+                          </Box>
+                        }
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Divider sx={{ my: 2 }} />
+              <Typography variant="h6" gutterBottom>Značky a štítky</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Pridajte pútavé značky pre marketing vozidla
+              </Typography>
+              
+              <Box sx={{ mb: 2 }}>
+                {formData.badges && formData.badges.length > 0 ? (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                    {formData.badges.map((badge, index) => (
+                      <Chip
+                        key={index}
+                        label={badge.text}
+                        style={{
+                          backgroundColor: badge.style?.backgroundColor || '#ff4444',
+                          color: badge.style?.textColor || '#ffffff'
+                        }}
+                        onDelete={dialogMode !== 'view' ? () => {
+                          const newBadges = formData.badges.filter((_, i) => i !== index);
+                          handleChange('badges', newBadges);
+                        } : undefined}
+                        deleteIcon={<DeleteIcon />}
+                      />
+                    ))}
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Žiadne značky nepridané
+                  </Typography>
+                )}
+                
+                {dialogMode !== 'view' && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<AddIcon />}
+                    onClick={() => {
+                      const newBadge = {
+                        text: 'NOVINKA',
+                        type: 'corner',
+                        style: {
+                          backgroundColor: '#ff4444',
+                          textColor: '#ffffff',
+                          position: 'top-right'
+                        },
+                        isActive: true
+                      };
+                      const newBadges = [...(formData.badges || []), newBadge];
+                      handleChange('badges', newBadges);
+                    }}
+                    size="small"
+                  >
+                    Pridať značku
+                  </Button>
+                )}
+              </Box>
+
+              {/* Predefined badge examples */}
+              {dialogMode !== 'view' && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Rýchle pridanie:
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {[
+                      { text: 'NOVINKA', color: '#4caf50' },
+                      { text: 'AKCIA', color: '#ff9800' },
+                      { text: 'TOP PONUKA', color: '#2196f3' },
+                      { text: 'LUXUS', color: '#9c27b0' },
+                      { text: 'ECO', color: '#8bc34a' },
+                    ].map(badge => (
+                      <Button
+                        key={badge.text}
+                        variant="outlined"
+                        size="small"
+                        onClick={() => {
+                          const newBadge = {
+                            text: badge.text,
+                            type: 'corner',
+                            style: {
+                              backgroundColor: badge.color,
+                              textColor: '#ffffff',
+                              position: 'top-right'
+                            },
+                            isActive: true
+                          };
+                          const existingBadges = formData.badges || [];
+                          const badgeExists = existingBadges.some(b => b.text === badge.text);
+                          
+                          if (!badgeExists) {
+                            handleChange('badges', [...existingBadges, newBadge]);
+                          }
+                        }}
+                        sx={{ 
+                          borderColor: badge.color,
+                          color: badge.color,
+                          '&:hover': { backgroundColor: badge.color, color: 'white' }
+                        }}
+                      >
+                        {badge.text}
+                      </Button>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+            </Grid>
+          </Grid>
+        </Box>
       </TabPanel>
     </Box>
   );

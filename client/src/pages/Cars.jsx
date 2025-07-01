@@ -340,7 +340,7 @@ function Cars() {
     if (!formData.transmission) {
       errors.transmission = t('required')
     }
-    if (!formData.dailyRate || formData.dailyRate <= 0) {
+    if (!formData.pricing?.dailyRate || formData.pricing.dailyRate <= 0) {
       errors.dailyRate = 'Denná sadzba musí byť väčšia ako 0'
     }
 
@@ -368,16 +368,49 @@ function Cars() {
           color: car.color || '',
           category: car.category || '',
           fuelType: car.fuelType || '',
+          drivetrain: car.drivetrain || 'front',
           transmission: car.transmission || '',
           seats: car.seats || 5,
           doors: car.doors || 4,
-          mileage: car.mileage || 0,
+          trunkVolume: car.trunkVolume || '',
+          engine: {
+            displacement: car.engine?.displacement || '',
+            power: car.engine?.power || '',
+            torque: car.engine?.torque || '',
+            cylinders: car.engine?.cylinders || ''
+          },
+          fuelConsumption: {
+            city: car.fuelConsumption?.city || '',
+            highway: car.fuelConsumption?.highway || '',
+            combined: car.fuelConsumption?.combined || '',
+            co2Emissions: car.fuelConsumption?.co2Emissions || ''
+          },
+          status: car.status || 'active',
+          mileage: {
+            current: car.mileage?.current || car.mileage || 0
+          },
+          documentValidity: {
+            highwayTollSticker: { expiryDate: car.documentValidity?.highwayTollSticker?.expiryDate || '' },
+            technicalInspection: { expiryDate: car.documentValidity?.technicalInspection?.expiryDate || '' },
+            emissionInspection: { expiryDate: car.documentValidity?.emissionInspection?.expiryDate || '' }
+          },
+          pricing: {
+            dailyRate: car.pricing?.dailyRate || car.dailyRate || 0,
+            deposit: car.pricing?.deposit || car.deposit || 0,
+            rates: {
+              '1day': car.pricing?.rates?.['1day'] || '',
+              '2-3days': car.pricing?.rates?.['2-3days'] || '',
+              '4-10days': car.pricing?.rates?.['4-10days'] || '',
+              '11-17days': car.pricing?.rates?.['11-17days'] || '',
+              '18-24days': car.pricing?.rates?.['18-24days'] || '',
+              '30plus': 'dohoda - volať/písať mail'
+            }
+          },
+          mileageLimits: {
+            dailyLimit: car.mileageLimits?.dailyLimit ?? -1,
+            excessKmPrice: car.mileageLimits?.excessKmPrice || 0.25
+          },
           description: car.description || '',
-          deposit: car.deposit || 0,
-          dailyRate: car.dailyRate || 0,
-          weeklyRate: car.weeklyRate || 0,
-          monthlyRate: car.monthlyRate || 0,
-          status: car.status || 'available',
           location: {
             name: car.location?.name || '',
             address: {
@@ -388,7 +421,17 @@ function Cars() {
               country: car.location?.address?.country || ''
             }
           },
+          equipment: car.equipment || [],
+          badges: car.badges || [],
           features: car.features || [],
+          statistics: {
+            totalBookings: car.statistics?.totalBookings || car.totalBookings || 0,
+            totalRevenue: car.statistics?.totalRevenue || car.totalRevenue || 0,
+            totalRentalDays: car.statistics?.totalRentalDays || 0,
+            averageDailyRate: car.statistics?.averageDailyRate || 0,
+            nextReservation: car.statistics?.nextReservation || null,
+            lastReservation: car.statistics?.lastReservation || null
+          },
           maintenance: {
             lastServiceDate: car.maintenance?.lastServiceDate || '',
             nextServiceDate: car.maintenance?.nextServiceDate || '',
@@ -414,16 +457,49 @@ function Cars() {
           color: car.color || '',
           category: car.category || '',
           fuelType: car.fuelType || '',
+          drivetrain: car.drivetrain || 'front',
           transmission: car.transmission || '',
           seats: car.seats || 5,
           doors: car.doors || 4,
-          mileage: car.mileage || 0,
+          trunkVolume: car.trunkVolume || '',
+          engine: {
+            displacement: car.engine?.displacement || '',
+            power: car.engine?.power || '',
+            torque: car.engine?.torque || '',
+            cylinders: car.engine?.cylinders || ''
+          },
+          fuelConsumption: {
+            city: car.fuelConsumption?.city || '',
+            highway: car.fuelConsumption?.highway || '',
+            combined: car.fuelConsumption?.combined || '',
+            co2Emissions: car.fuelConsumption?.co2Emissions || ''
+          },
+          status: car.status || 'active',
+          mileage: {
+            current: car.mileage?.current || car.mileage || 0
+          },
+          documentValidity: {
+            highwayTollSticker: { expiryDate: car.documentValidity?.highwayTollSticker?.expiryDate || '' },
+            technicalInspection: { expiryDate: car.documentValidity?.technicalInspection?.expiryDate || '' },
+            emissionInspection: { expiryDate: car.documentValidity?.emissionInspection?.expiryDate || '' }
+          },
+          pricing: {
+            dailyRate: car.pricing?.dailyRate || car.dailyRate || 0,
+            deposit: car.pricing?.deposit || car.deposit || 0,
+            rates: {
+              '1day': car.pricing?.rates?.['1day'] || '',
+              '2-3days': car.pricing?.rates?.['2-3days'] || '',
+              '4-10days': car.pricing?.rates?.['4-10days'] || '',
+              '11-17days': car.pricing?.rates?.['11-17days'] || '',
+              '18-24days': car.pricing?.rates?.['18-24days'] || '',
+              '30plus': 'dohoda - volať/písať mail'
+            }
+          },
+          mileageLimits: {
+            dailyLimit: car.mileageLimits?.dailyLimit ?? -1,
+            excessKmPrice: car.mileageLimits?.excessKmPrice || 0.25
+          },
           description: car.description || '',
-          deposit: car.deposit || 0,
-          dailyRate: car.dailyRate || 0,
-          weeklyRate: car.weeklyRate || 0,
-          monthlyRate: car.monthlyRate || 0,
-          status: car.status || 'available',
           location: {
             name: car.location?.name || '',
             address: {
@@ -434,7 +510,17 @@ function Cars() {
               country: car.location?.address?.country || ''
             }
           },
+          equipment: car.equipment || [],
+          badges: car.badges || [],
           features: car.features || [],
+          statistics: {
+            totalBookings: car.statistics?.totalBookings || car.totalBookings || 0,
+            totalRevenue: car.statistics?.totalRevenue || car.totalRevenue || 0,
+            totalRentalDays: car.statistics?.totalRentalDays || 0,
+            averageDailyRate: car.statistics?.averageDailyRate || 0,
+            nextReservation: car.statistics?.nextReservation || null,
+            lastReservation: car.statistics?.lastReservation || null
+          },
           maintenance: {
             lastServiceDate: car.maintenance?.lastServiceDate || '',
             nextServiceDate: car.maintenance?.nextServiceDate || '',

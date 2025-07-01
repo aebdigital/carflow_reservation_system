@@ -1032,6 +1032,106 @@ const subscribeToNewsletter = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Get all cars (public - no authentication)
+// @route   GET /api/public/cars
+// @access  Public
+const getPublicCars = asyncHandler(async (req, res, next) => {
+  // Get all active cars without authentication requirement
+  const baseQuery = { 
+    status: { $ne: 'archived' }, // Don't show archived cars
+    isActive: true // Only show active cars
+  };
+
+  // Copy req.query and merge with base filter
+  const reqQuery = { ...req.query };
+
+  // Fields to exclude from filtering
+  const removeFields = ['select', 'sort', 'page', 'limit'];
+  removeFields.forEach(param => delete reqQuery[param]);
+
+  // Create query string
+  let queryStr = JSON.stringify({ ...baseQuery, ...reqQuery });
+
+  // Create operators ($gt, $gte, etc)
+  queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
+
+  // Finding resource
+  let query = Car.find(JSON.parse(queryStr));
+
+  // Select fields - hide sensitive data
+  if (req.query.select) {
+    const fields = req.query.select.split(',').join(' ');
+    query = query.select(fields);
+  } else {
+    // Default selection - hide sensitive fields
+    query = query.select('-vin -owner -tenantId -notifications -damages');
+  }
+
+  // Sort
+  if (req.query.sort) {
+    const sortBy = req.query.sort.split(',').join(' ');
+    query = query.sort(sortBy);
+  } else {
+    query = query.sort('-createdAt');
+  }
+
+  // Pagination
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 25;
+  const startIndex = (page - 1) * limit;
+  const endIndex = page * limit;
+  const total = await Car.countDocuments(JSON.parse(queryStr));
+
+  query = query.skip(startIndex).limit(limit);
+
+  // Execute query
+  const cars = await query;
+
+  // Pagination result
+  const pagination = {};
+
+  if (endIndex < total) {
+    pagination.next = {
+      page: page + 1,
+      limit
+    };
+  }
+
+  if (startIndex > 0) {
+    pagination.prev = {
+      page: page - 1,
+      limit
+    };
+  }
+
+  res.status(200).json({
+    success: true,
+    count: cars.length,
+    pagination,
+    data: cars
+  });
+});
+
+// @desc    Get single car (public - no authentication)
+// @route   GET /api/public/cars/:id
+// @access  Public
+const getPublicCar = asyncHandler(async (req, res, next) => {
+  const car = await Car.findOne({ 
+    _id: req.params.id,
+    status: { $ne: 'archived' },
+    isActive: true
+  }).select('-vin -owner -tenantId -notifications -damages');
+
+  if (!car) {
+    return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    data: car
+  });
+});
+
 module.exports = {
   createPublicReservation,
   getCarsByUser,
@@ -1043,5 +1143,7 @@ module.exports = {
   getWebsiteSettingsByUser,
   getInfoBarByUser,
   getModalByUser,
-  subscribeToNewsletter
+  subscribeToNewsletter,
+  getPublicCars,
+  getPublicCar
 }; 
