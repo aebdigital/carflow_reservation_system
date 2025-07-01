@@ -11,7 +11,7 @@ import {
 } from '@mui/material'
 import {
   Info as InfoIcon,
-  Modal as ModalIcon,
+  OpenInNew as ModalIcon,
   LocalOffer as DiscountIcon,
 } from '@mui/icons-material'
 import InfoBarSettings from '../components/website/InfoBarSettings'
