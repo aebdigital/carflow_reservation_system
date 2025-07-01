@@ -13,25 +13,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Checkbox,
-  FormGroup,
-  FormControlLabel,
-  FormHelperText,
-  Tabs,
-  Tab,
-  Divider,
-  Alert,
   CircularProgress,
-  ImageList,
-  ImageListItem,
-  ImageListItemBar,
-  Tooltip,
-  InputAdornment,
+  Alert,
+  Tooltip
 } from '@mui/material'
 import {
   Add as AddIcon,
@@ -42,9 +26,6 @@ import {
   LocalGasStation as FuelIcon,
   Settings as TransmissionIcon,
   Star as StarIcon,
-  StarBorder as StarBorderIcon,
-  CloudUpload as UploadIcon,
-  Image as ImageIcon,
   Close as CloseIcon,
 } from '@mui/icons-material'
 import {
@@ -56,16 +37,16 @@ import {
   useSetPrimaryCarImageMutation,
 } from '../store/store'
 import { t } from '../utils/translations'
+import EnhancedCarForm from '../components/cars/EnhancedCarForm'
 
 function Cars() {
-  const [tabValue, setTabValue] = useState(0)
   const [openDialog, setOpenDialog] = useState(false)
   const [selectedCar, setSelectedCar] = useState(null)
   const [dialogMode, setDialogMode] = useState('create') // 'create', 'edit', 'view'
   const [selectedImages, setSelectedImages] = useState([])
   const [imagePreviewUrls, setImagePreviewUrls] = useState([])
 
-  // Initial form state
+  // Initial form state - Enhanced for comprehensive car management
   const initialFormState = {
     brand: '',
     model: '',
@@ -75,16 +56,49 @@ function Cars() {
     color: '',
     category: '',
     fuelType: '',
+    drivetrain: 'front',
     transmission: '',
     seats: 5,
     doors: 4,
-    mileage: 0,
+    trunkVolume: '',
+    engine: {
+      displacement: '',
+      power: '',
+      torque: '',
+      cylinders: ''
+    },
+    fuelConsumption: {
+      city: '',
+      highway: '',
+      combined: '',
+      co2Emissions: ''
+    },
+    status: 'active',
+    mileage: {
+      current: 0
+    },
+    documentValidity: {
+      highwayTollSticker: { expiryDate: '' },
+      technicalInspection: { expiryDate: '' },
+      emissionInspection: { expiryDate: '' }
+    },
+    pricing: {
+      dailyRate: 0,
+      deposit: 0,
+      rates: {
+        '1day': '',
+        '2-3days': '',
+        '4-10days': '',
+        '11-17days': '',
+        '18-24days': '',
+        '30plus': 'dohoda - volať/písať mail'
+      }
+    },
+    mileageLimits: {
+      dailyLimit: -1,
+      excessKmPrice: 0.25
+    },
     description: '',
-    deposit: 0,
-    dailyRate: 0,
-    weeklyRate: 0,
-    monthlyRate: 0,
-    status: 'available',
     location: {
       name: '',
       address: {
@@ -95,6 +109,8 @@ function Cars() {
         country: ''
       }
     },
+    equipment: [],
+    badges: [],
     features: [],
     maintenance: {
       lastServiceDate: '',
@@ -153,21 +169,7 @@ function Cars() {
   const transmissionOptions = [
     { value: 'manual', label: t('manual') },
     { value: 'automatic', label: t('automatic') },
-    { value: 'cvt', label: t('cvt') }
-  ]
-
-  // Feature options
-  const featureOptions = [
-    { value: 'air-conditioning', label: t('airConditioning') },
-    { value: 'gps', label: t('gps') },
-    { value: 'bluetooth', label: t('bluetooth') },
-    { value: 'heated-seats', label: t('heatedSeats') },
-    { value: 'sunroof', label: t('sunroof') },
-    { value: 'leather-seats', label: t('leatherSeats') },
-    { value: 'backup-camera', label: t('backupCamera') },
-    { value: 'cruise-control', label: t('cruiseControl') },
-    { value: 'usb-ports', label: t('usbPorts') },
-    { value: 'wifi', label: t('wifi') }
+    { value: 'cvt', label: 'CVT' }
   ]
 
   // Status color mapping
@@ -351,7 +353,6 @@ function Cars() {
     try {
       setDialogMode(mode)
       setSelectedCar(car)
-      setTabValue(0) // Reset to first tab when opening dialog
       
       if (mode === 'create') {
         setFormData(initialFormState)
@@ -451,7 +452,7 @@ function Cars() {
       
       setOpenDialog(true)
       setFormErrors({})
-      console.log(`🚗 Car dialog opened in ${mode} mode. Tab value: ${tabValue}`)
+      console.log(`🚗 Car dialog opened in ${mode} mode.`)
     } catch (error) {
       console.error('Error opening dialog:', error)
     }
@@ -627,15 +628,6 @@ function Cars() {
     }
   }
 
-  const handleFeatureChange = (feature) => {
-    setFormData(prev => ({
-      ...prev,
-      features: prev.features.includes(feature)
-        ? prev.features.filter(f => f !== feature)
-        : [...prev.features, feature]
-    }))
-  }
-
   const renderCarCard = (car) => (
     <Grid item xs={12} sm={6} md={4} key={car._id}>
       <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -778,740 +770,17 @@ function Cars() {
           {dialogMode === 'view' && t('viewCar')}
         </DialogTitle>
         
-        <DialogContent sx={{ pt: 3 }}>
-          <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)} sx={{ mb: 3 }}>
-            <Tab label={t('carInformation')} />
-            <Tab label={t('location')} />
-            <Tab label={t('features')} />
-            <Tab label={t('maintenance')} />
-            <Tab label={t('insurance')} />
-            <Tab 
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <ImageIcon />
-                  {t('images')}
-                </Box>
-              } 
-            />
-          </Tabs>
-          
-          {console.log(`🔧 Current tab value: ${tabValue}, Dialog mode: ${dialogMode}`)}
-
-          {/* Basic Information Tab */}
-          {tabValue === 0 && (
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label={`${t('brand')} *`}
-                  value={formData.brand}
-                  onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                  disabled={dialogMode === 'view'}
-                  error={!!formErrors.brand}
-                  helperText={formErrors.brand}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label={`${t('model')} *`}
-                  value={formData.model}
-                  onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                  disabled={dialogMode === 'view'}
-                  error={!!formErrors.model}
-                  helperText={formErrors.model}
-                />
-              </Grid>
-              
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label={`${t('year')} *`}
-                  type="number"
-                  value={formData.year}
-                  onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
-                  disabled={dialogMode === 'view'}
-                  error={!!formErrors.year}
-                  helperText={formErrors.year}
-                  inputProps={{ min: 1990, max: new Date().getFullYear() + 1 }}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label={`${t('registrationNumber')} *`}
-                  value={formData.registrationNumber}
-                  onChange={(e) => setFormData({ ...formData, registrationNumber: e.target.value.toUpperCase() })}
-                  disabled={dialogMode === 'view'}
-                  error={!!formErrors.registrationNumber}
-                  helperText={formErrors.registrationNumber}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label={`${t('color')} *`}
-                  value={formData.color}
-                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                  disabled={dialogMode === 'view'}
-                  error={!!formErrors.color}
-                  helperText={formErrors.color}
-                />
-              </Grid>
-
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label={`${t('vin')} *`}
-                  value={formData.vin}
-                  onChange={(e) => setFormData({ ...formData, vin: e.target.value.toUpperCase() })}
-                  disabled={dialogMode === 'view'}
-                  error={!!formErrors.vin}
-                  helperText={formErrors.vin}
-                  inputProps={{ maxLength: 17 }}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <FormControl fullWidth error={!!formErrors.category}>
-                  <InputLabel>{t('category')} *</InputLabel>
-                  <Select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    disabled={dialogMode === 'view'}
-                    label={`${t('category')} *`}
-                  >
-                    {categoryOptions.map(category => (
-                      <MenuItem key={category.value} value={category.value}>
-                        {category.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {formErrors.category && <FormHelperText>{formErrors.category}</FormHelperText>}
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <FormControl fullWidth error={!!formErrors.fuelType}>
-                  <InputLabel>{t('fuelType')} *</InputLabel>
-                  <Select
-                    value={formData.fuelType}
-                    onChange={(e) => setFormData({ ...formData, fuelType: e.target.value })}
-                    disabled={dialogMode === 'view'}
-                    label={`${t('fuelType')} *`}
-                  >
-                    {fuelTypeOptions.map(fuel => (
-                      <MenuItem key={fuel.value} value={fuel.value}>
-                        {fuel.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {formErrors.fuelType && <FormHelperText>{formErrors.fuelType}</FormHelperText>}
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <FormControl fullWidth error={!!formErrors.transmission}>
-                  <InputLabel>{t('transmission')} *</InputLabel>
-                  <Select
-                    value={formData.transmission}
-                    onChange={(e) => setFormData({ ...formData, transmission: e.target.value })}
-                    disabled={dialogMode === 'view'}
-                    label={`${t('transmission')} *`}
-                  >
-                    {transmissionOptions.map(trans => (
-                      <MenuItem key={trans.value} value={trans.value}>
-                        {trans.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {formErrors.transmission && <FormHelperText>{formErrors.transmission}</FormHelperText>}
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} md={3}>
-                <TextField
-                  fullWidth
-                  label={t('seats')}
-                  type="number"
-                  value={formData.seats}
-                  onChange={(e) => setFormData({ ...formData, seats: parseInt(e.target.value) })}
-                  disabled={dialogMode === 'view'}
-                  inputProps={{ min: 2, max: 9 }}
-                />
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <TextField
-                  fullWidth
-                  label={t('doors')}
-                  type="number"
-                  value={formData.doors}
-                  onChange={(e) => setFormData({ ...formData, doors: parseInt(e.target.value) })}
-                  disabled={dialogMode === 'view'}
-                  inputProps={{ min: 2, max: 5 }}
-                />
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <TextField
-                  fullWidth
-                  label={t('mileage')}
-                  type="number"
-                  value={formData.mileage}
-                  onChange={(e) => setFormData({ ...formData, mileage: parseInt(e.target.value) })}
-                  disabled={dialogMode === 'view'}
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">km</InputAdornment>,
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <TextField
-                  fullWidth
-                  label={t('deposit')}
-                  type="number"
-                  value={formData.deposit}
-                  onChange={(e) => setFormData({ ...formData, deposit: parseFloat(e.target.value) })}
-                  disabled={dialogMode === 'view'}
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">€</InputAdornment>,
-                  }}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label={`${t('dailyRate')} *`}
-                  type="number"
-                  value={formData.dailyRate}
-                  onChange={(e) => setFormData({ ...formData, dailyRate: parseFloat(e.target.value) })}
-                  disabled={dialogMode === 'view'}
-                  error={!!formErrors.dailyRate}
-                  helperText={formErrors.dailyRate}
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">€</InputAdornment>,
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label={t('weeklyRate')}
-                  type="number"
-                  value={formData.weeklyRate}
-                  onChange={(e) => setFormData({ ...formData, weeklyRate: parseFloat(e.target.value) })}
-                  disabled={dialogMode === 'view'}
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">€</InputAdornment>,
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label={t('monthlyRate')}
-                  type="number"
-                  value={formData.monthlyRate}
-                  onChange={(e) => setFormData({ ...formData, monthlyRate: parseFloat(e.target.value) })}
-                  disabled={dialogMode === 'view'}
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">€</InputAdornment>,
-                  }}
-                />
-              </Grid>
-
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label={t('description')}
-                  multiline
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-            </Grid>
-          )}
-
-          {/* Location Tab */}
-          {tabValue === 1 && (
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label={t('locationName')}
-                  value={formData.location.name}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    location: { ...formData.location, name: e.target.value }
-                  })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label={t('street')}
-                  value={formData.location.address.street}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    location: { 
-                      ...formData.location, 
-                      address: { ...formData.location.address, street: e.target.value }
-                    }
-                  })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label={t('city')}
-                  value={formData.location.address.city}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    location: { 
-                      ...formData.location, 
-                      address: { ...formData.location.address, city: e.target.value }
-                    }
-                  })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label={t('state')}
-                  value={formData.location.address.state}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    location: { 
-                      ...formData.location, 
-                      address: { ...formData.location.address, state: e.target.value }
-                    }
-                  })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label={t('zipCode')}
-                  value={formData.location.address.zipCode}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    location: { 
-                      ...formData.location, 
-                      address: { ...formData.location.address, zipCode: e.target.value }
-                    }
-                  })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label={t('country')}
-                  value={formData.location.address.country}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    location: { 
-                      ...formData.location, 
-                      address: { ...formData.location.address, country: e.target.value }
-                    }
-                  })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-            </Grid>
-          )}
-
-          {/* Features Tab */}
-          {tabValue === 2 && (
-            <Box>
-              <Typography variant="h6" gutterBottom>
-                {t('features')}
-              </Typography>
-              <FormGroup>
-                <Grid container spacing={1}>
-                  {featureOptions.map(feature => (
-                    <Grid item xs={12} sm={6} key={feature.value}>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={formData.features.includes(feature.value)}
-                            onChange={() => handleFeatureChange(feature.value)}
-                            disabled={dialogMode === 'view'}
-                          />
-                        }
-                        label={feature.label}
-                      />
-                    </Grid>
-                  ))}
-                </Grid>
-              </FormGroup>
-            </Box>
-          )}
-
-          {/* Maintenance Tab */}
-          {tabValue === 3 && (
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label={t('lastServiceDate')}
-                  type="date"
-                  value={formData.maintenance.lastServiceDate}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    maintenance: { ...formData.maintenance, lastServiceDate: e.target.value }
-                  })}
-                  disabled={dialogMode === 'view'}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label={t('nextServiceDate')}
-                  type="date"
-                  value={formData.maintenance.nextServiceDate}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    maintenance: { ...formData.maintenance, nextServiceDate: e.target.value }
-                  })}
-                  disabled={dialogMode === 'view'}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label={t('nextServiceMileage')}
-                  type="number"
-                  value={formData.maintenance.nextServiceMileage}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    maintenance: { ...formData.maintenance, nextServiceMileage: parseInt(e.target.value) }
-                  })}
-                  disabled={dialogMode === 'view'}
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">km</InputAdornment>,
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label={t('maintenanceNotes')}
-                  multiline
-                  rows={3}
-                  value={formData.maintenance.notes}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    maintenance: { ...formData.maintenance, notes: e.target.value }
-                  })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-            </Grid>
-          )}
-
-          {/* Insurance Tab */}
-          {tabValue === 4 && (
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label={t('insuranceProvider')}
-                  value={formData.insurance.provider}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    insurance: { ...formData.insurance, provider: e.target.value }
-                  })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label={t('policyNumber')}
-                  value={formData.insurance.policyNumber}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    insurance: { ...formData.insurance, policyNumber: e.target.value }
-                  })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label={t('expiryDate')}
-                  type="date"
-                  value={formData.insurance.expiryDate}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    insurance: { ...formData.insurance, expiryDate: e.target.value }
-                  })}
-                  disabled={dialogMode === 'view'}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label={t('coverageAmount')}
-                  type="number"
-                  value={formData.insurance.coverageAmount}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    insurance: { ...formData.insurance, coverageAmount: parseFloat(e.target.value) }
-                  })}
-                  disabled={dialogMode === 'view'}
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">€</InputAdornment>,
-                  }}
-                />
-              </Grid>
-            </Grid>
-          )}
-
-          {/* Images Tab */}
-          {tabValue === 5 && (
-            <Box>
-              <Typography variant="h6" gutterBottom>
-                {t('images')} 🖼️
-              </Typography>
-              
-              {console.log(`🖼️ Images tab rendered. DialogMode: ${dialogMode}, TabValue: ${tabValue}`)}
-              
-              {dialogMode === 'create' ? (
-                <Box>
-                  {/* Image Upload Section for New Cars */}
-                  <Box sx={{ mb: 3, p: 2, border: '2px dashed #ccc', borderRadius: 2 }}>
-                    <Button
-                      variant="outlined"
-                      component="label"
-                      startIcon={<UploadIcon />}
-                      fullWidth
-                      sx={{ mb: 2, py: 2 }}
-                      color="primary"
-                    >
-                      {t('uploadImages')} 📷
-                      <input
-                        type="file"
-                        hidden
-                        multiple
-                        accept="image/*"
-                        onChange={handleImageChange}
-                      />
-                    </Button>
-                    <Typography variant="body2" color="text.secondary" align="center">
-                      {t('maxImagesNote')} (10 obrázkov)
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" align="center" display="block" sx={{ mt: 1 }}>
-                      Podporované formáty: JPG, PNG, WEBP, GIF
-                    </Typography>
-                  </Box>
-
-                  {/* Image Previews */}
-                  {imagePreviewUrls.length > 0 && (
-                    <Box>
-                      <Typography variant="subtitle1" gutterBottom>
-                        Náhľad obrázkov ({imagePreviewUrls.length})
-                      </Typography>
-                      <ImageList sx={{ width: '100%' }} cols={3} rowHeight={164}>
-                        {imagePreviewUrls.map((url, index) => (
-                          <ImageListItem key={index}>
-                            <img
-                              src={url}
-                              alt={`Náhľad ${index + 1}`}
-                              loading="lazy"
-                              style={{ objectFit: 'cover' }}
-                            />
-                            <ImageListItemBar
-                              title={`Obrázok ${index + 1}`}
-                              subtitle={index === 0 ? '(Primárny)' : ''}
-                              actionIcon={
-                                <Tooltip title="Odstrániť obrázok">
-                                  <IconButton
-                                    sx={{ color: 'rgba(255, 255, 255, 0.54)' }}
-                                    onClick={() => removeImage(index)}
-                                  >
-                                    <CloseIcon />
-                                  </IconButton>
-                                </Tooltip>
-                              }
-                            />
-                          </ImageListItem>
-                        ))}
-                      </ImageList>
-                    </Box>
-                  )}
-                  
-                  {imagePreviewUrls.length === 0 && (
-                    <Box sx={{ textAlign: 'center', py: 4 }}>
-                      <ImageIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                      <Typography variant="body1" color="text.secondary">
-                        Zatiaľ neboli pridané žiadne obrázky
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-              ) : (
-                <Box>
-                  {/* Image Upload Section for Existing Cars in Edit Mode */}
-                  {dialogMode === 'edit' && (
-                    <Box sx={{ mb: 3 }}>
-                      <Typography variant="subtitle1" gutterBottom>
-                        {t('addMoreImages')} 
-                      </Typography>
-                      <Box sx={{ mb: 3, p: 2, border: '2px dashed #ccc', borderRadius: 2 }}>
-                        <Button
-                          variant="outlined"
-                          component="label"
-                          startIcon={<UploadIcon />}
-                          fullWidth
-                          sx={{ mb: 2, py: 2 }}
-                          color="primary"
-                        >
-                          {t('uploadImages')} 📷
-                          <input
-                            type="file"
-                            hidden
-                            multiple
-                            accept="image/*"
-                            onChange={handleImageChange}
-                          />
-                        </Button>
-                        <Typography variant="body2" color="text.secondary" align="center">
-                          {t('maxImagesNote')} (10 obrázkov celkovo)
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" align="center" display="block" sx={{ mt: 1 }}>
-                          Podporované formáty: JPG, PNG, WEBP, GIF
-                        </Typography>
-                      </Box>
-
-                      {/* New Image Previews */}
-                      {imagePreviewUrls.length > 0 && (
-                        <Box sx={{ mb: 3 }}>
-                          <Typography variant="subtitle2" gutterBottom>
-                            Nové obrázky na pridanie ({imagePreviewUrls.length})
-                          </Typography>
-                          <ImageList sx={{ width: '100%' }} cols={3} rowHeight={164}>
-                            {imagePreviewUrls.map((url, index) => (
-                              <ImageListItem key={`new-${index}`}>
-                                <img
-                                  src={url}
-                                  alt={`Nový obrázok ${index + 1}`}
-                                  loading="lazy"
-                                  style={{ objectFit: 'cover' }}
-                                />
-                                <ImageListItemBar
-                                  title={`Nový obrázok ${index + 1}`}
-                                  subtitle="(Pridať)"
-                                  actionIcon={
-                                    <Tooltip title="Odstrániť obrázok">
-                                      <IconButton
-                                        sx={{ color: 'rgba(255, 255, 255, 0.54)' }}
-                                        onClick={() => removeImage(index)}
-                                      >
-                                        <CloseIcon />
-                                      </IconButton>
-                                    </Tooltip>
-                                  }
-                                />
-                              </ImageListItem>
-                            ))}
-                          </ImageList>
-                        </Box>
-                      )}
-                    </Box>
-                  )}
-
-                  {/* Existing Images for Edit/View Mode */}
-                  <Typography variant="subtitle1" gutterBottom>
-                    {dialogMode === 'edit' ? 'Existujúce obrázky' : t('images')}
-                    {selectedCar?.images && selectedCar.images.length > 0 && (
-                      <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                        ({selectedCar.images.length}/10)
-                      </Typography>
-                    )}
-                  </Typography>
-                  {selectedCar?.images && selectedCar.images.length > 0 ? (
-                    <ImageList sx={{ width: '100%' }} cols={3} rowHeight={164}>
-                      {selectedCar.images.map((image, index) => (
-                        <ImageListItem key={`existing-${index}`}>
-                          <img
-                            src={image.urls?.medium || image.url}
-                            alt={image.description || `${t('images')} ${index + 1}`}
-                            loading="lazy"
-                            style={{ objectFit: 'cover' }}
-                          />
-                          <ImageListItemBar
-                            title={image.isPrimary ? `${t('images')} (Primárny)` : `${t('images')} ${index + 1}`}
-                            subtitle={image.description}
-                            actionIcon={
-                              <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                {dialogMode === 'edit' && (
-                                  <>
-                                    <Tooltip title={image.isPrimary ? "Už je primárny" : "Nastaviť ako primárny"}>
-                              <IconButton
-                                        sx={{ 
-                                          color: image.isPrimary ? '#ffc107' : 'rgba(255, 255, 255, 0.54)',
-                                          '&:hover': { color: '#ffc107' }
-                                        }}
-                                        onClick={() => !image.isPrimary && handleSetPrimaryImage(index)}
-                                        disabled={image.isPrimary}
-                                      >
-                                        <StarIcon />
-                                      </IconButton>
-                                    </Tooltip>
-                                    <Tooltip title="Odstrániť obrázok">
-                                      <IconButton
-                                        sx={{ 
-                                          color: 'rgba(255, 255, 255, 0.54)',
-                                          '&:hover': { color: '#f44336' }
-                                        }}
-                                        onClick={() => {
-                                          if (window.confirm('Naozaj chcete odstrániť tento obrázok?')) {
-                                            handleDeleteExistingImage(index)
-                                          }
-                                        }}
-                                      >
-                                        <DeleteIcon />
-                                      </IconButton>
-                                    </Tooltip>
-                                  </>
-                                )}
-                                {dialogMode === 'view' && (
-                                  <IconButton
-                                    sx={{ color: image.isPrimary ? '#ffc107' : 'rgba(255, 255, 255, 0.54)' }}
-                                    disabled
-                              >
-                                {image.isPrimary ? <StarIcon /> : <StarBorderIcon />}
-                              </IconButton>
-                                )}
-                              </Box>
-                            }
-                          />
-                        </ImageListItem>
-                      ))}
-                    </ImageList>
-                  ) : (
-                    <Box sx={{ textAlign: 'center', py: 4 }}>
-                      <ImageIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                      <Typography variant="body2" color="text.secondary">
-                        {dialogMode === 'edit' ? 'Žiadne existujúce obrázky. Pridajte nové vyššie.' : 'Žiadne obrázky nie sú dostupné.'}
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-              )}
-            </Box>
-          )}
+        <DialogContent sx={{ minWidth: '900px', minHeight: '600px' }}>
+          <EnhancedCarForm
+            formData={formData}
+            setFormData={setFormData}
+            formErrors={formErrors}
+            dialogMode={dialogMode}
+            onImageChange={handleImageChange}
+            onImageRemove={removeImage}
+            selectedImages={selectedImages}
+            imagePreviewUrls={imagePreviewUrls}
+          />
         </DialogContent>
         
         <DialogActions sx={{ p: 3, borderTop: 1, borderColor: 'divider' }}>
