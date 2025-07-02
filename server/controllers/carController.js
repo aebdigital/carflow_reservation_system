@@ -144,10 +144,14 @@ const createCar = asyncHandler(async (req, res, next) => {
       if (engineKeys.length > 0) {
         req.body.engine = {};
         engineKeys.forEach(key => {
-          const fieldName = key.match(/engine\[(.+)\]/)?.[1];
-          if (fieldName) {
-            req.body.engine[fieldName] = req.body[key];
-            delete req.body[key];
+          try {
+            const fieldName = key.match(/engine\[(.+)\]/)?.[1];
+            if (fieldName) {
+              req.body.engine[fieldName] = req.body[key];
+              delete req.body[key];
+            }
+          } catch (error) {
+            console.error(`Error processing engine field ${key}:`, error);
           }
         });
       }
@@ -157,10 +161,14 @@ const createCar = asyncHandler(async (req, res, next) => {
       if (mileageKeys.length > 0) {
         req.body.mileage = {};
         mileageKeys.forEach(key => {
-          const fieldName = key.match(/mileage\[(.+)\]/)?.[1];
-          if (fieldName) {
-            req.body.mileage[fieldName] = req.body[key];
-            delete req.body[key];
+          try {
+            const fieldName = key.match(/mileage\[(.+)\]/)?.[1];
+            if (fieldName) {
+              req.body.mileage[fieldName] = req.body[key];
+              delete req.body[key];
+            }
+          } catch (error) {
+            console.error(`Error processing mileage field ${key}:`, error);
           }
         });
       }
@@ -170,10 +178,14 @@ const createCar = asyncHandler(async (req, res, next) => {
       if (fuelKeys.length > 0) {
         req.body.fuelConsumption = {};
         fuelKeys.forEach(key => {
-          const fieldName = key.match(/fuelConsumption\[(.+)\]/)?.[1];
-          if (fieldName) {
-            req.body.fuelConsumption[fieldName] = req.body[key];
-            delete req.body[key];
+          try {
+            const fieldName = key.match(/fuelConsumption\[(.+)\]/)?.[1];
+            if (fieldName) {
+              req.body.fuelConsumption[fieldName] = req.body[key];
+              delete req.body[key];
+            }
+          } catch (error) {
+            console.error(`Error processing fuelConsumption field ${key}:`, error);
           }
         });
       }
@@ -183,14 +195,18 @@ const createCar = asyncHandler(async (req, res, next) => {
       if (docKeys.length > 0) {
         req.body.documentValidity = {};
         docKeys.forEach(key => {
-          const match = key.match(/documentValidity\[(.+?)\]\[(.+)\]/);
-          if (match) {
-            const [, docType, field] = match;
-            if (!req.body.documentValidity[docType]) {
-              req.body.documentValidity[docType] = {};
+          try {
+            const match = key.match(/documentValidity\[(.+?)\]\[(.+)\]/);
+            if (match) {
+              const [, docType, field] = match;
+              if (!req.body.documentValidity[docType]) {
+                req.body.documentValidity[docType] = {};
+              }
+              req.body.documentValidity[docType][field] = req.body[key];
+              delete req.body[key];
             }
-            req.body.documentValidity[docType][field] = req.body[key];
-            delete req.body[key];
+          } catch (error) {
+            console.error(`Error processing documentValidity field ${key}:`, error);
           }
         });
       }
@@ -200,20 +216,24 @@ const createCar = asyncHandler(async (req, res, next) => {
       if (pricingKeys.length > 0) {
         req.body.pricing = {};
         pricingKeys.forEach(key => {
-          const match = key.match(/pricing\[(.+?)\](?:\[(.+)\])?/);
-          if (match) {
-            const [, section, field] = match;
-            if (field) {
-              // Nested object like pricing[rates][1day]
-              if (!req.body.pricing[section]) {
-                req.body.pricing[section] = {};
+          try {
+            const match = key.match(/pricing\[(.+?)\](?:\[(.+)\])?/);
+            if (match) {
+              const [, section, field] = match;
+              if (field) {
+                // Nested object like pricing[rates][1day]
+                if (!req.body.pricing[section]) {
+                  req.body.pricing[section] = {};
+                }
+                req.body.pricing[section][field] = req.body[key];
+              } else {
+                // Direct field like pricing[dailyRate]
+                req.body.pricing[section] = req.body[key];
               }
-              req.body.pricing[section][field] = req.body[key];
-            } else {
-              // Direct field like pricing[dailyRate]
-              req.body.pricing[section] = req.body[key];
+              delete req.body[key];
             }
-            delete req.body[key];
+          } catch (error) {
+            console.error(`Error processing pricing field ${key}:`, error);
           }
         });
       }
@@ -223,10 +243,14 @@ const createCar = asyncHandler(async (req, res, next) => {
       if (mileageLimitKeys.length > 0) {
         req.body.mileageLimits = {};
         mileageLimitKeys.forEach(key => {
-          const fieldName = key.match(/mileageLimits\[(.+)\]/)?.[1];
-          if (fieldName) {
-            req.body.mileageLimits[fieldName] = req.body[key];
-            delete req.body[key];
+          try {
+            const fieldName = key.match(/mileageLimits\[(.+)\]/)?.[1];
+            if (fieldName) {
+              req.body.mileageLimits[fieldName] = req.body[key];
+              delete req.body[key];
+            }
+          } catch (error) {
+            console.error(`Error processing mileageLimits field ${key}:`, error);
           }
         });
       }
@@ -300,27 +324,32 @@ const createCar = asyncHandler(async (req, res, next) => {
       ];
 
       numericFields.forEach(field => {
-        const keys = field.split('.');
-        let obj = req.body;
-        for (let i = 0; i < keys.length - 1; i++) {
-          if (obj[keys[i]]) {
-            obj = obj[keys[i]];
-          } else {
-            return;
-          }
-        }
-        const finalKey = keys[keys.length - 1];
-        if (obj[finalKey] !== undefined) {
-          if (obj[finalKey] === '' || obj[finalKey] === null) {
-            // Set empty strings/null to undefined so they don't interfere with defaults
-            obj[finalKey] = undefined;
-          } else {
-            // Convert to number if it's a valid numeric value
-            const numValue = Number(obj[finalKey]);
-            if (!isNaN(numValue)) {
-              obj[finalKey] = numValue;
+        try {
+          const keys = field.split('.');
+          let obj = req.body;
+          for (let i = 0; i < keys.length - 1; i++) {
+            if (obj && obj[keys[i]]) {
+              obj = obj[keys[i]];
+            } else {
+              return; // Skip if path doesn't exist
             }
           }
+          const finalKey = keys[keys.length - 1];
+          if (obj && obj[finalKey] !== undefined) {
+            if (obj[finalKey] === '' || obj[finalKey] === null) {
+              // Set empty strings/null to undefined so they don't interfere with defaults
+              obj[finalKey] = undefined;
+            } else {
+              // Convert to number if it's a valid numeric value
+              const numValue = Number(obj[finalKey]);
+              if (!isNaN(numValue)) {
+                obj[finalKey] = numValue;
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Error processing numeric field ${field}:`, error);
+          // Continue processing other fields
         }
       });
     }
@@ -554,10 +583,14 @@ const updateCar = asyncHandler(async (req, res, next) => {
       if (engineKeys.length > 0) {
         req.body.engine = {};
         engineKeys.forEach(key => {
-          const fieldName = key.match(/engine\[(.+)\]/)?.[1];
-          if (fieldName) {
-            req.body.engine[fieldName] = req.body[key];
-            delete req.body[key];
+          try {
+            const fieldName = key.match(/engine\[(.+)\]/)?.[1];
+            if (fieldName) {
+              req.body.engine[fieldName] = req.body[key];
+              delete req.body[key];
+            }
+          } catch (error) {
+            console.error(`Error processing engine field ${key}:`, error);
           }
         });
       }
@@ -567,10 +600,14 @@ const updateCar = asyncHandler(async (req, res, next) => {
       if (mileageKeys.length > 0) {
         req.body.mileage = {};
         mileageKeys.forEach(key => {
-          const fieldName = key.match(/mileage\[(.+)\]/)?.[1];
-          if (fieldName) {
-            req.body.mileage[fieldName] = req.body[key];
-            delete req.body[key];
+          try {
+            const fieldName = key.match(/mileage\[(.+)\]/)?.[1];
+            if (fieldName) {
+              req.body.mileage[fieldName] = req.body[key];
+              delete req.body[key];
+            }
+          } catch (error) {
+            console.error(`Error processing mileage field ${key}:`, error);
           }
         });
       }
@@ -580,10 +617,14 @@ const updateCar = asyncHandler(async (req, res, next) => {
       if (fuelKeys.length > 0) {
         req.body.fuelConsumption = {};
         fuelKeys.forEach(key => {
-          const fieldName = key.match(/fuelConsumption\[(.+)\]/)?.[1];
-          if (fieldName) {
-            req.body.fuelConsumption[fieldName] = req.body[key];
-            delete req.body[key];
+          try {
+            const fieldName = key.match(/fuelConsumption\[(.+)\]/)?.[1];
+            if (fieldName) {
+              req.body.fuelConsumption[fieldName] = req.body[key];
+              delete req.body[key];
+            }
+          } catch (error) {
+            console.error(`Error processing fuelConsumption field ${key}:`, error);
           }
         });
       }
@@ -593,14 +634,18 @@ const updateCar = asyncHandler(async (req, res, next) => {
       if (docKeys.length > 0) {
         req.body.documentValidity = {};
         docKeys.forEach(key => {
-          const match = key.match(/documentValidity\[(.+?)\]\[(.+)\]/);
-          if (match) {
-            const [, docType, field] = match;
-            if (!req.body.documentValidity[docType]) {
-              req.body.documentValidity[docType] = {};
+          try {
+            const match = key.match(/documentValidity\[(.+?)\]\[(.+)\]/);
+            if (match) {
+              const [, docType, field] = match;
+              if (!req.body.documentValidity[docType]) {
+                req.body.documentValidity[docType] = {};
+              }
+              req.body.documentValidity[docType][field] = req.body[key];
+              delete req.body[key];
             }
-            req.body.documentValidity[docType][field] = req.body[key];
-            delete req.body[key];
+          } catch (error) {
+            console.error(`Error processing documentValidity field ${key}:`, error);
           }
         });
       }
@@ -610,20 +655,24 @@ const updateCar = asyncHandler(async (req, res, next) => {
       if (pricingKeys.length > 0) {
         req.body.pricing = {};
         pricingKeys.forEach(key => {
-          const match = key.match(/pricing\[(.+?)\](?:\[(.+)\])?/);
-          if (match) {
-            const [, section, field] = match;
-            if (field) {
-              // Nested object like pricing[rates][1day]
-              if (!req.body.pricing[section]) {
-                req.body.pricing[section] = {};
+          try {
+            const match = key.match(/pricing\[(.+?)\](?:\[(.+)\])?/);
+            if (match) {
+              const [, section, field] = match;
+              if (field) {
+                // Nested object like pricing[rates][1day]
+                if (!req.body.pricing[section]) {
+                  req.body.pricing[section] = {};
+                }
+                req.body.pricing[section][field] = req.body[key];
+              } else {
+                // Direct field like pricing[dailyRate]
+                req.body.pricing[section] = req.body[key];
               }
-              req.body.pricing[section][field] = req.body[key];
-            } else {
-              // Direct field like pricing[dailyRate]
-              req.body.pricing[section] = req.body[key];
+              delete req.body[key];
             }
-            delete req.body[key];
+          } catch (error) {
+            console.error(`Error processing pricing field ${key}:`, error);
           }
         });
       }
@@ -633,10 +682,14 @@ const updateCar = asyncHandler(async (req, res, next) => {
       if (mileageLimitKeys.length > 0) {
         req.body.mileageLimits = {};
         mileageLimitKeys.forEach(key => {
-          const fieldName = key.match(/mileageLimits\[(.+)\]/)?.[1];
-          if (fieldName) {
-            req.body.mileageLimits[fieldName] = req.body[key];
-            delete req.body[key];
+          try {
+            const fieldName = key.match(/mileageLimits\[(.+)\]/)?.[1];
+            if (fieldName) {
+              req.body.mileageLimits[fieldName] = req.body[key];
+              delete req.body[key];
+            }
+          } catch (error) {
+            console.error(`Error processing mileageLimits field ${key}:`, error);
           }
         });
       }
@@ -710,27 +763,32 @@ const updateCar = asyncHandler(async (req, res, next) => {
       ];
 
       numericFields.forEach(field => {
-        const keys = field.split('.');
-        let obj = req.body;
-        for (let i = 0; i < keys.length - 1; i++) {
-          if (obj[keys[i]]) {
-            obj = obj[keys[i]];
-          } else {
-            return;
-          }
-        }
-        const finalKey = keys[keys.length - 1];
-        if (obj[finalKey] !== undefined) {
-          if (obj[finalKey] === '' || obj[finalKey] === null) {
-            // Set empty strings/null to undefined so they don't interfere with defaults
-            obj[finalKey] = undefined;
-          } else {
-            // Convert to number if it's a valid numeric value
-            const numValue = Number(obj[finalKey]);
-            if (!isNaN(numValue)) {
-              obj[finalKey] = numValue;
+        try {
+          const keys = field.split('.');
+          let obj = req.body;
+          for (let i = 0; i < keys.length - 1; i++) {
+            if (obj && obj[keys[i]]) {
+              obj = obj[keys[i]];
+            } else {
+              return; // Skip if path doesn't exist
             }
           }
+          const finalKey = keys[keys.length - 1];
+          if (obj && obj[finalKey] !== undefined) {
+            if (obj[finalKey] === '' || obj[finalKey] === null) {
+              // Set empty strings/null to undefined so they don't interfere with defaults
+              obj[finalKey] = undefined;
+            } else {
+              // Convert to number if it's a valid numeric value
+              const numValue = Number(obj[finalKey]);
+              if (!isNaN(numValue)) {
+                obj[finalKey] = numValue;
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Error processing numeric field ${field}:`, error);
+          // Continue processing other fields
         }
       });
     }
