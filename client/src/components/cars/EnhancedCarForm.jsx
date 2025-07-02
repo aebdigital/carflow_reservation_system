@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Grid,
@@ -101,15 +101,8 @@ const EnhancedCarForm = ({
     { value: 'archived', label: 'Archivované', color: 'error' }
   ];
 
-  // Tab panel component
-  const TabPanel = ({ children, value, index, ...other }) => (
-    <div role="tabpanel" hidden={value !== index} {...other}>
-      {value === index && <Box sx={{ py: 2 }}>{children}</Box>}
-    </div>
-  );
-
-  // Handle form field changes
-  const handleChange = (field, value, nestedField = null) => {
+  // Handle form field changes - memoized to prevent re-renders
+  const handleChange = useCallback((field, value, nestedField = null) => {
     if (nestedField) {
       setFormData(prev => ({
         ...prev,
@@ -121,10 +114,10 @@ const EnhancedCarForm = ({
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
     }
-  };
+  }, [setFormData]);
 
-  // Handle deeply nested changes
-  const handleNestedChange = (path, value) => {
+  // Handle deeply nested changes - memoized to prevent re-renders
+  const handleNestedChange = useCallback((path, value) => {
     const keys = path.split('.');
     setFormData(prev => {
       const updated = { ...prev };
@@ -140,13 +133,31 @@ const EnhancedCarForm = ({
       current[keys[keys.length - 1]] = value;
       return updated;
     });
-  };
+  }, [setFormData]);
+
+  // Handle tab changes - memoized to prevent re-renders
+  const handleTabChange = useCallback((e, newValue) => {
+    setTabValue(newValue);
+  }, []);
+
+  // Tab panel component - memoized to prevent re-renders
+  const TabPanel = useCallback(({ children, value, index, ...other }) => (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`car-form-tabpanel-${index}`}
+      aria-labelledby={`car-form-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+    </div>
+  ), []);
 
   return (
     <Box sx={{ width: '100%' }}>
       <Tabs 
         value={tabValue} 
-        onChange={(e, newValue) => setTabValue(newValue)}
+        onChange={handleTabChange}
         variant="scrollable"
         scrollButtons="auto"
         sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
