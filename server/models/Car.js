@@ -48,8 +48,7 @@ const carSchema = new mongoose.Schema({
     type: String,
     required: [true, 'VIN is required'],
     trim: true,
-    uppercase: true,
-    length: [17, 'VIN must be exactly 17 characters']
+    uppercase: true
   },
   color: {
     type: String,

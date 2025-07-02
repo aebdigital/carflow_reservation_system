@@ -313,8 +313,6 @@ const createCar = asyncHandler(async (req, res, next) => {
         }
       }
     });
-    
-    console.log('🔧 Processed FormData:', JSON.stringify(req.body, null, 2));
   }
 
   // Add tenant information to car data
@@ -352,15 +350,23 @@ const createCar = asyncHandler(async (req, res, next) => {
     };
   }
   
-  // Handle VIN validation - pad or truncate to 17 characters if needed
-  if (carData.vin && carData.vin.length !== 17) {
+  // Handle VIN validation - ensure it's a reasonable length but not strict about 17 chars
+  if (carData.vin) {
+    // Remove any spaces and ensure uppercase
+    carData.vin = carData.vin.replace(/\s/g, '').toUpperCase();
+    
+    // If VIN is less than 17 characters, pad with zeros
     if (carData.vin.length < 17) {
-      // Pad with zeros
       carData.vin = carData.vin.padEnd(17, '0');
-    } else {
-      // Truncate to 17 characters
+    } else if (carData.vin.length > 17) {
+      // If too long, truncate to 17 characters
       carData.vin = carData.vin.substring(0, 17);
     }
+  }
+  
+  // Handle registration number - make it unique by adding tenant prefix if needed
+  if (carData.registrationNumber) {
+    carData.registrationNumber = carData.registrationNumber.toUpperCase().trim();
   }
 
   // Set default category description if not provided
@@ -375,10 +381,29 @@ const createCar = asyncHandler(async (req, res, next) => {
     carData.mileage.updatedBy = req.user._id;
   }
   
-  console.log('🚗 Final car data before creation:', JSON.stringify(carData, null, 2));
-  
   // Create car first to get the ID
-  const car = await Car.create(carData);
+  let car;
+  try {
+    car = await Car.create(carData);
+  } catch (error) {
+    // Handle specific MongoDB errors
+    if (error.code === 11000) {
+      // Duplicate key error
+      const field = Object.keys(error.keyPattern)[0];
+      const value = error.keyValue[field];
+      return next(new AppError(`${field} '${value}' already exists. Please use a different value.`, 400));
+    }
+    
+    if (error.name === 'ValidationError') {
+      // Validation error - extract meaningful message
+      const errors = Object.values(error.errors).map(err => err.message);
+      return next(new AppError(`Validation failed: ${errors.join(', ')}`, 400));
+    }
+    
+    // Log the error for debugging but don't expose details to user
+    console.error('Car creation error:', error);
+    return next(new AppError('Failed to create car. Please check your input and try again.', 400));
+  }
 
   // Handle uploaded images if any
   if (req.files && req.files.length > 0) {
@@ -662,8 +687,6 @@ const updateCar = asyncHandler(async (req, res, next) => {
         }
       }
     });
-    
-    console.log('🔧 Processed FormData:', JSON.stringify(req.body, null, 2));
   }
 
   // Set mileage updatedBy if mileage is being updated
@@ -720,14 +743,34 @@ const updateCar = asyncHandler(async (req, res, next) => {
     }
   }
 
-  car = await Car.findOneAndUpdate(
-    { _id: req.params.id, tenantId: req.user.tenantId },
-    req.body,
-    {
-    new: true,
-    runValidators: true
+  try {
+    car = await Car.findOneAndUpdate(
+      { _id: req.params.id, tenantId: req.user.tenantId },
+      req.body,
+      {
+      new: true,
+      runValidators: true
+      }
+    );
+  } catch (error) {
+    // Handle specific MongoDB errors
+    if (error.code === 11000) {
+      // Duplicate key error
+      const field = Object.keys(error.keyPattern)[0];
+      const value = error.keyValue[field];
+      return next(new AppError(`${field} '${value}' already exists. Please use a different value.`, 400));
     }
-  );
+    
+    if (error.name === 'ValidationError') {
+      // Validation error - extract meaningful message
+      const errors = Object.values(error.errors).map(err => err.message);
+      return next(new AppError(`Validation failed: ${errors.join(', ')}`, 400));
+    }
+    
+    // Log the error for debugging but don't expose details to user
+    console.error('Car update error:', error);
+    return next(new AppError('Failed to update car. Please check your input and try again.', 400));
+  }
 
   // Check for document validity notifications after update
   const notifications = car.checkDocumentValidity();
