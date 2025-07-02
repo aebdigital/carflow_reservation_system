@@ -1063,8 +1063,9 @@ const getPublicCars = asyncHandler(async (req, res, next) => {
     const fields = req.query.select.split(',').join(' ');
     query = query.select(fields);
   } else {
-    // Default selection - hide sensitive fields
-    query = query.select('-vin -owner -tenantId -notifications -damages');
+    // Use same safe field selection as tenant-specific endpoint
+    const publicFields = 'brand model year color category fuelType transmission seats doors description pricing location features images equipment badges status';
+    query = query.select(publicFields);
   }
 
   // Sort
@@ -1120,7 +1121,7 @@ const getPublicCar = asyncHandler(async (req, res, next) => {
     _id: req.params.id,
     status: { $ne: 'archived' },
     isActive: true
-  }).select('-vin -owner -tenantId -notifications -damages');
+  }).select('brand model year color category fuelType transmission seats doors description pricing location features images equipment badges status');
 
   if (!car) {
     return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
