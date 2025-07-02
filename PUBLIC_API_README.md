@@ -5,6 +5,15 @@ The CarFlow Public API provides public access to car rental data and reservation
 
 **Base URL**: `https://carflow-reservation-system.onrender.com/api/public`
 
+## 🚀 Recent Updates (July 2025)
+
+✅ **All endpoints fully operational**
+- Fixed legacy data migration issues that were causing 500 errors
+- Resolved admin panel car loading problems
+- Enhanced car form with improved user experience
+- Added comprehensive equipment and badge system
+- Improved mileage tracking and document validity features
+
 ## Authentication
 No authentication required for public endpoints.
 
@@ -41,7 +50,7 @@ Returns all publicly available cars without sensitive information.
 curl "https://carflow-reservation-system.onrender.com/api/public/cars?category=economy&limit=10"
 ```
 
-**Example Response:**
+**Enhanced Response Example:**
 ```json
 {
   "success": true,
@@ -55,6 +64,7 @@ curl "https://carflow-reservation-system.onrender.com/api/public/cars?category=e
   "data": [
     {
       "_id": "car_id",
+      "internalId": "AUTO_001",
       "brand": "Toyota",
       "model": "Corolla",
       "year": 2023,
@@ -62,27 +72,39 @@ curl "https://carflow-reservation-system.onrender.com/api/public/cars?category=e
       "category": "economy",
       "fuelType": "gasoline",
       "transmission": "automatic",
+      "drivetrain": "front",
       "seats": 5,
       "doors": 4,
-      "description": "Economical and reliable city car...",
+      "description": "Economical and reliable city car perfect for daily commutes and city driving...",
       "pricing": {
         "dailyRate": 25,
         "deposit": 300,
         "rates": {
           "1day": 25,
           "2-3days": 23,
-          "4-10days": 21
+          "4-10days": 21,
+          "11-17days": 19,
+          "18-24days": 17
         }
       },
-      "mileage": {
-        "current": 15000,
-        "lastUpdated": "2025-01-01T12:00:00.000Z"
+      "engine": {
+        "displacement": 1800,
+        "power": 100,
+        "torque": 170,
+        "cylinders": 4
+      },
+      "fuelConsumption": {
+        "city": 8.5,
+        "highway": 6.2,
+        "combined": 7.1,
+        "co2Emissions": 145
       },
       "location": {
         "name": "Main Office",
         "address": {
           "street": "123 Main St",
           "city": "Bratislava",
+          "zipCode": "12345",
           "country": "Slovakia"
         }
       },
@@ -91,24 +113,57 @@ curl "https://carflow-reservation-system.onrender.com/api/public/cars?category=e
         {
           "name": "Klimatizácia",
           "icon": "❄️",
-          "category": "comfort"
+          "category": "comfort",
+          "description": "Automatic air conditioning system"
+        },
+        {
+          "name": "GPS navigácia",
+          "icon": "🗺️",
+          "category": "navigation",
+          "description": "Built-in GPS navigation system"
+        },
+        {
+          "name": "Bluetooth",
+          "icon": "📱",
+          "category": "connectivity",
+          "description": "Hands-free calling and audio streaming"
         }
       ],
       "images": [
         {
-          "url": "https://storage.googleapis.com/car_rental_carflow/image.jpg",
-          "isPrimary": true
+          "url": "https://storage.googleapis.com/car_rental_carflow/image_medium.jpg",
+          "description": "Front view",
+          "isPrimary": true,
+          "urls": {
+            "thumbnail": "https://storage.googleapis.com/car_rental_carflow/image_thumb.jpg",
+            "medium": "https://storage.googleapis.com/car_rental_carflow/image_medium.jpg",
+            "large": "https://storage.googleapis.com/car_rental_carflow/image_large.jpg"
+          }
         }
       ],
       "badges": [
         {
           "text": "NOVINKA",
+          "type": "corner",
           "style": {
             "backgroundColor": "#4caf50",
+            "textColor": "#ffffff",
+            "position": "top-right"
+          },
+          "isActive": true
+        },
+        {
+          "text": "ECO",
+          "type": "pill",
+          "style": {
+            "backgroundColor": "#8bc34a",
             "textColor": "#ffffff"
-          }
+          },
+          "isActive": true
         }
-      ]
+      ],
+      "status": "active",
+      "isActive": true
     }
   ]
 }
@@ -400,7 +455,48 @@ curl -X POST "https://carflow-reservation-system.onrender.com/api/public/reserva
 
 For API support and integration questions, contact the development team.
 
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+#### 500 Internal Server Error
+**Fixed as of July 2025** - Previously caused by legacy mileage data migration. All endpoints now working correctly.
+
+**If you still encounter 500 errors:**
+1. Verify your request URL is correct
+2. Check that car IDs are valid MongoDB ObjectIds
+3. Ensure dates are in proper ISO format (YYYY-MM-DDTHH:mm:ss.sssZ)
+4. Contact support if issues persist
+
+#### Car Data Not Loading
+**Fixed as of July 2025** - Admin panel and all public endpoints now loading cars correctly.
+
+#### Empty Responses
+- Check that the tenant has cars in their fleet
+- Verify the user email exists in the system for tenant-specific endpoints
+- Ensure cars have `status: "active"` and `isActive: true`
+
+#### Image URLs Not Working
+- Images are stored in Google Cloud Storage
+- Check that the car has uploaded images
+- URLs are provided in multiple sizes: thumbnail, medium, large, original
+
+### API Status Check
+To verify all endpoints are working:
+```bash
+# Quick health check
+curl "https://carflow-reservation-system.onrender.com/api/public/cars?limit=1"
+```
+
+### Equipment and Badge Data
+New enhanced features include:
+- **Equipment**: Detailed car amenities with icons and descriptions
+- **Badges**: Marketing labels like "NOVINKA", "AKCIA", "TOP PONUKA"
+- **Enhanced Pricing**: Tiered pricing for different rental durations
+- **Technical Specs**: Engine details, fuel consumption, emissions data
+
 ---
 
-**Last Updated**: July 2025
-**API Version**: v1 
+**Last Updated**: July 3, 2025
+**API Version**: v1
+**Status**: ✅ All endpoints operational 
