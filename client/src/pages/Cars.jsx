@@ -83,8 +83,8 @@ function Cars() {
       emissionInspection: { expiryDate: '' }
     },
     pricing: {
-      dailyRate: 0,
-      deposit: 0,
+      dailyRate: '',
+      deposit: '',
       rates: {
         '1day': '',
         '2-3days': '',
@@ -340,11 +340,23 @@ function Cars() {
     if (!formData.transmission) {
       errors.transmission = t('required')
     }
-    if (!formData.pricing?.dailyRate || formData.pricing.dailyRate <= 0) {
-      errors.dailyRate = 'Denná sadzba musí byť väčšia ako 0'
+    
+    // Only require daily rate if it's provided, but it must be positive if provided
+    if (formData.pricing?.dailyRate !== undefined && formData.pricing.dailyRate !== '' && formData.pricing.dailyRate !== null) {
+      if (formData.pricing.dailyRate <= 0) {
+        errors.dailyRate = 'Denná sadzba musí byť väčšia ako 0'
+      }
     }
 
     setFormErrors(errors)
+    
+    // Log validation results for debugging
+    console.log('🔍 Form validation results:', {
+      hasErrors: Object.keys(errors).length > 0,
+      errors: errors,
+      formData: formData
+    });
+    
     return Object.keys(errors).length === 0
   }
 
