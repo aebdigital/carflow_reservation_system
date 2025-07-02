@@ -106,365 +106,400 @@ const getCar = asyncHandler(async (req, res, next) => {
 // @route   POST /api/cars
 // @access  Private/Admin
 const createCar = asyncHandler(async (req, res, next) => {
-  // Parse FormData if it contains nested objects
-  if (req.body && typeof req.body === 'object') {
-    // Handle location parsing
-    if (req.body['location[name]']) {
-      req.body.location = {
-        name: req.body['location[name]'],
+  try {
+    console.log('🚗 [CAR CREATE] Starting car creation process...');
+    console.log('🚗 [CAR CREATE] Request method:', req.method);
+    console.log('🚗 [CAR CREATE] Content-Type:', req.headers['content-type']);
+    console.log('🚗 [CAR CREATE] User ID:', req.user?._id);
+    console.log('🚗 [CAR CREATE] Tenant ID:', req.user?.tenantId);
+    console.log('🚗 [CAR CREATE] Files received:', req.files?.length || 0);
+    console.log('🚗 [CAR CREATE] Body keys:', Object.keys(req.body || {}));
+  
+    // Parse FormData if it contains nested objects
+    if (req.body && typeof req.body === 'object') {
+      console.log('🚗 [CAR CREATE] Processing FormData...');
+      // Handle location parsing
+      if (req.body['location[name]']) {
+        req.body.location = {
+          name: req.body['location[name]'],
+          address: {
+            street: req.body['location[address][street]'] || '',
+            city: req.body['location[address][city]'] || '',
+            state: req.body['location[address][state]'] || '',
+            zipCode: req.body['location[address][zipCode]'] || '',
+            country: req.body['location[address][country]'] || ''
+          }
+        };
+        
+        // Clean up the flat keys
+        Object.keys(req.body).forEach(key => {
+          if (key.startsWith('location[')) {
+            delete req.body[key];
+          }
+        });
+      }
+
+      // Handle engine object
+      const engineKeys = Object.keys(req.body).filter(key => key.startsWith('engine['));
+      if (engineKeys.length > 0) {
+        req.body.engine = {};
+        engineKeys.forEach(key => {
+          const fieldName = key.match(/engine\[(.+)\]/)?.[1];
+          if (fieldName) {
+            req.body.engine[fieldName] = req.body[key];
+            delete req.body[key];
+          }
+        });
+      }
+
+      // Handle mileage object
+      const mileageKeys = Object.keys(req.body).filter(key => key.startsWith('mileage['));
+      if (mileageKeys.length > 0) {
+        req.body.mileage = {};
+        mileageKeys.forEach(key => {
+          const fieldName = key.match(/mileage\[(.+)\]/)?.[1];
+          if (fieldName) {
+            req.body.mileage[fieldName] = req.body[key];
+            delete req.body[key];
+          }
+        });
+      }
+
+      // Handle fuelConsumption object
+      const fuelKeys = Object.keys(req.body).filter(key => key.startsWith('fuelConsumption['));
+      if (fuelKeys.length > 0) {
+        req.body.fuelConsumption = {};
+        fuelKeys.forEach(key => {
+          const fieldName = key.match(/fuelConsumption\[(.+)\]/)?.[1];
+          if (fieldName) {
+            req.body.fuelConsumption[fieldName] = req.body[key];
+            delete req.body[key];
+          }
+        });
+      }
+
+      // Handle documentValidity nested object
+      const docKeys = Object.keys(req.body).filter(key => key.startsWith('documentValidity['));
+      if (docKeys.length > 0) {
+        req.body.documentValidity = {};
+        docKeys.forEach(key => {
+          const match = key.match(/documentValidity\[(.+?)\]\[(.+)\]/);
+          if (match) {
+            const [, docType, field] = match;
+            if (!req.body.documentValidity[docType]) {
+              req.body.documentValidity[docType] = {};
+            }
+            req.body.documentValidity[docType][field] = req.body[key];
+            delete req.body[key];
+          }
+        });
+      }
+
+      // Handle pricing object
+      const pricingKeys = Object.keys(req.body).filter(key => key.startsWith('pricing['));
+      if (pricingKeys.length > 0) {
+        req.body.pricing = {};
+        pricingKeys.forEach(key => {
+          const match = key.match(/pricing\[(.+?)\](?:\[(.+)\])?/);
+          if (match) {
+            const [, section, field] = match;
+            if (field) {
+              // Nested object like pricing[rates][1day]
+              if (!req.body.pricing[section]) {
+                req.body.pricing[section] = {};
+              }
+              req.body.pricing[section][field] = req.body[key];
+            } else {
+              // Direct field like pricing[dailyRate]
+              req.body.pricing[section] = req.body[key];
+            }
+            delete req.body[key];
+          }
+        });
+      }
+
+      // Handle mileageLimits object
+      const mileageLimitKeys = Object.keys(req.body).filter(key => key.startsWith('mileageLimits['));
+      if (mileageLimitKeys.length > 0) {
+        req.body.mileageLimits = {};
+        mileageLimitKeys.forEach(key => {
+          const fieldName = key.match(/mileageLimits\[(.+)\]/)?.[1];
+          if (fieldName) {
+            req.body.mileageLimits[fieldName] = req.body[key];
+            delete req.body[key];
+          }
+        });
+      }
+
+      // Handle equipment array
+      if (req.body['equipment[]']) {
+        req.body.equipment = Array.isArray(req.body['equipment[]']) 
+          ? req.body['equipment[]'] 
+          : [req.body['equipment[]']];
+        delete req.body['equipment[]'];
+      }
+
+      // Handle badges array
+      if (req.body['badges[]']) {
+        req.body.badges = Array.isArray(req.body['badges[]']) 
+          ? req.body['badges[]'] 
+          : [req.body['badges[]']];
+        delete req.body['badges[]'];
+      }
+
+      // Handle addons array
+      if (req.body['addons[]']) {
+        req.body.addons = Array.isArray(req.body['addons[]']) 
+          ? req.body['addons[]'] 
+          : [req.body['addons[]']];
+        delete req.body['addons[]'];
+      }
+
+      // Handle features array (legacy)
+      if (req.body['features[]']) {
+        req.body.features = Array.isArray(req.body['features[]']) 
+          ? req.body['features[]'] 
+          : [req.body['features[]']];
+        delete req.body['features[]'];
+      }
+
+      // Handle maintenance object
+      const maintenanceKeys = Object.keys(req.body).filter(key => key.startsWith('maintenance['));
+      if (maintenanceKeys.length > 0) {
+        req.body.maintenance = {};
+        maintenanceKeys.forEach(key => {
+          const fieldName = key.match(/maintenance\[(.+)\]/)?.[1];
+          if (fieldName) {
+            req.body.maintenance[fieldName] = req.body[key];
+            delete req.body[key];
+          }
+        });
+      }
+
+      // Handle insurance object
+      const insuranceKeys = Object.keys(req.body).filter(key => key.startsWith('insurance['));
+      if (insuranceKeys.length > 0) {
+        req.body.insurance = {};
+        insuranceKeys.forEach(key => {
+          const fieldName = key.match(/insurance\[(.+)\]/)?.[1];
+          if (fieldName) {
+            req.body.insurance[fieldName] = req.body[key];
+            delete req.body[key];
+          }
+        });
+      }
+
+      // Convert string numbers to actual numbers for specific fields
+      const numericFields = [
+        'year', 'seats', 'doors', 'trunkVolume',
+        'engine.displacement', 'engine.power', 'engine.torque', 'engine.cylinders',
+        'fuelConsumption.city', 'fuelConsumption.highway', 'fuelConsumption.combined', 'fuelConsumption.co2Emissions',
+        'pricing.dailyRate', 'pricing.deposit', 'pricing.weeklyRate', 'pricing.monthlyRate',
+        'mileageLimits.dailyLimit', 'mileageLimits.excessKmPrice',
+        'mileage.current'
+      ];
+
+      numericFields.forEach(field => {
+        const keys = field.split('.');
+        let obj = req.body;
+        for (let i = 0; i < keys.length - 1; i++) {
+          if (obj[keys[i]]) {
+            obj = obj[keys[i]];
+          } else {
+            return;
+          }
+        }
+        const finalKey = keys[keys.length - 1];
+        if (obj[finalKey] !== undefined) {
+          if (obj[finalKey] === '' || obj[finalKey] === null) {
+            // Set empty strings/null to undefined so they don't interfere with defaults
+            obj[finalKey] = undefined;
+          } else {
+            // Convert to number if it's a valid numeric value
+            const numValue = Number(obj[finalKey]);
+            if (!isNaN(numValue)) {
+              obj[finalKey] = numValue;
+            }
+          }
+        }
+      });
+    }
+
+    console.log('🚗 [CAR CREATE] FormData processing complete');
+
+    // Add tenant information to car data
+    const carData = { 
+      ...req.body,
+      tenantId: req.user.tenantId,
+      owner: req.user._id
+    };
+
+    console.log('🚗 [CAR CREATE] Added tenant/owner info');
+
+    // Handle required fields with proper defaults
+    if (!carData.pricing) {
+      carData.pricing = {};
+    }
+    
+    // Set default values for required pricing fields if they're empty or missing
+    if (!carData.pricing.dailyRate || carData.pricing.dailyRate === '') {
+      carData.pricing.dailyRate = 0;
+    }
+    
+    if (!carData.pricing.deposit || carData.pricing.deposit === '') {
+      carData.pricing.deposit = 0;
+    }
+    
+    console.log('🚗 [CAR CREATE] Set pricing defaults');
+    
+    // Handle location - provide default if missing
+    if (!carData.location || !carData.location.name || carData.location.name.trim() === '') {
+      carData.location = {
+        name: 'Hlavná pobočka',
         address: {
-          street: req.body['location[address][street]'] || '',
-          city: req.body['location[address][city]'] || '',
-          state: req.body['location[address][state]'] || '',
-          zipCode: req.body['location[address][zipCode]'] || '',
-          country: req.body['location[address][country]'] || ''
+          street: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          country: 'Slovensko'
         }
       };
+    }
+    
+    console.log('🚗 [CAR CREATE] Set location defaults');
+    
+    // Handle VIN validation - ensure it's a reasonable length but not strict about 17 chars
+    if (carData.vin) {
+      // Remove any spaces and ensure uppercase
+      carData.vin = carData.vin.replace(/\s/g, '').toUpperCase();
       
-      // Clean up the flat keys
-      Object.keys(req.body).forEach(key => {
-        if (key.startsWith('location[')) {
-          delete req.body[key];
-        }
-      });
+      // If VIN is less than 17 characters, pad with zeros
+      if (carData.vin.length < 17) {
+        carData.vin = carData.vin.padEnd(17, '0');
+      } else if (carData.vin.length > 17) {
+        // If too long, truncate to 17 characters
+        carData.vin = carData.vin.substring(0, 17);
+      }
+    }
+    
+    // Handle registration number - make it unique by adding tenant prefix if needed
+    if (carData.registrationNumber) {
+      carData.registrationNumber = carData.registrationNumber.toUpperCase().trim();
     }
 
-    // Handle engine object
-    const engineKeys = Object.keys(req.body).filter(key => key.startsWith('engine['));
-    if (engineKeys.length > 0) {
-      req.body.engine = {};
-      engineKeys.forEach(key => {
-        const fieldName = key.match(/engine\[(.+)\]/)?.[1];
-        if (fieldName) {
-          req.body.engine[fieldName] = req.body[key];
-          delete req.body[key];
-        }
-      });
+    console.log('🚗 [CAR CREATE] Processed VIN and registration');
+
+    // Set default category description if not provided
+    if (carData.category && !carData.description) {
+      const Car = require('../models/Car');
+      const tempCar = new Car({ category: carData.category });
+      carData.description = tempCar.getCategoryDescription();
     }
 
-    // Handle mileage object
-    const mileageKeys = Object.keys(req.body).filter(key => key.startsWith('mileage['));
-    if (mileageKeys.length > 0) {
-      req.body.mileage = {};
-      mileageKeys.forEach(key => {
-        const fieldName = key.match(/mileage\[(.+)\]/)?.[1];
-        if (fieldName) {
-          req.body.mileage[fieldName] = req.body[key];
-          delete req.body[key];
-        }
-      });
+    // Set mileage updatedBy if mileage is provided
+    if (carData.mileage && carData.mileage.current !== undefined) {
+      carData.mileage.updatedBy = req.user._id;
+    }
+    
+    console.log('🚗 [CAR CREATE] Set category description and mileage info');
+    console.log('🚗 [CAR CREATE] Final car data keys:', Object.keys(carData));
+    console.log('🚗 [CAR CREATE] Attempting to create car...');
+
+    // Create car first to get the ID
+    let car;
+    try {
+      console.log('🚗 [CAR CREATE] Inside try block, calling Car.create...');
+      car = await Car.create(carData);
+      console.log('🚗 [CAR CREATE] Car created successfully! ID:', car._id);
+    } catch (error) {
+      console.log('🚗 [CAR CREATE] Error caught in try-catch block:', error.name);
+      console.log('🚗 [CAR CREATE] Error message:', error.message);
+      console.log('🚗 [CAR CREATE] Error code:', error.code);
+      console.log('🚗 [CAR CREATE] Full error:', error);
+      
+      // Handle specific MongoDB errors
+      if (error.code === 11000) {
+        // Duplicate key error
+        const field = Object.keys(error.keyPattern)[0];
+        const value = error.keyValue[field];
+        return next(new AppError(`${field} '${value}' already exists. Please use a different value.`, 400));
+      }
+      
+      if (error.name === 'ValidationError') {
+        // Validation error - extract meaningful message
+        const errors = Object.values(error.errors).map(err => err.message);
+        return next(new AppError(`Validation failed: ${errors.join(', ')}`, 400));
+      }
+      
+      // Log the error for debugging but don't expose details to user
+      console.error('Car creation error:', error);
+      return next(new AppError('Failed to create car. Please check your input and try again.', 400));
     }
 
-    // Handle fuelConsumption object
-    const fuelKeys = Object.keys(req.body).filter(key => key.startsWith('fuelConsumption['));
-    if (fuelKeys.length > 0) {
-      req.body.fuelConsumption = {};
-      fuelKeys.forEach(key => {
-        const fieldName = key.match(/fuelConsumption\[(.+)\]/)?.[1];
-        if (fieldName) {
-          req.body.fuelConsumption[fieldName] = req.body[key];
-          delete req.body[key];
-        }
-      });
-    }
+    // Handle uploaded images if any
+    if (req.files && req.files.length > 0) {
+      const uploadPromises = req.files.map(async (file, index) => {
+        try {
+          const result = await cloudStorage.uploadCarImage(
+            file.buffer,
+            file.originalname,
+            car._id.toString(),
+            req.user, // Pass user for tenant-specific folder
+            `Car image ${index + 1}`
+          );
 
-    // Handle documentValidity nested object
-    const docKeys = Object.keys(req.body).filter(key => key.startsWith('documentValidity['));
-    if (docKeys.length > 0) {
-      req.body.documentValidity = {};
-      docKeys.forEach(key => {
-        const match = key.match(/documentValidity\[(.+?)\]\[(.+)\]/);
-        if (match) {
-          const [, docType, field] = match;
-          if (!req.body.documentValidity[docType]) {
-            req.body.documentValidity[docType] = {};
-          }
-          req.body.documentValidity[docType][field] = req.body[key];
-          delete req.body[key];
-        }
-      });
-    }
-
-    // Handle pricing object
-    const pricingKeys = Object.keys(req.body).filter(key => key.startsWith('pricing['));
-    if (pricingKeys.length > 0) {
-      req.body.pricing = {};
-      pricingKeys.forEach(key => {
-        const match = key.match(/pricing\[(.+?)\](?:\[(.+)\])?/);
-        if (match) {
-          const [, section, field] = match;
-          if (field) {
-            // Nested object like pricing[rates][1day]
-            if (!req.body.pricing[section]) {
-              req.body.pricing[section] = {};
+          return {
+            url: result.urls.medium, // Use medium size as default
+            description: result.description,
+            isPrimary: index === 0,
+            filename: result.filename,
+            uploadDate: result.uploadDate,
+            urls: result.urls, // Store all size variants
+            order: index
+          };
+        } catch (error) {
+          console.error(`Failed to upload image ${index + 1}:`, error);
+          // If Google Cloud Storage is not configured, create a placeholder
+          return {
+            url: `/placeholder-car-image-${index + 1}.jpg`,
+            description: `Car image ${index + 1} (Upload pending - configure Google Cloud Storage)`,
+            isPrimary: index === 0,
+            filename: file.originalname,
+            uploadDate: new Date(),
+            order: index,
+            urls: {
+              thumbnail: `/placeholder-car-image-${index + 1}-thumb.jpg`,
+              medium: `/placeholder-car-image-${index + 1}-medium.jpg`,
+              large: `/placeholder-car-image-${index + 1}-large.jpg`,
+              original: `/placeholder-car-image-${index + 1}.jpg`
             }
-            req.body.pricing[section][field] = req.body[key];
-          } else {
-            // Direct field like pricing[dailyRate]
-            req.body.pricing[section] = req.body[key];
-          }
-          delete req.body[key];
+          };
         }
       });
-    }
 
-    // Handle mileageLimits object
-    const mileageLimitKeys = Object.keys(req.body).filter(key => key.startsWith('mileageLimits['));
-    if (mileageLimitKeys.length > 0) {
-      req.body.mileageLimits = {};
-      mileageLimitKeys.forEach(key => {
-        const fieldName = key.match(/mileageLimits\[(.+)\]/)?.[1];
-        if (fieldName) {
-          req.body.mileageLimits[fieldName] = req.body[key];
-          delete req.body[key];
-        }
-      });
-    }
-
-    // Handle equipment array
-    if (req.body['equipment[]']) {
-      req.body.equipment = Array.isArray(req.body['equipment[]']) 
-        ? req.body['equipment[]'] 
-        : [req.body['equipment[]']];
-      delete req.body['equipment[]'];
-    }
-
-    // Handle badges array
-    if (req.body['badges[]']) {
-      req.body.badges = Array.isArray(req.body['badges[]']) 
-        ? req.body['badges[]'] 
-        : [req.body['badges[]']];
-      delete req.body['badges[]'];
-    }
-
-    // Handle addons array
-    if (req.body['addons[]']) {
-      req.body.addons = Array.isArray(req.body['addons[]']) 
-        ? req.body['addons[]'] 
-        : [req.body['addons[]']];
-      delete req.body['addons[]'];
-    }
-
-    // Handle features array (legacy)
-    if (req.body['features[]']) {
-      req.body.features = Array.isArray(req.body['features[]']) 
-        ? req.body['features[]'] 
-        : [req.body['features[]']];
-      delete req.body['features[]'];
-    }
-
-    // Handle maintenance object
-    const maintenanceKeys = Object.keys(req.body).filter(key => key.startsWith('maintenance['));
-    if (maintenanceKeys.length > 0) {
-      req.body.maintenance = {};
-      maintenanceKeys.forEach(key => {
-        const fieldName = key.match(/maintenance\[(.+)\]/)?.[1];
-        if (fieldName) {
-          req.body.maintenance[fieldName] = req.body[key];
-          delete req.body[key];
-        }
-      });
-    }
-
-    // Handle insurance object
-    const insuranceKeys = Object.keys(req.body).filter(key => key.startsWith('insurance['));
-    if (insuranceKeys.length > 0) {
-      req.body.insurance = {};
-      insuranceKeys.forEach(key => {
-        const fieldName = key.match(/insurance\[(.+)\]/)?.[1];
-        if (fieldName) {
-          req.body.insurance[fieldName] = req.body[key];
-          delete req.body[key];
-        }
-      });
-    }
-
-    // Convert string numbers to actual numbers for specific fields
-    const numericFields = [
-      'year', 'seats', 'doors', 'trunkVolume',
-      'engine.displacement', 'engine.power', 'engine.torque', 'engine.cylinders',
-      'fuelConsumption.city', 'fuelConsumption.highway', 'fuelConsumption.combined', 'fuelConsumption.co2Emissions',
-      'pricing.dailyRate', 'pricing.deposit', 'pricing.weeklyRate', 'pricing.monthlyRate',
-      'mileageLimits.dailyLimit', 'mileageLimits.excessKmPrice',
-      'mileage.current'
-    ];
-
-    numericFields.forEach(field => {
-      const keys = field.split('.');
-      let obj = req.body;
-      for (let i = 0; i < keys.length - 1; i++) {
-        if (obj[keys[i]]) {
-          obj = obj[keys[i]];
-        } else {
-          return;
-        }
+      const uploadedImages = (await Promise.all(uploadPromises)).filter(img => img !== null);
+      
+      if (uploadedImages.length > 0) {
+        car.images = uploadedImages;
+        await car.save();
       }
-      const finalKey = keys[keys.length - 1];
-      if (obj[finalKey] !== undefined) {
-        if (obj[finalKey] === '' || obj[finalKey] === null) {
-          // Set empty strings/null to undefined so they don't interfere with defaults
-          obj[finalKey] = undefined;
-        } else {
-          // Convert to number if it's a valid numeric value
-          const numValue = Number(obj[finalKey]);
-          if (!isNaN(numValue)) {
-            obj[finalKey] = numValue;
-          }
-        }
-      }
-    });
-  }
-
-  // Add tenant information to car data
-  const carData = { 
-    ...req.body,
-    tenantId: req.user.tenantId,
-    owner: req.user._id
-  };
-
-  // Handle required fields with proper defaults
-  if (!carData.pricing) {
-    carData.pricing = {};
-  }
-  
-  // Set default values for required pricing fields if they're empty or missing
-  if (!carData.pricing.dailyRate || carData.pricing.dailyRate === '') {
-    carData.pricing.dailyRate = 0;
-  }
-  
-  if (!carData.pricing.deposit || carData.pricing.deposit === '') {
-    carData.pricing.deposit = 0;
-  }
-  
-  // Handle location - provide default if missing
-  if (!carData.location || !carData.location.name || carData.location.name.trim() === '') {
-    carData.location = {
-      name: 'Hlavná pobočka',
-      address: {
-        street: '',
-        city: '',
-        state: '',
-        zipCode: '',
-        country: 'Slovensko'
-      }
-    };
-  }
-  
-  // Handle VIN validation - ensure it's a reasonable length but not strict about 17 chars
-  if (carData.vin) {
-    // Remove any spaces and ensure uppercase
-    carData.vin = carData.vin.replace(/\s/g, '').toUpperCase();
-    
-    // If VIN is less than 17 characters, pad with zeros
-    if (carData.vin.length < 17) {
-      carData.vin = carData.vin.padEnd(17, '0');
-    } else if (carData.vin.length > 17) {
-      // If too long, truncate to 17 characters
-      carData.vin = carData.vin.substring(0, 17);
     }
-  }
-  
-  // Handle registration number - make it unique by adding tenant prefix if needed
-  if (carData.registrationNumber) {
-    carData.registrationNumber = carData.registrationNumber.toUpperCase().trim();
-  }
 
-  // Set default category description if not provided
-  if (carData.category && !carData.description) {
-    const Car = require('../models/Car');
-    const tempCar = new Car({ category: carData.category });
-    carData.description = tempCar.getCategoryDescription();
-  }
-
-  // Set mileage updatedBy if mileage is provided
-  if (carData.mileage && carData.mileage.current !== undefined) {
-    carData.mileage.updatedBy = req.user._id;
-  }
-  
-  // Create car first to get the ID
-  let car;
-  try {
-    car = await Car.create(carData);
-  } catch (error) {
-    // Handle specific MongoDB errors
-    if (error.code === 11000) {
-      // Duplicate key error
-      const field = Object.keys(error.keyPattern)[0];
-      const value = error.keyValue[field];
-      return next(new AppError(`${field} '${value}' already exists. Please use a different value.`, 400));
-    }
-    
-    if (error.name === 'ValidationError') {
-      // Validation error - extract meaningful message
-      const errors = Object.values(error.errors).map(err => err.message);
-      return next(new AppError(`Validation failed: ${errors.join(', ')}`, 400));
-    }
-    
-    // Log the error for debugging but don't expose details to user
-    console.error('Car creation error:', error);
-    return next(new AppError('Failed to create car. Please check your input and try again.', 400));
-  }
-
-  // Handle uploaded images if any
-  if (req.files && req.files.length > 0) {
-    const uploadPromises = req.files.map(async (file, index) => {
-      try {
-        const result = await cloudStorage.uploadCarImage(
-          file.buffer,
-          file.originalname,
-          car._id.toString(),
-          req.user, // Pass user for tenant-specific folder
-          `Car image ${index + 1}`
-        );
-
-        return {
-          url: result.urls.medium, // Use medium size as default
-          description: result.description,
-          isPrimary: index === 0,
-          filename: result.filename,
-          uploadDate: result.uploadDate,
-          urls: result.urls, // Store all size variants
-          order: index
-        };
-      } catch (error) {
-        console.error(`Failed to upload image ${index + 1}:`, error);
-        // If Google Cloud Storage is not configured, create a placeholder
-        return {
-          url: `/placeholder-car-image-${index + 1}.jpg`,
-          description: `Car image ${index + 1} (Upload pending - configure Google Cloud Storage)`,
-          isPrimary: index === 0,
-          filename: file.originalname,
-          uploadDate: new Date(),
-          order: index,
-          urls: {
-            thumbnail: `/placeholder-car-image-${index + 1}-thumb.jpg`,
-            medium: `/placeholder-car-image-${index + 1}-medium.jpg`,
-            large: `/placeholder-car-image-${index + 1}-large.jpg`,
-            original: `/placeholder-car-image-${index + 1}.jpg`
-          }
-        };
-      }
-    });
-
-    const uploadedImages = (await Promise.all(uploadPromises)).filter(img => img !== null);
-    
-    if (uploadedImages.length > 0) {
-      car.images = uploadedImages;
+    // Check for document validity notifications
+    const notifications = car.checkDocumentValidity();
+    if (notifications.length > 0) {
+      car.notifications = [...(car.notifications || []), ...notifications];
       await car.save();
     }
-  }
 
-  // Check for document validity notifications
-  const notifications = car.checkDocumentValidity();
-  if (notifications.length > 0) {
-    car.notifications = [...(car.notifications || []), ...notifications];
-    await car.save();
+    res.status(201).json({
+      success: true,
+      data: car
+    });
+  } catch (error) {
+    console.error('Error in createCar:', error);
+    return next(new AppError('Failed to create car. Please check your input and try again.', 400));
   }
-
-  res.status(201).json({
-    success: true,
-    data: car
-  });
 });
 
 // @desc    Update car (tenant-scoped)
