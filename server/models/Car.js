@@ -191,8 +191,8 @@ const carSchema = new mongoose.Schema({
   pricing: {
     dailyRate: {
       type: Number,
-      required: [true, 'Daily rate is required'],
-      min: [0, 'Daily rate cannot be negative']
+      min: [0, 'Daily rate cannot be negative'],
+      default: 0
     },
     rates: {
       '1day': Number,
@@ -206,7 +206,6 @@ const carSchema = new mongoose.Schema({
     monthlyRate: Number,
     deposit: {
       type: Number,
-      required: [true, 'Deposit is required'],
       min: [0, 'Deposit cannot be negative'],
       default: 0
     }
@@ -302,7 +301,7 @@ const carSchema = new mongoose.Schema({
   location: {
     name: {
       type: String,
-      required: [true, 'Location name is required']
+      default: 'Hlavná pobočka'
     },
     address: {
       street: String,

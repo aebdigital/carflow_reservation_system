@@ -300,10 +300,21 @@ const createCar = asyncHandler(async (req, res, next) => {
         }
       }
       const finalKey = keys[keys.length - 1];
-      if (obj[finalKey] !== undefined && obj[finalKey] !== '') {
-        obj[finalKey] = Number(obj[finalKey]);
+      if (obj[finalKey] !== undefined) {
+        if (obj[finalKey] === '' || obj[finalKey] === null) {
+          // Set empty strings/null to undefined so they don't interfere with defaults
+          obj[finalKey] = undefined;
+        } else {
+          // Convert to number if it's a valid numeric value
+          const numValue = Number(obj[finalKey]);
+          if (!isNaN(numValue)) {
+            obj[finalKey] = numValue;
+          }
+        }
       }
     });
+    
+    console.log('🔧 Processed FormData:', JSON.stringify(req.body, null, 2));
   }
 
   // Add tenant information to car data
@@ -312,6 +323,45 @@ const createCar = asyncHandler(async (req, res, next) => {
     tenantId: req.user.tenantId,
     owner: req.user._id
   };
+
+  // Handle required fields with proper defaults
+  if (!carData.pricing) {
+    carData.pricing = {};
+  }
+  
+  // Set default values for required pricing fields if they're empty or missing
+  if (!carData.pricing.dailyRate || carData.pricing.dailyRate === '') {
+    carData.pricing.dailyRate = 0;
+  }
+  
+  if (!carData.pricing.deposit || carData.pricing.deposit === '') {
+    carData.pricing.deposit = 0;
+  }
+  
+  // Handle location - provide default if missing
+  if (!carData.location || !carData.location.name || carData.location.name.trim() === '') {
+    carData.location = {
+      name: 'Hlavná pobočka',
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'Slovensko'
+      }
+    };
+  }
+  
+  // Handle VIN validation - pad or truncate to 17 characters if needed
+  if (carData.vin && carData.vin.length !== 17) {
+    if (carData.vin.length < 17) {
+      // Pad with zeros
+      carData.vin = carData.vin.padEnd(17, '0');
+    } else {
+      // Truncate to 17 characters
+      carData.vin = carData.vin.substring(0, 17);
+    }
+  }
 
   // Set default category description if not provided
   if (carData.category && !carData.description) {
@@ -324,6 +374,8 @@ const createCar = asyncHandler(async (req, res, next) => {
   if (carData.mileage && carData.mileage.current !== undefined) {
     carData.mileage.updatedBy = req.user._id;
   }
+  
+  console.log('🚗 Final car data before creation:', JSON.stringify(carData, null, 2));
   
   // Create car first to get the ID
   const car = await Car.create(carData);
@@ -597,10 +649,21 @@ const updateCar = asyncHandler(async (req, res, next) => {
         }
       }
       const finalKey = keys[keys.length - 1];
-      if (obj[finalKey] !== undefined && obj[finalKey] !== '') {
-        obj[finalKey] = Number(obj[finalKey]);
+      if (obj[finalKey] !== undefined) {
+        if (obj[finalKey] === '' || obj[finalKey] === null) {
+          // Set empty strings/null to undefined so they don't interfere with defaults
+          obj[finalKey] = undefined;
+        } else {
+          // Convert to number if it's a valid numeric value
+          const numValue = Number(obj[finalKey]);
+          if (!isNaN(numValue)) {
+            obj[finalKey] = numValue;
+          }
+        }
       }
     });
+    
+    console.log('🔧 Processed FormData:', JSON.stringify(req.body, null, 2));
   }
 
   // Set mileage updatedBy if mileage is being updated
