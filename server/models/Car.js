@@ -446,7 +446,21 @@ const carSchema = new mongoose.Schema({
   monthlyRate: Number,
   deposit: Number
 }, {
-  timestamps: true
+  timestamps: true,
+  // Transform the object when converting to JSON (API responses)
+  toJSON: {
+    transform: function(doc, ret) {
+      // Handle legacy mileage format in JSON output
+      if (ret.mileage !== undefined && typeof ret.mileage === 'number') {
+        ret.mileage = {
+          current: ret.mileage,
+          lastUpdated: new Date(),
+          updatedBy: null
+        };
+      }
+      return ret;
+    }
+  }
 });
 
 // Generate internal ID before saving
@@ -477,27 +491,6 @@ carSchema.pre('save', async function(next) {
   }
   
   next();
-});
-
-// Simple post-find middleware to handle legacy data
-carSchema.post(['find', 'findOne', 'findOneAndUpdate'], function(docs) {
-  if (!docs) return;
-  
-  const handleDoc = (doc) => {
-    if (doc && doc.mileage !== undefined && typeof doc.mileage === 'number') {
-      doc.mileage = {
-        current: doc.mileage,
-        lastUpdated: new Date(),
-        updatedBy: null
-      };
-    }
-  };
-  
-  if (Array.isArray(docs)) {
-    docs.forEach(handleDoc);
-  } else {
-    handleDoc(docs);
-  }
 });
 
 // Method to check document validity and create notifications
