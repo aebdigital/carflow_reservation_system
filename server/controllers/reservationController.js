@@ -520,7 +520,11 @@ const checkOutReservation = asyncHandler(async (req, res, next) => {
   // Update car status and mileage
   await Car.findByIdAndUpdate(reservation.car, { 
     status: 'available',
-    mileage: mileage
+    mileage: {
+      current: mileage,
+      lastUpdated: new Date(),
+      updatedBy: req.user._id
+    }
   });
 
   // Update car revenue and booking count
