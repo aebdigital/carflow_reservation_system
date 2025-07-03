@@ -461,6 +461,21 @@ const carSchema = new mongoose.Schema({
   }
 });
 
+// CRITICAL: Handle legacy mileage data BEFORE Mongoose applies schema defaults
+carSchema.pre('init', function(next, obj) {
+  // Convert legacy mileage format during document initialization
+  if (obj.mileage !== undefined && typeof obj.mileage === 'number') {
+    console.log('🔧 [SCHEMA] Converting legacy mileage during init:', obj.mileage);
+    obj.mileage = {
+      current: obj.mileage,
+      lastUpdated: new Date(),
+      updatedBy: null
+    };
+    console.log('🔧 [SCHEMA] Converted to object:', obj.mileage);
+  }
+  next();
+});
+
 // Generate internal ID before saving
 carSchema.pre('save', async function(next) {
   if (this.isNew && !this.internalId) {
@@ -473,19 +488,10 @@ carSchema.pre('save', async function(next) {
     }
   }
   
-  // Simple mileage migration - ensure mileage is always an object
-  if (this.mileage !== undefined) {
-    if (typeof this.mileage === 'number') {
-      // Convert legacy number format to new object format
-      this.mileage = {
-        current: this.mileage,
-        lastUpdated: new Date(),
-        updatedBy: this.owner || null
-      };
-    } else if (typeof this.mileage === 'object' && this.mileage !== null && this.mileage.hasOwnProperty('current') && this.isModified('mileage.current')) {
-      // Update timestamp if mileage changed - but only if it's a proper object with current property
-      this.mileage.lastUpdated = new Date();
-    }
+  // Update mileage timestamp when current mileage changes (legacy conversion handled by pre('init'))
+  if (this.mileage && typeof this.mileage === 'object' && this.mileage !== null && 
+      this.mileage.hasOwnProperty('current') && this.isModified('mileage.current')) {
+    this.mileage.lastUpdated = new Date();
   }
   
   next();
