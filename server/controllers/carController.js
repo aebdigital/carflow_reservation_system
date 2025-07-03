@@ -589,6 +589,14 @@ const updateCar = asyncHandler(async (req, res, next) => {
         }
       );
       console.log('🚗 [CAR UPDATE] Step 2f: Existing car mileage converted successfully');
+      
+      // Refetch the updated car to ensure we have the latest data
+      console.log('🚗 [CAR UPDATE] Step 2g: Refetching updated car...');
+      car = await Car.findOne({ 
+        _id: req.params.id, 
+        tenantId: req.user.tenantId 
+      });
+      console.log('🚗 [CAR UPDATE] Step 2h: Car refetched successfully');
     }
 
     console.log('�� [CAR UPDATE] Step 3: Checking if FormData processing needed...');
@@ -868,6 +876,12 @@ const updateCar = asyncHandler(async (req, res, next) => {
     console.log('�� [CAR UPDATE] Step 6: Checking for uploaded images...');
     // Handle uploaded images
     if (req.files && req.files.length > 0) {
+      // Safety check: Ensure car object exists before accessing its properties
+      if (!car || !car._id) {
+        console.error('🚗 [CAR UPDATE] ERROR: Car object is undefined or invalid during image upload');
+        return next(new AppError('Invalid car object during image processing', 500));
+      }
+      
       console.log('🚗 [CAR UPDATE] Step 6a: Processing uploaded images...');
       const uploadPromises = req.files.map(async (file, index) => {
         try {
