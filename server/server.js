@@ -106,6 +106,12 @@ app.use(morgan('combined'));
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Logging middleware
+app.use((req, res, next) => {
+  console.log(`🌐 [REQUEST] ${req.method} ${req.path} - ${new Date().toISOString()}`);
+  next();
+});
+
 // Database connection
 const connectDB = async () => {
   try {
