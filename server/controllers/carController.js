@@ -567,8 +567,29 @@ const updateCar = asyncHandler(async (req, res, next) => {
     }
 
     console.log('🚗 [CAR UPDATE] Step 2: Found existing car:', car._id);
+    console.log('🚗 [CAR UPDATE] Step 2a: Existing car mileage type:', typeof car.mileage);
+    console.log('🚗 [CAR UPDATE] Step 2b: Existing car mileage value:', car.mileage);
+    console.log('🚗 [CAR UPDATE] Step 2c: Is mileage object?', typeof car.mileage === 'object');
+    console.log('🚗 [CAR UPDATE] Step 2d: Has current property?', car.mileage && car.mileage.hasOwnProperty && car.mileage.hasOwnProperty('current'));
 
-    console.log('🚗 [CAR UPDATE] Step 3: Checking if FormData processing needed...');
+    // Convert existing car's mileage to proper format if needed before update
+    if (car.mileage !== undefined && typeof car.mileage === 'number') {
+      console.log('🚗 [CAR UPDATE] Step 2e: Converting existing car mileage from number to object...');
+      // We need to update the existing car in database first
+      await Car.findOneAndUpdate(
+        { _id: req.params.id, tenantId: req.user.tenantId },
+        { 
+          mileage: {
+            current: car.mileage,
+            lastUpdated: new Date(),
+            updatedBy: req.user._id
+          }
+        }
+      );
+      console.log('🚗 [CAR UPDATE] Step 2f: Existing car mileage converted successfully');
+    }
+
+    console.log('�� [CAR UPDATE] Step 3: Checking if FormData processing needed...');
     // Parse FormData if it contains nested objects
     if (req.body && typeof req.body === 'object') {
       console.log('🚗 [CAR UPDATE] Step 4: Starting FormData processing...');
@@ -896,6 +917,8 @@ const updateCar = asyncHandler(async (req, res, next) => {
     }
     
     console.log('🚗 [CAR UPDATE] Step 7: Final update data keys:', Object.keys(req.body));
+    console.log('🚗 [CAR UPDATE] Step 7a: Final mileage type:', typeof req.body.mileage);
+    console.log('🚗 [CAR UPDATE] Step 7b: Final mileage value:', req.body.mileage);
     console.log('🚗 [CAR UPDATE] Step 8: Attempting to update car...');
 
     try {
