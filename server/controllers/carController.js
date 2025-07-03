@@ -426,8 +426,20 @@ const createCar = asyncHandler(async (req, res, next) => {
     }
 
     // Set mileage updatedBy if mileage is provided
-    if (carData.mileage && carData.mileage.current !== undefined) {
-      carData.mileage.updatedBy = req.user._id;
+    if (carData.mileage !== undefined) {
+      // Handle legacy mileage format - ensure it's an object before setting properties
+      if (typeof carData.mileage === 'number') {
+        // Convert legacy number format to new object format
+        carData.mileage = {
+          current: carData.mileage,
+          lastUpdated: new Date(),
+          updatedBy: req.user._id
+        };
+      } else if (typeof carData.mileage === 'object' && carData.mileage !== null && carData.mileage.current !== undefined) {
+        // Ensure lastUpdated and updatedBy are set for object format
+        carData.mileage.lastUpdated = new Date();
+        carData.mileage.updatedBy = req.user._id;
+      }
     }
     
     console.log('🚗 [CAR CREATE] Set category description and mileage info');
@@ -814,11 +826,23 @@ const updateCar = asyncHandler(async (req, res, next) => {
     
     console.log('🚗 [CAR UPDATE] Step 5: Setting mileage updatedBy...');
     // Set mileage updatedBy if mileage is being updated
-    if (req.body.mileage && req.body.mileage.current !== undefined) {
-      req.body.mileage.updatedBy = req.user._id;
+    if (req.body.mileage !== undefined) {
+      // Handle legacy mileage format - ensure it's an object before setting properties
+      if (typeof req.body.mileage === 'number') {
+        // Convert legacy number format to new object format
+        req.body.mileage = {
+          current: req.body.mileage,
+          lastUpdated: new Date(),
+          updatedBy: req.user._id
+        };
+      } else if (typeof req.body.mileage === 'object' && req.body.mileage !== null && req.body.mileage.current !== undefined) {
+        // Ensure lastUpdated and updatedBy are set for object format
+        req.body.mileage.lastUpdated = new Date();
+        req.body.mileage.updatedBy = req.user._id;
+      }
     }
 
-    console.log('🚗 [CAR UPDATE] Step 6: Checking for uploaded images...');
+    console.log('�� [CAR UPDATE] Step 6: Checking for uploaded images...');
     // Handle uploaded images
     if (req.files && req.files.length > 0) {
       console.log('🚗 [CAR UPDATE] Step 6a: Processing uploaded images...');
