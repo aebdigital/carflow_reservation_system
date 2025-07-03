@@ -543,22 +543,26 @@ const updateCar = asyncHandler(async (req, res, next) => {
     console.log('🚗 [CAR UPDATE] Files received:', req.files?.length || 0);
     console.log('🚗 [CAR UPDATE] Body keys:', Object.keys(req.body || {}));
 
+    console.log('🚗 [CAR UPDATE] Step 1: Finding existing car...');
     let car = await Car.findOne({ 
       _id: req.params.id, 
       tenantId: req.user.tenantId 
     });
 
     if (!car) {
+      console.log('🚗 [CAR UPDATE] Car not found!');
       return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
     }
 
-    console.log('🚗 [CAR UPDATE] Found existing car:', car._id);
+    console.log('🚗 [CAR UPDATE] Step 2: Found existing car:', car._id);
 
+    console.log('🚗 [CAR UPDATE] Step 3: Checking if FormData processing needed...');
     // Parse FormData if it contains nested objects
     if (req.body && typeof req.body === 'object') {
-      console.log('🚗 [CAR UPDATE] Processing FormData...');
+      console.log('🚗 [CAR UPDATE] Step 4: Starting FormData processing...');
       // Handle location parsing
       if (req.body['location[name]']) {
+        console.log('🚗 [CAR UPDATE] Step 4a: Processing location fields...');
         req.body.location = {
           name: req.body['location[name]'],
           address: {
@@ -581,6 +585,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
       // Handle engine object
       const engineKeys = Object.keys(req.body).filter(key => key.startsWith('engine['));
       if (engineKeys.length > 0) {
+        console.log('🚗 [CAR UPDATE] Step 4b: Processing engine fields...');
         req.body.engine = {};
         engineKeys.forEach(key => {
           try {
@@ -598,6 +603,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
       // Handle mileage object
       const mileageKeys = Object.keys(req.body).filter(key => key.startsWith('mileage['));
       if (mileageKeys.length > 0) {
+        console.log('🚗 [CAR UPDATE] Step 4c: Processing mileage fields...');
         req.body.mileage = {};
         mileageKeys.forEach(key => {
           try {
@@ -615,6 +621,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
       // Handle fuelConsumption object
       const fuelKeys = Object.keys(req.body).filter(key => key.startsWith('fuelConsumption['));
       if (fuelKeys.length > 0) {
+        console.log('🚗 [CAR UPDATE] Step 4d: Processing fuelConsumption fields...');
         req.body.fuelConsumption = {};
         fuelKeys.forEach(key => {
           try {
@@ -632,6 +639,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
       // Handle documentValidity nested object
       const docKeys = Object.keys(req.body).filter(key => key.startsWith('documentValidity['));
       if (docKeys.length > 0) {
+        console.log('🚗 [CAR UPDATE] Step 4e: Processing documentValidity fields...');
         req.body.documentValidity = {};
         docKeys.forEach(key => {
           try {
@@ -653,6 +661,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
       // Handle pricing object
       const pricingKeys = Object.keys(req.body).filter(key => key.startsWith('pricing['));
       if (pricingKeys.length > 0) {
+        console.log('🚗 [CAR UPDATE] Step 4f: Processing pricing fields...');
         req.body.pricing = {};
         pricingKeys.forEach(key => {
           try {
@@ -680,6 +689,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
       // Handle mileageLimits object
       const mileageLimitKeys = Object.keys(req.body).filter(key => key.startsWith('mileageLimits['));
       if (mileageLimitKeys.length > 0) {
+        console.log('🚗 [CAR UPDATE] Step 4g: Processing mileageLimits fields...');
         req.body.mileageLimits = {};
         mileageLimitKeys.forEach(key => {
           try {
@@ -696,6 +706,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
 
       // Handle equipment array
       if (req.body['equipment[]']) {
+        console.log('🚗 [CAR UPDATE] Step 4h: Processing equipment array...');
         req.body.equipment = Array.isArray(req.body['equipment[]']) 
           ? req.body['equipment[]'] 
           : [req.body['equipment[]']];
@@ -704,6 +715,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
 
       // Handle badges array
       if (req.body['badges[]']) {
+        console.log('🚗 [CAR UPDATE] Step 4i: Processing badges array...');
         req.body.badges = Array.isArray(req.body['badges[]']) 
           ? req.body['badges[]'] 
           : [req.body['badges[]']];
@@ -712,6 +724,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
 
       // Handle addons array
       if (req.body['addons[]']) {
+        console.log('🚗 [CAR UPDATE] Step 4j: Processing addons array...');
         req.body.addons = Array.isArray(req.body['addons[]']) 
           ? req.body['addons[]'] 
           : [req.body['addons[]']];
@@ -720,6 +733,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
 
       // Handle features array (legacy)
       if (req.body['features[]']) {
+        console.log('🚗 [CAR UPDATE] Step 4k: Processing features array...');
         req.body.features = Array.isArray(req.body['features[]']) 
           ? req.body['features[]'] 
           : [req.body['features[]']];
@@ -729,6 +743,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
       // Handle maintenance object
       const maintenanceKeys = Object.keys(req.body).filter(key => key.startsWith('maintenance['));
       if (maintenanceKeys.length > 0) {
+        console.log('🚗 [CAR UPDATE] Step 4l: Processing maintenance fields...');
         req.body.maintenance = {};
         maintenanceKeys.forEach(key => {
           const fieldName = key.match(/maintenance\[(.+)\]/)?.[1];
@@ -742,6 +757,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
       // Handle insurance object
       const insuranceKeys = Object.keys(req.body).filter(key => key.startsWith('insurance['));
       if (insuranceKeys.length > 0) {
+        console.log('🚗 [CAR UPDATE] Step 4m: Processing insurance fields...');
         req.body.insurance = {};
         insuranceKeys.forEach(key => {
           const fieldName = key.match(/insurance\[(.+)\]/)?.[1];
@@ -762,6 +778,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
         'mileage.current'
       ];
 
+      console.log('🚗 [CAR UPDATE] Step 4n: Processing numeric fields...');
       numericFields.forEach(field => {
         try {
           const keys = field.split('.');
@@ -795,13 +812,16 @@ const updateCar = asyncHandler(async (req, res, next) => {
 
     console.log('🚗 [CAR UPDATE] FormData processing complete');
     
+    console.log('🚗 [CAR UPDATE] Step 5: Setting mileage updatedBy...');
     // Set mileage updatedBy if mileage is being updated
     if (req.body.mileage && req.body.mileage.current !== undefined) {
       req.body.mileage.updatedBy = req.user._id;
     }
 
+    console.log('🚗 [CAR UPDATE] Step 6: Checking for uploaded images...');
     // Handle uploaded images
     if (req.files && req.files.length > 0) {
+      console.log('🚗 [CAR UPDATE] Step 6a: Processing uploaded images...');
       const uploadPromises = req.files.map(async (file, index) => {
         try {
           const result = await cloudStorage.uploadCarImage(
@@ -841,19 +861,21 @@ const updateCar = asyncHandler(async (req, res, next) => {
         }
       });
 
+      console.log('🚗 [CAR UPDATE] Step 6b: Waiting for image uploads...');
       const uploadedImages = (await Promise.all(uploadPromises)).filter(img => img !== null);
       
       if (uploadedImages.length > 0) {
+        console.log('🚗 [CAR UPDATE] Step 6c: Adding images to request body...');
         // Add new images to existing ones
         req.body.images = [...(car.images || []), ...uploadedImages];
       }
     }
     
-    console.log('🚗 [CAR UPDATE] Final update data keys:', Object.keys(req.body));
-    console.log('🚗 [CAR UPDATE] Attempting to update car...');
+    console.log('🚗 [CAR UPDATE] Step 7: Final update data keys:', Object.keys(req.body));
+    console.log('🚗 [CAR UPDATE] Step 8: Attempting to update car...');
 
     try {
-      console.log('🚗 [CAR UPDATE] Inside try block, calling findOneAndUpdate...');
+      console.log('🚗 [CAR UPDATE] Step 8a: Inside try block, calling findOneAndUpdate...');
       car = await Car.findOneAndUpdate(
         { _id: req.params.id, tenantId: req.user.tenantId },
         req.body,
@@ -862,9 +884,9 @@ const updateCar = asyncHandler(async (req, res, next) => {
         runValidators: true
         }
       );
-      console.log('🚗 [CAR UPDATE] Car updated successfully! ID:', car._id);
+      console.log('🚗 [CAR UPDATE] Step 8b: Car updated successfully! ID:', car._id);
     } catch (error) {
-      console.log('🚗 [CAR UPDATE] Error caught in try-catch block:', error.name);
+      console.log('🚗 [CAR UPDATE] Error caught in inner try-catch block:', error.name);
       console.log('🚗 [CAR UPDATE] Error message:', error.message);
       console.log('🚗 [CAR UPDATE] Error code:', error.code);
       console.log('🚗 [CAR UPDATE] Full error:', error);
@@ -888,9 +910,11 @@ const updateCar = asyncHandler(async (req, res, next) => {
       return next(new AppError('Failed to update car. Please check your input and try again.', 400));
     }
 
+    console.log('🚗 [CAR UPDATE] Step 9: Checking document validity notifications...');
     // Check for document validity notifications after update
     const notifications = car.checkDocumentValidity();
     if (notifications.length > 0) {
+      console.log('🚗 [CAR UPDATE] Step 9a: Adding new notifications...');
       // Add new notifications to existing ones
       const existingNotifications = car.notifications || [];
       const newNotifications = notifications.filter(newNotif => 
@@ -907,13 +931,17 @@ const updateCar = asyncHandler(async (req, res, next) => {
       }
     }
 
+    console.log('🚗 [CAR UPDATE] Step 10: Sending response...');
     res.status(200).json({
       success: true,
       data: car
     });
   } catch (error) {
-    console.error('Error in updateCar:', error);
-    return next(new AppError('Failed to update car. Please check your input and try again.', 400));
+    console.error('🚗 [CAR UPDATE] OUTER CATCH ERROR - Name:', error.name);
+    console.error('🚗 [CAR UPDATE] OUTER CATCH ERROR - Message:', error.message);
+    console.error('🚗 [CAR UPDATE] OUTER CATCH ERROR - Stack:', error.stack);
+    console.error('🚗 [CAR UPDATE] OUTER CATCH ERROR - Full error object:', error);
+    return next(new AppError(`Update failed: ${error.message}`, 400));
   }
 });
 
