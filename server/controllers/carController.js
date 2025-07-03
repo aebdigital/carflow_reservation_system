@@ -569,10 +569,19 @@ const updateCar = asyncHandler(async (req, res, next) => {
     }
 
     console.log('🚗 [CAR UPDATE] Step 2: Found existing car:', car._id);
-    console.log('🚗 [CAR UPDATE] Step 2a: Existing car mileage type:', typeof car.mileage);
-    console.log('🚗 [CAR UPDATE] Step 2b: Existing car mileage value:', car.mileage);
-    console.log('🚗 [CAR UPDATE] Step 2c: Is mileage object?', typeof car.mileage === 'object');
-    console.log('🚗 [CAR UPDATE] Step 2d: Has current property?', car.mileage && car.mileage.hasOwnProperty && car.mileage.hasOwnProperty('current'));
+    
+    // SAFETY CHECK: Ensure car object is valid before accessing properties
+    if (!car || typeof car !== 'object') {
+      console.error('🚗 [CAR UPDATE] CRITICAL ERROR: Car object is invalid!');
+      console.error('🚗 [CAR UPDATE] Car type:', typeof car);
+      console.error('🚗 [CAR UPDATE] Car value:', car);
+      return next(new AppError('Invalid car object found', 500));
+    }
+    
+    console.log('🚗 [CAR UPDATE] Step 2a: Existing car mileage type:', typeof (car ? car.mileage : 'undefined car'));
+    console.log('🚗 [CAR UPDATE] Step 2b: Existing car mileage value:', car ? car.mileage : 'undefined car');
+    console.log('🚗 [CAR UPDATE] Step 2c: Is mileage object?', car && typeof car.mileage === 'object');
+    console.log('🚗 [CAR UPDATE] Step 2d: Has current property?', car && car.mileage && car.mileage.hasOwnProperty && car.mileage.hasOwnProperty('current'));
 
     // Convert existing car's mileage to proper format if needed before update
     if (car.mileage !== undefined && typeof car.mileage === 'number') {
@@ -597,6 +606,17 @@ const updateCar = asyncHandler(async (req, res, next) => {
         tenantId: req.user.tenantId 
       });
       console.log('🚗 [CAR UPDATE] Step 2h: Car refetched successfully');
+      
+      // CRITICAL: Verify car object is still valid after refetch
+      if (!car) {
+        console.error('🚗 [CAR UPDATE] CRITICAL ERROR: Car became undefined after refetch!');
+        console.error('🚗 [CAR UPDATE] Car ID:', req.params.id);
+        console.error('🚗 [CAR UPDATE] Tenant ID:', req.user.tenantId);
+        return next(new AppError('Car not found after mileage conversion', 404));
+      }
+      
+      console.log('🚗 [CAR UPDATE] Step 2i: Car object verified, ID:', car._id);
+      console.log('🚗 [CAR UPDATE] Step 2j: Car mileage after refetch:', car.mileage);
     }
 
     console.log('�� [CAR UPDATE] Step 3: Checking if FormData processing needed...');
