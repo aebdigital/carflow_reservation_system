@@ -462,11 +462,11 @@ const carSchema = new mongoose.Schema({
 });
 
 // CRITICAL: Handle legacy mileage data BEFORE Mongoose applies schema defaults
-carSchema.pre('init', function(next, obj) {
+carSchema.pre('init', function(obj) {
   // Safety check: Ensure obj exists before accessing its properties
   if (!obj || typeof obj !== 'object') {
     console.log('🔧 [SCHEMA] Pre-init: obj is undefined or not an object, skipping mileage conversion');
-    return next();
+    return;
   }
   
   // Convert legacy mileage format during document initialization
@@ -479,7 +479,6 @@ carSchema.pre('init', function(next, obj) {
     };
     console.log('🔧 [SCHEMA] Converted to object:', obj.mileage);
   }
-  next();
 });
 
 // Generate internal ID before saving
