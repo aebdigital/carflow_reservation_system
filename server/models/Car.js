@@ -482,8 +482,8 @@ carSchema.pre('save', async function(next) {
         lastUpdated: new Date(),
         updatedBy: this.owner || null
       };
-    } else if (this.isModified('mileage.current') && this.mileage && typeof this.mileage === 'object') {
-      // Update timestamp if mileage changed
+    } else if (typeof this.mileage === 'object' && this.mileage !== null && this.mileage.hasOwnProperty('current') && this.isModified('mileage.current')) {
+      // Update timestamp if mileage changed - but only if it's a proper object with current property
       this.mileage.lastUpdated = new Date();
     }
   }
