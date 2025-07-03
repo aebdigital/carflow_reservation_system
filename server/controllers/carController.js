@@ -548,12 +548,14 @@ const createCar = asyncHandler(async (req, res, next) => {
 // @access  Private/Admin
 const updateCar = asyncHandler(async (req, res, next) => {
   try {
+    console.log('🚨 [CAR UPDATE] === FUNCTION CALLED WITH LATEST DEBUG CODE ===');
     console.log('🚗 [CAR UPDATE] Starting car update process...');
     console.log('🚗 [CAR UPDATE] Car ID:', req.params.id);
     console.log('🚗 [CAR UPDATE] User ID:', req.user?._id);
     console.log('🚗 [CAR UPDATE] Tenant ID:', req.user?.tenantId);
     console.log('🚗 [CAR UPDATE] Files received:', req.files?.length || 0);
     console.log('🚗 [CAR UPDATE] Body keys:', Object.keys(req.body || {}));
+    console.log('🚗 [CAR UPDATE] Raw request body:', JSON.stringify(req.body, null, 2));
 
     console.log('🚗 [CAR UPDATE] Step 1: Finding existing car...');
     let car = await Car.findOne({ 
