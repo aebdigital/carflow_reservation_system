@@ -509,7 +509,11 @@ const EnhancedCarForm = ({
               label="Aktuálne kilometre"
               type="number"
               value={formData.mileage?.current || 0}
-              onChange={(e) => handleNestedChange('mileage.current', parseInt(e.target.value))}
+              onChange={(e) => {
+                const value = parseInt(e.target.value);
+                const mileageValue = isNaN(value) || value < 0 ? 0 : value;
+                handleNestedChange('mileage.current', mileageValue);
+              }}
               disabled={dialogMode === 'view'}
               InputProps={{
                 endAdornment: <InputAdornment position="end">km</InputAdornment>,
