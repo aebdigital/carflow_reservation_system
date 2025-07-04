@@ -175,9 +175,9 @@ function Cars() {
   // Status color mapping
   const getStatusColor = (status) => {
     const colors = {
-      available: 'success',
-      maintenance: 'warning',
-      'out-of-service': 'error'
+      active: 'success',
+      unavailable: 'warning',
+      archived: 'error'
     }
     return colors[status] || 'default'
   }
@@ -185,9 +185,9 @@ function Cars() {
   // Status text mapping
   const getStatusText = (status) => {
     const statusTexts = {
-      available: t('available'),
-      maintenance: t('maintenance'),
-      'out-of-service': t('outOfService')
+      active: t('available'),
+      unavailable: t('maintenance'),
+      archived: t('outOfService')
     }
     return statusTexts[status] || status
   }
@@ -586,13 +586,25 @@ function Cars() {
         
         // Append all form fields
         Object.keys(formData).forEach(key => {
-          if (key === 'location' || key === 'maintenance' || key === 'insurance') {
+          if (key === 'location' || key === 'maintenance' || key === 'insurance' || key === 'mileage' || 
+              key === 'engine' || key === 'fuelConsumption' || key === 'pricing' || 
+              key === 'documentValidity' || key === 'mileageLimits') {
             // Handle nested objects
             Object.keys(formData[key]).forEach(nestedKey => {
               if (key === 'location' && nestedKey === 'address') {
                 // Handle nested address object
                 Object.keys(formData[key][nestedKey]).forEach(addressKey => {
                   formDataToSend.append(`${key}[${nestedKey}][${addressKey}]`, formData[key][nestedKey][addressKey]);
+                });
+              } else if (key === 'pricing' && nestedKey === 'rates') {
+                // Handle pricing rates nested object
+                Object.keys(formData[key][nestedKey]).forEach(rateKey => {
+                  formDataToSend.append(`${key}[${nestedKey}][${rateKey}]`, formData[key][nestedKey][rateKey]);
+                });
+              } else if (key === 'documentValidity') {
+                // Handle documentValidity nested objects
+                Object.keys(formData[key][nestedKey]).forEach(docKey => {
+                  formDataToSend.append(`${key}[${nestedKey}][${docKey}]`, formData[key][nestedKey][docKey]);
                 });
               } else {
                 formDataToSend.append(`${key}[${nestedKey}]`, formData[key][nestedKey]);
@@ -633,13 +645,25 @@ function Cars() {
           formDataToSend.append('id', selectedCar._id); // Add ID to FormData
           
           Object.keys(formData).forEach(key => {
-            if (key === 'location' || key === 'maintenance' || key === 'insurance') {
+            if (key === 'location' || key === 'maintenance' || key === 'insurance' || key === 'mileage' || 
+                key === 'engine' || key === 'fuelConsumption' || key === 'pricing' || 
+                key === 'documentValidity' || key === 'mileageLimits') {
               // Handle nested objects
               Object.keys(formData[key]).forEach(nestedKey => {
                 if (key === 'location' && nestedKey === 'address') {
                   // Handle nested address object
                   Object.keys(formData[key][nestedKey]).forEach(addressKey => {
                     formDataToSend.append(`${key}[${nestedKey}][${addressKey}]`, formData[key][nestedKey][addressKey]);
+                  });
+                } else if (key === 'pricing' && nestedKey === 'rates') {
+                  // Handle pricing rates nested object
+                  Object.keys(formData[key][nestedKey]).forEach(rateKey => {
+                    formDataToSend.append(`${key}[${nestedKey}][${rateKey}]`, formData[key][nestedKey][rateKey]);
+                  });
+                } else if (key === 'documentValidity') {
+                  // Handle documentValidity nested objects
+                  Object.keys(formData[key][nestedKey]).forEach(docKey => {
+                    formDataToSend.append(`${key}[${nestedKey}][${docKey}]`, formData[key][nestedKey][docKey]);
                   });
                 } else {
                   formDataToSend.append(`${key}[${nestedKey}]`, formData[key][nestedKey]);
@@ -669,13 +693,25 @@ function Cars() {
           formDataToSend.append('id', selectedCar._id); // Add ID to FormData
           
           Object.keys(formData).forEach(key => {
-            if (key === 'location' || key === 'maintenance' || key === 'insurance') {
+            if (key === 'location' || key === 'maintenance' || key === 'insurance' || key === 'mileage' || 
+                key === 'engine' || key === 'fuelConsumption' || key === 'pricing' || 
+                key === 'documentValidity' || key === 'mileageLimits') {
               // Handle nested objects
               Object.keys(formData[key]).forEach(nestedKey => {
                 if (key === 'location' && nestedKey === 'address') {
                   // Handle nested address object
                   Object.keys(formData[key][nestedKey]).forEach(addressKey => {
                     formDataToSend.append(`${key}[${nestedKey}][${addressKey}]`, formData[key][nestedKey][addressKey]);
+                  });
+                } else if (key === 'pricing' && nestedKey === 'rates') {
+                  // Handle pricing rates nested object
+                  Object.keys(formData[key][nestedKey]).forEach(rateKey => {
+                    formDataToSend.append(`${key}[${nestedKey}][${rateKey}]`, formData[key][nestedKey][rateKey]);
+                  });
+                } else if (key === 'documentValidity') {
+                  // Handle documentValidity nested objects
+                  Object.keys(formData[key][nestedKey]).forEach(docKey => {
+                    formDataToSend.append(`${key}[${nestedKey}][${docKey}]`, formData[key][nestedKey][docKey]);
                   });
                 } else {
                   formDataToSend.append(`${key}[${nestedKey}]`, formData[key][nestedKey]);

@@ -182,22 +182,22 @@ function Calendar() {
     }
 
     // Check if car is in maintenance (you can extend this logic)
-    if (car.status === 'maintenance') {
+    if (car.status === 'unavailable') {
       return {
-        status: 'maintenance',
+        status: 'unavailable',
         color: 'warning'
       }
     }
 
-    if (car.status === 'out-of-service') {
+    if (car.status === 'archived') {
       return {
-        status: 'out-of-service',
+        status: 'archived',
         color: 'error'
       }
     }
 
     return {
-      status: 'available',
+      status: 'active',
       color: 'success'
     }
   }
@@ -205,10 +205,10 @@ function Calendar() {
   // Get status color
   const getStatusColor = (status) => {
     const colors = {
-      available: 'success',
+      active: 'success',
       reserved: 'primary',
-      maintenance: 'warning',
-      'out-of-service': 'error',
+      unavailable: 'warning',
+      archived: 'error',
       booked: 'info'
     }
     return colors[status] || 'default'
@@ -307,10 +307,10 @@ function Calendar() {
                 label={t('status')}
               >
                 <MenuItem value="all">Všetky stavy</MenuItem>
-                <MenuItem value="available">{t('available')}</MenuItem>
+                <MenuItem value="active">{t('available')}</MenuItem>
                 <MenuItem value="booked">{t('booked')}</MenuItem>
-                <MenuItem value="maintenance">{t('maintenance')}</MenuItem>
-                <MenuItem value="out-of-service">{t('outOfService')}</MenuItem>
+                <MenuItem value="unavailable">{t('maintenance')}</MenuItem>
+                <MenuItem value="archived">{t('outOfService')}</MenuItem>
               </Select>
             </FormControl>
 
@@ -630,7 +630,7 @@ function Calendar() {
                 </Avatar>
                 <Box>
                   <Typography variant="h6">
-                    {cars.filter(car => car.status === 'available').length}
+                    {cars.filter(car => car.status === 'active').length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Available Cars
@@ -668,7 +668,7 @@ function Calendar() {
                 </Avatar>
                 <Box>
                   <Typography variant="h6">
-                    {cars.filter(car => car.status === 'maintenance').length}
+                    {cars.filter(car => car.status === 'unavailable').length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     In Maintenance
@@ -687,7 +687,7 @@ function Calendar() {
                 </Avatar>
                 <Box>
                   <Typography variant="h6">
-                    {cars.filter(car => car.status === 'out-of-service').length}
+                    {cars.filter(car => car.status === 'archived').length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Out of Service

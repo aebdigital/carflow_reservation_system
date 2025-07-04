@@ -126,7 +126,7 @@ function Reservations() {
   const { 
     data: carsData, 
     isLoading: carsLoading 
-  } = useGetCarsQuery({ status: 'available' })
+  } = useGetCarsQuery({ status: 'active' })
 
   const { 
     data: usersData, 
