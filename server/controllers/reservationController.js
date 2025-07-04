@@ -423,7 +423,7 @@ const cancelReservation = asyncHandler(async (req, res, next) => {
   await reservation.save();
 
   // Update car status back to available
-  await Car.findByIdAndUpdate(reservation.car, { status: 'available' });
+  await Car.findByIdAndUpdate(reservation.car, { status: 'active' });
 
   // If payment exists, process refund (demo mode)
   if (reservation.payment) {
@@ -519,7 +519,7 @@ const checkOutReservation = asyncHandler(async (req, res, next) => {
 
   // Update car status and mileage
   await Car.findByIdAndUpdate(reservation.car, { 
-    status: 'available',
+    status: 'active',
     mileage: {
       current: mileage,
       lastUpdated: new Date(),

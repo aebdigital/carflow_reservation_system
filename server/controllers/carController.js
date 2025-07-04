@@ -1298,7 +1298,7 @@ const getCarStats = asyncHandler(async (req, res, next) => {
         totalCars: { $sum: 1 },
         availableCars: {
           $sum: {
-            $cond: [{ $eq: ['$status', 'available'] }, 1, 0]
+            $cond: [{ $eq: ['$status', 'active'] }, 1, 0]
           }
         },
         maintenanceCars: {
@@ -1337,7 +1337,7 @@ const getCarStats = asyncHandler(async (req, res, next) => {
         count: { $sum: 1 },
         available: {
           $sum: {
-            $cond: [{ $eq: ['$status', 'available'] }, 1, 0]
+            $cond: [{ $eq: ['$status', 'active'] }, 1, 0]
           }
         }
       }

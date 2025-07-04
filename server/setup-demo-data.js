@@ -74,7 +74,7 @@ async function setupDemoData() {
           doors: 4,
           mileage: 15000,
           dailyRate: 45,
-          status: 'available',
+          status: 'active',
           location: {
             name: 'Main Office',
             address: {
@@ -101,7 +101,7 @@ async function setupDemoData() {
           doors: 4,
           mileage: 12000,
           dailyRate: 65,
-          status: 'available',
+          status: 'active',
           location: {
             name: 'Main Office',
             address: {
@@ -128,7 +128,7 @@ async function setupDemoData() {
           doors: 4,
           mileage: 8000,
           dailyRate: 95,
-          status: 'available',
+          status: 'active',
           location: {
             name: 'Main Office',
             address: {

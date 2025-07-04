@@ -24,7 +24,7 @@ const getCarsByUser = asyncHandler(async (req, res, next) => {
   const tenantId = await getTenantByUserEmail(email);
   
   // Build query with tenant filter
-  const baseQuery = { tenantId, isActive: true, status: 'available' };
+  const baseQuery = { tenantId, isActive: true, status: 'active' };
   
   // Copy req.query and merge with base filter
   const reqQuery = { ...req.query };
@@ -138,7 +138,7 @@ const getCarAvailabilityByUser = asyncHandler(async (req, res, next) => {
   }
   
   let availability = {
-    isAvailable: car.status === 'available',
+    isAvailable: car.status === 'active',
     status: car.status
   };
   
@@ -171,7 +171,7 @@ const getCarAvailabilityByUser = asyncHandler(async (req, res, next) => {
       ]
     });
     
-    availability.isAvailableForDates = overlappingReservations.length === 0 && car.status === 'available';
+    availability.isAvailableForDates = overlappingReservations.length === 0 && car.status === 'active';
     availability.conflictingReservations = overlappingReservations.length;
   }
   
@@ -194,7 +194,7 @@ const getCarsByCategoryAndUser = asyncHandler(async (req, res, next) => {
     tenantId,
     category: category.toLowerCase(),
     isActive: true,
-    status: 'available'
+    status: 'active'
   }).select('brand model year color dailyRate weeklyRate monthlyRate location features images');
   
   res.status(200).json({
@@ -274,7 +274,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     return next(new AppError('Car not found', 404));
   }
 
-  if (car.status !== 'available') {
+  if (car.status !== 'active') {
     return next(new AppError('Car is not available for booking', 400));
   }
 
@@ -595,7 +595,7 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     return next(new AppError('Car not found', 404));
   }
 
-  if (car.status !== 'available') {
+  if (car.status !== 'active') {
     return next(new AppError('Car is not available for booking', 400));
   }
 
@@ -1038,8 +1038,8 @@ const subscribeToNewsletter = asyncHandler(async (req, res, next) => {
 const getPublicCars = asyncHandler(async (req, res, next) => {
   // Get all active cars without authentication requirement
   const baseQuery = { 
-    status: { $ne: 'archived' }, // Don't show archived cars
-    isActive: true // Only show active cars
+    status: 'active',
+    isActive: true
   };
 
   // Copy req.query and merge with base filter
@@ -1078,7 +1078,7 @@ const getPublicCars = asyncHandler(async (req, res, next) => {
 
   // Pagination
   const page = parseInt(req.query.page, 10) || 1;
-  const limit = parseInt(req.query.limit, 10) || 25;
+  const limit = parseInt(req.query.limit, 10) || 20;
   const startIndex = (page - 1) * limit;
   const endIndex = page * limit;
   const total = await Car.countDocuments(JSON.parse(queryStr));
@@ -1119,7 +1119,7 @@ const getPublicCars = asyncHandler(async (req, res, next) => {
 const getPublicCar = asyncHandler(async (req, res, next) => {
   const car = await Car.findOne({ 
     _id: req.params.id,
-    status: { $ne: 'archived' },
+    status: 'active',
     isActive: true
   }).select('brand model year color category fuelType transmission seats doors description pricing location features images equipment badges status');
 
