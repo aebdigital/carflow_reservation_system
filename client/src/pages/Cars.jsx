@@ -810,7 +810,7 @@ function Cars() {
           </Box>
           
           <Typography variant="h6" color="primary" sx={{ fontWeight: 600, mt: 1 }}>
-            {car.dailyRate}€/{t('den')}
+            {car.pricing?.dailyRate || car.dailyRate || 0}€/{t('den')}
           </Typography>
           
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>

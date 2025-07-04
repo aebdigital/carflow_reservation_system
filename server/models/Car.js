@@ -499,6 +499,22 @@ carSchema.pre('save', async function(next) {
     this.mileage.lastUpdated = new Date();
   }
   
+  // Populate legacy pricing fields from new pricing structure for backward compatibility
+  if (this.pricing) {
+    if (this.pricing.dailyRate !== undefined) {
+      this.dailyRate = this.pricing.dailyRate;
+    }
+    if (this.pricing.weeklyRate !== undefined) {
+      this.weeklyRate = this.pricing.weeklyRate;
+    }
+    if (this.pricing.monthlyRate !== undefined) {
+      this.monthlyRate = this.pricing.monthlyRate;
+    }
+    if (this.pricing.deposit !== undefined) {
+      this.deposit = this.pricing.deposit;
+    }
+  }
+  
   next();
 });
 

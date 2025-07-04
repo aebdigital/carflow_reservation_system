@@ -323,6 +323,13 @@ const createCar = asyncHandler(async (req, res, next) => {
         'mileage.current'
       ];
 
+      // Define which fields should be integers vs floats
+      const integerFields = new Set([
+        'year', 'seats', 'doors', 'trunkVolume',
+        'engine.displacement', 'engine.power', 'engine.torque', 'engine.cylinders',
+        'fuelConsumption.co2Emissions', 'mileageLimits.dailyLimit', 'mileage.current'
+      ]);
+
       numericFields.forEach(field => {
         try {
           const keys = field.split('.');
@@ -340,10 +347,20 @@ const createCar = asyncHandler(async (req, res, next) => {
               // Set empty strings/null to undefined so they don't interfere with defaults
               obj[finalKey] = undefined;
             } else {
-              // Convert to number if it's a valid numeric value
-              const numValue = Number(obj[finalKey]);
+              // Convert to number with proper type handling
+              let numValue;
+              const originalValue = obj[finalKey];
+              if (integerFields.has(field)) {
+                numValue = parseInt(obj[finalKey], 10);
+              } else {
+                numValue = parseFloat(obj[finalKey]);
+                // Round to 2 decimal places to avoid precision issues
+                numValue = Math.round(numValue * 100) / 100;
+              }
+              
               if (!isNaN(numValue)) {
                 obj[finalKey] = numValue;
+                console.log(`🚗 [CAR CREATE] Converted ${field}: "${originalValue}" → ${numValue} (${integerFields.has(field) ? 'int' : 'float'})`);
               }
             }
           }
@@ -979,6 +996,13 @@ const updateCar = asyncHandler(async (req, res, next) => {
         'mileage.current'
       ];
 
+      // Define which fields should be integers vs floats
+      const integerFields = new Set([
+        'year', 'seats', 'doors', 'trunkVolume',
+        'engine.displacement', 'engine.power', 'engine.torque', 'engine.cylinders',
+        'fuelConsumption.co2Emissions', 'mileageLimits.dailyLimit', 'mileage.current'
+      ]);
+
       console.log('🚗 [CAR UPDATE] Step 4n: Processing numeric fields...');
       numericFields.forEach(field => {
         try {
@@ -997,10 +1021,20 @@ const updateCar = asyncHandler(async (req, res, next) => {
               // Set empty strings/null to undefined so they don't interfere with defaults
               obj[finalKey] = undefined;
             } else {
-              // Convert to number if it's a valid numeric value
-              const numValue = Number(obj[finalKey]);
+              // Convert to number with proper type handling
+              let numValue;
+              const originalValue = obj[finalKey];
+              if (integerFields.has(field)) {
+                numValue = parseInt(obj[finalKey], 10);
+              } else {
+                numValue = parseFloat(obj[finalKey]);
+                // Round to 2 decimal places to avoid precision issues
+                numValue = Math.round(numValue * 100) / 100;
+              }
+              
               if (!isNaN(numValue)) {
                 obj[finalKey] = numValue;
+                console.log(`🚗 [CAR UPDATE] Converted ${field}: "${originalValue}" → ${numValue} (${integerFields.has(field) ? 'int' : 'float'})`);
               }
             }
           }
