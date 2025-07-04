@@ -409,6 +409,18 @@ const EnhancedCarForm = ({
           <Grid item xs={12} md={4}>
             <TextField
               fullWidth
+              label="Počet dverí"
+              type="number"
+              value={formData.doors || 4}
+              onChange={(e) => handleChange('doors', parseInt(e.target.value))}
+              disabled={dialogMode === 'view'}
+              inputProps={{ min: 2, max: 5 }}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
               label="Objem kufra (l)"
               type="number"
               value={formData.trunkVolume || ''}

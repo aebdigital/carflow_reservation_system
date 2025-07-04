@@ -457,7 +457,121 @@ const createCar = asyncHandler(async (req, res, next) => {
     }
     
     console.log('🚗 [CAR CREATE] Set category description and mileage info');
+    
+    // Comprehensive data cleaning before save
+    console.log('🚗 [CAR CREATE] Starting data cleaning...');
+    
+    // Clean string fields - convert empty strings to undefined for proper defaults
+    const stringFields = ['brand', 'model', 'registrationNumber', 'vin', 'color', 'category', 'fuelType', 'drivetrain', 'transmission', 'description'];
+    stringFields.forEach(field => {
+      if (carData[field] === '' || carData[field] === null) {
+        carData[field] = undefined;
+      }
+    });
+    
+    // Clean nested string fields
+    if (carData.location) {
+      if (carData.location.name === '' || carData.location.name === null) {
+        carData.location.name = undefined;
+      }
+      if (carData.location.address) {
+        ['street', 'city', 'state', 'zipCode', 'country'].forEach(field => {
+          if (carData.location.address[field] === '' || carData.location.address[field] === null) {
+            carData.location.address[field] = undefined;
+          }
+        });
+      }
+    }
+    
+    // Clean engine fields
+    if (carData.engine) {
+      ['displacement', 'power', 'torque', 'cylinders'].forEach(field => {
+        if (carData.engine[field] === '' || carData.engine[field] === null || carData.engine[field] === 0) {
+          carData.engine[field] = undefined;
+        }
+      });
+    }
+    
+    // Clean fuel consumption fields
+    if (carData.fuelConsumption) {
+      ['city', 'highway', 'combined', 'co2Emissions'].forEach(field => {
+        if (carData.fuelConsumption[field] === '' || carData.fuelConsumption[field] === null || carData.fuelConsumption[field] === 0) {
+          carData.fuelConsumption[field] = undefined;
+        }
+      });
+    }
+    
+    // Clean maintenance fields
+    if (carData.maintenance) {
+      ['lastServiceDate', 'nextServiceDate', 'notes'].forEach(field => {
+        if (carData.maintenance[field] === '' || carData.maintenance[field] === null) {
+          carData.maintenance[field] = undefined;
+        }
+      });
+      if (carData.maintenance.nextServiceMileage === '' || carData.maintenance.nextServiceMileage === null || carData.maintenance.nextServiceMileage === 0) {
+        carData.maintenance.nextServiceMileage = undefined;
+      }
+    }
+    
+    // Clean insurance fields
+    if (carData.insurance) {
+      ['provider', 'policyNumber', 'expiryDate'].forEach(field => {
+        if (carData.insurance[field] === '' || carData.insurance[field] === null) {
+          carData.insurance[field] = undefined;
+        }
+      });
+      if (carData.insurance.coverageAmount === '' || carData.insurance.coverageAmount === null || carData.insurance.coverageAmount === 0) {
+        carData.insurance.coverageAmount = undefined;
+      }
+    }
+    
+    // Clean document validity fields
+    if (carData.documentValidity) {
+      ['highwayTollSticker', 'technicalInspection', 'emissionInspection'].forEach(docType => {
+        if (carData.documentValidity[docType] && carData.documentValidity[docType].expiryDate === '') {
+          carData.documentValidity[docType].expiryDate = undefined;
+        }
+      });
+    }
+    
+    // Ensure equipment and badges are arrays
+    if (!Array.isArray(carData.equipment)) {
+      carData.equipment = [];
+    }
+    if (!Array.isArray(carData.badges)) {
+      carData.badges = [];
+    }
+    if (!Array.isArray(carData.features)) {
+      carData.features = [];
+    }
+    
+    console.log('🚗 [CAR CREATE] Data cleaning complete');
     console.log('🚗 [CAR CREATE] Final car data keys:', Object.keys(carData));
+    console.log('🚗 [CAR CREATE] ======= COMPLETE DATA DEBUG =======');
+    console.log('🚗 [CAR CREATE] Full carData structure:');
+    console.log(JSON.stringify(carData, null, 2));
+    console.log('🚗 [CAR CREATE] ======= FIELD BY FIELD CHECK =======');
+    console.log('🚗 [CAR CREATE] brand:', carData.brand);
+    console.log('🚗 [CAR CREATE] model:', carData.model);
+    console.log('🚗 [CAR CREATE] year:', carData.year, 'type:', typeof carData.year);
+    console.log('🚗 [CAR CREATE] registrationNumber:', carData.registrationNumber);
+    console.log('🚗 [CAR CREATE] vin:', carData.vin);
+    console.log('🚗 [CAR CREATE] color:', carData.color);
+    console.log('🚗 [CAR CREATE] category:', carData.category);
+    console.log('🚗 [CAR CREATE] fuelType:', carData.fuelType);
+    console.log('🚗 [CAR CREATE] transmission:', carData.transmission);
+    console.log('🚗 [CAR CREATE] engine:', JSON.stringify(carData.engine, null, 2));
+    console.log('🚗 [CAR CREATE] fuelConsumption:', JSON.stringify(carData.fuelConsumption, null, 2));
+    console.log('🚗 [CAR CREATE] mileage:', JSON.stringify(carData.mileage, null, 2));
+    console.log('🚗 [CAR CREATE] pricing:', JSON.stringify(carData.pricing, null, 2));
+    console.log('🚗 [CAR CREATE] location:', JSON.stringify(carData.location, null, 2));
+    console.log('🚗 [CAR CREATE] equipment:', JSON.stringify(carData.equipment, null, 2));
+    console.log('🚗 [CAR CREATE] badges:', JSON.stringify(carData.badges, null, 2));
+    console.log('🚗 [CAR CREATE] documentValidity:', JSON.stringify(carData.documentValidity, null, 2));
+    console.log('🚗 [CAR CREATE] mileageLimits:', JSON.stringify(carData.mileageLimits, null, 2));
+    console.log('🚗 [CAR CREATE] maintenance:', JSON.stringify(carData.maintenance, null, 2));
+    console.log('🚗 [CAR CREATE] insurance:', JSON.stringify(carData.insurance, null, 2));
+    console.log('🚗 [CAR CREATE] =======================================');
     console.log('🚗 [CAR CREATE] ======= MILEAGE DEBUG INFO =======');
     console.log('🚗 [CAR CREATE] carData.mileage type:', typeof carData.mileage);
     console.log('🚗 [CAR CREATE] carData.mileage value:', carData.mileage);
@@ -472,6 +586,10 @@ const createCar = asyncHandler(async (req, res, next) => {
       console.log('🚗 [CAR CREATE] Inside try block, calling Car.create...');
       car = await Car.create(carData);
       console.log('🚗 [CAR CREATE] Car created successfully! ID:', car._id);
+      console.log('🚗 [CAR CREATE] ======= SAVED CAR DATA =======');
+      console.log('🚗 [CAR CREATE] What was saved in MongoDB:');
+      console.log(JSON.stringify(car.toObject(), null, 2));
+      console.log('🚗 [CAR CREATE] ================================');
     } catch (error) {
       console.log('🚗 [CAR CREATE] Error caught in try-catch block:', error.name);
       console.log('🚗 [CAR CREATE] Error message:', error.message);
@@ -639,7 +757,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
       console.log('🚗 [CAR UPDATE] Step 2j: Car mileage after refetch:', car.mileage);
     }
 
-    console.log('�� [CAR UPDATE] Step 3: Checking if FormData processing needed...');
+    console.log('🚗 [CAR UPDATE] Step 3: Checking if FormData processing needed...');
     // Parse FormData if it contains nested objects
     if (req.body && typeof req.body === 'object') {
       console.log('🚗 [CAR UPDATE] Step 4: Starting FormData processing...');
@@ -920,6 +1038,94 @@ const updateCar = asyncHandler(async (req, res, next) => {
       }
     }
 
+    // Comprehensive data cleaning before update
+    console.log('🚗 [CAR UPDATE] Starting data cleaning...');
+    
+    // Clean string fields - convert empty strings to undefined for proper defaults
+    const stringFields = ['brand', 'model', 'registrationNumber', 'vin', 'color', 'category', 'fuelType', 'drivetrain', 'transmission', 'description'];
+    stringFields.forEach(field => {
+      if (req.body[field] === '' || req.body[field] === null) {
+        req.body[field] = undefined;
+      }
+    });
+    
+    // Clean nested string fields
+    if (req.body.location) {
+      if (req.body.location.name === '' || req.body.location.name === null) {
+        req.body.location.name = undefined;
+      }
+      if (req.body.location.address) {
+        ['street', 'city', 'state', 'zipCode', 'country'].forEach(field => {
+          if (req.body.location.address[field] === '' || req.body.location.address[field] === null) {
+            req.body.location.address[field] = undefined;
+          }
+        });
+      }
+    }
+    
+    // Clean engine fields
+    if (req.body.engine) {
+      ['displacement', 'power', 'torque', 'cylinders'].forEach(field => {
+        if (req.body.engine[field] === '' || req.body.engine[field] === null || req.body.engine[field] === 0) {
+          req.body.engine[field] = undefined;
+        }
+      });
+    }
+    
+    // Clean fuel consumption fields
+    if (req.body.fuelConsumption) {
+      ['city', 'highway', 'combined', 'co2Emissions'].forEach(field => {
+        if (req.body.fuelConsumption[field] === '' || req.body.fuelConsumption[field] === null || req.body.fuelConsumption[field] === 0) {
+          req.body.fuelConsumption[field] = undefined;
+        }
+      });
+    }
+    
+    // Clean maintenance fields
+    if (req.body.maintenance) {
+      ['lastServiceDate', 'nextServiceDate', 'notes'].forEach(field => {
+        if (req.body.maintenance[field] === '' || req.body.maintenance[field] === null) {
+          req.body.maintenance[field] = undefined;
+        }
+      });
+      if (req.body.maintenance.nextServiceMileage === '' || req.body.maintenance.nextServiceMileage === null || req.body.maintenance.nextServiceMileage === 0) {
+        req.body.maintenance.nextServiceMileage = undefined;
+      }
+    }
+    
+    // Clean insurance fields
+    if (req.body.insurance) {
+      ['provider', 'policyNumber', 'expiryDate'].forEach(field => {
+        if (req.body.insurance[field] === '' || req.body.insurance[field] === null) {
+          req.body.insurance[field] = undefined;
+        }
+      });
+      if (req.body.insurance.coverageAmount === '' || req.body.insurance.coverageAmount === null || req.body.insurance.coverageAmount === 0) {
+        req.body.insurance.coverageAmount = undefined;
+      }
+    }
+    
+    // Clean document validity fields
+    if (req.body.documentValidity) {
+      ['highwayTollSticker', 'technicalInspection', 'emissionInspection'].forEach(docType => {
+        if (req.body.documentValidity[docType] && req.body.documentValidity[docType].expiryDate === '') {
+          req.body.documentValidity[docType].expiryDate = undefined;
+        }
+      });
+    }
+    
+    // Ensure equipment and badges are arrays
+    if (req.body.equipment !== undefined && !Array.isArray(req.body.equipment)) {
+      req.body.equipment = [];
+    }
+    if (req.body.badges !== undefined && !Array.isArray(req.body.badges)) {
+      req.body.badges = [];
+    }
+    if (req.body.features !== undefined && !Array.isArray(req.body.features)) {
+      req.body.features = [];
+    }
+    
+    console.log('🚗 [CAR UPDATE] Data cleaning complete');
     console.log('�� [CAR UPDATE] Step 6: Checking for uploaded images...');
     // Handle uploaded images
     if (req.files && req.files.length > 0) {
