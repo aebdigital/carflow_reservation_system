@@ -444,6 +444,12 @@ const createCar = asyncHandler(async (req, res, next) => {
     
     console.log('🚗 [CAR CREATE] Set category description and mileage info');
     console.log('🚗 [CAR CREATE] Final car data keys:', Object.keys(carData));
+    console.log('🚗 [CAR CREATE] ======= MILEAGE DEBUG INFO =======');
+    console.log('🚗 [CAR CREATE] carData.mileage type:', typeof carData.mileage);
+    console.log('🚗 [CAR CREATE] carData.mileage value:', carData.mileage);
+    console.log('🚗 [CAR CREATE] carData.mileage.current:', carData.mileage?.current);
+    console.log('🚗 [CAR CREATE] carData.mileage JSON:', JSON.stringify(carData.mileage, null, 2));
+    console.log('🚗 [CAR CREATE] ===================================');
     console.log('🚗 [CAR CREATE] Attempting to create car...');
 
     // Create car first to get the ID
@@ -955,6 +961,12 @@ const updateCar = asyncHandler(async (req, res, next) => {
     console.log('🚗 [CAR UPDATE] Step 7: Final update data keys:', Object.keys(req.body));
     console.log('🚗 [CAR UPDATE] Step 7a: Final mileage type:', typeof req.body.mileage);
     console.log('🚗 [CAR UPDATE] Step 7b: Final mileage value:', req.body.mileage);
+    console.log('🚗 [CAR UPDATE] ======= MILEAGE DEBUG INFO =======');
+    console.log('🚗 [CAR UPDATE] req.body.mileage type:', typeof req.body.mileage);
+    console.log('🚗 [CAR UPDATE] req.body.mileage value:', req.body.mileage);
+    console.log('🚗 [CAR UPDATE] req.body.mileage.current:', req.body.mileage?.current);
+    console.log('🚗 [CAR UPDATE] req.body.mileage JSON:', JSON.stringify(req.body.mileage, null, 2));
+    console.log('🚗 [CAR UPDATE] ===================================');
     console.log('🚗 [CAR UPDATE] Step 8: Attempting to update car...');
 
     try {

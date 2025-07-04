@@ -576,6 +576,12 @@ function Cars() {
     console.log('✅ Form validation passed, proceeding with submission...');
     console.log('📋 Form data:', formData);
     console.log('🖼️ Selected images:', selectedImages);
+    console.log('🚗 [FRONTEND] ======= MILEAGE DEBUG INFO =======');
+    console.log('🚗 [FRONTEND] formData.mileage type:', typeof formData.mileage);
+    console.log('🚗 [FRONTEND] formData.mileage value:', formData.mileage);
+    console.log('🚗 [FRONTEND] formData.mileage.current:', formData.mileage?.current);
+    console.log('🚗 [FRONTEND] formData.mileage JSON:', JSON.stringify(formData.mileage, null, 2));
+    console.log('🚗 [FRONTEND] =======================================');
 
     try {
       if (dialogMode === 'create') {
