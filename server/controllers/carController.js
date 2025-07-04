@@ -439,7 +439,21 @@ const createCar = asyncHandler(async (req, res, next) => {
         // Ensure lastUpdated and updatedBy are set for object format
         carData.mileage.lastUpdated = new Date();
         carData.mileage.updatedBy = req.user._id;
+      } else {
+        // Safety fallback: if mileage object exists but has no current value, set it to 0
+        carData.mileage = {
+          current: 0,
+          lastUpdated: new Date(),
+          updatedBy: req.user._id
+        };
       }
+    } else {
+      // Safety fallback: if no mileage provided at all, set default structure
+      carData.mileage = {
+        current: 0,
+        lastUpdated: new Date(),
+        updatedBy: req.user._id
+      };
     }
     
     console.log('🚗 [CAR CREATE] Set category description and mileage info');
@@ -896,6 +910,13 @@ const updateCar = asyncHandler(async (req, res, next) => {
         // Ensure lastUpdated and updatedBy are set for object format
         req.body.mileage.lastUpdated = new Date();
         req.body.mileage.updatedBy = req.user._id;
+      } else {
+        // Safety fallback: if mileage object exists but has no current value, set it to 0
+        req.body.mileage = {
+          current: 0,
+          lastUpdated: new Date(),
+          updatedBy: req.user._id
+        };
       }
     }
 
