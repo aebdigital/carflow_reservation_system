@@ -32,7 +32,6 @@ import {
   Campaign as CampaignIcon,
   Description as ContractIcon,
   Language as WebsiteIcon,
-  EventNote as ReservationsIcon,
   Extension as ServicesIcon,
   Notifications as NotificationsIcon,
 } from '@mui/icons-material'
