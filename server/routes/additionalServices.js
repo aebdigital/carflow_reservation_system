@@ -13,10 +13,31 @@ const {
   updateSortOrder
 } = require('../controllers/additionalServiceController');
 
-const { protect, authorize } = require('../middleware/auth');
+const { protect, requireAdmin, requireStaff } = require('../middleware/authMiddleware');
 const { validateRequest, serviceValidation } = require('../middleware/validation');
 
 const router = express.Router();
+
+// Helper function to authorize roles
+const authorize = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Access denied. Not authenticated.'
+      });
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Insufficient permissions.'
+      });
+    }
+
+    next();
+  };
+};
 
 // Configure multer for service image uploads
 const upload = multer({
