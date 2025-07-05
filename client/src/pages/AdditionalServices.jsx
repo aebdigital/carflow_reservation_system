@@ -53,7 +53,8 @@ import AdditionalServiceForm from '../components/additionalServices/AdditionalSe
 // API endpoints (will be replaced with RTK Query)
 const additionalServicesAPI = {
   getAll: async () => {
-    const response = await fetch('/api/additional-services', {
+    const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
+    const response = await fetch(`${baseUrl}/additional-services`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
@@ -61,7 +62,8 @@ const additionalServicesAPI = {
     return response.json();
   },
   create: async (formData) => {
-    const response = await fetch('/api/additional-services', {
+    const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
+    const response = await fetch(`${baseUrl}/additional-services`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -71,7 +73,8 @@ const additionalServicesAPI = {
     return response.json();
   },
   update: async (id, formData) => {
-    const response = await fetch(`/api/additional-services/${id}`, {
+    const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
+    const response = await fetch(`${baseUrl}/additional-services/${id}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -81,7 +84,8 @@ const additionalServicesAPI = {
     return response.json();
   },
   delete: async (id) => {
-    const response = await fetch(`/api/additional-services/${id}`, {
+    const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
+    const response = await fetch(`${baseUrl}/additional-services/${id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -90,7 +94,8 @@ const additionalServicesAPI = {
     return response.json();
   },
   updateSortOrder: async (services) => {
-    const response = await fetch('/api/additional-services/sort-order', {
+    const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
+    const response = await fetch(`${baseUrl}/additional-services/sort-order`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
