@@ -11,6 +11,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Reservations from './pages/Reservations'
 import Cars from './pages/Cars'
+import AdditionalServices from './pages/AdditionalServices'
 import Customers from './pages/Customers'
 import Calendar from './pages/Calendar'
 import Payments from './pages/Payments'
@@ -144,6 +145,7 @@ function App() {
         <Route index element={<Dashboard />} />
         <Route path="reservations" element={<Reservations />} />
         <Route path="cars" element={<Cars />} />
+        <Route path="additional-services" element={<AdditionalServices />} />
         <Route path="customers" element={<Customers />} />
         <Route path="calendar" element={<Calendar />} />
         <Route path="payments" element={<Payments />} />

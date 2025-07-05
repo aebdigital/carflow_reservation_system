@@ -17,6 +17,7 @@ const publicRoutes = require('./routes/publicRoutes');
 const websiteRoutes = require('./routes/websiteRoutes');
 const discountCodeRoutes = require('./routes/discountCodeRoutes');
 const equipmentRoutes = require('./routes/equipmentRoutes');
+const additionalServiceRoutes = require('./routes/additionalServices');
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
@@ -138,6 +139,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/website', websiteRoutes);
 app.use('/api/discount-codes', discountCodeRoutes);
 app.use('/api/equipment', equipmentRoutes);
+app.use('/api/additional-services', additionalServiceRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

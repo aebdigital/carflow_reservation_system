@@ -439,6 +439,103 @@ class CloudStorageService {
       return { success: false, message: `Failed to connect to GCS: ${error.message}` };
     }
   }
+
+  /**
+   * Upload service image with tenant/user separation
+   * @param {Buffer} fileBuffer - Image file buffer
+   * @param {string} originalName - Original filename
+   * @param {Object} user - User object with tenantId and storageFolder
+   * @param {string} description - Image description
+   * @returns {Promise<Object>} Upload result with URLs
+   */
+  async uploadServiceImage(fileBuffer, originalName, user, description = '') {
+    await this.checkConfiguration();
+
+    try {
+      // Validate file type
+      const fileType = await this.getFileType(fileBuffer);
+      if (!this.imageSettings.allowedTypes.includes(fileType)) {
+        throw new Error(`Invalid file type. Allowed types: ${this.imageSettings.allowedTypes.join(', ')}`);
+      }
+
+      // Validate file size
+      if (fileBuffer.length > this.imageSettings.maxSize) {
+        throw new Error(`File too large. Maximum size: ${this.imageSettings.maxSize / 1024 / 1024}MB`);
+      }
+
+      // Generate unique filename
+      const fileExtension = path.extname(originalName).toLowerCase();
+      const baseFileName = `${uuidv4()}${fileExtension}`;
+      
+      // Use user-specific folder path for complete tenant separation
+      const folderPath = `${user.storageFolder}/services`;
+
+      // Process and upload different sizes
+      const uploadPromises = await this.processAndUploadSizes(
+        fileBuffer, 
+        folderPath, 
+        baseFileName
+      );
+
+      const results = await Promise.all(uploadPromises);
+      
+      // Return structured result
+      return {
+        filename: baseFileName,
+        description: description,
+        urls: {
+          thumbnail: results[0].url,
+          medium: results[1].url,
+          large: results[2].url,
+          original: results[3].url
+        },
+        uploadDate: new Date(),
+        tenantId: user.tenantId,
+        userId: user._id
+      };
+
+    } catch (error) {
+      console.error('Error uploading service image:', error);
+      throw new Error(`Failed to upload service image: ${error.message}`);
+    }
+  }
+
+  /**
+   * Delete service image from user-specific storage
+   * @param {string} filename - Specific filename to delete
+   * @param {Object} user - User object with storageFolder
+   */
+  async deleteServiceImage(filename, user) {
+    await this.checkConfiguration();
+
+    try {
+      const folderPath = `${user.storageFolder}/services/`;
+      
+      // Delete specific file and its variants
+      const name = path.parse(filename).name;
+      const ext = path.parse(filename).ext;
+      
+      const filesToDelete = [
+        `${folderPath}${name}_thumbnail${ext}`,
+        `${folderPath}${name}_medium${ext}`,
+        `${folderPath}${name}_large${ext}`,
+        `${folderPath}${filename}`
+      ];
+
+      await Promise.all(
+        filesToDelete.map(file => 
+          this.bucket.file(file).delete().catch(() => {
+            // Ignore errors for non-existent files
+          })
+        )
+      );
+
+      return { success: true, message: 'Service image deleted successfully' };
+    } catch (error) {
+      console.error('Error deleting service image:', error);
+      throw new Error(`Failed to delete service image: ${error.message}`);
+    }
+  }
 }
 
 module.exports = new CloudStorageService(); 

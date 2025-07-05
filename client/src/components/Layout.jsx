@@ -32,6 +32,9 @@ import {
   Campaign as CampaignIcon,
   Description as ContractIcon,
   Language as WebsiteIcon,
+  EventNote as ReservationsIcon,
+  Extension as ServicesIcon,
+  Notifications as NotificationsIcon,
 } from '@mui/icons-material'
 import { selectCurrentUser } from '../store/authSlice'
 import { useLogoutMutation } from '../store/store'
@@ -46,6 +49,7 @@ const menuItems = [
   { text: t('dashboard'), icon: <DashboardIcon />, path: '/' },
   { text: t('reservations'), icon: <ReservationsIcon />, path: '/reservations' },
   { text: t('fleetManagement'), icon: <CarsIcon />, path: '/cars' },
+  { text: 'Doplnkové služby', icon: <ServicesIcon />, path: '/additional-services' },
   { text: t('customers'), icon: <CustomersIcon />, path: '/customers' },
   { text: t('calendar'), icon: <CalendarIcon />, path: '/calendar' },
   { text: t('payments'), icon: <PaymentsIcon />, path: '/payments' },
