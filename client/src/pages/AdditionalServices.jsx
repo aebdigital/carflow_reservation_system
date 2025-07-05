@@ -53,7 +53,7 @@ import AdditionalServiceForm from '../components/additionalServices/AdditionalSe
 // API endpoints (will be replaced with RTK Query)
 const additionalServicesAPI = {
   getAll: async () => {
-    const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
+    const baseUrl = (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, '');
     const response = await fetch(`${baseUrl}/additional-services`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -62,7 +62,7 @@ const additionalServicesAPI = {
     return response.json();
   },
   create: async (formData) => {
-    const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
+    const baseUrl = (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, '');
     const response = await fetch(`${baseUrl}/additional-services`, {
       method: 'POST',
       headers: {
@@ -73,7 +73,7 @@ const additionalServicesAPI = {
     return response.json();
   },
   update: async (id, formData) => {
-    const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
+    const baseUrl = (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, '');
     const response = await fetch(`${baseUrl}/additional-services/${id}`, {
       method: 'PUT',
       headers: {
@@ -84,7 +84,7 @@ const additionalServicesAPI = {
     return response.json();
   },
   delete: async (id) => {
-    const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
+    const baseUrl = (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, '');
     const response = await fetch(`${baseUrl}/additional-services/${id}`, {
       method: 'DELETE',
       headers: {
@@ -94,7 +94,7 @@ const additionalServicesAPI = {
     return response.json();
   },
   updateSortOrder: async (services) => {
-    const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
+    const baseUrl = (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, '');
     const response = await fetch(`${baseUrl}/additional-services/sort-order`, {
       method: 'PUT',
       headers: {
