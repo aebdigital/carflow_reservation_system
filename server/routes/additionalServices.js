@@ -42,6 +42,8 @@ const authorize = (...roles) => {
 // Middleware to parse JSON strings from FormData
 const parseFormDataJSON = (req, res, next) => {
   try {
+    console.log('🔧 [PARSE] Original req.body:', JSON.stringify(req.body, null, 2));
+    
     // Parse JSON strings back to objects for nested fields
     const jsonFields = ['pricing', 'availability', 'behavior', 'dynamicPricing'];
     
@@ -49,16 +51,41 @@ const parseFormDataJSON = (req, res, next) => {
       if (req.body[field] && typeof req.body[field] === 'string') {
         try {
           req.body[field] = JSON.parse(req.body[field]);
+          console.log(`🔧 [PARSE] Parsed ${field}:`, req.body[field]);
         } catch (error) {
-          console.error(`Error parsing ${field}:`, error);
+          console.error(`❌ [PARSE] Error parsing ${field}:`, error);
           // If parsing fails, leave as string and let validation catch it
         }
       }
     });
     
+    // Convert string booleans to actual booleans for top-level fields
+    const booleanFields = ['isActive', 'isPublic'];
+    booleanFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        if (req.body[field] === 'true') {
+          req.body[field] = true;
+        } else if (req.body[field] === 'false') {
+          req.body[field] = false;
+        }
+      }
+    });
+    
+    // Convert string numbers to actual numbers for top-level fields
+    const numberFields = ['sortOrder'];
+    numberFields.forEach(field => {
+      if (req.body[field] !== undefined && typeof req.body[field] === 'string') {
+        const parsed = parseInt(req.body[field], 10);
+        if (!isNaN(parsed)) {
+          req.body[field] = parsed;
+        }
+      }
+    });
+    
+    console.log('🔧 [PARSE] Final req.body:', JSON.stringify(req.body, null, 2));
     next();
   } catch (error) {
-    console.error('Error in parseFormDataJSON middleware:', error);
+    console.error('❌ [PARSE] Error in parseFormDataJSON middleware:', error);
     next();
   }
 };

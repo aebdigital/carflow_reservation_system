@@ -358,6 +358,9 @@ function AdditionalServices() {
     try {
       const formDataToSend = new FormData();
       
+      // Log form data for debugging
+      console.log('🔧 [FRONTEND] Form data being sent:', formData);
+      
       // Append all form fields
       Object.keys(formData).forEach(key => {
         if (key === 'pricing' || key === 'availability' || key === 'behavior' || key === 'dynamicPricing') {
@@ -372,6 +375,12 @@ function AdditionalServices() {
         formDataToSend.append('image', selectedImage);
       }
       
+      // Log FormData contents for debugging
+      console.log('🔧 [FRONTEND] FormData entries:');
+      for (let [key, value] of formDataToSend.entries()) {
+        console.log(`  ${key}:`, value);
+      }
+      
       let result;
       if (dialogMode === 'create') {
         result = await additionalServicesAPI.create(formDataToSend);
@@ -379,13 +388,22 @@ function AdditionalServices() {
         result = await additionalServicesAPI.update(selectedService._id, formDataToSend);
       }
       
+      console.log('🔧 [FRONTEND] API result:', result);
+      
       if (result.success) {
         await fetchServices();
         handleCloseDialog();
       } else {
-        throw new Error(result.message || 'Chyba pri ukladaní služby');
+        // Show detailed validation errors if available
+        if (result.errors && Array.isArray(result.errors)) {
+          const errorMessages = result.errors.map(err => `${err.path}: ${err.msg}`).join('\n');
+          throw new Error(`Validation failed:\n${errorMessages}`);
+        } else {
+          throw new Error(result.message || 'Chyba pri ukladaní služby');
+        }
       }
     } catch (err) {
+      console.error('❌ [FRONTEND] Submit error:', err);
       setError(err.message);
     } finally {
       setSubmitting(false);
