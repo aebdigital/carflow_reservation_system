@@ -53,8 +53,7 @@ import AdditionalServiceForm from '../components/additionalServices/AdditionalSe
 // API endpoints (will be replaced with RTK Query)
 const additionalServicesAPI = {
   getAll: async () => {
-    // Temporarily override to use Render backend since VITE_API_URL points to frontend domain
-    const baseUrl = 'https://carflow-reservation-system.onrender.com/api';
+    const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
     const response = await fetch(`${baseUrl}/additional-services`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -63,8 +62,7 @@ const additionalServicesAPI = {
     return response.json();
   },
   create: async (formData) => {
-    // Temporarily override to use Render backend since VITE_API_URL points to frontend domain
-    const baseUrl = 'https://carflow-reservation-system.onrender.com/api';
+    const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
     const response = await fetch(`${baseUrl}/additional-services`, {
       method: 'POST',
       headers: {
@@ -75,8 +73,7 @@ const additionalServicesAPI = {
     return response.json();
   },
   update: async (id, formData) => {
-    // Temporarily override to use Render backend since VITE_API_URL points to frontend domain
-    const baseUrl = 'https://carflow-reservation-system.onrender.com/api';
+    const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
     const response = await fetch(`${baseUrl}/additional-services/${id}`, {
       method: 'PUT',
       headers: {
@@ -87,8 +84,7 @@ const additionalServicesAPI = {
     return response.json();
   },
   delete: async (id) => {
-    // Temporarily override to use Render backend since VITE_API_URL points to frontend domain
-    const baseUrl = 'https://carflow-reservation-system.onrender.com/api';
+    const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
     const response = await fetch(`${baseUrl}/additional-services/${id}`, {
       method: 'DELETE',
       headers: {
@@ -98,8 +94,7 @@ const additionalServicesAPI = {
     return response.json();
   },
   updateSortOrder: async (services) => {
-    // Temporarily override to use Render backend since VITE_API_URL points to frontend domain
-    const baseUrl = 'https://carflow-reservation-system.onrender.com/api';
+    const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api';
     const response = await fetch(`${baseUrl}/additional-services/sort-order`, {
       method: 'PUT',
       headers: {
