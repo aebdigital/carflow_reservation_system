@@ -545,27 +545,27 @@ function Contracts() {
                           {new Date(contract.createdAt).toLocaleDateString('sk-SK')}
                         </Typography>
                       </TableCell>
-                      <TableCell>
+                    <TableCell>
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
                           {contract.rental.totalAmount}€
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={getStatusText(contract.status)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={getStatusText(contract.status)}
                           color={getStatusColor(contract.status)}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
                           <Tooltip title="Zobraziť">
                             <IconButton 
                               size="small" 
                               onClick={() => handleOpenDialog('view', contract)}
                             >
-                              <ViewIcon fontSize="small" />
-                            </IconButton>
+                        <ViewIcon fontSize="small" />
+                      </IconButton>
                           </Tooltip>
                           <Tooltip title="Upraviť">
                             <IconButton 
@@ -573,17 +573,17 @@ function Contracts() {
                               onClick={() => handleOpenDialog('edit', contract)}
                               disabled={contract.status === 'signed'}
                             >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
+                        <EditIcon fontSize="small" />
+                      </IconButton>
                           </Tooltip>
                           <Tooltip title="Stiahnuť PDF">
-                            <IconButton 
-                              size="small" 
+                      <IconButton 
+                        size="small" 
                               onClick={() => handleDownloadPDF(contract._id)}
-                              color="primary"
-                            >
-                              <DownloadIcon fontSize="small" />
-                            </IconButton>
+                        color="primary"
+                      >
+                        <DownloadIcon fontSize="small" />
+                      </IconButton>
                           </Tooltip>
                           <Tooltip title="Vymazať">
                             <IconButton 
@@ -592,12 +592,12 @@ function Contracts() {
                               color="error"
                               disabled={contract.status === 'signed'}
                             >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
                           </Tooltip>
                         </Box>
-                      </TableCell>
-                    </TableRow>
+                    </TableCell>
+                  </TableRow>
                   ))
                 )}
               </TableBody>
@@ -797,10 +797,10 @@ function Contracts() {
                 <Typography variant="h6">Detaily prenájmu</Typography>
               </AccordionSummary>
               <AccordionDetails>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
                       label="Dátum od"
                       type="date"
                       value={formData.rental.startDate ? new Date(formData.rental.startDate).toISOString().split('T')[0] : ''}
@@ -810,22 +810,22 @@ function Contracts() {
                       }))}
                       disabled={dialogMode === 'view'}
                       InputLabelProps={{ shrink: true }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
                       label="Dátum do"
-                      type="date"
+                type="date"
                       value={formData.rental.endDate ? new Date(formData.rental.endDate).toISOString().split('T')[0] : ''}
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
                         rental: { ...prev.rental, endDate: e.target.value }
                       }))}
-                      disabled={dialogMode === 'view'}
-                      InputLabelProps={{ shrink: true }}
-                    />
-                  </Grid>
+                disabled={dialogMode === 'view'}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
                   <Grid item xs={12} md={6}>
                     <TextField
                       fullWidth
@@ -938,10 +938,10 @@ function Contracts() {
                         ...prev,
                         rentalRules: { ...prev.rentalRules, insuranceDeductible: parseInt(e.target.value) || 0 }
                       }))}
-                      disabled={dialogMode === 'view'}
+                  disabled={dialogMode === 'view'}
                     />
-                  </Grid>
-                  <Grid item xs={12}>
+            </Grid>
+            <Grid item xs={12}>
                     <TextField
                       fullWidth
                       label="Storno podmienky"
@@ -971,22 +971,22 @@ function Contracts() {
                 disabled={dialogMode === 'view'}
               />
             </Box>
-          </DialogContent>
-          
+        </DialogContent>
+        
           <DialogActions>
-            <Button onClick={handleCloseDialog}>
+          <Button onClick={handleCloseDialog}>
               Zrušiť
-            </Button>
-            {dialogMode !== 'view' && (
+          </Button>
+          {dialogMode !== 'view' && (
               <Button 
                 type="submit" 
-                variant="contained"
+                variant="contained" 
                 disabled={creating || updating}
               >
                 {creating || updating ? 'Ukladá sa...' : 'Uložiť'}
               </Button>
-            )}
-          </DialogActions>
+          )}
+        </DialogActions>
         </form>
       </Dialog>
     </Box>

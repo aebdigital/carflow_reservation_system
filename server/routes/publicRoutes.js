@@ -18,7 +18,6 @@ const {
   getModalByUser,
   subscribeToNewsletter,
   verifyDiscountCodeByUser,
-  getAvailableServicesByUser,
   getPublicCars,
   getPublicCar
 } = require('../controllers/publicController');
@@ -59,7 +58,6 @@ router.get('/users/:email/cars/:carId', getCarByUser);
 router.get('/users/:email/cars/:carId/availability', getCarAvailabilityByUser);
 router.get('/users/:email/cars/category/:category', getCarsByCategoryAndUser);
 router.get('/users/:email/features', getAvailableFeaturesByUser);
-router.get('/users/:email/services', getAvailableServicesByUser);
 router.post('/users/:email/reservations', createReservationByUser);
 router.get('/users/:email/website-settings', getWebsiteSettingsByUser);
 router.get('/users/:email/info-bar', getInfoBarByUser);

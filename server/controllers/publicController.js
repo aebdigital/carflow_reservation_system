@@ -482,17 +482,12 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     carId,
     startDate,
     endDate,
-    startTime,
-    endTime,
     pickupLocation,
     dropoffLocation,
     additionalDrivers,
     specialRequests,
     notes,
-    discountCode, // Add discount code support
-    
-    // Additional services
-    selectedServices = [] // Array of { serviceId, quantity }
+    discountCode // Add discount code support
   } = req.body;
 
   // Use provided customerEmail or fallback to the email in the URL
@@ -521,21 +516,9 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     return next(new AppError('Car is not available for booking', 400));
   }
 
-  // Process dates with times
+  // Validate dates
   const start = new Date(startDate);
   const end = new Date(endDate);
-  
-  // Apply start and end times if provided
-  if (startTime) {
-    const startTimeDate = new Date(startTime);
-    start.setHours(startTimeDate.getHours(), startTimeDate.getMinutes(), 0, 0);
-  }
-  
-  if (endTime) {
-    const endTimeDate = new Date(endTime);
-    end.setHours(endTimeDate.getHours(), endTimeDate.getMinutes(), 0, 0);
-  }
-
   const now = new Date();
 
   if (start < now) {
@@ -636,85 +619,18 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       subtotal = (weeks * car.weeklyRate) + (remainingDays * car.dailyRate);
     }
 
-    // Apply tiered pricing if available
-    if (car.pricing?.rates) {
-      const rates = car.pricing.rates;
-      if (durationDays === 1 && rates['1day']) {
-        subtotal = rates['1day'];
-      } else if (durationDays >= 2 && durationDays <= 3 && rates['2-3days']) {
-        subtotal = rates['2-3days'] * durationDays;
-      } else if (durationDays >= 4 && durationDays <= 10 && rates['4-10days']) {
-        subtotal = rates['4-10days'] * durationDays;
-      } else if (durationDays >= 11 && durationDays <= 17 && rates['11-17days']) {
-        subtotal = rates['11-17days'] * durationDays;
-      } else if (durationDays >= 18 && durationDays <= 24 && rates['18-24days']) {
-        subtotal = rates['18-24days'] * durationDays;
-      }
-    }
-
-    // Process additional services
-    const { AdditionalService } = require('../models/AdditionalService');
-    const processedServices = [];
-    let servicesTotal = 0;
-
-    if (selectedServices && selectedServices.length > 0) {
-      for (const selectedService of selectedServices) {
-        const service = await AdditionalService.findOne({
-          _id: selectedService.serviceId,
-          tenantId,
-          isActive: true
-        });
-
-        if (service) {
-          const quantity = selectedService.quantity || 1;
-          let servicePrice = service.pricing.amount;
-
-          // Calculate price based on service type
-          switch (service.pricing.type) {
-            case 'fixed':
-              servicePrice = service.pricing.amount * quantity;
-              break;
-            case 'per_day':
-              servicePrice = service.pricing.amount * quantity * durationDays;
-              break;
-            case 'per_km':
-              // For now, use base price. Distance calculation would be added later
-              servicePrice = service.pricing.amount * quantity;
-              break;
-            case 'percentage':
-              servicePrice = (subtotal * service.pricing.amount / 100) * quantity;
-              break;
-            default:
-              servicePrice = service.pricing.amount * quantity;
-          }
-
-          processedServices.push({
-            service: service._id,
-            name: service.name,
-            quantity,
-            unitPrice: service.pricing.amount,
-            totalPrice: servicePrice,
-            pricingType: service.pricing.type
-          });
-
-          servicesTotal += servicePrice;
-        }
-      }
-    }
-
     // Calculate taxes (assuming 10% tax rate)
-    const taxes = (subtotal + servicesTotal) * 0.10;
+    const taxes = subtotal * 0.10;
     
     // Initialize pricing object
     let pricing = {
       dailyRate: car.dailyRate,
       totalDays: durationDays,
       subtotal: subtotal,
-      servicesTotal: servicesTotal,
       taxes: taxes,
       fees: [],
       discounts: [],
-      totalAmount: subtotal + servicesTotal + taxes
+      totalAmount: subtotal + taxes
     };
 
     let appliedDiscountCodes = [];
@@ -743,7 +659,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
 
       // Calculate discount
       const discountResult = discountCodeDoc.calculateDiscount(
-        subtotal + servicesTotal, 
+        subtotal, 
         durationDays, 
         car.category
       );
@@ -771,7 +687,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       });
 
       // Recalculate total amount
-      pricing.totalAmount = subtotal + servicesTotal + taxes - discountAmount;
+      pricing.totalAmount = subtotal + taxes - discountAmount;
     }
 
     // Default pickup/dropoff locations if not provided
@@ -804,12 +720,11 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       status: 'pending',
       pricing,
       appliedDiscountCodes,
-      additionalServices: processedServices,
       additionalDrivers: additionalDrivers || [],
       specialRequests: specialRequests || '',
       notes: notes || '',
       terms: {
-        mileageLimit: car.mileageLimits?.dailyLimit || -1,
+        mileageLimit: -1,
         fuelPolicy: 'full-to-full',
         cancellationPolicy: 'Free cancellation up to 24 hours before pickup',
         lateReturnFee: 50
@@ -848,8 +763,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     const populatedReservation = await Reservation.findById(reservation._id)
       .populate('customer', 'firstName lastName email phone')
       .populate('car', 'brand model year registrationNumber dailyRate images')
-      .populate('appliedDiscountCodes.discountCode', 'code description discountType discountValue')
-      .populate('additionalServices.service', 'name description pricing category');
+      .populate('appliedDiscountCodes.discountCode', 'code description discountType discountValue');
 
     res.status(201).json({
       success: true,
@@ -873,12 +787,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
           applied: true,
           codes: appliedDiscountCodes,
           totalSaved: appliedDiscountCodes.reduce((sum, code) => sum + code.discountAmount, 0)
-        } : { applied: false },
-        services: {
-          count: processedServices.length,
-          total: servicesTotal,
-          services: processedServices
-        }
+        } : { applied: false }
       }
     });
 
@@ -1489,137 +1398,6 @@ const verifyDiscountCodeByUser = asyncHandler(async (req, res, next) => {
   }
 });
 
-// @desc    Get available additional services for a specific user/tenant (public)
-// @route   GET /api/public/users/:email/services
-// @access  Public
-const getAvailableServicesByUser = asyncHandler(async (req, res, next) => {
-  const userEmail = req.params.email;
-  const { carCategory, startDate, endDate } = req.query;
-  
-  if (!userEmail) {
-    return next(new AppError('User email is required', 400));
-  }
-
-  try {
-    const tenantId = await getTenantByUserEmail(userEmail);
-    
-    if (!tenantId) {
-      return next(new AppError('Tenant not found for this user', 404));
-    }
-
-    const { AdditionalService } = require('../models/AdditionalService');
-    
-    // Build query for active services
-    let query = {
-      tenantId,
-      isActive: true
-    };
-
-    // Filter by car category if provided
-    if (carCategory) {
-      query.$or = [
-        { 'availability.vehicleCategories': { $in: [carCategory] } },
-        { 'availability.vehicleCategories': { $size: 0 } } // Services available for all categories
-      ];
-    }
-
-    // Get all matching services
-    const services = await AdditionalService.find(query).sort({ category: 1, name: 1 });
-
-    // Filter by seasonal availability if dates are provided
-    let filteredServices = services;
-    
-    if (startDate && endDate) {
-      const startMonth = new Date(startDate).getMonth() + 1;
-      const endMonth = new Date(endDate).getMonth() + 1;
-      
-      filteredServices = services.filter(service => {
-        // Skip seasonal filtering if not active
-        if (!service.availability.seasonal.isActive) {
-          return true;
-        }
-        
-        const seasonStart = service.availability.seasonal.startMonth;
-        const seasonEnd = service.availability.seasonal.endMonth;
-        
-        // Check if the rental period overlaps with the service's season
-        if (seasonStart <= seasonEnd) {
-          // Normal season (e.g., June to September)
-          return (startMonth <= seasonEnd && endMonth >= seasonStart);
-        } else {
-          // Season spans year boundary (e.g., November to March)
-          return (startMonth <= seasonEnd || endMonth >= seasonStart);
-        }
-      });
-    }
-
-    // Group services by category
-    const servicesByCategory = filteredServices.reduce((acc, service) => {
-      if (!acc[service.category]) {
-        acc[service.category] = [];
-      }
-      
-      // Return only public-facing fields
-      acc[service.category].push({
-        _id: service._id,
-        name: service.name,
-        description: service.description,
-        category: service.category,
-        icon: service.icon,
-        pricing: {
-          type: service.pricing.type,
-          amount: service.pricing.amount,
-          currency: service.pricing.currency
-        },
-        behavior: {
-          maxQuantity: service.behavior.maxQuantity,
-          isRequired: service.behavior.isRequired,
-          isAutoSelected: service.behavior.isAutoSelected
-        },
-        availability: {
-          vehicleCategories: service.availability.vehicleCategories,
-          seasonal: service.availability.seasonal
-        }
-      });
-      
-      return acc;
-    }, {});
-
-    res.status(200).json({
-      success: true,
-      data: {
-        services: filteredServices.map(service => ({
-          _id: service._id,
-          name: service.name,
-          description: service.description,
-          category: service.category,
-          icon: service.icon,
-          pricing: {
-            type: service.pricing.type,
-            amount: service.pricing.amount,
-            currency: service.pricing.currency
-          },
-          behavior: {
-            maxQuantity: service.behavior.maxQuantity,
-            isRequired: service.behavior.isRequired,
-            isAutoSelected: service.behavior.isAutoSelected
-          },
-          availability: {
-            vehicleCategories: service.availability.vehicleCategories,
-            seasonal: service.availability.seasonal
-          }
-        })),
-        servicesByCategory,
-        totalCount: filteredServices.length
-      }
-    });
-
-  } catch (error) {
-    console.error('Error fetching available services:', error);
-    return next(new AppError('Error fetching available services', 500));
-  }
-});
-
 // @desc    Get all cars (public - no authentication) with advanced filtering
 // @route   GET /api/public/cars
 // @access  Public
@@ -1974,7 +1752,6 @@ module.exports = {
   getModalByUser,
   subscribeToNewsletter,
   verifyDiscountCodeByUser,
-  getAvailableServicesByUser,
   getPublicCars,
   getPublicCar
 }; 
