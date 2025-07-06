@@ -13,10 +13,12 @@ import {
   Info as InfoIcon,
   OpenInNew as ModalIcon,
   LocalOffer as DiscountIcon,
+  Image as BannerIcon,
 } from '@mui/icons-material'
 import InfoBarSettings from '../components/website/InfoBarSettings'
 import ModalSettings from '../components/website/ModalSettings'
 import DiscountCodes from '../components/website/DiscountCodes'
+import BannerSettings from '../components/website/BannerSettings'
 import { useGetWebsiteSettingsQuery } from '../store/store'
 
 function TabPanel({ children, value, index, ...other }) {
@@ -90,7 +92,7 @@ export default function Website() {
       </Typography>
 
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        Spravujte vzhľad a funkcionalitu vašej webstránky vrátane info pásikov, modalov a zľavových kódov.
+        Spravujte vzhľad a funkcionalitu vašej webstránky vrátane info pásikov, modalov, bannerov a zľavových kódov.
       </Typography>
 
       <Paper sx={{ width: '100%', backgroundColor: 'white' }}>
@@ -121,10 +123,16 @@ export default function Website() {
               {...a11yProps(1)} 
             />
             <Tab 
+              icon={<BannerIcon />} 
+              label="Bannery" 
+              iconPosition="start"
+              {...a11yProps(2)} 
+            />
+            <Tab 
               icon={<DiscountIcon />} 
               label="Zľavové Kódy" 
               iconPosition="start"
-              {...a11yProps(2)} 
+              {...a11yProps(3)} 
             />
           </Tabs>
         </Box>
@@ -138,6 +146,10 @@ export default function Website() {
         </TabPanel>
 
         <TabPanel value={tabValue} index={2}>
+          <BannerSettings />
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={3}>
           <DiscountCodes />
         </TabPanel>
       </Paper>

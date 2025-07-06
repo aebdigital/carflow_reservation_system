@@ -18,7 +18,7 @@ const baseQuery = fetchBaseQuery({
 export const api = createApi({
   reducerPath: 'api',
   baseQuery,
-  tagTypes: ['User', 'Car', 'Reservation', 'Payment', 'WebsiteSettings', 'DiscountCode'],
+  tagTypes: ['User', 'Car', 'Reservation', 'Payment', 'WebsiteSettings', 'DiscountCode', 'Banner'],
   endpoints: (builder) => ({
     // Auth endpoints
     login: builder.mutation({
@@ -401,6 +401,58 @@ export const api = createApi({
     getDiscountCodeStats: builder.query({
       query: () => 'discount-codes/stats',
     }),
+
+    // Banner endpoints
+    getBanners: builder.query({
+      query: (params = {}) => ({
+        url: 'banners',
+        params,
+      }),
+      providesTags: ['Banner'],
+    }),
+    getBanner: builder.query({
+      query: (id) => `banners/${id}`,
+      providesTags: (result, error, id) => [{ type: 'Banner', id }],
+    }),
+    createBanner: builder.mutation({
+      query: (bannerData) => ({
+        url: 'banners',
+        method: 'POST',
+        body: bannerData,
+      }),
+      invalidatesTags: ['Banner'],
+    }),
+    updateBanner: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `banners/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Banner', id }, 'Banner'],
+    }),
+    deleteBanner: builder.mutation({
+      query: (id) => ({
+        url: `banners/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Banner'],
+    }),
+    getBannersByPage: builder.query({
+      query: (page) => `banners/page/${page}`,
+      providesTags: ['Banner'],
+    }),
+    getCarouselBanners: builder.query({
+      query: (page) => `banners/carousel/${page}`,
+      providesTags: ['Banner'],
+    }),
+    updateBannerSortOrder: builder.mutation({
+      query: (sortData) => ({
+        url: 'banners/sort-order',
+        method: 'PUT',
+        body: sortData,
+      }),
+      invalidatesTags: ['Banner'],
+    }),
   }),
 })
 
@@ -464,6 +516,16 @@ export const {
   useToggleDiscountCodeMutation,
   useValidateDiscountCodeMutation,
   useGetDiscountCodeStatsQuery,
+
+  // Banner hooks
+  useGetBannersQuery,
+  useGetBannerQuery,
+  useCreateBannerMutation,
+  useUpdateBannerMutation,
+  useDeleteBannerMutation,
+  useGetBannersByPageQuery,
+  useGetCarouselBannersQuery,
+  useUpdateBannerSortOrderMutation,
 } = api
 
 export const store = configureStore({
