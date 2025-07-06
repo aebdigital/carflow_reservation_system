@@ -499,7 +499,7 @@ Returns additional services for a specific rental company identified by user ema
 
 **Example Request:**
 ```bash
-curl "https://carflow-reservation-system.onrender.com/api/public/users/admin@company.com/services"
+curl "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/services"
 ```
 
 ### 18. Get Services for Vehicle by User/Tenant
@@ -513,7 +513,7 @@ Returns additional services available for a specific vehicle within a tenant.
 
 **Example Request:**
 ```bash
-curl "https://carflow-reservation-system.onrender.com/api/public/users/admin@company.com/services/vehicle/vehicle_id_here"
+curl "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/services/vehicle/vehicle_id_here"
 ```
 
 ### 19. Calculate Service Price by User/Tenant
@@ -537,7 +537,7 @@ Calculate the price for a specific additional service based on parameters for a 
 
 **Example Request:**
 ```bash
-curl -X POST "https://carflow-reservation-system.onrender.com/api/public/users/admin@company.com/services/calculate-price" \
+curl -X POST "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/services/calculate-price" \
   -H "Content-Type: application/json" \
   -d '{
     "serviceId": "service_id_here",
@@ -582,7 +582,7 @@ Returns cars for a specific rental company identified by user email.
 
 **Example Request:**
 ```bash
-curl "https://carflow-reservation-system.onrender.com/api/public/users/admin@company.com/cars"
+curl "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/cars"
 ```
 
 ### 4. Get Single Car by User/Tenant
@@ -590,7 +590,7 @@ curl "https://carflow-reservation-system.onrender.com/api/public/users/admin@com
 
 **Example Request:**
 ```bash
-curl "https://carflow-reservation-system.onrender.com/api/public/users/admin@company.com/cars/car_id"
+curl "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/cars/car_id"
 ```
 
 ### 5. Check Car Availability
@@ -604,7 +604,7 @@ Check if a car is available for specific dates.
 
 **Example Request:**
 ```bash
-curl "https://carflow-reservation-system.onrender.com/api/public/users/admin@company.com/cars/car_id/availability?startDate=2025-07-01&endDate=2025-07-05"
+curl "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/cars/car_id/availability?startDate=2025-07-01&endDate=2025-07-05"
 ```
 
 **Example Response:**
@@ -630,13 +630,40 @@ curl "https://carflow-reservation-system.onrender.com/api/public/users/admin@com
 
 **Example Request:**
 ```bash
-curl "https://carflow-reservation-system.onrender.com/api/public/users/admin@company.com/cars/category/economy"
+curl "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/cars/category/economy"
 ```
 
 ### 7. Get Available Features
 **GET** `/users/:email/features`
 
 Returns all unique features available across cars for a tenant.
+
+**Example Request:**
+```bash
+curl "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/features"
+```
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "count": 15,
+  "data": [
+    {
+      "name": "air-conditioning",
+      "displayName": "Klimatizácia",
+      "icon": "❄️",
+      "category": "comfort"
+    },
+    {
+      "name": "gps",
+      "displayName": "GPS navigácia", 
+      "icon": "🗺️",
+      "category": "navigation"
+    }
+  ]
+}
+```
 
 ## Reservation Endpoints
 
@@ -681,36 +708,202 @@ Create a reservation and automatically create customer account if needed.
 
 Same as above but for a specific tenant. Supports discount codes.
 
+**Parameters:**
+- `email` (string, required): User's email to identify tenant
+
 **Additional Fields:**
 - `discountCode` (string): Optional discount code
+
+**Example Request:**
+```bash
+curl -X POST "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/reservations" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "customer@example.com",
+    "phone": "+421901234567",
+    "carId": "car_id_here",
+    "startDate": "2025-07-01T10:00:00.000Z",
+    "endDate": "2025-07-05T10:00:00.000Z",
+    "discountCode": "SUMMER2024"
+  }'
+```
 
 ## Website Settings Endpoints
 
 ### 10. Get Website Settings
 **GET** `/users/:email/website-settings`
 
-Returns public website settings for a tenant.
+Returns public website settings for a tenant including branding, contact info, and configuration.
+
+**Parameters:**
+- `email` (string, required): User's email to identify tenant
+
+**Example Request:**
+```bash
+curl "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/website-settings"
+```
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "settings_id",
+    "branding": {
+      "companyName": "Rival Car Rental",
+      "logo": {
+        "url": "https://storage.googleapis.com/bucket/logo.png",
+        "alt": "Company Logo"
+      },
+      "favicon": {
+        "url": "https://storage.googleapis.com/bucket/favicon.ico"
+      },
+      "colors": {
+        "primary": "#1976D2",
+        "secondary": "#FFC107",
+        "accent": "#4CAF50"
+      }
+    },
+    "contact": {
+      "phone": "+421901234567",
+      "email": "info@rival.sk",
+      "address": {
+        "street": "Hlavná 123",
+        "city": "Bratislava",
+        "zipCode": "12345",
+        "country": "Slovensko"
+      },
+      "workingHours": {
+        "monday": "8:00-18:00",
+        "tuesday": "8:00-18:00",
+        "wednesday": "8:00-18:00",
+        "thursday": "8:00-18:00",
+        "friday": "8:00-18:00",
+        "saturday": "9:00-15:00",
+        "sunday": "Zatvorené"
+      }
+    },
+    "features": {
+      "onlineReservation": true,
+      "paymentGateway": true,
+      "multiLanguage": ["sk", "en"],
+      "currency": "EUR"
+    },
+    "seo": {
+      "title": "Rival Car Rental - Prenájom áut",
+      "description": "Profesionálny prenájom vozidiel v Bratislave",
+      "keywords": ["prenájom áut", "car rental", "Bratislava"]
+    }
+  }
+}
+```
 
 ### 11. Get Info Bar
 **GET** `/users/:email/info-bar`
 
-Returns active info bar configuration.
+Returns active info bar configuration for displaying promotional messages.
+
+**Parameters:**
+- `email` (string, required): User's email to identify tenant
 
 **Query Parameters:**
-- `page` (string): Current page (homepage, pricing, all-pages)
+- `page` (string, optional): Current page (homepage, pricing, all-pages)
+
+**Example Request:**
+```bash
+curl "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/info-bar?page=homepage"
+```
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "infobar_id",
+    "isActive": true,
+    "message": "🎉 Letná akcia! Zľava 20% na všetky rezervácie do 31.8.2024",
+    "link": {
+      "url": "https://rival.carflow.sk/akcie",
+      "text": "Viac informácií",
+      "isEnabled": true
+    },
+    "styling": {
+      "backgroundColor": "#4CAF50",
+      "textColor": "#FFFFFF",
+      "fontSize": "14px",
+      "position": "top"
+    },
+    "schedule": {
+      "startDate": "2024-06-01T00:00:00Z",
+      "endDate": "2024-08-31T23:59:59Z",
+      "isScheduled": true
+    }
+  }
+}
+```
 
 ### 12. Get Modal/Popup
 **GET** `/users/:email/modal`
 
-Returns active modal/popup configuration.
+Returns active modal/popup configuration for displaying promotional popups.
+
+**Parameters:**
+- `email` (string, required): User's email to identify tenant
 
 **Query Parameters:**
-- `page` (string): Current page context
+- `page` (string, optional): Current page context
+
+**Example Request:**
+```bash
+curl "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/modal?page=homepage"
+```
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "modal_id",
+    "isActive": true,
+    "title": "Vítajte v Rival Car Rental!",
+    "content": "Získajte 15% zľavu na vašu prvú rezerváciu. Použite kód: WELCOME15",
+    "image": {
+      "url": "https://storage.googleapis.com/bucket/welcome_modal.jpg",
+      "alt": "Welcome modal image"
+    },
+    "button": {
+      "text": "Rezervovať teraz",
+      "url": "https://rival.carflow.sk/rezervacia",
+      "style": "primary"
+    },
+    "settings": {
+      "showDelay": 3000,
+      "autoClose": false,
+      "showOnce": true,
+      "cookieExpiry": 7
+    },
+    "styling": {
+      "backgroundColor": "#FFFFFF",
+      "textColor": "#333333",
+      "borderRadius": "8px",
+      "overlay": {
+        "backgroundColor": "#000000",
+        "opacity": 0.7
+      }
+    }
+  }
+}
+```
 
 ### 13. Newsletter Subscription
 **POST** `/users/:email/newsletter`
 
-Subscribe to newsletter.
+Subscribe to newsletter for a specific tenant.
+
+**Parameters:**
+- `email` (string, required): User's email to identify tenant
 
 **Request Body:**
 ```json
@@ -719,6 +912,288 @@ Subscribe to newsletter.
   "firstName": "John",
   "lastName": "Doe"
 }
+```
+
+**Example Request:**
+```bash
+curl -X POST "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/newsletter" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subscriberEmail": "subscriber@example.com",
+    "firstName": "John",
+    "lastName": "Doe"
+  }'
+```
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "message": "Successfully subscribed to newsletter",
+  "data": {
+    "email": "subscriber@example.com",
+    "subscribedAt": "2024-07-15T10:30:00Z"
+  }
+}
+```
+
+## Complete Integration Example for rival@test.sk
+
+Here's a complete example showing how to integrate all endpoints for the rival@test.sk tenant:
+
+```javascript
+const API_BASE = 'https://carflow-reservation-system.onrender.com/api/public';
+const USER_EMAIL = 'rival@test.sk';
+
+// 1. Get website settings and branding
+const websiteSettings = await fetch(`${API_BASE}/users/${USER_EMAIL}/website-settings`);
+const settings = await websiteSettings.json();
+console.log('Company:', settings.data.branding.companyName);
+
+// 2. Get info bar for homepage
+const infoBarResponse = await fetch(`${API_BASE}/users/${USER_EMAIL}/info-bar?page=homepage`);
+const infoBar = await infoBarResponse.json();
+if (infoBar.data?.isActive) {
+  console.log('Info bar message:', infoBar.data.message);
+}
+
+// 3. Get modal settings
+const modalResponse = await fetch(`${API_BASE}/users/${USER_EMAIL}/modal?page=homepage`);
+const modal = await modalResponse.json();
+if (modal.data?.isActive) {
+  console.log('Modal title:', modal.data.title);
+}
+
+// 4. Get homepage banners
+const bannersResponse = await fetch(`${API_BASE}/users/${USER_EMAIL}/banners/page/homepage`);
+const banners = await bannersResponse.json();
+console.log('Homepage banners:', banners.count);
+
+// 5. Get available cars
+const carsResponse = await fetch(`${API_BASE}/users/${USER_EMAIL}/cars?available=true&limit=12`);
+const cars = await carsResponse.json();
+console.log('Available cars:', cars.count);
+
+// 6. Get economy cars specifically
+const economyCars = await fetch(`${API_BASE}/users/${USER_EMAIL}/cars/category/economy`);
+const economyData = await economyCars.json();
+console.log('Economy cars:', economyData.count);
+
+// 7. Check car availability
+const carId = cars.data[0]._id;
+const availability = await fetch(`${API_BASE}/users/${USER_EMAIL}/cars/${carId}/availability?startDate=2024-07-15&endDate=2024-07-20`);
+const availabilityData = await availability.json();
+console.log('Car available:', availabilityData.data.isAvailable);
+
+// 8. Get additional services
+const servicesResponse = await fetch(`${API_BASE}/users/${USER_EMAIL}/services`);
+const services = await servicesResponse.json();
+console.log('Available services:', services.count);
+
+// 9. Get services for specific vehicle
+const vehicleServices = await fetch(`${API_BASE}/users/${USER_EMAIL}/services/vehicle/${carId}`);
+const vehicleServicesData = await vehicleServices.json();
+console.log('Vehicle-specific services:', vehicleServicesData.count);
+
+// 10. Calculate service price
+const priceCalculation = await fetch(`${API_BASE}/users/${USER_EMAIL}/services/calculate-price`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    serviceId: services.data[0]._id,
+    quantity: 1,
+    days: 5
+  })
+});
+const priceData = await priceCalculation.json();
+console.log('Service price:', priceData.data.calculatedPrice);
+
+// 11. Get available features
+const featuresResponse = await fetch(`${API_BASE}/users/${USER_EMAIL}/features`);
+const features = await featuresResponse.json();
+console.log('Available features:', features.data.map(f => f.displayName));
+
+// 12. Create a reservation
+const reservationData = {
+  firstName: 'John',
+  lastName: 'Doe',
+  email: 'john@example.com',
+  phone: '+421901234567',
+  carId: carId,
+  startDate: '2024-07-15T10:00:00Z',
+  endDate: '2024-07-20T10:00:00Z',
+  discountCode: 'SUMMER2024'
+};
+
+const createReservation = await fetch(`${API_BASE}/users/${USER_EMAIL}/reservations`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(reservationData)
+});
+const reservationResult = await createReservation.json();
+console.log('Reservation created:', reservationResult.success);
+
+// 13. Subscribe to newsletter
+const newsletterData = {
+  subscriberEmail: 'subscriber@example.com',
+  firstName: 'Jane',
+  lastName: 'Smith'
+};
+
+const subscribe = await fetch(`${API_BASE}/users/${USER_EMAIL}/newsletter`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(newsletterData)
+});
+const subscribeResult = await subscribe.json();
+console.log('Newsletter subscription:', subscribeResult.success);
+```
+
+## React Integration Example
+
+```jsx
+import React, { useState, useEffect } from 'react';
+
+const RivalCarRental = () => {
+  const [websiteData, setWebsiteData] = useState({});
+  const [cars, setCars] = useState([]);
+  const [banners, setBanners] = useState([]);
+  const [infoBar, setInfoBar] = useState(null);
+  const [modal, setModal] = useState(null);
+
+  const API_BASE = 'https://carflow-reservation-system.onrender.com/api/public';
+  const USER_EMAIL = 'rival@test.sk';
+
+  useEffect(() => {
+    const loadWebsiteData = async () => {
+      try {
+        // Load all website data in parallel
+        const [settingsRes, carsRes, bannersRes, infoBarRes, modalRes] = await Promise.all([
+          fetch(`${API_BASE}/users/${USER_EMAIL}/website-settings`),
+          fetch(`${API_BASE}/users/${USER_EMAIL}/cars?available=true&limit=12`),
+          fetch(`${API_BASE}/users/${USER_EMAIL}/banners/page/homepage`),
+          fetch(`${API_BASE}/users/${USER_EMAIL}/info-bar?page=homepage`),
+          fetch(`${API_BASE}/users/${USER_EMAIL}/modal?page=homepage`)
+        ]);
+
+        const [settings, carsData, bannersData, infoBarData, modalData] = await Promise.all([
+          settingsRes.json(),
+          carsRes.json(),
+          bannersRes.json(),
+          infoBarRes.json(),
+          modalRes.json()
+        ]);
+
+        setWebsiteData(settings.data);
+        setCars(carsData.data);
+        setBanners(bannersData.data);
+        setInfoBar(infoBarData.data?.isActive ? infoBarData.data : null);
+        setModal(modalData.data?.isActive ? modalData.data : null);
+      } catch (error) {
+        console.error('Error loading website data:', error);
+      }
+    };
+
+    loadWebsiteData();
+  }, []);
+
+  return (
+    <div className="rival-website">
+      {/* Info Bar */}
+      {infoBar && (
+        <div 
+          className="info-bar"
+          style={{ 
+            backgroundColor: infoBar.styling.backgroundColor,
+            color: infoBar.styling.textColor 
+          }}
+        >
+          {infoBar.message}
+          {infoBar.link?.isEnabled && (
+            <a href={infoBar.link.url}>{infoBar.link.text}</a>
+          )}
+        </div>
+      )}
+
+      {/* Header with branding */}
+      <header>
+        <img 
+          src={websiteData.branding?.logo?.url} 
+          alt={websiteData.branding?.companyName}
+        />
+        <h1>{websiteData.branding?.companyName}</h1>
+      </header>
+
+      {/* Homepage banners */}
+      <section className="hero-banners">
+        {banners.map(banner => (
+          <div key={banner._id} className="banner">
+            <img src={banner.image?.url} alt={banner.image?.alt} />
+            <div className="banner-content">
+              <h2>{banner.title}</h2>
+              <p>{banner.description}</p>
+              {banner.link?.isEnabled && (
+                <a 
+                  href={banner.link.url} 
+                  target={banner.link.target}
+                  className="banner-button"
+                >
+                  {banner.link.text}
+                </a>
+              )}
+            </div>
+          </div>
+        ))}
+      </section>
+
+      {/* Available cars */}
+      <section className="cars-section">
+        <h2>Dostupné vozidlá</h2>
+        <div className="cars-grid">
+          {cars.map(car => (
+            <div key={car._id} className="car-card">
+              <img src={car.images[0]?.url} alt={`${car.brand} ${car.model}`} />
+              <h3>{car.brand} {car.model}</h3>
+              <p className="car-price">{car.pricing.dailyRate}€/deň</p>
+              <div className="car-features">
+                {car.features.slice(0, 3).map(feature => (
+                  <span key={feature} className="feature">{feature}</span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Contact info */}
+      <footer>
+        <div className="contact-info">
+          <p>📞 {websiteData.contact?.phone}</p>
+          <p>✉️ {websiteData.contact?.email}</p>
+          <p>📍 {websiteData.contact?.address?.street}, {websiteData.contact?.address?.city}</p>
+        </div>
+      </footer>
+
+      {/* Modal */}
+      {modal && (
+        <div className="modal-overlay" style={{ backgroundColor: modal.styling.overlay.backgroundColor }}>
+          <div className="modal" style={{ backgroundColor: modal.styling.backgroundColor }}>
+            <h2>{modal.title}</h2>
+            <p>{modal.content}</p>
+            {modal.image?.url && <img src={modal.image.url} alt={modal.image.alt} />}
+            {modal.button && (
+              <a href={modal.button.url} className={`modal-button ${modal.button.style}`}>
+                {modal.button.text}
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default RivalCarRental;
 ```
 
 ## Car Categories
@@ -993,7 +1468,7 @@ Same enhanced filtering capabilities as above, but filtered by specific tenant.
 
 **Example Request:**
 ```bash
-curl "https://carflow-reservation-system.onrender.com/api/public/users/admin@carflow.sk/cars?carClass=stredna&transmission=automat&startDate=2024-01-15&endDate=2024-01-20"
+curl "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/cars?carClass=stredna&transmission=automat&startDate=2024-01-15&endDate=2024-01-20"
 ```
 
 ## Public Banner Endpoints
@@ -1083,7 +1558,7 @@ Returns active banners for a specific tenant identified by user email.
 
 **Example Request:**
 ```bash
-curl "https://carflow-reservation-system.onrender.com/api/public/users/admin@carflow.sk/banners?page=homepage"
+curl "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/banners?page=homepage"
 ```
 
 **Example Response:**
@@ -1126,7 +1601,21 @@ curl "https://carflow-reservation-system.onrender.com/api/public/users/admin@car
 }
 ```
 
-### 20. Get Banners by Page
+### 20. Get Banners by Page and User/Tenant  
+**GET** `/users/:email/banners/page/:page`
+
+Returns banners for a specific page and tenant.
+
+**Parameters:**
+- `email` (string, required): User's email to identify tenant
+- `page` (string, required): Page identifier (homepage, car-listing, reservation, all-pages)
+
+**Example Request:**
+```bash
+curl "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/banners/page/homepage"
+```
+
+### 21. Get Banners by Page (Generic)
 **GET** `/banners/page/:page`
 
 Returns banners for a specific page (same as adding page parameter to main endpoint).
@@ -1145,10 +1634,10 @@ curl "https://carflow-reservation-system.onrender.com/api/public/banners/page/ca
 
 ### Banner Integration Examples
 
-**Homepage Hero Banner:**
+**Homepage Hero Banner for rival@test.sk:**
 ```javascript
-// Fetch homepage banners
-const response = await fetch('/api/public/banners?tenantId=YOUR_TENANT_ID&page=homepage&position=top');
+// Fetch homepage banners for Rival Car Rental
+const response = await fetch('/api/public/users/rival@test.sk/banners?page=homepage&position=top');
 const banners = await response.json();
 
 // Display as carousel if multiple banners
@@ -1158,10 +1647,10 @@ if (banners.data.length > 1) {
 }
 ```
 
-**Car Listing Sidebar Banner:**
+**Car Listing Sidebar Banner for rival@test.sk:**
 ```javascript
 // Fetch sidebar banners for car listing page
-const response = await fetch('/api/public/banners?tenantId=YOUR_TENANT_ID&page=car-listing&position=sidebar');
+const response = await fetch('/api/public/users/rival@test.sk/banners?page=car-listing&position=sidebar');
 const banners = await response.json();
 
 // Display as static banners
@@ -1170,6 +1659,33 @@ banners.data.forEach(banner => {
   // Show banner.image.url with banner.title overlay
   // Add click handler for banner.link.url if enabled
 });
+```
+
+**Complete Banner Integration for rival@test.sk:**
+```javascript
+const loadAllBanners = async () => {
+  const USER_EMAIL = 'rival@test.sk';
+  const API_BASE = 'https://carflow-reservation-system.onrender.com/api/public';
+  
+  // Load banners for different pages
+  const [homePageBanners, carListingBanners, reservationBanners] = await Promise.all([
+    fetch(`${API_BASE}/users/${USER_EMAIL}/banners/page/homepage`),
+    fetch(`${API_BASE}/users/${USER_EMAIL}/banners/page/car-listing`),
+    fetch(`${API_BASE}/users/${USER_EMAIL}/banners/page/reservation`)
+  ]);
+  
+  const [homeData, carData, reservationData] = await Promise.all([
+    homePageBanners.json(),
+    carListingBanners.json(),
+    reservationBanners.json()
+  ]);
+  
+  return {
+    homepage: homeData.data,
+    carListing: carData.data,
+    reservation: reservationData.data
+  };
+};
 ```
 
 ## Error Handling
