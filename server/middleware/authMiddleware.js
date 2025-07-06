@@ -55,6 +55,27 @@ const protect = async (req, res, next) => {
   }
 };
 
+// Generic authorization function that accepts roles
+const authorize = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Access denied. Not authenticated.'
+      });
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: `Access denied. Required roles: ${roles.join(', ')}`
+      });
+    }
+
+    next();
+  };
+};
+
 // Check if user has admin role
 const requireAdmin = (req, res, next) => {
     if (!req.user) {
@@ -247,6 +268,7 @@ const restrictRivalDomain = async (req, res, next) => {
 
 module.exports = {
   protect,
+  authorize,
   requireAdmin,
   requireStaff,
   requireOwnershipOrStaff,
