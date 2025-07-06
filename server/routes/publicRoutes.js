@@ -21,43 +21,60 @@ const {
   getPublicCar
 } = require('../controllers/publicController');
 
+// Import additional services controller
+const {
+  getPublicServices,
+  getServicesForVehicle,
+  getServicesForVehiclePublic,
+  calculateServicePrice,
+  calculateServicePricePublic
+} = require('../controllers/additionalServiceController');
+
+// Import banner controller
+const {
+  getPublicBanners,
+  getPublicBannersByUser
+} = require('../controllers/bannerController');
+
 const router = express.Router();
 
 // Public car browsing endpoints (no authentication required)
 router.get('/cars', getPublicCars); // Get all cars (public)
-router.get('/cars/:id', getPublicCar); // Get specific car details (public)
-router.get('/cars/:id/availability', getCarAvailability); // Check car availability
-router.get('/cars/:id/calendar', getCarCalendar); // Get car booking calendar
-router.get('/cars/location/:locationName', getCarsByLocation); // Get cars by location
+router.get('/cars/:id', getPublicCar); // Get single car (public)
 
-// Public reservation endpoint (no authentication required)
-router.post('/reservations', createPublicReservation); // Create reservation + customer
+// Public Additional Services endpoints (no authentication required)
+router.get('/services', getPublicServices); // Get all public additional services
+router.get('/services/vehicle/:vehicleId', getServicesForVehiclePublic); // Get services for specific vehicle
+router.post('/services/calculate-price', calculateServicePricePublic); // Calculate service price
 
-// === NEW TENANT-AWARE ENDPOINTS ===
-// These endpoints filter by user email to show only that user's tenant cars
+// Public Banner endpoints (no authentication required)
+router.get('/banners', getPublicBanners); // Get public banners
+router.get('/banners/page/:page', getPublicBanners); // Get banners by page
 
-// Get cars for a specific user/tenant
+// User/tenant-specific endpoints (public access but filtered by tenant)
 router.get('/users/:email/cars', getCarsByUser);
-
-// Get single car details for a specific user/tenant
 router.get('/users/:email/cars/:carId', getCarByUser);
-
-// Check car availability for specific dates within a user/tenant
 router.get('/users/:email/cars/:carId/availability', getCarAvailabilityByUser);
-
-// Get cars by category for a specific user/tenant
 router.get('/users/:email/cars/category/:category', getCarsByCategoryAndUser);
-
-// Get available features/amenities for a specific user/tenant
 router.get('/users/:email/features', getAvailableFeaturesByUser);
-
-// Create reservation for a specific user/tenant
 router.post('/users/:email/reservations', createReservationByUser);
-
-// Website settings routes (tenant-specific)
 router.get('/users/:email/website-settings', getWebsiteSettingsByUser);
 router.get('/users/:email/info-bar', getInfoBarByUser);
 router.get('/users/:email/modal', getModalByUser);
 router.post('/users/:email/newsletter', subscribeToNewsletter);
+
+// User/tenant-specific services endpoints
+router.get('/users/:email/services', getPublicServices);
+router.get('/users/:email/services/vehicle/:vehicleId', getServicesForVehiclePublic);
+router.post('/users/:email/services/calculate-price', calculateServicePricePublic);
+
+// User/tenant-specific banner endpoints
+router.get('/users/:email/banners', getPublicBannersByUser);
+router.get('/users/:email/banners/page/:page', getPublicBannersByUser);
+
+// Availability check endpoint (utility)
+router.get('/availability', getCarAvailability);
+router.get('/cars/location/:location', getCarsByLocation);
+router.get('/cars/:id/calendar', getCarCalendar);
 
 module.exports = router; 

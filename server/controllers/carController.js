@@ -115,23 +115,23 @@ const createCar = asyncHandler(async (req, res, next) => {
     console.log('🚗 [CAR CREATE] Files received:', req.files?.length || 0);
     console.log('🚗 [CAR CREATE] Body keys:', Object.keys(req.body || {}));
   
-    // Parse FormData if it contains nested objects
-    if (req.body && typeof req.body === 'object') {
+  // Parse FormData if it contains nested objects
+  if (req.body && typeof req.body === 'object') {
       console.log('🚗 [CAR CREATE] Processing FormData...');
-      // Handle location parsing
-      if (req.body['location[name]']) {
-        req.body.location = {
-          name: req.body['location[name]'],
-          address: {
-            street: req.body['location[address][street]'] || '',
-            city: req.body['location[address][city]'] || '',
-            state: req.body['location[address][state]'] || '',
-            zipCode: req.body['location[address][zipCode]'] || '',
-            country: req.body['location[address][country]'] || ''
-          }
-        };
-        
-        // Clean up the flat keys
+    // Handle location parsing
+    if (req.body['location[name]']) {
+      req.body.location = {
+        name: req.body['location[name]'],
+        address: {
+          street: req.body['location[address][street]'] || '',
+          city: req.body['location[address][city]'] || '',
+          state: req.body['location[address][state]'] || '',
+          zipCode: req.body['location[address][zipCode]'] || '',
+          country: req.body['location[address][country]'] || ''
+        }
+      };
+      
+      // Clean up the flat keys
         Object.keys(req.body).forEach(key => {
           if (key.startsWith('location[')) {
             delete req.body[key];
@@ -280,38 +280,38 @@ const createCar = asyncHandler(async (req, res, next) => {
       }
 
       // Handle features array (legacy)
-      if (req.body['features[]']) {
-        req.body.features = Array.isArray(req.body['features[]']) 
-          ? req.body['features[]'] 
-          : [req.body['features[]']];
-        delete req.body['features[]'];
-      }
+    if (req.body['features[]']) {
+      req.body.features = Array.isArray(req.body['features[]']) 
+        ? req.body['features[]'] 
+        : [req.body['features[]']];
+      delete req.body['features[]'];
+    }
 
-      // Handle maintenance object
-      const maintenanceKeys = Object.keys(req.body).filter(key => key.startsWith('maintenance['));
-      if (maintenanceKeys.length > 0) {
-        req.body.maintenance = {};
-        maintenanceKeys.forEach(key => {
-          const fieldName = key.match(/maintenance\[(.+)\]/)?.[1];
-          if (fieldName) {
-            req.body.maintenance[fieldName] = req.body[key];
-            delete req.body[key];
-          }
-        });
-      }
+    // Handle maintenance object
+    const maintenanceKeys = Object.keys(req.body).filter(key => key.startsWith('maintenance['));
+    if (maintenanceKeys.length > 0) {
+      req.body.maintenance = {};
+      maintenanceKeys.forEach(key => {
+        const fieldName = key.match(/maintenance\[(.+)\]/)?.[1];
+        if (fieldName) {
+          req.body.maintenance[fieldName] = req.body[key];
+          delete req.body[key];
+        }
+      });
+    }
 
-      // Handle insurance object
-      const insuranceKeys = Object.keys(req.body).filter(key => key.startsWith('insurance['));
-      if (insuranceKeys.length > 0) {
-        req.body.insurance = {};
-        insuranceKeys.forEach(key => {
-          const fieldName = key.match(/insurance\[(.+)\]/)?.[1];
-          if (fieldName) {
-            req.body.insurance[fieldName] = req.body[key];
-            delete req.body[key];
-          }
-        });
-      }
+    // Handle insurance object
+    const insuranceKeys = Object.keys(req.body).filter(key => key.startsWith('insurance['));
+    if (insuranceKeys.length > 0) {
+      req.body.insurance = {};
+      insuranceKeys.forEach(key => {
+        const fieldName = key.match(/insurance\[(.+)\]/)?.[1];
+        if (fieldName) {
+          req.body.insurance[fieldName] = req.body[key];
+          delete req.body[key];
+        }
+      });
+    }
 
       // Convert string numbers to actual numbers for specific fields
       const numericFields = [
@@ -373,12 +373,12 @@ const createCar = asyncHandler(async (req, res, next) => {
 
     console.log('🚗 [CAR CREATE] FormData processing complete');
 
-    // Add tenant information to car data
-    const carData = { 
-      ...req.body,
-      tenantId: req.user.tenantId,
-      owner: req.user._id
-    };
+  // Add tenant information to car data
+  const carData = { 
+    ...req.body,
+    tenantId: req.user.tenantId,
+    owner: req.user._id
+  };
 
     console.log('🚗 [CAR CREATE] Added tenant/owner info');
 
@@ -596,8 +596,8 @@ const createCar = asyncHandler(async (req, res, next) => {
     console.log('🚗 [CAR CREATE] carData.mileage JSON:', JSON.stringify(carData.mileage, null, 2));
     console.log('🚗 [CAR CREATE] ===================================');
     console.log('🚗 [CAR CREATE] Attempting to create car...');
-
-    // Create car first to get the ID
+  
+  // Create car first to get the ID
     let car;
     try {
       console.log('🚗 [CAR CREATE] Inside try block, calling Car.create...');
@@ -632,54 +632,54 @@ const createCar = asyncHandler(async (req, res, next) => {
       return next(new AppError('Failed to create car. Please check your input and try again.', 400));
     }
 
-    // Handle uploaded images if any
-    if (req.files && req.files.length > 0) {
-      const uploadPromises = req.files.map(async (file, index) => {
-        try {
-          const result = await cloudStorage.uploadCarImage(
-            file.buffer,
-            file.originalname,
-            car._id.toString(),
-            req.user, // Pass user for tenant-specific folder
-            `Car image ${index + 1}`
-          );
+  // Handle uploaded images if any
+  if (req.files && req.files.length > 0) {
+    const uploadPromises = req.files.map(async (file, index) => {
+      try {
+        const result = await cloudStorage.uploadCarImage(
+          file.buffer,
+          file.originalname,
+          car._id.toString(),
+          req.user, // Pass user for tenant-specific folder
+          `Car image ${index + 1}`
+        );
 
-          return {
-            url: result.urls.medium, // Use medium size as default
-            description: result.description,
-            isPrimary: index === 0,
-            filename: result.filename,
-            uploadDate: result.uploadDate,
+        return {
+          url: result.urls.medium, // Use medium size as default
+          description: result.description,
+          isPrimary: index === 0,
+          filename: result.filename,
+          uploadDate: result.uploadDate,
             urls: result.urls, // Store all size variants
             order: index
-          };
-        } catch (error) {
-          console.error(`Failed to upload image ${index + 1}:`, error);
-          // If Google Cloud Storage is not configured, create a placeholder
-          return {
-            url: `/placeholder-car-image-${index + 1}.jpg`,
-            description: `Car image ${index + 1} (Upload pending - configure Google Cloud Storage)`,
-            isPrimary: index === 0,
-            filename: file.originalname,
-            uploadDate: new Date(),
+        };
+      } catch (error) {
+        console.error(`Failed to upload image ${index + 1}:`, error);
+        // If Google Cloud Storage is not configured, create a placeholder
+        return {
+          url: `/placeholder-car-image-${index + 1}.jpg`,
+          description: `Car image ${index + 1} (Upload pending - configure Google Cloud Storage)`,
+          isPrimary: index === 0,
+          filename: file.originalname,
+          uploadDate: new Date(),
             order: index,
-            urls: {
-              thumbnail: `/placeholder-car-image-${index + 1}-thumb.jpg`,
-              medium: `/placeholder-car-image-${index + 1}-medium.jpg`,
-              large: `/placeholder-car-image-${index + 1}-large.jpg`,
-              original: `/placeholder-car-image-${index + 1}.jpg`
-            }
-          };
-        }
-      });
-
-      const uploadedImages = (await Promise.all(uploadPromises)).filter(img => img !== null);
-      
-      if (uploadedImages.length > 0) {
-        car.images = uploadedImages;
-        await car.save();
+          urls: {
+            thumbnail: `/placeholder-car-image-${index + 1}-thumb.jpg`,
+            medium: `/placeholder-car-image-${index + 1}-medium.jpg`,
+            large: `/placeholder-car-image-${index + 1}-large.jpg`,
+            original: `/placeholder-car-image-${index + 1}.jpg`
+          }
+        };
       }
+    });
+
+    const uploadedImages = (await Promise.all(uploadPromises)).filter(img => img !== null);
+    
+    if (uploadedImages.length > 0) {
+      car.images = uploadedImages;
+      await car.save();
     }
+  }
 
     // Check for document validity notifications
     const notifications = car.checkDocumentValidity();
@@ -688,10 +688,10 @@ const createCar = asyncHandler(async (req, res, next) => {
       await car.save();
     }
 
-    res.status(201).json({
-      success: true,
-      data: car
-    });
+  res.status(201).json({
+    success: true,
+    data: car
+  });
   } catch (error) {
     console.error('Error in createCar:', error);
     return next(new AppError('Failed to create car. Please check your input and try again.', 400));
@@ -713,15 +713,15 @@ const updateCar = asyncHandler(async (req, res, next) => {
     console.log('🚗 [CAR UPDATE] Raw request body:', JSON.stringify(req.body, null, 2));
 
     console.log('🚗 [CAR UPDATE] Step 1: Finding existing car...');
-    let car = await Car.findOne({ 
-      _id: req.params.id, 
-      tenantId: req.user.tenantId 
-    });
+  let car = await Car.findOne({ 
+    _id: req.params.id, 
+    tenantId: req.user.tenantId 
+  });
 
-    if (!car) {
+  if (!car) {
       console.log('🚗 [CAR UPDATE] Car not found!');
-      return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
-    }
+    return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
+  }
 
     console.log('🚗 [CAR UPDATE] Step 2: Found existing car:', car._id);
     
@@ -775,24 +775,24 @@ const updateCar = asyncHandler(async (req, res, next) => {
     }
 
     console.log('🚗 [CAR UPDATE] Step 3: Checking if FormData processing needed...');
-    // Parse FormData if it contains nested objects
-    if (req.body && typeof req.body === 'object') {
+  // Parse FormData if it contains nested objects
+  if (req.body && typeof req.body === 'object') {
       console.log('🚗 [CAR UPDATE] Step 4: Starting FormData processing...');
-      // Handle location parsing
-      if (req.body['location[name]']) {
+    // Handle location parsing
+    if (req.body['location[name]']) {
         console.log('🚗 [CAR UPDATE] Step 4a: Processing location fields...');
-        req.body.location = {
-          name: req.body['location[name]'],
-          address: {
-            street: req.body['location[address][street]'] || '',
-            city: req.body['location[address][city]'] || '',
-            state: req.body['location[address][state]'] || '',
-            zipCode: req.body['location[address][zipCode]'] || '',
-            country: req.body['location[address][country]'] || ''
-          }
-        };
-        
-        // Clean up the flat keys
+      req.body.location = {
+        name: req.body['location[name]'],
+        address: {
+          street: req.body['location[address][street]'] || '',
+          city: req.body['location[address][city]'] || '',
+          state: req.body['location[address][state]'] || '',
+          zipCode: req.body['location[address][zipCode]'] || '',
+          country: req.body['location[address][country]'] || ''
+        }
+      };
+      
+      // Clean up the flat keys
         Object.keys(req.body).forEach(key => {
           if (key.startsWith('location[')) {
             delete req.body[key];
@@ -950,41 +950,41 @@ const updateCar = asyncHandler(async (req, res, next) => {
       }
 
       // Handle features array (legacy)
-      if (req.body['features[]']) {
+    if (req.body['features[]']) {
         console.log('🚗 [CAR UPDATE] Step 4k: Processing features array...');
-        req.body.features = Array.isArray(req.body['features[]']) 
-          ? req.body['features[]'] 
-          : [req.body['features[]']];
-        delete req.body['features[]'];
-      }
+      req.body.features = Array.isArray(req.body['features[]']) 
+        ? req.body['features[]'] 
+        : [req.body['features[]']];
+      delete req.body['features[]'];
+    }
 
-      // Handle maintenance object
-      const maintenanceKeys = Object.keys(req.body).filter(key => key.startsWith('maintenance['));
-      if (maintenanceKeys.length > 0) {
+    // Handle maintenance object
+    const maintenanceKeys = Object.keys(req.body).filter(key => key.startsWith('maintenance['));
+    if (maintenanceKeys.length > 0) {
         console.log('🚗 [CAR UPDATE] Step 4l: Processing maintenance fields...');
-        req.body.maintenance = {};
-        maintenanceKeys.forEach(key => {
-          const fieldName = key.match(/maintenance\[(.+)\]/)?.[1];
-          if (fieldName) {
-            req.body.maintenance[fieldName] = req.body[key];
-            delete req.body[key];
-          }
-        });
-      }
+      req.body.maintenance = {};
+      maintenanceKeys.forEach(key => {
+        const fieldName = key.match(/maintenance\[(.+)\]/)?.[1];
+        if (fieldName) {
+          req.body.maintenance[fieldName] = req.body[key];
+          delete req.body[key];
+        }
+      });
+    }
 
-      // Handle insurance object
-      const insuranceKeys = Object.keys(req.body).filter(key => key.startsWith('insurance['));
-      if (insuranceKeys.length > 0) {
+    // Handle insurance object
+    const insuranceKeys = Object.keys(req.body).filter(key => key.startsWith('insurance['));
+    if (insuranceKeys.length > 0) {
         console.log('🚗 [CAR UPDATE] Step 4m: Processing insurance fields...');
-        req.body.insurance = {};
-        insuranceKeys.forEach(key => {
-          const fieldName = key.match(/insurance\[(.+)\]/)?.[1];
-          if (fieldName) {
-            req.body.insurance[fieldName] = req.body[key];
-            delete req.body[key];
-          }
-        });
-      }
+      req.body.insurance = {};
+      insuranceKeys.forEach(key => {
+        const fieldName = key.match(/insurance\[(.+)\]/)?.[1];
+        if (fieldName) {
+          req.body.insurance[fieldName] = req.body[key];
+          delete req.body[key];
+        }
+      });
+    }
 
       // Convert string numbers to actual numbers for specific fields
       const numericFields = [
@@ -1161,8 +1161,8 @@ const updateCar = asyncHandler(async (req, res, next) => {
     
     console.log('🚗 [CAR UPDATE] Data cleaning complete');
     console.log('�� [CAR UPDATE] Step 6: Checking for uploaded images...');
-    // Handle uploaded images
-    if (req.files && req.files.length > 0) {
+  // Handle uploaded images
+  if (req.files && req.files.length > 0) {
       // Safety check: Ensure car object exists before accessing its properties
       if (!car || !car._id) {
         console.error('🚗 [CAR UPDATE] ERROR: Car object is undefined or invalid during image upload');
@@ -1170,55 +1170,55 @@ const updateCar = asyncHandler(async (req, res, next) => {
       }
       
       console.log('🚗 [CAR UPDATE] Step 6a: Processing uploaded images...');
-      const uploadPromises = req.files.map(async (file, index) => {
-        try {
-          const result = await cloudStorage.uploadCarImage(
-            file.buffer,
-            file.originalname,
-            car._id.toString(),
-            req.user, // Pass user for tenant-specific folder
-            `Car image ${index + 1}`
-          );
+    const uploadPromises = req.files.map(async (file, index) => {
+      try {
+        const result = await cloudStorage.uploadCarImage(
+          file.buffer,
+          file.originalname,
+          car._id.toString(),
+          req.user, // Pass user for tenant-specific folder
+          `Car image ${index + 1}`
+        );
 
-          return {
-            url: result.urls.medium,
-            description: result.description,
-            isPrimary: index === 0 && (!car.images || car.images.length === 0),
-            filename: result.filename,
-            uploadDate: result.uploadDate,
+        return {
+          url: result.urls.medium,
+          description: result.description,
+          isPrimary: index === 0 && (!car.images || car.images.length === 0),
+          filename: result.filename,
+          uploadDate: result.uploadDate,
             urls: result.urls,
             order: (car.images?.length || 0) + index
-          };
-        } catch (error) {
-          console.error(`Failed to upload image ${index + 1}:`, error);
-          // If Google Cloud Storage is not configured, create a placeholder
-          return {
-            url: `/placeholder-car-image-${index + 1}.jpg`,
-            description: `Car image ${index + 1} (Upload pending - configure Google Cloud Storage)`,
-            isPrimary: index === 0 && (!car.images || car.images.length === 0),
-            filename: file.originalname,
-            uploadDate: new Date(),
+        };
+      } catch (error) {
+        console.error(`Failed to upload image ${index + 1}:`, error);
+        // If Google Cloud Storage is not configured, create a placeholder
+        return {
+          url: `/placeholder-car-image-${index + 1}.jpg`,
+          description: `Car image ${index + 1} (Upload pending - configure Google Cloud Storage)`,
+          isPrimary: index === 0 && (!car.images || car.images.length === 0),
+          filename: file.originalname,
+          uploadDate: new Date(),
             order: (car.images?.length || 0) + index,
-            urls: {
-              thumbnail: `/placeholder-car-image-${index + 1}-thumb.jpg`,
-              medium: `/placeholder-car-image-${index + 1}-medium.jpg`,
-              large: `/placeholder-car-image-${index + 1}-large.jpg`,
-              original: `/placeholder-car-image-${index + 1}.jpg`
-            }
-          };
-        }
-      });
+          urls: {
+            thumbnail: `/placeholder-car-image-${index + 1}-thumb.jpg`,
+            medium: `/placeholder-car-image-${index + 1}-medium.jpg`,
+            large: `/placeholder-car-image-${index + 1}-large.jpg`,
+            original: `/placeholder-car-image-${index + 1}.jpg`
+          }
+        };
+      }
+    });
 
       console.log('🚗 [CAR UPDATE] Step 6b: Waiting for image uploads...');
-      const uploadedImages = (await Promise.all(uploadPromises)).filter(img => img !== null);
-      
-      if (uploadedImages.length > 0) {
-        console.log('🚗 [CAR UPDATE] Step 6c: Adding images to request body...');
-        // Add new images to existing ones
-        req.body.images = [...(car.images || []), ...uploadedImages];
-      }
-    }
+    const uploadedImages = (await Promise.all(uploadPromises)).filter(img => img !== null);
     
+    if (uploadedImages.length > 0) {
+        console.log('🚗 [CAR UPDATE] Step 6c: Adding images to request body...');
+      // Add new images to existing ones
+      req.body.images = [...(car.images || []), ...uploadedImages];
+    }
+  }
+
     console.log('🚗 [CAR UPDATE] Step 7: Final update data keys:', Object.keys(req.body));
     console.log('🚗 [CAR UPDATE] Step 7a: Final mileage type:', typeof req.body.mileage);
     console.log('🚗 [CAR UPDATE] Step 7b: Final mileage value:', req.body.mileage);
@@ -1232,14 +1232,14 @@ const updateCar = asyncHandler(async (req, res, next) => {
 
     try {
       console.log('🚗 [CAR UPDATE] Step 8a: Inside try block, calling findOneAndUpdate...');
-      car = await Car.findOneAndUpdate(
-        { _id: req.params.id, tenantId: req.user.tenantId },
-        req.body,
-        {
-        new: true,
-        runValidators: true
-        }
-      );
+  car = await Car.findOneAndUpdate(
+    { _id: req.params.id, tenantId: req.user.tenantId },
+    req.body,
+    {
+    new: true,
+    runValidators: true
+    }
+  );
       console.log('🚗 [CAR UPDATE] Step 8b: Car updated successfully! ID:', car._id);
     } catch (error) {
       console.log('🚗 [CAR UPDATE] Error caught in inner try-catch block:', error.name);
@@ -1288,10 +1288,10 @@ const updateCar = asyncHandler(async (req, res, next) => {
     }
 
     console.log('🚗 [CAR UPDATE] Step 10: Sending response...');
-    res.status(200).json({
-      success: true,
-      data: car
-    });
+  res.status(200).json({
+    success: true,
+    data: car
+  });
   } catch (error) {
     console.error('🚗 [CAR UPDATE] OUTER CATCH ERROR - Name:', error.name);
     console.error('🚗 [CAR UPDATE] OUTER CATCH ERROR - Message:', error.message);

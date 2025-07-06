@@ -490,12 +490,27 @@ function AdditionalServices() {
             </Box>
             
             {service.image?.url && (
-              <CardMedia
-                component="img"
-                sx={{ width: 100, height: 100, objectFit: 'cover' }}
-                image={service.image.url}
-                alt={service.name}
-              />
+              <Box sx={{ 
+                width: 100, 
+                height: 100, 
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#f5f5f5',
+                borderRadius: 1
+              }}>
+                <CardMedia
+                  component="img"
+                  sx={{ 
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    objectFit: 'cover',
+                    borderRadius: 1
+                  }}
+                  image={service.image.url}
+                  alt={service.name}
+                />
+              </Box>
             )}
             
             <CardContent sx={{ flex: '1 0 auto', py: 1 }}>

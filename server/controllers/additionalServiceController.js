@@ -342,6 +342,15 @@ const getPublicServices = asyncHandler(async (req, res, next) => {
     tenantId = req.user.tenantId;
   }
   
+  // For tenant-specific endpoints, get tenantId from email parameter
+  if (!tenantId && req.params.email) {
+    const User = require('../models/User');
+    const user = await User.findOne({ email: req.params.email });
+    if (user) {
+      tenantId = user.tenantId;
+    }
+  }
+  
   if (!tenantId) {
     return next(new AppError('Tenant ID is required for public services', 400));
   }
@@ -355,15 +364,30 @@ const getPublicServices = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get services available for specific vehicle
-// @route   GET /api/additional-services/vehicle/:vehicleId
-// @access  Private
-const getServicesForVehicle = asyncHandler(async (req, res, next) => {
+// @desc    Get services available for specific vehicle (public)
+// @route   GET /api/public/services/vehicle/:vehicleId
+// @access  Public
+const getServicesForVehiclePublic = asyncHandler(async (req, res, next) => {
   const Car = require('../models/Car');
+  
+  // Get tenantId from email parameter for tenant-specific routes
+  let tenantId = req.query.tenantId;
+  
+  if (!tenantId && req.params.email) {
+    const User = require('../models/User');
+    const user = await User.findOne({ email: req.params.email });
+    if (user) {
+      tenantId = user.tenantId;
+    }
+  }
+  
+  if (!tenantId) {
+    return next(new AppError('Tenant ID is required for public services', 400));
+  }
   
   const vehicle = await Car.findOne({ 
     _id: req.params.vehicleId, 
-    tenantId: req.user.tenantId 
+    tenantId: tenantId 
   });
 
   if (!vehicle) {
@@ -371,7 +395,7 @@ const getServicesForVehicle = asyncHandler(async (req, res, next) => {
   }
 
   const allServices = await AdditionalService.find({ 
-    tenantId: req.user.tenantId, 
+    tenantId: tenantId, 
     isActive: true 
   }).sort('category sortOrder name');
 
@@ -393,20 +417,156 @@ const getServicesForVehicle = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Get services available for specific vehicle
+// @route   GET /api/additional-services/vehicle/:vehicleId
+// @access  Private
+const getServicesForVehicle = asyncHandler(async (req, res, next) => {
+  const Car = require('../models/Car');
+  
+  // Check if this is a public route (no user) or private route (with user)
+  let tenantId = req.user ? req.user.tenantId : null;
+  
+  // For public routes, get tenantId from email parameter
+  if (!tenantId && req.params.email) {
+    const User = require('../models/User');
+    const user = await User.findOne({ email: req.params.email });
+    if (user) {
+      tenantId = user.tenantId;
+    }
+  }
+  
+  // For public routes, get tenantId from query parameter
+  if (!tenantId && req.query.tenantId) {
+    tenantId = req.query.tenantId;
+  }
+  
+  if (!tenantId) {
+    return next(new AppError('Authentication required or tenant ID must be provided', 401));
+  }
+  
+  const vehicle = await Car.findOne({ 
+    _id: req.params.vehicleId, 
+    tenantId: tenantId 
+  });
+
+  if (!vehicle) {
+    return next(new AppError(`Vehicle not found with id of ${req.params.vehicleId}`, 404));
+  }
+
+  const allServices = await AdditionalService.find({ 
+    tenantId: tenantId, 
+    isActive: true 
+  }).sort('category sortOrder name');
+
+  // Filter services available for this vehicle
+  const availableServices = allServices.filter(service => 
+    service.isAvailableForVehicle(vehicle)
+  );
+
+  res.status(200).json({
+    success: true,
+    count: availableServices.length,
+    vehicle: {
+      id: vehicle._id,
+      brand: vehicle.brand,
+      model: vehicle.model,
+      category: vehicle.category
+    },
+    data: availableServices
+  });
+});
+
+// @desc    Calculate service price (public)
+// @route   POST /api/public/services/calculate-price
+// @access  Public
+const calculateServicePricePublic = asyncHandler(async (req, res, next) => {
+  const { serviceId, quantity, days, distance, basePrice } = req.body;
+  
+  if (!serviceId) {
+    return next(new AppError('Service ID is required', 400));
+  }
+  
+  // Get tenantId from email parameter for tenant-specific routes
+  let tenantId = req.query.tenantId;
+  
+  if (!tenantId && req.params.email) {
+    const User = require('../models/User');
+    const user = await User.findOne({ email: req.params.email });
+    if (user) {
+      tenantId = user.tenantId;
+    }
+  }
+  
+  if (!tenantId) {
+    return next(new AppError('Tenant ID is required for public services', 400));
+  }
+  
+  const service = await AdditionalService.findOne({ 
+    _id: serviceId, 
+    tenantId: tenantId 
+  });
+
+  if (!service) {
+    return next(new AppError(`Additional service not found with id of ${serviceId}`, 404));
+  }
+
+  const calculatedPrice = service.calculatePrice({ quantity, days, distance, basePrice });
+
+  res.status(200).json({
+    success: true,
+    data: {
+      serviceId: service._id,
+      serviceName: service.name,
+      parameters: { quantity, days, distance, basePrice },
+      calculatedPrice,
+      currency: service.pricing.currency
+    }
+  });
+});
+
 // @desc    Calculate service price
 // @route   POST /api/additional-services/:id/calculate-price
 // @access  Private
 const calculateServicePrice = asyncHandler(async (req, res, next) => {
+  const { serviceId, quantity, days, distance, basePrice } = req.body;
+  
+  // Handle both old format (serviceId from URL) and new format (serviceId from body)
+  const actualServiceId = req.params.id || serviceId;
+  
+  if (!actualServiceId) {
+    return next(new AppError('Service ID is required', 400));
+  }
+  
+  // Check if this is a public route (no user) or private route (with user)
+  let tenantId = req.user ? req.user.tenantId : null;
+  
+  // For public routes, get tenantId from email parameter
+  if (!tenantId && req.params.email) {
+    const User = require('../models/User');
+    const user = await User.findOne({ email: req.params.email });
+    if (user) {
+      tenantId = user.tenantId;
+    }
+  }
+  
+  // For public routes, get tenantId from query parameter
+  if (!tenantId && req.query.tenantId) {
+    tenantId = req.query.tenantId;
+  }
+  
+  if (!tenantId) {
+    return next(new AppError('Authentication required or tenant ID must be provided', 401));
+  }
+  
   const service = await AdditionalService.findOne({ 
-    _id: req.params.id, 
-    tenantId: req.user.tenantId 
+    _id: actualServiceId, 
+    tenantId: tenantId 
   });
 
   if (!service) {
-    return next(new AppError(`Additional service not found with id of ${req.params.id}`, 404));
+    return next(new AppError(`Additional service not found with id of ${actualServiceId}`, 404));
   }
 
-  const { quantity, days, distance, basePrice } = req.body;
   const calculatedPrice = service.calculatePrice({ quantity, days, distance, basePrice });
 
   res.status(200).json({
@@ -456,6 +616,8 @@ module.exports = {
   getServicesByCategory,
   getPublicServices,
   getServicesForVehicle,
+  getServicesForVehiclePublic,
   calculateServicePrice,
+  calculateServicePricePublic,
   updateSortOrder
 }; 

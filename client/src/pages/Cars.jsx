@@ -344,7 +344,7 @@ function Cars() {
     // Only require daily rate if it's provided, but it must be positive if provided
     if (formData.pricing?.dailyRate !== undefined && formData.pricing.dailyRate !== '' && formData.pricing.dailyRate !== null) {
       if (formData.pricing.dailyRate <= 0) {
-        errors.dailyRate = 'Denná sadzba musí byť väčšia ako 0'
+      errors.dailyRate = 'Denná sadzba musí byť väčšia ako 0'
       }
     }
 

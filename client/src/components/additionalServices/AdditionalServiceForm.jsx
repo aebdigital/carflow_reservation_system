@@ -190,7 +190,7 @@ function AdditionalServiceForm({
         </Grid>
 
         <Grid item xs={12} md={6}>
-          <Box>
+          <Box sx={{ position: 'relative' }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
               Farba
             </Typography>
@@ -212,14 +212,25 @@ function AdditionalServiceForm({
                 {formData.color}
               </Button>
               {showColorPicker && (
-                <Box sx={{ position: 'absolute', zIndex: 1000, mt: 1 }}>
+                <Box sx={{ 
+                  position: 'absolute', 
+                  top: '100%',
+                  left: 0,
+                  zIndex: 1000, 
+                  mt: 1,
+                  boxShadow: 3,
+                  borderRadius: 1,
+                  backgroundColor: 'white',
+                  p: 1
+                }}>
                   <Box
                     sx={{ 
                       position: 'fixed', 
                       top: 0, 
                       right: 0, 
                       bottom: 0, 
-                      left: 0 
+                      left: 0,
+                      zIndex: 999
                     }}
                     onClick={() => setShowColorPicker(false)}
                   />

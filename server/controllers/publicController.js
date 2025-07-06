@@ -14,7 +14,7 @@ const getTenantByUserEmail = async (email) => {
   return user.tenantId;
 };
 
-// @desc    Get cars for a specific user/tenant (public)
+// @desc    Get cars for a specific user/tenant (public) with advanced filtering
 // @route   GET /api/public/users/:email/cars
 // @access  Public
 const getCarsByUser = asyncHandler(async (req, res, next) => {
@@ -23,72 +23,310 @@ const getCarsByUser = asyncHandler(async (req, res, next) => {
   // Get tenant ID from user email
   const tenantId = await getTenantByUserEmail(email);
   
-  // Build query with tenant filter
-  const baseQuery = { tenantId, isActive: true, status: 'active' };
-  
-  // Copy req.query and merge with base filter
-  const reqQuery = { ...req.query };
-  
-  // Fields to exclude from filtering
-  const removeFields = ['select', 'sort', 'page', 'limit'];
-  removeFields.forEach(param => delete reqQuery[param]);
-  
-  // Create query string
-  let queryStr = JSON.stringify({ ...baseQuery, ...reqQuery });
-  
-  // Create operators ($gt, $gte, etc)
-  queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
-  
-  // Finding resource with tenant filter
-  let query = Car.find(JSON.parse(queryStr));
-  
-  // Select only public fields
-  const publicFields = 'brand model year color category fuelType transmission seats doors description dailyRate weeklyRate monthlyRate location features images';
-  query = query.select(publicFields);
-  
-  // Sort
-  if (req.query.sort) {
-    const sortBy = req.query.sort.split(',').join(' ');
-    query = query.sort(sortBy);
-  } else {
-    query = query.sort('-createdAt');
+  // Extract filtering parameters
+  const {
+    // Basic filters
+    category,
+    fuelType,
+    transmission,
+    seats,
+    
+    // Date availability filters
+    startDate,
+    endDate,
+    
+    // Advanced filters
+    carClass,
+    unlimitedKm,
+    petsAllowed,
+    childSeat,
+    navigation,
+    roofBox,
+    internationalTravel,
+    
+    // Pagination and sorting
+    page = 1,
+    limit = 25,
+    sort,
+    select
+  } = req.query;
+
+  // Build base query with tenant filter
+  let baseQuery = { 
+    tenantId, 
+    isActive: true, 
+    status: 'active' 
+  };
+
+  // Enhanced category mapping for car classes
+  if (carClass) {
+    const carClassMapping = {
+      'ekonomicka': ['economy', 'compact'],
+      'stredna': ['midsize'],
+      'vyssia': ['fullsize', 'luxury'],
+      'viacmiestne': ['minivan'],
+      'uzitkove': ['utility'],
+      'karavany': ['caravan'],
+      'motorky': ['motorcycle'],
+      'sportove': ['sports'],
+      'elektromobily': ['electric']
+    };
+    
+    if (carClassMapping[carClass]) {
+      baseQuery.category = { $in: carClassMapping[carClass] };
+    }
+  } else if (category) {
+    // Standard category filter
+    if (Array.isArray(category)) {
+      baseQuery.category = { $in: category };
+    } else {
+      baseQuery.category = category;
+    }
   }
+
+  // Fuel type filter
+  if (fuelType) {
+    if (Array.isArray(fuelType)) {
+      baseQuery.fuelType = { $in: fuelType };
+    } else {
+      baseQuery.fuelType = fuelType;
+    }
+  }
+
+  // Transmission filter
+  if (transmission) {
+    if (Array.isArray(transmission)) {
+      baseQuery.transmission = { $in: transmission };
+    } else {
+      baseQuery.transmission = transmission;
+    }
+  }
+
+  // Seats filter
+  if (seats) {
+    if (Array.isArray(seats)) {
+      baseQuery.seats = { $in: seats.map(s => parseInt(s)) };
+    } else {
+      baseQuery.seats = parseInt(seats);
+    }
+  }
+
+  // Additional services filters
+  const serviceFilters = [];
   
-  // Pagination
-  const page = parseInt(req.query.page, 10) || 1;
-  const limit = parseInt(req.query.limit, 10) || 25;
-  const startIndex = (page - 1) * limit;
-  const endIndex = page * limit;
-  const total = await Car.countDocuments(JSON.parse(queryStr));
-  
-  query = query.skip(startIndex).limit(limit);
-  
-  // Execute query
-  const cars = await query;
-  
-  // Pagination result
+  if (unlimitedKm === 'true') {
+    serviceFilters.push('unlimited_km');
+  }
+  if (petsAllowed === 'true') {
+    serviceFilters.push('pets_allowed');
+  }
+  if (childSeat === 'true') {
+    serviceFilters.push('child_seat');
+  }
+  if (navigation === 'true') {
+    serviceFilters.push('navigation');
+  }
+  if (roofBox === 'true') {
+    serviceFilters.push('roof_box');
+  }
+  if (internationalTravel === 'true') {
+    serviceFilters.push('international_travel');
+  }
+
+  if (serviceFilters.length > 0) {
+    baseQuery.features = { $all: serviceFilters };
+  }
+
+  let availableCars = [];
+  let totalAvailable = 0;
+  let hasDateFilter = false;
+
+  // Date availability filtering
+  if (startDate && endDate) {
+    hasDateFilter = true;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (start >= end) {
+      return next(new AppError('End date must be after start date', 400));
+    }
+
+    // Find cars that are available for the specified dates
+    const allCars = await Car.find(baseQuery);
+    
+    for (const car of allCars) {
+      // Check for overlapping reservations
+      const overlappingReservations = await Reservation.find({
+        car: car._id,
+        tenantId: car.tenantId,
+        status: { $in: ['confirmed', 'ongoing'] },
+        $or: [
+          {
+            startDate: { $lte: start },
+            endDate: { $gte: start }
+          },
+          {
+            startDate: { $lte: end },
+            endDate: { $gte: end }
+          },
+          {
+            startDate: { $gte: start },
+            endDate: { $lte: end }
+          }
+        ]
+      });
+
+      if (overlappingReservations.length === 0) {
+        availableCars.push(car);
+      }
+    }
+
+    totalAvailable = availableCars.length;
+  } else {
+    // No date filter, use regular query
+    const query = Car.find(baseQuery);
+    availableCars = await query;
+    totalAvailable = await Car.countDocuments(baseQuery);
+  }
+
+  // Fallback logic when no results found
+  if (availableCars.length === 0 && hasDateFilter) {
+    // Show available alternatives for the date, sorted by price
+    const fallbackQuery = {
+      tenantId,
+      status: 'active',
+      isActive: true
+    };
+
+    const fallbackCars = await Car.find(fallbackQuery);
+    const availableFallbackCars = [];
+    
+    for (const car of fallbackCars) {
+      const overlappingReservations = await Reservation.find({
+        car: car._id,
+        tenantId: car.tenantId,
+        status: { $in: ['confirmed', 'ongoing'] },
+        $or: [
+          {
+            startDate: { $lte: new Date(startDate) },
+            endDate: { $gte: new Date(startDate) }
+          },
+          {
+            startDate: { $lte: new Date(endDate) },
+            endDate: { $gte: new Date(endDate) }
+          },
+          {
+            startDate: { $gte: new Date(startDate) },
+            endDate: { $lte: new Date(endDate) }
+          }
+        ]
+      });
+
+      if (overlappingReservations.length === 0) {
+        availableFallbackCars.push(car);
+      }
+    }
+
+    // Sort by price ascending
+    availableFallbackCars.sort((a, b) => {
+      const priceA = a.pricing?.dailyRate || a.dailyRate || 0;
+      const priceB = b.pricing?.dailyRate || b.dailyRate || 0;
+      return priceA - priceB;
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: availableFallbackCars.length,
+      total: availableFallbackCars.length,
+      isFallback: true,
+      message: 'Vami vybrané vozidlo momentálne nie je dostupné. Zobrazujeme dostupné alternatívy pre zadaný dátum vzostupne podľa ceny.',
+      data: availableFallbackCars.slice(0, parseInt(limit))
+    });
+  }
+
+  // Apply sorting
+  if (sort) {
+    const sortBy = sort.split(',').join(' ');
+    if (sort.includes('price') || sort.includes('dailyRate')) {
+      // Custom price sorting
+      availableCars.sort((a, b) => {
+        const priceA = a.pricing?.dailyRate || a.dailyRate || 0;
+        const priceB = b.pricing?.dailyRate || b.dailyRate || 0;
+        return sort.startsWith('-') ? priceB - priceA : priceA - priceB;
+      });
+    }
+  } else {
+    // Default sorting by daily rate ascending
+    availableCars.sort((a, b) => {
+      const priceA = a.pricing?.dailyRate || a.dailyRate || 0;
+      const priceB = b.pricing?.dailyRate || b.dailyRate || 0;
+      return priceA - priceB;
+    });
+  }
+
+  // Apply pagination
+  const startIndex = (parseInt(page) - 1) * parseInt(limit);
+  const endIndex = startIndex + parseInt(limit);
+  const paginatedCars = availableCars.slice(startIndex, endIndex);
+
+  // Apply field selection
+  let responseData = paginatedCars;
+  if (select) {
+    const fields = select.split(',');
+    responseData = paginatedCars.map(car => {
+      const selected = {};
+      fields.forEach(field => {
+        if (car[field] !== undefined) {
+          selected[field] = car[field];
+        }
+      });
+      return selected;
+    });
+  } else {
+    // Default safe fields
+    const publicFields = ['_id', 'brand', 'model', 'year', 'color', 'category', 'fuelType', 'transmission', 'seats', 'doors', 'description', 'pricing', 'location', 'features', 'images', 'equipment', 'badges', 'status'];
+    responseData = paginatedCars.map(car => {
+      const safeData = {};
+      publicFields.forEach(field => {
+        if (car[field] !== undefined) {
+          safeData[field] = car[field];
+        }
+      });
+      return safeData;
+    });
+  }
+
+  // Pagination metadata
   const pagination = {};
-  
-  if (endIndex < total) {
+  if (endIndex < totalAvailable) {
     pagination.next = {
-      page: page + 1,
-      limit
+      page: parseInt(page) + 1,
+      limit: parseInt(limit)
     };
   }
-  
   if (startIndex > 0) {
     pagination.prev = {
-      page: page - 1,
-      limit
+      page: parseInt(page) - 1,
+      limit: parseInt(limit)
     };
   }
-  
+
   res.status(200).json({
     success: true,
-    count: cars.length,
-    total,
+    count: responseData.length,
+    total: totalAvailable,
     pagination,
-    data: cars
+    filters: {
+      carClass,
+      category,
+      fuelType,
+      transmission,
+      seats,
+      startDate,
+      endDate,
+      additionalServices: serviceFilters
+    },
+    data: responseData
   });
 });
 
@@ -1032,84 +1270,324 @@ const subscribeToNewsletter = asyncHandler(async (req, res, next) => {
   }
 });
 
-// @desc    Get all cars (public - no authentication)
+// @desc    Get all cars (public - no authentication) with advanced filtering
 // @route   GET /api/public/cars
 // @access  Public
 const getPublicCars = asyncHandler(async (req, res, next) => {
-  // Get all active cars without authentication requirement
-  const baseQuery = { 
+  // Extract filtering parameters
+  const {
+    // Basic filters
+    category,
+    fuelType,
+    transmission,
+    seats,
+    
+    // Date availability filters
+    startDate,
+    endDate,
+    
+    // Advanced filters
+    carClass,
+    unlimitedKm,
+    petsAllowed,
+    childSeat,
+    navigation,
+    roofBox,
+    internationalTravel,
+    
+    // Pagination and sorting
+    page = 1,
+    limit = 20,
+    sort,
+    select,
+    
+    // Tenant filtering (optional)
+    tenantId
+  } = req.query;
+
+  // Build base query
+  let baseQuery = { 
     status: 'active',
     isActive: true
   };
 
-  // Copy req.query and merge with base filter
-  const reqQuery = { ...req.query };
-
-  // Fields to exclude from filtering
-  const removeFields = ['select', 'sort', 'page', 'limit'];
-  removeFields.forEach(param => delete reqQuery[param]);
-
-  // Create query string
-  let queryStr = JSON.stringify({ ...baseQuery, ...reqQuery });
-
-  // Create operators ($gt, $gte, etc)
-  queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
-
-  // Finding resource
-  let query = Car.find(JSON.parse(queryStr));
-
-  // Select fields - hide sensitive data
-  if (req.query.select) {
-    const fields = req.query.select.split(',').join(' ');
-    query = query.select(fields);
-  } else {
-    // Use same safe field selection as tenant-specific endpoint
-    const publicFields = 'brand model year color category fuelType transmission seats doors description pricing location features images equipment badges status';
-    query = query.select(publicFields);
+  // Add tenant filter if provided
+  if (tenantId) {
+    baseQuery.tenantId = tenantId;
   }
 
-  // Sort
-  if (req.query.sort) {
-    const sortBy = req.query.sort.split(',').join(' ');
-    query = query.sort(sortBy);
-  } else {
-    query = query.sort('-createdAt');
+  // Enhanced category mapping for car classes
+  if (carClass) {
+    const carClassMapping = {
+      'ekonomicka': ['economy', 'compact'],
+      'stredna': ['midsize'],
+      'vyssia': ['fullsize', 'luxury'],
+      'viacmiestne': ['minivan'],
+      'uzitkove': ['utility'],
+      'karavany': ['caravan'],
+      'motorky': ['motorcycle'],
+      'sportove': ['sports'],
+      'elektromobily': ['electric']
+    };
+    
+    if (carClassMapping[carClass]) {
+      baseQuery.category = { $in: carClassMapping[carClass] };
+    }
+  } else if (category) {
+    // Standard category filter
+    if (Array.isArray(category)) {
+      baseQuery.category = { $in: category };
+    } else {
+      baseQuery.category = category;
+    }
   }
 
-  // Pagination
-  const page = parseInt(req.query.page, 10) || 1;
-  const limit = parseInt(req.query.limit, 10) || 20;
-  const startIndex = (page - 1) * limit;
-  const endIndex = page * limit;
-  const total = await Car.countDocuments(JSON.parse(queryStr));
+  // Fuel type filter
+  if (fuelType) {
+    if (Array.isArray(fuelType)) {
+      baseQuery.fuelType = { $in: fuelType };
+    } else {
+      baseQuery.fuelType = fuelType;
+    }
+  }
 
-  query = query.skip(startIndex).limit(limit);
+  // Transmission filter
+  if (transmission) {
+    if (Array.isArray(transmission)) {
+      baseQuery.transmission = { $in: transmission };
+    } else {
+      baseQuery.transmission = transmission;
+    }
+  }
 
-  // Execute query
-  const cars = await query;
+  // Seats filter
+  if (seats) {
+    if (Array.isArray(seats)) {
+      baseQuery.seats = { $in: seats.map(s => parseInt(s)) };
+    } else {
+      baseQuery.seats = parseInt(seats);
+    }
+  }
 
-  // Pagination result
+  // Additional services filters
+  const serviceFilters = [];
+  
+  if (unlimitedKm === 'true') {
+    serviceFilters.push('unlimited_km');
+  }
+  if (petsAllowed === 'true') {
+    serviceFilters.push('pets_allowed');
+  }
+  if (childSeat === 'true') {
+    serviceFilters.push('child_seat');
+  }
+  if (navigation === 'true') {
+    serviceFilters.push('navigation');
+  }
+  if (roofBox === 'true') {
+    serviceFilters.push('roof_box');
+  }
+  if (internationalTravel === 'true') {
+    serviceFilters.push('international_travel');
+  }
+
+  if (serviceFilters.length > 0) {
+    baseQuery.features = { $all: serviceFilters };
+  }
+
+  let availableCars = [];
+  let totalAvailable = 0;
+  let hasDateFilter = false;
+
+  // Date availability filtering
+  if (startDate && endDate) {
+    hasDateFilter = true;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (start >= end) {
+      return next(new AppError('End date must be after start date', 400));
+    }
+
+    // Find cars that are available for the specified dates
+    const allCars = await Car.find(baseQuery);
+    
+    for (const car of allCars) {
+      // Check for overlapping reservations
+      const overlappingReservations = await Reservation.find({
+        car: car._id,
+        tenantId: car.tenantId,
+        status: { $in: ['confirmed', 'ongoing'] },
+        $or: [
+          {
+            startDate: { $lte: start },
+            endDate: { $gte: start }
+          },
+          {
+            startDate: { $lte: end },
+            endDate: { $gte: end }
+          },
+          {
+            startDate: { $gte: start },
+            endDate: { $lte: end }
+          }
+        ]
+      });
+
+      if (overlappingReservations.length === 0) {
+        availableCars.push(car);
+      }
+    }
+
+    totalAvailable = availableCars.length;
+  } else {
+    // No date filter, use regular query
+    const query = Car.find(baseQuery);
+    availableCars = await query;
+    totalAvailable = await Car.countDocuments(baseQuery);
+  }
+
+  // Fallback logic when no results found
+  if (availableCars.length === 0 && hasDateFilter) {
+    // Show available alternatives for the date, sorted by price
+    const fallbackQuery = {
+      status: 'active',
+      isActive: true
+    };
+    
+    if (tenantId) {
+      fallbackQuery.tenantId = tenantId;
+    }
+
+    const fallbackCars = await Car.find(fallbackQuery);
+    const availableFallbackCars = [];
+    
+    for (const car of fallbackCars) {
+      const overlappingReservations = await Reservation.find({
+        car: car._id,
+        tenantId: car.tenantId,
+        status: { $in: ['confirmed', 'ongoing'] },
+        $or: [
+          {
+            startDate: { $lte: new Date(startDate) },
+            endDate: { $gte: new Date(startDate) }
+          },
+          {
+            startDate: { $lte: new Date(endDate) },
+            endDate: { $gte: new Date(endDate) }
+          },
+          {
+            startDate: { $gte: new Date(startDate) },
+            endDate: { $lte: new Date(endDate) }
+          }
+        ]
+      });
+
+      if (overlappingReservations.length === 0) {
+        availableFallbackCars.push(car);
+      }
+    }
+
+    // Sort by price ascending
+    availableFallbackCars.sort((a, b) => {
+      const priceA = a.pricing?.dailyRate || a.dailyRate || 0;
+      const priceB = b.pricing?.dailyRate || b.dailyRate || 0;
+      return priceA - priceB;
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: availableFallbackCars.length,
+      total: availableFallbackCars.length,
+      isFallback: true,
+      message: 'Vami vybrané vozidlo momentálne nie je dostupné. Zobrazujeme dostupné alternatívy pre zadaný dátum vzostupne podľa ceny.',
+      data: availableFallbackCars.slice(0, parseInt(limit))
+    });
+  }
+
+  // Apply sorting
+  if (sort) {
+    const sortBy = sort.split(',').join(' ');
+    if (sort.includes('price') || sort.includes('dailyRate')) {
+      // Custom price sorting
+      availableCars.sort((a, b) => {
+        const priceA = a.pricing?.dailyRate || a.dailyRate || 0;
+        const priceB = b.pricing?.dailyRate || b.dailyRate || 0;
+        return sort.startsWith('-') ? priceB - priceA : priceA - priceB;
+      });
+    }
+  } else {
+    // Default sorting by daily rate ascending
+    availableCars.sort((a, b) => {
+      const priceA = a.pricing?.dailyRate || a.dailyRate || 0;
+      const priceB = b.pricing?.dailyRate || b.dailyRate || 0;
+      return priceA - priceB;
+    });
+  }
+
+  // Apply pagination
+  const startIndex = (parseInt(page) - 1) * parseInt(limit);
+  const endIndex = startIndex + parseInt(limit);
+  const paginatedCars = availableCars.slice(startIndex, endIndex);
+
+  // Apply field selection
+  let responseData = paginatedCars;
+  if (select) {
+    const fields = select.split(',');
+    responseData = paginatedCars.map(car => {
+      const selected = {};
+      fields.forEach(field => {
+        if (car[field] !== undefined) {
+          selected[field] = car[field];
+        }
+      });
+      return selected;
+    });
+  } else {
+    // Default safe fields
+    const publicFields = ['_id', 'brand', 'model', 'year', 'color', 'category', 'fuelType', 'transmission', 'seats', 'doors', 'description', 'pricing', 'location', 'features', 'images', 'equipment', 'badges', 'status'];
+    responseData = paginatedCars.map(car => {
+      const safeData = {};
+      publicFields.forEach(field => {
+        if (car[field] !== undefined) {
+          safeData[field] = car[field];
+        }
+      });
+      return safeData;
+    });
+  }
+
+  // Pagination metadata
   const pagination = {};
-
-  if (endIndex < total) {
+  if (endIndex < totalAvailable) {
     pagination.next = {
-      page: page + 1,
-      limit
+      page: parseInt(page) + 1,
+      limit: parseInt(limit)
     };
   }
-
   if (startIndex > 0) {
     pagination.prev = {
-      page: page - 1,
-      limit
+      page: parseInt(page) - 1,
+      limit: parseInt(limit)
     };
   }
 
   res.status(200).json({
     success: true,
-    count: cars.length,
+    count: responseData.length,
+    total: totalAvailable,
     pagination,
-    data: cars
+    filters: {
+      carClass,
+      category,
+      fuelType,
+      transmission,
+      seats,
+      startDate,
+      endDate,
+      additionalServices: serviceFilters
+    },
+    data: responseData
   });
 });
 
