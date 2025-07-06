@@ -98,7 +98,7 @@ export default function BannerSettings() {
         isActive: banner.isActive !== undefined ? banner.isActive : true,
         sortOrder: banner.sortOrder || 0,
       })
-      setImagePreview(banner.imageUrl || null)
+      setImagePreview(banner.imageUrl || banner.image?.url || null)
     } else {
       setFormData({
         position: 'homepage-hero',
@@ -299,7 +299,7 @@ export default function BannerSettings() {
                       <TableCell>
                         <Avatar
                           variant="rounded"
-                          src={banner.imageUrl}
+                          src={banner.imageUrl || banner.image?.url}
                           sx={{ width: 80, height: 50 }}
                         >
                           <ImageIcon />

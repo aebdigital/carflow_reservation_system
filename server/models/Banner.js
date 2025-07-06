@@ -58,7 +58,9 @@ const bannerSchema = new mongoose.Schema({
     required: [true, 'Creator ID is required']
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
 // Index for efficient querying
