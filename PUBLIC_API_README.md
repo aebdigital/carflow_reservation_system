@@ -940,7 +940,7 @@ curl -X POST "https://carflow-reservation-system.onrender.com/api/public/users/r
 ### 14. Verify Discount Code
 **POST** `/users/:email/verify-discount`
 
-Verify if a discount code (zľavový kód) is valid for a specific tenant. This endpoint can be used for real-time validation when users enter discount codes.
+Verify if a discount code is valid for a specific tenant and optionally calculate the discount amount.
 
 **Parameters:**
 - `email` (string, required): User's email to identify tenant
@@ -948,76 +948,42 @@ Verify if a discount code (zľavový kód) is valid for a specific tenant. This 
 **Request Body:**
 ```json
 {
-  "code": "SUMMER2024",
+  "code": "LETO10",
   "reservationAmount": 150,
   "reservationDays": 5,
   "carCategory": "economy"
 }
 ```
 
-**Request Body Parameters:**
-- `code` (string, required): The discount code to verify
-- `reservationAmount` (number, optional): Total reservation amount to calculate discount
-- `reservationDays` (number, optional): Number of rental days (default: 1)
-- `carCategory` (string, optional): Car category for category-specific discounts
-
-**Example Request (Basic Verification):**
+**Example Request:**
 ```bash
 curl -X POST "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/verify-discount" \
   -H "Content-Type: application/json" \
   -d '{
-    "code": "SUMMER2024"
-  }'
-```
-
-**Example Request (With Calculation):**
-```bash
-curl -X POST "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/verify-discount" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "code": "SUMMER2024",
+    "code": "LETO10",
     "reservationAmount": 150,
-    "reservationDays": 5,
-    "carCategory": "economy"
+    "reservationDays": 5
   }'
 ```
 
-**Example Response (Valid Code - Basic):**
+**Example Response (Valid Code):**
 ```json
 {
   "success": true,
   "valid": true,
   "data": {
-    "code": "SUMMER2024",
-    "description": "Letná zľava 20%",
+    "code": "LETO10",
+    "description": "Letná akcia 10% zľava",
     "discountType": "percentage",
-    "discountValue": 20,
-    "isActive": true,
-    "usageCount": 15,
-    "maxUsage": "unlimited"
-  },
-  "message": "Zľavový kód je platný!"
-}
-```
-
-**Example Response (Valid Code - With Calculation):**
-```json
-{
-  "success": true,
-  "valid": true,
-  "data": {
-    "code": "SUMMER2024",
-    "description": "Letná zľava 20%",
-    "discountType": "percentage",
-    "discountValue": 20,
-    "discountAmount": 30,
+    "discountValue": 10,
+    "discountAmount": 15,
     "originalAmount": 150,
-    "finalAmount": 120,
-    "savings": 30,
-    "usageCount": 15,
-    "maxUsage": "unlimited"
+    "finalAmount": 135,
+    "savings": 15,
+    "usageCount": 5,
+    "maxUsage": 100
   },
-  "message": "Zľava 30€ bola úspešne aplikovaná!"
+  "message": "Zľava 15€ bola úspešne aplikovaná!"
 }
 ```
 
@@ -1031,108 +997,221 @@ curl -X POST "https://carflow-reservation-system.onrender.com/api/public/users/r
 }
 ```
 
-**Example Response (Expired Code):**
+### 15. Get Available Services
+**GET** `/users/:email/services`
+
+Get all available additional services for a specific tenant, with optional filtering by car category and rental dates.
+
+**Parameters:**
+- `email` (string, required): User's email to identify tenant
+
+**Query Parameters:**
+- `carCategory` (string, optional): Filter services by car category (economy, midsize, luxury, etc.)
+- `startDate` (string, optional): Start date for seasonal filtering (ISO format)
+- `endDate` (string, optional): End date for seasonal filtering (ISO format)
+
+**Example Request:**
+```bash
+curl "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/services?carCategory=economy&startDate=2024-07-01&endDate=2024-07-15"
+```
+
+**Example Response:**
 ```json
 {
-  "success": false,
-  "valid": false,
-  "reason": "Zľavový kód je neplatný alebo vypršal",
-  "message": "Tento zľavový kód nie je aktívny alebo už vypršal."
+  "success": true,
+  "data": {
+    "services": [
+      {
+        "_id": "service_id_1",
+        "name": "Detské sedadlo",
+        "description": "Bezpečnostné sedadlo pre deti do 12 rokov",
+        "category": "family_accessories",
+        "icon": "baby_changing_station",
+        "pricing": {
+          "type": "per_day",
+          "amount": 5,
+          "currency": "EUR"
+        },
+        "behavior": {
+          "maxQuantity": 3,
+          "isRequired": false,
+          "isAutoSelected": false
+        },
+        "availability": {
+          "vehicleCategories": ["economy", "midsize"],
+          "seasonal": {
+            "isActive": false
+          }
+        }
+      },
+      {
+        "_id": "service_id_2",
+        "name": "GPS navigácia",
+        "description": "Moderný GPS navigačný systém",
+        "category": "driving_comfort",
+        "icon": "navigation",
+        "pricing": {
+          "type": "per_day",
+          "amount": 3,
+          "currency": "EUR"
+        },
+        "behavior": {
+          "maxQuantity": 1,
+          "isRequired": false,
+          "isAutoSelected": false
+        },
+        "availability": {
+          "vehicleCategories": [],
+          "seasonal": {
+            "isActive": false
+          }
+        }
+      }
+    ],
+    "servicesByCategory": {
+      "family_accessories": [
+        {
+          "_id": "service_id_1",
+          "name": "Detské sedadlo",
+          "description": "Bezpečnostné sedadlo pre deti do 12 rokov",
+          "category": "family_accessories",
+          "icon": "baby_changing_station",
+          "pricing": {
+            "type": "per_day",
+            "amount": 5,
+            "currency": "EUR"
+          },
+          "behavior": {
+            "maxQuantity": 3,
+            "isRequired": false,
+            "isAutoSelected": false
+          },
+          "availability": {
+            "vehicleCategories": ["economy", "midsize"],
+            "seasonal": {
+              "isActive": false
+            }
+          }
+        }
+      ],
+      "driving_comfort": [
+        {
+          "_id": "service_id_2",
+          "name": "GPS navigácia",
+          "description": "Moderný GPS navigačný systém",
+          "category": "driving_comfort",
+          "icon": "navigation",
+          "pricing": {
+            "type": "per_day",
+            "amount": 3,
+            "currency": "EUR"
+          },
+          "behavior": {
+            "maxQuantity": 1,
+            "isRequired": false,
+            "isAutoSelected": false
+          },
+          "availability": {
+            "vehicleCategories": [],
+            "seasonal": {
+              "isActive": false
+            }
+          }
+        }
+      ]
+    },
+    "totalCount": 2
+  }
 }
 ```
 
-**Example Response (Usage Limit Exceeded):**
-```json
-{
-  "success": false,
-  "valid": false,
-  "reason": "Zľavový kód dosiahol maximálny počet použití",
-  "message": "Tento zľavový kód už bol použitý maximálny počet krát."
-}
-```
+**Service Categories:**
+- `driving_comfort` - Jazda a komfort
+- `insurance_assistance` - Poistenie a asistencia  
+- `time_services` - Časové služby
+- `delivery_pickup` - Pristavenie/vyzdvihnutie
+- `family_accessories` - Rodina a doplnky
+- `specialized` - Špecializované
+
+**Pricing Types:**
+- `fixed` - Jednorazový poplatok
+- `per_day` - Cena za deň prenájmu
+- `per_km` - Cena za kilometer
+- `percentage` - Percentuálny poplatok z celkovej sumy
 
 **Frontend Integration Example:**
 ```javascript
-// Verify discount code on button click
-const verifyDiscountCode = async (code) => {
-  const USER_EMAIL = 'rival@test.sk';
+// Fetch services for a reservation
+const fetchServices = async (userEmail, carCategory, startDate, endDate) => {
+  const params = new URLSearchParams({
+    carCategory,
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString()
+  });
   
-  try {
-    const response = await fetch(`/api/public/users/${USER_EMAIL}/verify-discount`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        code: code,
-        reservationAmount: 150,
-        reservationDays: 5
-      })
-    });
-    
-    const result = await response.json();
-    
-    if (result.valid) {
-      // Show success message with discount amount
-      showMessage(result.message, 'success');
-      updatePricing(result.data.finalAmount, result.data.savings);
-    } else {
-      // Show error message
-      showMessage(result.message, 'error');
-    }
-  } catch (error) {
-    console.error('Error verifying discount code:', error);
-    showMessage('Chyba pri overovaní zľavového kódu', 'error');
-  }
+  const response = await fetch(`/api/public/users/${userEmail}/services?${params}`);
+  const data = await response.json();
+  
+  return data.data.servicesByCategory;
 };
 
-// React component example
-const DiscountCodeInput = () => {
-  const [code, setCode] = useState('');
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [discount, setDiscount] = useState(null);
+// Calculate service price
+const calculateServicePrice = (service, quantity, days) => {
+  const basePrice = service.pricing.amount;
   
-  const handleVerify = async () => {
-    if (!code.trim()) return;
-    
-    setIsVerifying(true);
-    try {
-      const result = await verifyDiscountCode(code);
-      if (result.valid) {
-        setDiscount(result.data);
-      } else {
-        setDiscount(null);
-        alert(result.message);
-      }
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-  
-  return (
-    <div className="discount-code-section">
-      <input
-        type="text"
-        value={code}
-        onChange={(e) => setCode(e.target.value.toUpperCase())}
-        placeholder="Zadajte zľavový kód"
-        className="discount-input"
-      />
-      <button 
-        onClick={handleVerify}
-        disabled={isVerifying || !code.trim()}
-        className="verify-button"
-      >
-        {isVerifying ? 'Overuje sa...' : 'Overiť kód'}
-      </button>
-      
-      {discount && (
-        <div className="discount-applied">
-          <p>✅ Zľava aplikovaná: {discount.savings}€</p>
-          <p>Nová cena: {discount.finalAmount}€</p>
-        </div>
-      )}
-    </div>
-  );
+  switch (service.pricing.type) {
+    case 'fixed':
+      return basePrice * quantity;
+    case 'per_day':
+      return basePrice * quantity * days;
+    case 'per_km':
+      return basePrice * quantity; // Distance would be calculated separately
+    case 'percentage':
+      return (totalAmount * basePrice / 100) * quantity;
+    default:
+      return basePrice * quantity;
+  }
 };
+```
+
+### 16. Newsletter Subscription
+**POST** `/users/:email/newsletter`
+
+Subscribe to newsletter for a specific tenant.
+
+**Parameters:**
+- `email` (string, required): User's email to identify tenant
+
+**Request Body:**
+```json
+{
+  "subscriberEmail": "subscriber@example.com",
+  "firstName": "John",
+  "lastName": "Doe"
+}
+```
+
+**Example Request:**
+```bash
+curl -X POST "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/newsletter" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subscriberEmail": "subscriber@example.com",
+    "firstName": "John",
+    "lastName": "Doe"
+  }'
+```
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "message": "Successfully subscribed to newsletter",
+  "data": {
+    "email": "subscriber@example.com",
+    "subscribedAt": "2024-07-15T10:30:00Z"
+  }
+}
 ```
 
 ## Complete Integration Example for rival@test.sk
