@@ -17,6 +17,7 @@ const {
   getInfoBarByUser,
   getModalByUser,
   subscribeToNewsletter,
+  verifyDiscountCodeByUser,
   getPublicCars,
   getPublicCar
 } = require('../controllers/publicController');
@@ -62,6 +63,7 @@ router.get('/users/:email/website-settings', getWebsiteSettingsByUser);
 router.get('/users/:email/info-bar', getInfoBarByUser);
 router.get('/users/:email/modal', getModalByUser);
 router.post('/users/:email/newsletter', subscribeToNewsletter);
+router.post('/users/:email/verify-discount', verifyDiscountCodeByUser);
 
 // User/tenant-specific services endpoints
 router.get('/users/:email/services', getPublicServices);

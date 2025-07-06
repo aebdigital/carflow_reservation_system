@@ -937,6 +937,204 @@ curl -X POST "https://carflow-reservation-system.onrender.com/api/public/users/r
 }
 ```
 
+### 14. Verify Discount Code
+**POST** `/users/:email/verify-discount`
+
+Verify if a discount code (zľavový kód) is valid for a specific tenant. This endpoint can be used for real-time validation when users enter discount codes.
+
+**Parameters:**
+- `email` (string, required): User's email to identify tenant
+
+**Request Body:**
+```json
+{
+  "code": "SUMMER2024",
+  "reservationAmount": 150,
+  "reservationDays": 5,
+  "carCategory": "economy"
+}
+```
+
+**Request Body Parameters:**
+- `code` (string, required): The discount code to verify
+- `reservationAmount` (number, optional): Total reservation amount to calculate discount
+- `reservationDays` (number, optional): Number of rental days (default: 1)
+- `carCategory` (string, optional): Car category for category-specific discounts
+
+**Example Request (Basic Verification):**
+```bash
+curl -X POST "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/verify-discount" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "SUMMER2024"
+  }'
+```
+
+**Example Request (With Calculation):**
+```bash
+curl -X POST "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/verify-discount" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "SUMMER2024",
+    "reservationAmount": 150,
+    "reservationDays": 5,
+    "carCategory": "economy"
+  }'
+```
+
+**Example Response (Valid Code - Basic):**
+```json
+{
+  "success": true,
+  "valid": true,
+  "data": {
+    "code": "SUMMER2024",
+    "description": "Letná zľava 20%",
+    "discountType": "percentage",
+    "discountValue": 20,
+    "isActive": true,
+    "usageCount": 15,
+    "maxUsage": "unlimited"
+  },
+  "message": "Zľavový kód je platný!"
+}
+```
+
+**Example Response (Valid Code - With Calculation):**
+```json
+{
+  "success": true,
+  "valid": true,
+  "data": {
+    "code": "SUMMER2024",
+    "description": "Letná zľava 20%",
+    "discountType": "percentage",
+    "discountValue": 20,
+    "discountAmount": 30,
+    "originalAmount": 150,
+    "finalAmount": 120,
+    "savings": 30,
+    "usageCount": 15,
+    "maxUsage": "unlimited"
+  },
+  "message": "Zľava 30€ bola úspešne aplikovaná!"
+}
+```
+
+**Example Response (Invalid Code):**
+```json
+{
+  "success": false,
+  "valid": false,
+  "reason": "Neplatný zľavový kód",
+  "message": "Zadaný zľavový kód neexistuje alebo nie je platný pre túto spoločnosť."
+}
+```
+
+**Example Response (Expired Code):**
+```json
+{
+  "success": false,
+  "valid": false,
+  "reason": "Zľavový kód je neplatný alebo vypršal",
+  "message": "Tento zľavový kód nie je aktívny alebo už vypršal."
+}
+```
+
+**Example Response (Usage Limit Exceeded):**
+```json
+{
+  "success": false,
+  "valid": false,
+  "reason": "Zľavový kód dosiahol maximálny počet použití",
+  "message": "Tento zľavový kód už bol použitý maximálny počet krát."
+}
+```
+
+**Frontend Integration Example:**
+```javascript
+// Verify discount code on button click
+const verifyDiscountCode = async (code) => {
+  const USER_EMAIL = 'rival@test.sk';
+  
+  try {
+    const response = await fetch(`/api/public/users/${USER_EMAIL}/verify-discount`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        code: code,
+        reservationAmount: 150,
+        reservationDays: 5
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.valid) {
+      // Show success message with discount amount
+      showMessage(result.message, 'success');
+      updatePricing(result.data.finalAmount, result.data.savings);
+    } else {
+      // Show error message
+      showMessage(result.message, 'error');
+    }
+  } catch (error) {
+    console.error('Error verifying discount code:', error);
+    showMessage('Chyba pri overovaní zľavového kódu', 'error');
+  }
+};
+
+// React component example
+const DiscountCodeInput = () => {
+  const [code, setCode] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [discount, setDiscount] = useState(null);
+  
+  const handleVerify = async () => {
+    if (!code.trim()) return;
+    
+    setIsVerifying(true);
+    try {
+      const result = await verifyDiscountCode(code);
+      if (result.valid) {
+        setDiscount(result.data);
+      } else {
+        setDiscount(null);
+        alert(result.message);
+      }
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+  
+  return (
+    <div className="discount-code-section">
+      <input
+        type="text"
+        value={code}
+        onChange={(e) => setCode(e.target.value.toUpperCase())}
+        placeholder="Zadajte zľavový kód"
+        className="discount-input"
+      />
+      <button 
+        onClick={handleVerify}
+        disabled={isVerifying || !code.trim()}
+        className="verify-button"
+      >
+        {isVerifying ? 'Overuje sa...' : 'Overiť kód'}
+      </button>
+      
+      {discount && (
+        <div className="discount-applied">
+          <p>✅ Zľava aplikovaná: {discount.savings}€</p>
+          <p>Nová cena: {discount.finalAmount}€</p>
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
 ## Complete Integration Example for rival@test.sk
 
 Here's a complete example showing how to integrate all endpoints for the rival@test.sk tenant:

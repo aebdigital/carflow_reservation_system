@@ -1270,6 +1270,117 @@ const subscribeToNewsletter = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Verify discount code (public)
+// @route   POST /api/public/users/:email/verify-discount
+// @access  Public
+const verifyDiscountCodeByUser = asyncHandler(async (req, res, next) => {
+  const userEmail = req.params.email;
+  const { code, reservationAmount, reservationDays, carCategory } = req.body;
+  
+  if (!userEmail || !code) {
+    return next(new AppError('User email and discount code are required', 400));
+  }
+
+  try {
+    const tenantId = await getTenantByUserEmail(userEmail);
+    
+    if (!tenantId) {
+      return next(new AppError('Tenant not found for this user', 404));
+    }
+
+    // Find the discount code for this tenant
+    const discountCode = await DiscountCode.findOne({ 
+      code: code.toUpperCase(),
+      tenantId: tenantId
+    });
+
+    if (!discountCode) {
+      return res.status(200).json({
+        success: false,
+        valid: false,
+        reason: 'Neplatný zľavový kód',
+        message: 'Zadaný zľavový kód neexistuje alebo nie je platný pre túto spoločnosť.'
+      });
+    }
+
+    // Check if code is valid (active and within date range)
+    if (!discountCode.isValid()) {
+      return res.status(200).json({
+        success: false,
+        valid: false,
+        reason: 'Zľavový kód je neplatný alebo vypršal',
+        message: 'Tento zľavový kód nie je aktívny alebo už vypršal.'
+      });
+    }
+
+    // Check usage limits
+    if (discountCode.usageLimit === 'limited' && discountCode.currentUsageCount >= discountCode.maxUsageCount) {
+      return res.status(200).json({
+        success: false,
+        valid: false,
+        reason: 'Zľavový kód dosiahol maximálny počet použití',
+        message: 'Tento zľavový kód už bol použitý maximálny počet krát.'
+      });
+    }
+
+    // If no reservation amount provided, just check if code exists and is valid
+    if (!reservationAmount) {
+      return res.status(200).json({
+        success: true,
+        valid: true,
+        data: {
+          code: discountCode.code,
+          description: discountCode.description,
+          discountType: discountCode.discountType,
+          discountValue: discountCode.discountValue,
+          isActive: discountCode.isActive,
+          usageCount: discountCode.currentUsageCount,
+          maxUsage: discountCode.usageLimit === 'limited' ? discountCode.maxUsageCount : 'unlimited'
+        },
+        message: 'Zľavový kód je platný!'
+      });
+    }
+
+    // Calculate discount if reservation amount is provided
+    const discountResult = discountCode.calculateDiscount(
+      reservationAmount, 
+      reservationDays || 1, 
+      carCategory
+    );
+
+    if (discountResult.reason) {
+      return res.status(200).json({
+        success: false,
+        valid: false,
+        reason: discountResult.reason,
+        message: 'Zľavový kód nie je možné použiť pre túto rezerváciu.'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      valid: true,
+      data: {
+        code: discountCode.code,
+        description: discountCode.description,
+        discountType: discountCode.discountType,
+        discountValue: discountCode.discountValue,
+        discountAmount: discountResult.discount,
+        originalAmount: reservationAmount,
+        finalAmount: reservationAmount - discountResult.discount,
+        savings: discountResult.discount,
+        usageCount: discountCode.currentUsageCount,
+        maxUsage: discountCode.usageLimit === 'limited' ? discountCode.maxUsageCount : 'unlimited'
+      },
+      message: `Zľava ${discountResult.discount}€ bola úspešne aplikovaná!`
+    });
+
+  } catch (error) {
+    console.error('Error verifying discount code:', error);
+    return next(new AppError('Chyba pri overovaní zľavového kódu', 500));
+  }
+});
+
 // @desc    Get all cars (public - no authentication) with advanced filtering
 // @route   GET /api/public/cars
 // @access  Public
@@ -1623,6 +1734,7 @@ module.exports = {
   getInfoBarByUser,
   getModalByUser,
   subscribeToNewsletter,
+  verifyDiscountCodeByUser,
   getPublicCars,
   getPublicCar
 }; 
