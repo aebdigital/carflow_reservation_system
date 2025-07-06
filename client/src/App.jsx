@@ -20,6 +20,7 @@ import Contracts from './pages/Contracts'
 import Settings from './pages/Settings'
 import Website from './pages/Website'
 import CustomerPortal from './pages/CustomerPortal'
+import PublicReservationDemo from './pages/PublicReservationDemo'
 import Layout from './components/Layout'
 
 // Protected Route Component
@@ -121,6 +122,12 @@ function App() {
             <Login />
           </AuthRoute>
         } 
+      />
+      
+      {/* Public Reservation Demo - accessible without authentication */}
+      <Route 
+        path="/public-reservation-demo" 
+        element={<PublicReservationDemo />} 
       />
       
       {/* Customer Portal - Only for customers */}
