@@ -20,9 +20,9 @@ const bannerSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  },
-  position: {
-    type: String,
+    },
+    position: {
+      type: String,
     enum: [
       'homepage-hero',
       'homepage-section', 
@@ -93,7 +93,7 @@ bannerSchema.statics.getActiveForTenant = function(tenantId) {
 bannerSchema.pre('save', function(next) {
   if (!this.image.alt) {
     this.image.alt = `Banner image for ${this.position}`;
-  }
+    }
   next();
 });
 

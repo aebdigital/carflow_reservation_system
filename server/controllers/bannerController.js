@@ -67,7 +67,7 @@ const getBanners = asyncHandler(async (req, res, next) => {
       limit
     };
   }
-
+  
   res.status(200).json({
     success: true,
     count: banners.length,
@@ -190,7 +190,7 @@ const updateBanner = asyncHandler(async (req, res, next) => {
       isActive: req.body.isActive !== undefined ? req.body.isActive : banner.isActive,
       sortOrder: req.body.sortOrder !== undefined ? parseInt(req.body.sortOrder) : banner.sortOrder,
     };
-
+    
     // Handle image update if present
     if (req.file) {
       try {
@@ -218,7 +218,7 @@ const updateBanner = asyncHandler(async (req, res, next) => {
       } catch (error) {
         console.error('🖼️ [BANNER UPDATE] Image upload failed:', error);
         return next(new AppError('Failed to upload banner image', 400));
-      }
+    }
     }
 
     // Update banner
@@ -294,7 +294,7 @@ const getBannersByPosition = asyncHandler(async (req, res, next) => {
   if (!tenantId) {
     return next(new AppError('Tenant ID is required', 400));
   }
-
+  
   const banners = await Banner.getActiveByPosition(tenantId, position);
 
   res.status(200).json({
@@ -314,7 +314,7 @@ const getActiveBanners = asyncHandler(async (req, res, next) => {
   if (!tenantId) {
     return next(new AppError('Tenant ID is required', 400));
   }
-
+  
   const banners = await Banner.getActiveForTenant(tenantId);
 
   res.status(200).json({
@@ -370,7 +370,7 @@ const getPublicBanners = asyncHandler(async (req, res, next) => {
   if (position) {
     query.position = position;
   }
-
+  
   const banners = await Banner.find(query)
     .sort({ position: 1, sortOrder: 1 })
     .populate('createdBy', 'name email');
@@ -406,7 +406,7 @@ const getPublicBannersByUser = asyncHandler(async (req, res, next) => {
   if (position) {
     query.position = position;
   }
-
+  
   const banners = await Banner.find(query)
     .sort({ position: 1, sortOrder: 1 })
     .populate('createdBy', 'name email');

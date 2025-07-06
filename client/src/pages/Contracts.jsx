@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Box,
   Typography,
@@ -25,6 +25,17 @@ import {
   IconButton,
   Chip,
   Alert,
+  Divider,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  FormControlLabel,
+  Switch,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  Tooltip,
 } from '@mui/material'
 import {
   Add as AddIcon,
@@ -34,66 +45,331 @@ import {
   Print as PrintIcon,
   Visibility as ViewIcon,
   Description as ContractIcon,
+  ExpandMore as ExpandMoreIcon,
+  PersonAdd as PersonAddIcon,
+  DirectionsCar as CarIcon,
+  EventNote as EventIcon,
+  MonetizationOn as MoneyIcon,
+  Rule as RuleIcon,
+  Assignment as AssignmentIcon,
 } from '@mui/icons-material'
+import { 
+  useGetContractsQuery,
+  useGetContractQuery,
+  useCreateContractMutation,
+  useUpdateContractMutation,
+  useDeleteContractMutation,
+  useUpdateContractStatusMutation,
+  useSignContractStaffMutation,
+  useGenerateContractPDFMutation,
+  useGetContractStatsQuery,
+  useGetReservationsQuery,
+} from '../store/store'
 import { t } from '../utils/translations'
 
 function Contracts() {
   const [openDialog, setOpenDialog] = useState(false)
   const [dialogMode, setDialogMode] = useState('create') // 'create', 'edit', 'view'
+  const [selectedContract, setSelectedContract] = useState(null)
+  const [alert, setAlert] = useState(null)
   const [formData, setFormData] = useState({
-    contractNumber: '',
     reservationId: '',
-    customerName: '',
-    contractDate: '',
-    status: 'draft',
+    customer: {
+      firstName: '',
+      lastName: '',
+      phone: '',
+      email: '',
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'Slovensko'
+      },
+      ico: ''
+    },
+    vehicle: {
+      brand: '',
+      model: '',
+      year: '',
+      registrationNumber: '',
+      vin: '',
+      category: '',
+      fuelType: '',
+      transmission: ''
+    },
+    rental: {
+      startDate: '',
+      endDate: '',
+      pickupLocation: '',
+      returnLocation: '',
+      totalDays: 0,
+      dailyRate: 0,
+      totalAmount: 0
+    },
+    additionalServices: [],
+    specialServices: {
+      delivery: {
+        isSelected: false,
+        price: 0,
+        address: ''
+      },
+      afterHours: {
+        isSelected: false,
+        price: 0,
+        notes: ''
+      }
+    },
+    rentalRules: {
+      dailyKmLimit: 200,
+      excessKmFee: 0.25,
+      insuranceDeductible: 1000,
+      prohibitedActivities: [
+        'Fajčenie vo vozidle',
+        'Prevoz domácich zvierat bez schválenia',
+        'Jazda v teréne',
+        'Používanie vozidla na komerčné účely'
+      ],
+      cancellationPolicy: 'Zrušenie rezervácie je možné do 24 hodín pred začiatkom prenájmu bez poplatku. Pri zrušení menej ako 24 hodín pred začiatkom sa účtuje poplatok 50% z celkovej sumy.'
+    },
+    notes: '',
+    status: 'draft'
   })
 
-  // Mock data for contracts
-  const contracts = [
-    {
-      id: 1,
-      contractNumber: 'ZML-2024-001',
-      reservationId: 'RES001234',
-      customerName: 'John Doe',
-      contractDate: '2024-06-15',
-      carInfo: '2023 Toyota Camry',
-      status: 'signed',
-      amount: '380€',
-    },
-    {
-      id: 2,
-      contractNumber: 'ZML-2024-002',
-      reservationId: 'RES001235',
-      customerName: 'Jane Smith',
-      contractDate: '2024-06-16',
-      carInfo: '2023 Honda Accord',
-      status: 'draft',
-      amount: '240€',
-    },
-    {
-      id: 3,
-      contractNumber: 'ZML-2024-003',
-      reservationId: 'RES001236',
-      customerName: 'Mike Johnson',
-      contractDate: '2024-06-17',
-      carInfo: '2023 BMW X5',
-      status: 'pending',
-      amount: '950€',
-    },
-  ]
+  // API hooks
+  const { data: contractsData, isLoading: contractsLoading, error: contractsError, refetch } = useGetContractsQuery()
+  const { data: contractStatsData } = useGetContractStatsQuery()
+  const { data: reservationsData } = useGetReservationsQuery({ status: 'confirmed' })
+  const [createContract, { isLoading: creating }] = useCreateContractMutation()
+  const [updateContract, { isLoading: updating }] = useUpdateContractMutation()
+  const [deleteContract, { isLoading: deleting }] = useDeleteContractMutation()
+  const [updateContractStatus] = useUpdateContractStatusMutation()
+  const [signContractStaff] = useSignContractStaffMutation()
+  const [generateContractPDF] = useGenerateContractPDFMutation()
 
-  // Mock reservations for selection
-  const availableReservations = [
-    { id: 'RES001234', customer: 'John Doe', car: '2023 Toyota Camry', amount: '380€' },
-    { id: 'RES001235', customer: 'Jane Smith', car: '2023 Honda Accord', amount: '240€' },
-    { id: 'RES001236', customer: 'Mike Johnson', car: '2023 BMW X5', amount: '950€' },
-  ]
+  const contracts = contractsData?.data || []
+  const stats = contractStatsData?.data || {}
+  const availableReservations = reservationsData?.data || []
+
+  useEffect(() => {
+    if (alert) {
+      const timer = setTimeout(() => setAlert(null), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [alert])
+
+  // Handlers
+  const handleOpenDialog = (mode, contract = null) => {
+    setDialogMode(mode)
+    setSelectedContract(contract)
+    
+    if (mode === 'create') {
+      setFormData({
+        reservationId: '',
+        customer: {
+          firstName: '',
+          lastName: '',
+          phone: '',
+          email: '',
+          address: {
+            street: '',
+            city: '',
+            state: '',
+            zipCode: '',
+            country: 'Slovensko'
+          },
+          ico: ''
+        },
+        vehicle: {
+          brand: '',
+          model: '',
+          year: '',
+          registrationNumber: '',
+          vin: '',
+          category: '',
+          fuelType: '',
+          transmission: ''
+        },
+        rental: {
+          startDate: '',
+          endDate: '',
+          pickupLocation: '',
+          returnLocation: '',
+          totalDays: 0,
+          dailyRate: 0,
+          totalAmount: 0
+        },
+        additionalServices: [],
+        specialServices: {
+          delivery: {
+            isSelected: false,
+            price: 0,
+            address: ''
+          },
+          afterHours: {
+            isSelected: false,
+            price: 0,
+            notes: ''
+          }
+        },
+        rentalRules: {
+          dailyKmLimit: 200,
+          excessKmFee: 0.25,
+          insuranceDeductible: 1000,
+          prohibitedActivities: [
+            'Fajčenie vo vozidle',
+            'Prevoz domácich zvierat bez schválenia',
+            'Jazda v teréne',
+            'Používanie vozidla na komerčné účely'
+          ],
+          cancellationPolicy: 'Zrušenie rezervácie je možné do 24 hodín pred začiatkom prenájmu bez poplatku. Pri zrušení menej ako 24 hodín pred začiatkom sa účtuje poplatok 50% z celkovej sumy.'
+        },
+        notes: '',
+        status: 'draft'
+      })
+    } else if (mode === 'edit' && contract) {
+      setFormData(contract)
+    }
+    
+    setOpenDialog(true)
+  }
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false)
+    setSelectedContract(null)
+  }
+
+  const handleReservationChange = (reservationId) => {
+    const reservation = availableReservations.find(r => r._id === reservationId)
+    if (reservation) {
+      setFormData(prev => ({
+        ...prev,
+        reservationId,
+        customer: {
+          firstName: reservation.customer?.firstName || '',
+          lastName: reservation.customer?.lastName || '',
+          phone: reservation.customer?.phone || '',
+          email: reservation.customer?.email || '',
+          address: reservation.customer?.address || {
+            street: '',
+            city: '',
+            state: '',
+            zipCode: '',
+            country: 'Slovensko'
+          },
+          ico: reservation.customer?.ico || ''
+        },
+        vehicle: {
+          brand: reservation.car?.brand || '',
+          model: reservation.car?.model || '',
+          year: reservation.car?.year || '',
+          registrationNumber: reservation.car?.registrationNumber || '',
+          vin: reservation.car?.vin || '',
+          category: reservation.car?.category || '',
+          fuelType: reservation.car?.fuelType || '',
+          transmission: reservation.car?.transmission || ''
+        },
+        rental: {
+          startDate: reservation.startDate || '',
+          endDate: reservation.endDate || '',
+          pickupLocation: reservation.pickupLocation?.name || '',
+          returnLocation: reservation.dropoffLocation?.name || '',
+          totalDays: reservation.pricing?.totalDays || 0,
+          dailyRate: reservation.pricing?.dailyRate || 0,
+          totalAmount: reservation.pricing?.totalAmount || 0
+        }
+      }))
+    }
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    
+    try {
+      if (dialogMode === 'create') {
+        await createContract(formData).unwrap()
+        setAlert({ type: 'success', message: 'Zmluva bola úspešne vytvorená!' })
+      } else if (dialogMode === 'edit') {
+        await updateContract({ id: selectedContract._id, ...formData }).unwrap()
+        setAlert({ type: 'success', message: 'Zmluva bola úspešne aktualizovaná!' })
+      }
+      
+      handleCloseDialog()
+      refetch()
+    } catch (error) {
+      console.error('Error saving contract:', error)
+      setAlert({ 
+        type: 'error', 
+        message: `Chyba pri ukladaní zmluvy: ${error.data?.message || error.message}` 
+      })
+    }
+  }
+
+  const handleDelete = async (contractId) => {
+    if (window.confirm('Ste si istí, že chcete vymazať túto zmluvu?')) {
+      try {
+        await deleteContract(contractId).unwrap()
+        setAlert({ type: 'success', message: 'Zmluva bola úspešne vymazaná!' })
+        refetch()
+      } catch (error) {
+        console.error('Error deleting contract:', error)
+        setAlert({ 
+          type: 'error', 
+          message: `Chyba pri mazaní zmluvy: ${error.data?.message || error.message}` 
+        })
+      }
+    }
+  }
+
+  const handleStatusChange = async (contractId, newStatus) => {
+    try {
+      await updateContractStatus({ id: contractId, status: newStatus }).unwrap()
+      setAlert({ type: 'success', message: `Stav zmluvy bol zmenený na ${newStatus}!` })
+      refetch()
+    } catch (error) {
+      console.error('Error updating contract status:', error)
+      setAlert({ 
+        type: 'error', 
+        message: `Chyba pri zmene stavu zmluvy: ${error.data?.message || error.message}` 
+      })
+    }
+  }
+
+  const handleSignContract = async (contractId) => {
+    try {
+      await signContractStaff(contractId).unwrap()
+      setAlert({ type: 'success', message: 'Zmluva bola podpísaná!' })
+      refetch()
+    } catch (error) {
+      console.error('Error signing contract:', error)
+      setAlert({ 
+        type: 'error', 
+        message: `Chyba pri podpisovaní zmluvy: ${error.data?.message || error.message}` 
+      })
+    }
+  }
+
+  const handleDownloadPDF = async (contractId) => {
+    try {
+      const response = await generateContractPDF({ id: contractId, preview: false }).unwrap()
+      // The PDF download will be handled by the browser
+      setAlert({ type: 'success', message: 'PDF zmluvy sa sťahuje!' })
+    } catch (error) {
+      console.error('Error generating PDF:', error)
+      setAlert({ 
+        type: 'error', 
+        message: `Chyba pri generovaní PDF: ${error.data?.message || error.message}` 
+      })
+    }
+  }
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'signed': return 'success'
       case 'pending': return 'warning'
       case 'draft': return 'default'
+      case 'cancelled': return 'error'
+      case 'expired': return 'error'
       default: return 'default'
     }
   }
@@ -102,75 +378,33 @@ function Contracts() {
     switch (status) {
       case 'signed': return 'Podpísaná'
       case 'pending': return 'Čakajúca'
-      case 'draft': return t('draft')
+      case 'draft': return 'Koncept'
+      case 'cancelled': return 'Zrušená'
+      case 'expired': return 'Vypršaná'
       default: return status
     }
   }
 
-  const generateContractNumber = () => {
-    const year = new Date().getFullYear()
-    const count = contracts.length + 1
-    return `ZML-${year}-${count.toString().padStart(3, '0')}`
+  if (contractsLoading) {
+    return <Typography>Načítava sa...</Typography>
   }
 
-  const handleOpenDialog = (mode, contract = null) => {
-    setDialogMode(mode)
-    if (contract) {
-      setFormData({
-        contractNumber: contract.contractNumber || '',
-        reservationId: contract.reservationId || '',
-        customerName: contract.customerName || '',
-        contractDate: contract.contractDate || '',
-        status: contract.status || 'draft',
-      })
-    } else {
-      setFormData({
-        contractNumber: generateContractNumber(),
-        reservationId: '',
-        customerName: '',
-        contractDate: new Date().toISOString().split('T')[0],
-        status: 'draft',
-      })
-    }
-    setOpenDialog(true)
-  }
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false)
-    setFormData({
-      contractNumber: '',
-      reservationId: '',
-      customerName: '',
-      contractDate: '',
-      status: 'draft',
-    })
-  }
-
-  const handleSubmit = () => {
-    // Here you would implement the contract creation/update logic
-    console.log('Contract data:', formData)
-    handleCloseDialog()
-  }
-
-  const handleReservationChange = (reservationId) => {
-    const reservation = availableReservations.find(r => r.id === reservationId)
-    if (reservation) {
-      setFormData({
-        ...formData,
-        reservationId,
-        customerName: reservation.customer,
-      })
-    }
-  }
-
-  const handleDownloadContract = (contractId) => {
-    // Here you would implement the contract PDF generation and download
-    console.log('Downloading contract:', contractId)
-    alert('Funkcia sťahovania zmluvy bude implementovaná neskôr s PDF šablónou.')
+  if (contractsError) {
+    return <Alert severity="error">Chyba pri načítavaní zmlúv: {contractsError.message}</Alert>
   }
 
   return (
     <Box>
+      {alert && (
+        <Alert 
+          severity={alert.type} 
+          onClose={() => setAlert(null)}
+          sx={{ mb: 3 }}
+        >
+          {alert.message}
+        </Alert>
+      )}
+
       {/* Header */}
       <Box sx={{ 
         display: 'flex', 
@@ -198,17 +432,17 @@ function Contracts() {
             mt: { xs: 1, sm: 0 }
           }}
         >
-          {t('createContract')}
+          Nová zmluva
         </Button>
       </Box>
 
       {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4, ml: 0 }}>
+      <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                {contracts.length}
+                {stats.totalContracts || 0}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Celkový počet zmlúv
@@ -220,7 +454,7 @@ function Contracts() {
           <Card>
             <CardContent>
               <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.main' }}>
-                {contracts.filter(c => c.status === 'signed').length}
+                {stats.signedContracts || 0}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Podpísané zmluvy
@@ -232,10 +466,10 @@ function Contracts() {
           <Card>
             <CardContent>
               <Typography variant="h4" sx={{ fontWeight: 700, color: 'warning.main' }}>
-                {contracts.filter(c => c.status === 'pending').length}
+                {stats.contractsThisMonth || 0}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Čakajúce zmluvy
+                Zmluvy tento mesiac
               </Typography>
             </CardContent>
           </Card>
@@ -243,86 +477,129 @@ function Contracts() {
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'default.main' }}>
-                {contracts.filter(c => c.status === 'draft').length}
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'info.main' }}>
+                {stats.contractsByStatus?.find(s => s._id === 'pending')?.count || 0}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Koncepty
+                Čakajúce zmluvy
               </Typography>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
-      {/* Template Notice */}
-      <Alert severity="info" sx={{ mb: 3 }}>
-        📋 PDF šablóna zmluvy bude pridaná neskôr do assets/contract.pdf pre automatické vyplňovanie.
-      </Alert>
-
       {/* Contracts Table */}
       <Card>
         <CardContent>
           <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-            {t('contracts')}
+            Zmluvy
           </Typography>
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>{t('contractNumber')}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>ID rezervácie</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Číslo zmluvy</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Zákazník</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Vozidlo</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{t('contractDate')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Dátum vytvorenia</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Suma</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Stav</TableCell>
-                  <TableCell></TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Akcie</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {contracts.map((contract) => (
-                  <TableRow key={contract.id}>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {contract.contractNumber}
+                {contracts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center">
+                      <Typography variant="body2" color="text.secondary">
+                        Žiadne zmluvy neboli vytvorené
                       </Typography>
-                    </TableCell>
-                    <TableCell>{contract.reservationId}</TableCell>
-                    <TableCell>{contract.customerName}</TableCell>
-                    <TableCell>{contract.carInfo}</TableCell>
-                    <TableCell>{contract.contractDate}</TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {contract.amount}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={getStatusText(contract.status)}
-                        size="small"
-                        color={getStatusColor(contract.status)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <IconButton size="small" onClick={() => handleOpenDialog('view', contract)}>
-                        <ViewIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small" onClick={() => handleOpenDialog('edit', contract)}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton 
-                        size="small" 
-                        color="primary"
-                        onClick={() => handleDownloadContract(contract.id)}
-                      >
-                        <DownloadIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small" color="error">
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  contracts.map((contract) => (
+                    <TableRow key={contract._id}>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {contract.contractNumber}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {contract.customer.firstName} {contract.customer.lastName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {contract.customer.email}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {contract.vehicle.brand} {contract.vehicle.model}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {contract.vehicle.registrationNumber}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {new Date(contract.createdAt).toLocaleDateString('sk-SK')}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {contract.rental.totalAmount}€
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={getStatusText(contract.status)}
+                          color={getStatusColor(contract.status)}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <Tooltip title="Zobraziť">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleOpenDialog('view', contract)}
+                            >
+                              <ViewIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Upraviť">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleOpenDialog('edit', contract)}
+                              disabled={contract.status === 'signed'}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Stiahnuť PDF">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleDownloadPDF(contract._id)}
+                              color="primary"
+                            >
+                              <DownloadIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Vymazať">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleDelete(contract._id)}
+                              color="error"
+                              disabled={contract.status === 'signed'}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </TableContainer>
@@ -333,103 +610,384 @@ function Contracts() {
       <Dialog 
         open={openDialog} 
         onClose={handleCloseDialog}
-        maxWidth="md"
+        maxWidth="lg"
         fullWidth
       >
         <DialogTitle>
-          {dialogMode === 'create' && t('createContract')}
+          {dialogMode === 'create' && 'Nová zmluva'}
           {dialogMode === 'edit' && 'Upraviť zmluvu'}
           {dialogMode === 'view' && 'Zobraziť zmluvu'}
         </DialogTitle>
         
-        <DialogContent sx={{ pt: 3 }}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
+        <form onSubmit={handleSubmit}>
+          <DialogContent>
+            {dialogMode === 'create' && (
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel>Vyberte rezerváciu</InputLabel>
+                    <Select
+                      value={formData.reservationId}
+                      onChange={(e) => handleReservationChange(e.target.value)}
+                      label="Vyberte rezerváciu"
+                    >
+                      {availableReservations.map((reservation) => (
+                        <MenuItem key={reservation._id} value={reservation._id}>
+                          {reservation.reservationNumber} - {reservation.customer?.firstName} {reservation.customer?.lastName} - {reservation.car?.brand} {reservation.car?.model}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              </Grid>
+            )}
+
+            {/* Customer Information */}
+            <Accordion defaultExpanded>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <PersonAddIcon sx={{ mr: 1 }} />
+                <Typography variant="h6">Informácie o zákazníkovi</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Meno"
+                      value={formData.customer.firstName}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        customer: { ...prev.customer, firstName: e.target.value }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Priezvisko"
+                      value={formData.customer.lastName}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        customer: { ...prev.customer, lastName: e.target.value }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Telefón"
+                      value={formData.customer.phone}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        customer: { ...prev.customer, phone: e.target.value }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="E-mail"
+                      value={formData.customer.email}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        customer: { ...prev.customer, email: e.target.value }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={8}>
+                    <TextField
+                      fullWidth
+                      label="Adresa"
+                      value={formData.customer.address.street}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        customer: { 
+                          ...prev.customer, 
+                          address: { ...prev.customer.address, street: e.target.value }
+                        }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      fullWidth
+                      label="IČO (voliteľné)"
+                      value={formData.customer.ico}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        customer: { ...prev.customer, ico: e.target.value }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                </Grid>
+              </AccordionDetails>
+            </Accordion>
+
+            {/* Vehicle Information */}
+            <Accordion defaultExpanded>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <CarIcon sx={{ mr: 1 }} />
+                <Typography variant="h6">Informácie o vozidle</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Značka"
+                      value={formData.vehicle.brand}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        vehicle: { ...prev.vehicle, brand: e.target.value }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Model"
+                      value={formData.vehicle.model}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        vehicle: { ...prev.vehicle, model: e.target.value }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Evidenčné číslo"
+                      value={formData.vehicle.registrationNumber}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        vehicle: { ...prev.vehicle, registrationNumber: e.target.value }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Rok výroby"
+                      type="number"
+                      value={formData.vehicle.year}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        vehicle: { ...prev.vehicle, year: e.target.value }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                </Grid>
+              </AccordionDetails>
+            </Accordion>
+
+            {/* Rental Details */}
+            <Accordion defaultExpanded>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <EventIcon sx={{ mr: 1 }} />
+                <Typography variant="h6">Detaily prenájmu</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Dátum od"
+                      type="date"
+                      value={formData.rental.startDate ? new Date(formData.rental.startDate).toISOString().split('T')[0] : ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        rental: { ...prev.rental, startDate: e.target.value }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Dátum do"
+                      type="date"
+                      value={formData.rental.endDate ? new Date(formData.rental.endDate).toISOString().split('T')[0] : ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        rental: { ...prev.rental, endDate: e.target.value }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Miesto prevzatia"
+                      value={formData.rental.pickupLocation}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        rental: { ...prev.rental, pickupLocation: e.target.value }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Miesto vrátenia"
+                      value={formData.rental.returnLocation}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        rental: { ...prev.rental, returnLocation: e.target.value }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      fullWidth
+                      label="Počet dní"
+                      type="number"
+                      value={formData.rental.totalDays}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        rental: { ...prev.rental, totalDays: parseInt(e.target.value) || 0 }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      fullWidth
+                      label="Denná sadzba (€)"
+                      type="number"
+                      value={formData.rental.dailyRate}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        rental: { ...prev.rental, dailyRate: parseFloat(e.target.value) || 0 }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      fullWidth
+                      label="Celková suma (€)"
+                      type="number"
+                      value={formData.rental.totalAmount}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        rental: { ...prev.rental, totalAmount: parseFloat(e.target.value) || 0 }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                </Grid>
+              </AccordionDetails>
+            </Accordion>
+
+            {/* Rental Rules */}
+            <Accordion>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <RuleIcon sx={{ mr: 1 }} />
+                <Typography variant="h6">Pravidlá prenájmu</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      fullWidth
+                      label="Denný limit km"
+                      type="number"
+                      value={formData.rentalRules.dailyKmLimit}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        rentalRules: { ...prev.rentalRules, dailyKmLimit: parseInt(e.target.value) || 0 }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      fullWidth
+                      label="Poplatok za nadlimitné km (€/km)"
+                      type="number"
+                      step="0.01"
+                      value={formData.rentalRules.excessKmFee}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        rentalRules: { ...prev.rentalRules, excessKmFee: parseFloat(e.target.value) || 0 }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      fullWidth
+                      label="Spoluúčasť pri poistení (€)"
+                      type="number"
+                      value={formData.rentalRules.insuranceDeductible}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        rentalRules: { ...prev.rentalRules, insuranceDeductible: parseInt(e.target.value) || 0 }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Storno podmienky"
+                      multiline
+                      rows={3}
+                      value={formData.rentalRules.cancellationPolicy}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        rentalRules: { ...prev.rentalRules, cancellationPolicy: e.target.value }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                </Grid>
+              </AccordionDetails>
+            </Accordion>
+
+            {/* Notes */}
+            <Box sx={{ mt: 2 }}>
               <TextField
                 fullWidth
-                label={t('contractNumber')}
-                value={formData.contractNumber}
-                onChange={(e) => setFormData({ ...formData, contractNumber: e.target.value })}
-                disabled={true}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label={t('contractDate')}
-                type="date"
-                value={formData.contractDate}
-                onChange={(e) => setFormData({ ...formData, contractDate: e.target.value })}
+                label="Poznámky"
+                multiline
+                rows={3}
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                 disabled={dialogMode === 'view'}
-                InputLabelProps={{ shrink: true }}
               />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Rezervácia</InputLabel>
-                <Select
-                  value={formData.reservationId}
-                  onChange={(e) => handleReservationChange(e.target.value)}
-                  disabled={dialogMode === 'view'}
-                  label="Rezervácia"
-                >
-                  {availableReservations.map(reservation => (
-                    <MenuItem key={reservation.id} value={reservation.id}>
-                      {reservation.id} - {reservation.customer} - {reservation.car}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Zákazník"
-                value={formData.customerName}
-                disabled={true}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Stav zmluvy</InputLabel>
-                <Select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  disabled={dialogMode === 'view'}
-                  label="Stav zmluvy"
-                >
-                  <MenuItem value="draft">Koncept</MenuItem>
-                  <MenuItem value="pending">Čakajúca</MenuItem>
-                  <MenuItem value="signed">Podpísaná</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        </DialogContent>
-        
-        <DialogActions sx={{ p: 3 }}>
-          <Button onClick={handleCloseDialog}>
-            {t('cancel')}
-          </Button>
-          {dialogMode !== 'view' && (
-            <>
+            </Box>
+          </DialogContent>
+          
+          <DialogActions>
+            <Button onClick={handleCloseDialog}>
+              Zrušiť
+            </Button>
+            {dialogMode !== 'view' && (
               <Button 
-                variant="outlined" 
-                onClick={() => handleDownloadContract(formData.contractNumber)}
-                startIcon={<DownloadIcon />}
+                type="submit" 
+                variant="contained"
+                disabled={creating || updating}
               >
-                {t('downloadContract')}
+                {creating || updating ? 'Ukladá sa...' : 'Uložiť'}
               </Button>
-              <Button 
-                variant="contained" 
-                onClick={handleSubmit}
-                startIcon={<ContractIcon />}
-              >
-                {dialogMode === 'create' ? t('generateContract') : t('save')}
-              </Button>
-            </>
-          )}
-        </DialogActions>
+            )}
+          </DialogActions>
+        </form>
       </Dialog>
     </Box>
   )

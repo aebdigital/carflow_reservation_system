@@ -18,7 +18,7 @@ const baseQuery = fetchBaseQuery({
 export const api = createApi({
   reducerPath: 'api',
   baseQuery,
-  tagTypes: ['User', 'Car', 'Reservation', 'Payment', 'WebsiteSettings', 'DiscountCode', 'Banner'],
+  tagTypes: ['User', 'Car', 'Reservation', 'Payment', 'WebsiteSettings', 'DiscountCode', 'Banner', 'Contract'],
   endpoints: (builder) => ({
     // Auth endpoints
     login: builder.mutation({
@@ -453,6 +453,66 @@ export const api = createApi({
       }),
       invalidatesTags: ['Banner'],
     }),
+
+    // Contract endpoints
+    getContracts: builder.query({
+      query: (params = {}) => ({
+        url: 'contracts',
+        params,
+      }),
+      providesTags: ['Contract'],
+    }),
+    getContract: builder.query({
+      query: (id) => `contracts/${id}`,
+      providesTags: (result, error, id) => [{ type: 'Contract', id }],
+    }),
+    createContract: builder.mutation({
+      query: (contractData) => ({
+        url: 'contracts',
+        method: 'POST',
+        body: contractData,
+      }),
+      invalidatesTags: ['Contract', 'Reservation'],
+    }),
+    updateContract: builder.mutation({
+      query: ({ id, ...contractData }) => ({
+        url: `contracts/${id}`,
+        method: 'PUT',
+        body: contractData,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Contract', id }, 'Contract'],
+    }),
+    deleteContract: builder.mutation({
+      query: (id) => ({
+        url: `contracts/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Contract'],
+    }),
+    updateContractStatus: builder.mutation({
+      query: ({ id, status }) => ({
+        url: `contracts/${id}/status`,
+        method: 'PUT',
+        body: { status },
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Contract', id }, 'Contract'],
+    }),
+    signContractStaff: builder.mutation({
+      query: (id) => ({
+        url: `contracts/${id}/sign-staff`,
+        method: 'PUT',
+      }),
+      invalidatesTags: (result, error, id) => [{ type: 'Contract', id }, 'Contract'],
+    }),
+    generateContractPDF: builder.mutation({
+      query: ({ id, preview = false }) => ({
+        url: `contracts/${id}/pdf${preview ? '?preview=true' : ''}`,
+        method: 'GET',
+      }),
+    }),
+    getContractStats: builder.query({
+      query: () => 'contracts/stats',
+    }),
   }),
 })
 
@@ -526,6 +586,17 @@ export const {
   useGetBannersByPageQuery,
   useGetCarouselBannersQuery,
   useUpdateBannerSortOrderMutation,
+
+  // Contract hooks
+  useGetContractsQuery,
+  useGetContractQuery,
+  useCreateContractMutation,
+  useUpdateContractMutation,
+  useDeleteContractMutation,
+  useUpdateContractStatusMutation,
+  useSignContractStaffMutation,
+  useGenerateContractPDFMutation,
+  useGetContractStatsQuery,
 } = api
 
 export const store = configureStore({
