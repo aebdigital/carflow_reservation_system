@@ -350,6 +350,74 @@ const updateSortOrder = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Get public banners (public)
+// @route   GET /api/public/banners
+// @access  Public
+const getPublicBanners = asyncHandler(async (req, res, next) => {
+  const { page, position } = req.query;
+  const tenantId = req.headers['x-tenant-id'] || req.query.tenantId;
+  
+  if (!tenantId) {
+    return next(new AppError('Tenant ID is required', 400));
+  }
+
+  let query = {
+    tenantId,
+    isActive: true
+  };
+
+  // Add position filter if provided
+  if (position) {
+    query.position = position;
+  }
+
+  const banners = await Banner.find(query)
+    .sort({ position: 1, sortOrder: 1 })
+    .populate('createdBy', 'name email');
+
+  res.status(200).json({
+    success: true,
+    count: banners.length,
+    data: banners
+  });
+});
+
+// @desc    Get public banners by user/tenant (public)
+// @route   GET /api/public/users/:email/banners
+// @access  Public
+const getPublicBannersByUser = asyncHandler(async (req, res, next) => {
+  const { email } = req.params;
+  const { page, position } = req.query;
+  
+  // Find user to get tenant ID
+  const User = require('../models/User');
+  const user = await User.findOne({ email }).select('tenantId');
+  
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+
+  let query = {
+    tenantId: user.tenantId,
+    isActive: true
+  };
+
+  // Add position filter if provided
+  if (position) {
+    query.position = position;
+  }
+
+  const banners = await Banner.find(query)
+    .sort({ position: 1, sortOrder: 1 })
+    .populate('createdBy', 'name email');
+
+  res.status(200).json({
+    success: true,
+    count: banners.length,
+    data: banners
+  });
+});
+
 module.exports = {
   getBanners,
   getBanner,
@@ -358,5 +426,7 @@ module.exports = {
   deleteBanner,
   getBannersByPosition,
   getActiveBanners,
-  updateSortOrder
+  updateSortOrder,
+  getPublicBanners,
+  getPublicBannersByUser
 }; 
