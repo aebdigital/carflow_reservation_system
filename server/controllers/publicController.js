@@ -1288,18 +1288,35 @@ const verifyDiscountCodeByUser = asyncHandler(async (req, res, next) => {
       return next(new AppError('Tenant not found for this user', 404));
     }
 
+    console.log('🔍 DEBUG: Discount code verification');
+    console.log('📧 User email:', userEmail);
+    console.log('🏢 Tenant ID:', tenantId);
+    console.log('🎫 Original code:', code);
+    console.log('🎫 Uppercase code:', code.toUpperCase());
+
     // Find the discount code for this tenant
     const discountCode = await DiscountCode.findOne({ 
       code: code.toUpperCase(),
       tenantId: tenantId
     });
 
+    console.log('💾 Database query result:', discountCode ? 'FOUND' : 'NOT FOUND');
+    
+    // Let's also check all discount codes for this tenant for debugging
+    const allCodesForTenant = await DiscountCode.find({ tenantId: tenantId });
+    console.log('📋 All discount codes for this tenant:', allCodesForTenant.map(c => ({ code: c.code, isActive: c.isActive })));
+
     if (!discountCode) {
       return res.status(200).json({
         success: false,
         valid: false,
         reason: 'Neplatný zľavový kód',
-        message: 'Zadaný zľavový kód neexistuje alebo nie je platný pre túto spoločnosť.'
+        message: 'Zadaný zľavový kód neexistuje alebo nie je platný pre túto spoločnosť.',
+        debug: {
+          searchedCode: code.toUpperCase(),
+          tenantId: tenantId,
+          availableCodes: allCodesForTenant.map(c => c.code)
+        }
       });
     }
 
