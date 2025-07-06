@@ -1,7 +1,7 @@
 # CarFlow Public API Documentation
 
 ## Overview
-The CarFlow Public API provides public access to car rental data and reservation functionality without requiring authentication. This API is designed for public-facing websites, mobile apps, and integration with third-party services.
+The CarFlow Public API provides public access to car rental data, banner content, and reservation functionality without requiring authentication. This API is designed for public-facing websites, mobile apps, and integration with third-party services.
 
 **Base URL**: `https://carflow-reservation-system.onrender.com/api/public`
 
@@ -13,6 +13,7 @@ The CarFlow Public API provides public access to car rental data and reservation
 - Enhanced car form with improved user experience
 - Added comprehensive equipment and badge system
 - Improved mileage tracking and document validity features
+- **NEW**: Added banner management system with position-based display
 
 ## Authentication
 No authentication required for public endpoints.
@@ -179,9 +180,168 @@ Returns detailed information about a specific car.
 curl "https://carflow-reservation-system.onrender.com/api/public/cars/car_id_here"
 ```
 
+## Public Banner Endpoints
+
+### 3. Get Banners by Position
+**GET** `/banners/position/:position`
+
+Returns all active banners for a specific website position.
+
+**Headers:**
+- `x-tenant-id` (string, required): Tenant ID to filter banners
+
+**Position Options:**
+- `homepage-hero` - Main banner on homepage
+- `homepage-section` - Section banner on homepage
+- `cars-hero` - Main banner on cars page
+- `cars-section` - Section banner on cars page
+- `contact-hero` - Main banner on contact page
+- `contact-section` - Section banner on contact page
+- `about-hero` - Main banner on about page
+- `about-section` - Section banner on about page
+- `header` - Header banner
+- `footer` - Footer banner
+
+**Example Request:**
+```bash
+curl -H "x-tenant-id: tenant_id_here" \
+     "https://carflow-reservation-system.onrender.com/api/banners/position/homepage-hero"
+```
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "count": 2,
+  "data": [
+    {
+      "_id": "banner_id_1",
+      "image": {
+        "url": "https://storage.googleapis.com/car_rental_carflow/banner_medium.jpg",
+        "filename": "banner_filename.jpg",
+        "alt": "Banner image for homepage-hero",
+        "uploadDate": "2024-01-15T10:30:00.000Z"
+      },
+      "position": "homepage-hero",
+      "isActive": true,
+      "sortOrder": 0,
+      "createdAt": "2024-01-15T10:30:00.000Z"
+    },
+    {
+      "_id": "banner_id_2",
+      "image": {
+        "url": "https://storage.googleapis.com/car_rental_carflow/banner2_medium.jpg",
+        "filename": "banner2_filename.jpg",
+        "alt": "Banner image for homepage-hero",
+        "uploadDate": "2024-01-16T14:20:00.000Z"
+      },
+      "position": "homepage-hero",
+      "isActive": true,
+      "sortOrder": 1,
+      "createdAt": "2024-01-16T14:20:00.000Z"
+    }
+  ]
+}
+```
+
+### 4. Get All Active Banners
+**GET** `/banners/active`
+
+Returns all active banners for a tenant, grouped by position.
+
+**Headers:**
+- `x-tenant-id` (string, required): Tenant ID to filter banners
+
+**Example Request:**
+```bash
+curl -H "x-tenant-id: tenant_id_here" \
+     "https://carflow-reservation-system.onrender.com/api/banners/active"
+```
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "count": 5,
+  "data": [
+    {
+      "_id": "banner_id_1",
+      "image": {
+        "url": "https://storage.googleapis.com/car_rental_carflow/banner_medium.jpg",
+        "filename": "banner_filename.jpg",
+        "alt": "Banner image for homepage-hero",
+        "uploadDate": "2024-01-15T10:30:00.000Z"
+      },
+      "position": "homepage-hero",
+      "isActive": true,
+      "sortOrder": 0,
+      "createdAt": "2024-01-15T10:30:00.000Z"
+    },
+    {
+      "_id": "banner_id_2",
+      "image": {
+        "url": "https://storage.googleapis.com/car_rental_carflow/banner2_medium.jpg",
+        "filename": "banner2_filename.jpg",
+        "alt": "Banner image for cars-hero",
+        "uploadDate": "2024-01-16T14:20:00.000Z"
+      },
+      "position": "cars-hero",
+      "isActive": true,
+      "sortOrder": 0,
+      "createdAt": "2024-01-16T14:20:00.000Z"
+    }
+  ]
+}
+```
+
+### Banner Implementation Example
+
+**Frontend Integration:**
+```javascript
+// Fetch banners for homepage hero section
+const fetchHomepageBanners = async () => {
+  try {
+    const response = await fetch('/api/banners/position/homepage-hero', {
+      headers: {
+        'x-tenant-id': 'your-tenant-id'
+      }
+    });
+    const data = await response.json();
+    
+    if (data.success) {
+      return data.data; // Array of banner objects
+    }
+  } catch (error) {
+    console.error('Failed to fetch banners:', error);
+  }
+};
+
+// React component example
+const HeroBanner = () => {
+  const [banners, setBanners] = useState([]);
+  
+  useEffect(() => {
+    fetchHomepageBanners().then(setBanners);
+  }, []);
+  
+  return (
+    <div className="hero-section">
+      {banners.map((banner) => (
+        <img 
+          key={banner._id}
+          src={banner.image.url}
+          alt={banner.image.alt}
+          className="hero-banner"
+        />
+      ))}
+    </div>
+  );
+};
+```
+
 ## Public Additional Services Endpoints
 
-### 14. Get Public Additional Services
+### 5. Get Public Additional Services
 **GET** `/services`
 
 Returns all public additional services for the "Naše služby" (Our Services) section.

@@ -6,8 +6,8 @@ const {
   createBanner,
   updateBanner,
   deleteBanner,
-  getBannersByPage,
-  getCarouselBanners,
+  getBannersByPosition,
+  getActiveBanners,
   updateSortOrder
 } = require('../controllers/bannerController');
 
@@ -32,7 +32,14 @@ const upload = multer({
   }
 });
 
-// All routes require authentication and admin privileges
+// Public routes (no authentication required)
+router.route('/position/:position')
+  .get(getBannersByPosition);
+
+router.route('/active')
+  .get(getActiveBanners);
+
+// Protected routes require authentication and admin privileges
 router.use(protect);
 router.use(authorize('admin', 'super_admin'));
 
@@ -46,13 +53,7 @@ router.route('/:id')
   .put(upload.single('image'), updateBanner)
   .delete(deleteBanner);
 
-// Specialized routes
-router.route('/page/:page')
-  .get(getBannersByPage);
-
-router.route('/carousel/:page')
-  .get(getCarouselBanners);
-
+// Admin-only routes
 router.route('/sort-order')
   .put(updateSortOrder);
 

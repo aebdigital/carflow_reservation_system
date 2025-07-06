@@ -4,7 +4,6 @@ import {
   Card,
   CardContent,
   Grid,
-  TextField,
   FormControl,
   InputLabel,
   Select,
@@ -14,9 +13,6 @@ import {
   Button,
   Alert,
   Typography,
-  Divider,
-  Chip,
-  Paper,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -28,41 +24,36 @@ import {
   TableHead,
   TableRow,
   IconButton,
-  FormHelperText,
-  InputAdornment,
   Tooltip,
   Avatar,
   CircularProgress,
+  Chip,
+  TextField,
 } from '@mui/material'
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Image as ImageIcon,
-  Link as LinkIcon,
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
   Save as SaveIcon,
   Cancel as CancelIcon,
   CloudUpload as UploadIcon,
-  DragIndicator as DragIcon,
-  Preview as PreviewIcon,
 } from '@mui/icons-material'
 import { useGetBannersQuery, useCreateBannerMutation, useUpdateBannerMutation, useDeleteBannerMutation } from '../../store/store'
 
-const pageOptions = [
-  { value: 'homepage', label: 'Domovská stránka' },
-  { value: 'cars', label: 'Stránka áut' },
-  { value: 'about', label: 'O nás' },
-  { value: 'contact', label: 'Kontakt' },
-  { value: 'all', label: 'Všetky stránky' },
-]
-
-const bannerTypeOptions = [
-  { value: 'hero', label: 'Hlavný banner (Hero)' },
-  { value: 'promotional', label: 'Propagačný banner' },
-  { value: 'announcement', label: 'Oznámenie' },
-  { value: 'carousel', label: 'Karusel' },
+const positionOptions = [
+  { value: 'homepage-hero', label: 'Domovská stránka - Hlavný banner' },
+  { value: 'homepage-section', label: 'Domovská stránka - Sekcia' },
+  { value: 'cars-hero', label: 'Stránka áut - Hlavný banner' },
+  { value: 'cars-section', label: 'Stránka áut - Sekcia' },
+  { value: 'contact-hero', label: 'Kontakt - Hlavný banner' },
+  { value: 'contact-section', label: 'Kontakt - Sekcia' },
+  { value: 'about-hero', label: 'O nás - Hlavný banner' },
+  { value: 'about-section', label: 'O nás - Sekcia' },
+  { value: 'footer', label: 'Päta stránky' },
+  { value: 'header', label: 'Hlavička stránky' },
 ]
 
 export default function BannerSettings() {
@@ -74,17 +65,9 @@ export default function BannerSettings() {
   const [imagePreview, setImagePreview] = useState(null)
   const [alert, setAlert] = useState(null)
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    buttonText: '',
-    buttonLink: '',
-    type: 'promotional',
-    page: 'homepage',
+    position: 'homepage-hero',
     isActive: true,
     sortOrder: 0,
-    textColor: '#ffffff',
-    backgroundColor: '#000000',
-    overlayOpacity: 0.5,
   })
 
   const { data: bannersData, isLoading: bannersLoading, error: bannersError, refetch } = useGetBannersQuery()
@@ -111,32 +94,16 @@ export default function BannerSettings() {
     
     if (banner) {
       setFormData({
-        title: banner.title || '',
-        description: banner.description || '',
-        buttonText: banner.buttonText || '',
-        buttonLink: banner.buttonLink || '',
-        type: banner.type || 'promotional',
-        page: banner.page || 'homepage',
+        position: banner.position || 'homepage-hero',
         isActive: banner.isActive !== undefined ? banner.isActive : true,
         sortOrder: banner.sortOrder || 0,
-        textColor: banner.textColor || '#ffffff',
-        backgroundColor: banner.backgroundColor || '#000000',
-        overlayOpacity: banner.overlayOpacity || 0.5,
       })
       setImagePreview(banner.imageUrl || null)
     } else {
       setFormData({
-        title: '',
-        description: '',
-        buttonText: '',
-        buttonLink: '',
-        type: 'promotional',
-        page: 'homepage',
+        position: 'homepage-hero',
         isActive: true,
         sortOrder: 0,
-        textColor: '#ffffff',
-        backgroundColor: '#000000',
-        overlayOpacity: 0.5,
       })
       setImagePreview(null)
     }
@@ -151,17 +118,9 @@ export default function BannerSettings() {
     setSelectedFile(null)
     setImagePreview(null)
     setFormData({
-      title: '',
-      description: '',
-      buttonText: '',
-      buttonLink: '',
-      type: 'promotional',
-      page: 'homepage',
+      position: 'homepage-hero',
       isActive: true,
       sortOrder: 0,
-      textColor: '#ffffff',
-      backgroundColor: '#000000',
-      overlayOpacity: 0.5,
     })
   }
 
@@ -188,13 +147,18 @@ export default function BannerSettings() {
   const handleSubmit = async (event) => {
     event.preventDefault()
     
+    if (!selectedFile && dialogMode === 'create') {
+      setAlert({ type: 'error', message: 'Prosím vyberte obrázok pre banner.' })
+      return
+    }
+
     try {
       const formDataToSend = new FormData()
       
-      // Add all form fields
-      Object.keys(formData).forEach(key => {
-        formDataToSend.append(key, formData[key])
-      })
+      // Add form fields
+      formDataToSend.append('position', formData.position)
+      formDataToSend.append('isActive', formData.isActive)
+      formDataToSend.append('sortOrder', formData.sortOrder)
       
       // Add image if selected
       if (selectedFile) {
@@ -292,7 +256,7 @@ export default function BannerSettings() {
             Správa Bannerov
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Vytvárajte a spravujte bannery pre vašu webstránku
+            Spravujte obrázky bannerov pre rôzne pozície na webstránke
           </Typography>
         </Box>
         
@@ -314,9 +278,8 @@ export default function BannerSettings() {
               <TableHead>
                 <TableRow>
                   <TableCell>Náhľad</TableCell>
-                  <TableCell>Názov</TableCell>
-                  <TableCell>Typ</TableCell>
-                  <TableCell>Stránka</TableCell>
+                  <TableCell>Pozícia</TableCell>
+                  <TableCell>Poradie</TableCell>
                   <TableCell>Stav</TableCell>
                   <TableCell>Akcie</TableCell>
                 </TableRow>
@@ -324,7 +287,7 @@ export default function BannerSettings() {
               <TableBody>
                 {banners.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center">
+                    <TableCell colSpan={5} align="center">
                       <Typography variant="body2" color="text.secondary">
                         Žiadne bannery neboli vytvorené
                       </Typography>
@@ -337,33 +300,19 @@ export default function BannerSettings() {
                         <Avatar
                           variant="rounded"
                           src={banner.imageUrl}
-                          sx={{ width: 60, height: 40 }}
+                          sx={{ width: 80, height: 50 }}
                         >
                           <ImageIcon />
                         </Avatar>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" fontWeight="medium">
-                          {banner.title}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {banner.description}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
                         <Chip 
-                          label={bannerTypeOptions.find(opt => opt.value === banner.type)?.label || banner.type}
-                          size="small"
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={pageOptions.find(opt => opt.value === banner.page)?.label || banner.page}
+                          label={positionOptions.find(opt => opt.value === banner.position)?.label || banner.position}
                           size="small"
                           color="primary"
                         />
                       </TableCell>
+                      <TableCell>{banner.sortOrder}</TableCell>
                       <TableCell>
                         <Chip
                           label={banner.isActive ? 'Aktívny' : 'Neaktívny'}
@@ -411,7 +360,7 @@ export default function BannerSettings() {
       <Dialog 
         open={openDialog} 
         onClose={handleCloseDialog}
-        maxWidth="md"
+        maxWidth="sm"
         fullWidth
       >
         <DialogTitle>
@@ -440,13 +389,14 @@ export default function BannerSettings() {
                       component="span"
                       startIcon={<UploadIcon />}
                       sx={{ mb: 2 }}
+                      fullWidth
                     >
-                      Vybrať Obrázok
+                      {selectedFile ? 'Zmeniť obrázok' : 'Vybrať obrázok'}
                     </Button>
                   </label>
                   
                   {imagePreview && (
-                    <Box>
+                    <Box sx={{ mt: 2 }}>
                       <img
                         src={imagePreview}
                         alt="Preview"
@@ -463,26 +413,16 @@ export default function BannerSettings() {
                 </Box>
               </Grid>
 
-              {/* Basic Information */}
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Názov"
-                  value={formData.title}
-                  onChange={handleChange('title')}
-                  required
-                />
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
+              {/* Position Selection */}
+              <Grid item xs={12}>
                 <FormControl fullWidth>
-                  <InputLabel>Typ</InputLabel>
+                  <InputLabel>Pozícia na webstránke</InputLabel>
                   <Select
-                    value={formData.type}
-                    onChange={handleChange('type')}
-                    label="Typ"
+                    value={formData.position}
+                    onChange={handleChange('position')}
+                    label="Pozícia na webstránke"
                   >
-                    {bannerTypeOptions.map((option) => (
+                    {positionOptions.map((option) => (
                       <MenuItem key={option.value} value={option.value}>
                         {option.label}
                       </MenuItem>
@@ -491,105 +431,16 @@ export default function BannerSettings() {
                 </FormControl>
               </Grid>
 
+              {/* Sort Order */}
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Popis"
-                  multiline
-                  rows={2}
-                  value={formData.description}
-                  onChange={handleChange('description')}
-                />
-              </Grid>
-
-              {/* Button Configuration */}
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Text tlačidla"
-                  value={formData.buttonText}
-                  onChange={handleChange('buttonText')}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LinkIcon />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Link tlačidla"
-                  value={formData.buttonLink}
-                  onChange={handleChange('buttonLink')}
-                  placeholder="https://example.com"
-                />
-              </Grid>
-
-              {/* Display Settings */}
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Stránka</InputLabel>
-                  <Select
-                    value={formData.page}
-                    onChange={handleChange('page')}
-                    label="Stránka"
-                  >
-                    {pageOptions.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Poradie"
+                  label="Poradie zobrazenia"
                   type="number"
                   value={formData.sortOrder}
                   onChange={handleChange('sortOrder')}
                   InputProps={{ inputProps: { min: 0 } }}
-                />
-              </Grid>
-
-              {/* Style Settings */}
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  type="color"
-                  label="Farba textu"
-                  value={formData.textColor}
-                  onChange={handleChange('textColor')}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  type="color"
-                  label="Farba pozadia"
-                  value={formData.backgroundColor}
-                  onChange={handleChange('backgroundColor')}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Priehľadnosť prekrytia"
-                  value={formData.overlayOpacity}
-                  onChange={handleChange('overlayOpacity')}
-                  InputProps={{ 
-                    inputProps: { min: 0, max: 1, step: 0.1 },
-                    endAdornment: <InputAdornment position="end">%</InputAdornment>
-                  }}
+                  helperText="Čím menšie číslo, tým vyššie sa banner zobrazí"
                 />
               </Grid>
 
@@ -603,7 +454,7 @@ export default function BannerSettings() {
                       color="primary"
                     />
                   }
-                  label="Aktívny"
+                  label="Aktívny banner"
                 />
               </Grid>
             </Grid>
