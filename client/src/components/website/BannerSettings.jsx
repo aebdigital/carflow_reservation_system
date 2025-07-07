@@ -44,16 +44,9 @@ import {
 import { useGetBannersQuery, useCreateBannerMutation, useUpdateBannerMutation, useDeleteBannerMutation } from '../../store/store'
 
 const positionOptions = [
-  { value: 'homepage-hero', label: 'Domovská stránka - Hlavný banner' },
-  { value: 'homepage-section', label: 'Domovská stránka - Sekcia' },
-  { value: 'cars-hero', label: 'Stránka áut - Hlavný banner' },
-  { value: 'cars-section', label: 'Stránka áut - Sekcia' },
-  { value: 'contact-hero', label: 'Kontakt - Hlavný banner' },
-  { value: 'contact-section', label: 'Kontakt - Sekcia' },
-  { value: 'about-hero', label: 'O nás - Hlavný banner' },
-  { value: 'about-section', label: 'O nás - Sekcia' },
-  { value: 'footer', label: 'Päta stránky' },
-  { value: 'header', label: 'Hlavička stránky' },
+  { value: 'hero-section', label: 'Hero sekcia' },
+  { value: 'homepage-carousel-1', label: 'HomePage Carousel 1' },
+  { value: 'homepage-carousel-2', label: 'HomePage Carousel 2' },
 ]
 
 export default function BannerSettings() {
@@ -65,7 +58,7 @@ export default function BannerSettings() {
   const [imagePreview, setImagePreview] = useState(null)
   const [alert, setAlert] = useState(null)
   const [formData, setFormData] = useState({
-    position: 'homepage-hero',
+    position: 'hero-section',
     isActive: true,
     sortOrder: 0,
   })
@@ -94,14 +87,14 @@ export default function BannerSettings() {
     
     if (banner) {
       setFormData({
-        position: banner.position || 'homepage-hero',
+        position: banner.position || 'hero-section',
         isActive: banner.isActive !== undefined ? banner.isActive : true,
         sortOrder: banner.sortOrder || 0,
       })
       setImagePreview(banner.imageUrl || banner.image?.url || null)
     } else {
       setFormData({
-        position: 'homepage-hero',
+        position: 'hero-section',
         isActive: true,
         sortOrder: 0,
       })
@@ -118,7 +111,7 @@ export default function BannerSettings() {
     setSelectedFile(null)
     setImagePreview(null)
     setFormData({
-      position: 'homepage-hero',
+      position: 'hero-section',
       isActive: true,
       sortOrder: 0,
     })

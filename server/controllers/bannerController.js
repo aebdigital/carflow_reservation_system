@@ -104,7 +104,7 @@ const createBanner = asyncHandler(async (req, res, next) => {
     
     // Add tenant information and creator
     const bannerData = { 
-      position: req.body.position || 'homepage-hero',
+      position: req.body.position || 'hero-section',
       isActive: req.body.isActive !== undefined ? req.body.isActive : true,
       sortOrder: parseInt(req.body.sortOrder) || 0,
       tenantId: req.user.tenantId,

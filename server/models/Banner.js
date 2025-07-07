@@ -24,18 +24,11 @@ const bannerSchema = new mongoose.Schema({
     position: {
       type: String,
     enum: [
-      'homepage-hero',
-      'homepage-section', 
-      'cars-hero',
-      'cars-section',
-      'contact-hero',
-      'contact-section',
-      'about-hero',
-      'about-section',
-      'footer',
-      'header'
+      'hero-section',
+      'homepage-carousel-1',
+      'homepage-carousel-2'
     ],
-    default: 'homepage-hero',
+    default: 'hero-section',
     required: [true, 'Banner position is required']
   },
   isActive: {
