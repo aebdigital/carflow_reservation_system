@@ -10,7 +10,7 @@ const {
   toggleBlogStatus
 } = require('../controllers/blogController');
 
-const { protect, requireStaff } = require('../middleware/auth');
+const { protect, requireStaff } = require('../middleware/authMiddleware');
 
 // Configure multer for image uploads
 const storage = multer.memoryStorage();
