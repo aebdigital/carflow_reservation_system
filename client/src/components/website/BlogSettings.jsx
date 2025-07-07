@@ -52,7 +52,6 @@ import {
   useToggleBlogStatusMutation,
   useUploadBlogImageMutation
 } from '../../store/store';
-import { useSnackbar } from 'notistack';
 
 // Rich text editor component (simplified version)
 const RichTextEditor = ({ value, onChange, placeholder }) => {
@@ -71,7 +70,7 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
 };
 
 const BlogSettings = () => {
-  const { enqueueSnackbar } = useSnackbar();
+  const [alert, setAlert] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
   const [blogDialogOpen, setBlogDialogOpen] = useState(false);
   const [selectedBlog, setSelectedBlog] = useState(null);
@@ -117,6 +116,14 @@ const BlogSettings = () => {
   const [deleteBlog] = useDeleteBlogMutation();
   const [toggleBlogStatus] = useToggleBlogStatusMutation();
   const [uploadBlogImage] = useUploadBlogImageMutation();
+
+  // Clear alert after 5 seconds
+  useEffect(() => {
+    if (alert) {
+      const timer = setTimeout(() => setAlert(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [alert]);
 
   // Blog categories with Slovak labels
   const categories = [
@@ -213,26 +220,32 @@ const BlogSettings = () => {
     try {
       if (selectedBlog) {
         await updateBlog({ id: selectedBlog._id, ...blogData }).unwrap();
-        enqueueSnackbar('Blog updated successfully', { variant: 'success' });
+        setAlert({ type: 'success', message: 'Blog bol úspešne aktualizovaný!' });
       } else {
         await createBlog(blogData).unwrap();
-        enqueueSnackbar('Blog created successfully', { variant: 'success' });
+        setAlert({ type: 'success', message: 'Blog bol úspešne vytvorený!' });
       }
       handleCloseBlogDialog();
       refetch();
     } catch (error) {
-      enqueueSnackbar(error.data?.message || 'Error saving blog', { variant: 'error' });
+      setAlert({ 
+        type: 'error', 
+        message: `Chyba pri ukladaní blogu: ${error.data?.message || error.message}` 
+      });
     }
   };
 
   const handleDeleteBlog = async (blogId) => {
-    if (window.confirm('Are you sure you want to delete this blog?')) {
+    if (window.confirm('Ste si istí, že chcete vymazať tento blog?')) {
       try {
         await deleteBlog(blogId).unwrap();
-        enqueueSnackbar('Blog deleted successfully', { variant: 'success' });
+        setAlert({ type: 'success', message: 'Blog bol úspešne vymazaný!' });
         refetch();
       } catch (error) {
-        enqueueSnackbar('Error deleting blog', { variant: 'error' });
+        setAlert({ 
+          type: 'error', 
+          message: `Chyba pri mazaní blogu: ${error.data?.message || error.message}` 
+        });
       }
     }
   };
@@ -241,10 +254,16 @@ const BlogSettings = () => {
     try {
       const newStatus = currentStatus === 'published' ? 'draft' : 'published';
       await toggleBlogStatus({ id: blogId, status: newStatus }).unwrap();
-      enqueueSnackbar(`Blog ${newStatus === 'published' ? 'published' : 'unpublished'} successfully`, { variant: 'success' });
+      setAlert({ 
+        type: 'success', 
+        message: `Blog bol ${newStatus === 'published' ? 'publikovaný' : 'zrušený'}!` 
+      });
       refetch();
     } catch (error) {
-      enqueueSnackbar('Error updating blog status', { variant: 'error' });
+      setAlert({ 
+        type: 'error', 
+        message: `Chyba pri zmene stavu blogu: ${error.data?.message || error.message}` 
+      });
     }
   };
 
@@ -262,9 +281,12 @@ const BlogSettings = () => {
       if (isFeatured) {
         setBlogData(prev => ({ ...prev, featuredImage: result.data }));
       }
-      enqueueSnackbar('Image uploaded successfully', { variant: 'success' });
+      setAlert({ type: 'success', message: 'Obrázok bol úspešne nahraný!' });
     } catch (error) {
-      enqueueSnackbar('Error uploading image', { variant: 'error' });
+      setAlert({ 
+        type: 'error', 
+        message: `Chyba pri nahrávaní obrázka: ${error.data?.message || error.message}` 
+      });
     }
   };
 
@@ -330,6 +352,17 @@ const BlogSettings = () => {
       <Typography variant="h5" gutterBottom>
         Blog Management
       </Typography>
+
+      {/* Alert Messages */}
+      {alert && (
+        <Alert
+          severity={alert.type}
+          onClose={() => setAlert(null)}
+          sx={{ mb: 3 }}
+        >
+          {alert.message}
+        </Alert>
+      )}
 
       {/* Blog List and Management */}
       <Card>
