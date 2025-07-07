@@ -1355,7 +1355,7 @@ function Reservations() {
                             </Typography>
                             {selectedReservation.checkOut.additionalCharges.map((charge, index) => (
                               <Typography key={index} variant="body2" gutterBottom>
-                                • {charge.type}: ${charge.amount} - {charge.description}
+                                • {charge.type}: {charge.amount?.toFixed(2) || '0.00'}€ - {charge.description}
                               </Typography>
                             ))}
                           </>
