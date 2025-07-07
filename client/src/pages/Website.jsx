@@ -14,11 +14,13 @@ import {
   OpenInNew as ModalIcon,
   LocalOffer as DiscountIcon,
   Image as BannerIcon,
+  Article as BlogIcon,
 } from '@mui/icons-material'
 import InfoBarSettings from '../components/website/InfoBarSettings'
 import ModalSettings from '../components/website/ModalSettings'
 import DiscountCodes from '../components/website/DiscountCodes'
 import BannerSettings from '../components/website/BannerSettings'
+import BlogSettings from '../components/website/BlogSettings'
 import { useGetWebsiteSettingsQuery } from '../store/store'
 
 function TabPanel({ children, value, index, ...other }) {
@@ -129,10 +131,16 @@ export default function Website() {
               {...a11yProps(2)} 
             />
             <Tab 
+              icon={<BlogIcon />} 
+              label="Blog" 
+              iconPosition="start"
+              {...a11yProps(3)} 
+            />
+            <Tab 
               icon={<DiscountIcon />} 
               label="Zľavové Kódy" 
               iconPosition="start"
-              {...a11yProps(3)} 
+              {...a11yProps(4)} 
             />
           </Tabs>
         </Box>
@@ -150,6 +158,10 @@ export default function Website() {
         </TabPanel>
 
         <TabPanel value={tabValue} index={3}>
+          <BlogSettings />
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={4}>
           <DiscountCodes />
         </TabPanel>
       </Paper>

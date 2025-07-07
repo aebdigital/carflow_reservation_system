@@ -1,0 +1,789 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Box, 
+  Typography, 
+  Button, 
+  TextField, 
+  Select, 
+  MenuItem, 
+  FormControl, 
+  InputLabel, 
+  Chip, 
+  Grid, 
+  Card, 
+  CardContent, 
+  CardMedia, 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions,
+  Switch,
+  FormControlLabel,
+  Alert,
+  Tabs,
+  Tab,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  IconButton,
+  Avatar,
+  Divider,
+  Stack
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Publish as PublishIcon,
+  UnpublishedOutlined as UnpublishIcon,
+  Image as ImageIcon,
+  ExpandMore as ExpandMoreIcon,
+  Visibility as ViewIcon,
+  ThumbUp as LikeIcon,
+  Comment as CommentIcon,
+  Schedule as ScheduleIcon,
+  Search as SearchIcon
+} from '@mui/icons-material';
+import { 
+  useGetBlogsQuery, 
+  useCreateBlogMutation, 
+  useUpdateBlogMutation, 
+  useDeleteBlogMutation,
+  useToggleBlogStatusMutation,
+  useUploadBlogImageMutation
+} from '../../store/store';
+import { useSnackbar } from 'notistack';
+
+// Rich text editor component (simplified version)
+const RichTextEditor = ({ value, onChange, placeholder }) => {
+  return (
+    <TextField
+      multiline
+      rows={8}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      fullWidth
+      variant="outlined"
+      helperText="HTML tags are supported for rich formatting"
+    />
+  );
+};
+
+const BlogSettings = () => {
+  const { enqueueSnackbar } = useSnackbar();
+  const [activeTab, setActiveTab] = useState(0);
+  const [blogDialogOpen, setBlogDialogOpen] = useState(false);
+  const [selectedBlog, setSelectedBlog] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+
+  // Blog form state
+  const [blogData, setBlogData] = useState({
+    title: '',
+    slug: '',
+    excerpt: '',
+    content: '',
+    category: 'general',
+    tags: [],
+    status: 'draft',
+    publishDate: new Date().toISOString().split('T')[0],
+    featuredImage: null,
+    seo: {
+      metaTitle: '',
+      metaDescription: '',
+      keywords: []
+    },
+    socialMedia: {
+      ogTitle: '',
+      ogDescription: ''
+    },
+    commentsEnabled: true
+  });
+
+  const [newTag, setNewTag] = useState('');
+  const [newKeyword, setNewKeyword] = useState('');
+
+  // API hooks
+  const { data: blogsData, isLoading, refetch } = useGetBlogsQuery({
+    search: searchTerm,
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    category: categoryFilter !== 'all' ? categoryFilter : undefined
+  });
+
+  const [createBlog] = useCreateBlogMutation();
+  const [updateBlog] = useUpdateBlogMutation();
+  const [deleteBlog] = useDeleteBlogMutation();
+  const [toggleBlogStatus] = useToggleBlogStatusMutation();
+  const [uploadBlogImage] = useUploadBlogImageMutation();
+
+  // Blog categories with Slovak labels
+  const categories = [
+    { value: 'company-news', label: 'Firemné novinky' },
+    { value: 'car-tips', label: 'Tipy pre vodičov' },
+    { value: 'travel-guides', label: 'Cestovné sprievodcovia' },
+    { value: 'maintenance', label: 'Údržba vozidiel' },
+    { value: 'industry-news', label: 'Novinky z odvetvia' },
+    { value: 'promotions', label: 'Akcie a zľavy' },
+    { value: 'customer-stories', label: 'Príbehy zákazníkov' },
+    { value: 'general', label: 'Všeobecné' }
+  ];
+
+  // Auto-generate slug from title
+  useEffect(() => {
+    if (blogData.title && !selectedBlog) {
+      const slug = blogData.title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim('-');
+      setBlogData(prev => ({ ...prev, slug }));
+    }
+  }, [blogData.title, selectedBlog]);
+
+  // Auto-generate SEO fields
+  useEffect(() => {
+    if (blogData.title && !blogData.seo.metaTitle) {
+      setBlogData(prev => ({
+        ...prev,
+        seo: {
+          ...prev.seo,
+          metaTitle: blogData.title.substring(0, 60)
+        }
+      }));
+    }
+    if (blogData.excerpt && !blogData.seo.metaDescription) {
+      setBlogData(prev => ({
+        ...prev,
+        seo: {
+          ...prev.seo,
+          metaDescription: blogData.excerpt.substring(0, 160)
+        }
+      }));
+    }
+  }, [blogData.title, blogData.excerpt]);
+
+  const handleOpenBlogDialog = (blog = null) => {
+    if (blog) {
+      setSelectedBlog(blog);
+      setBlogData({
+        title: blog.title || '',
+        slug: blog.slug || '',
+        excerpt: blog.excerpt || '',
+        content: blog.content || '',
+        category: blog.category || 'general',
+        tags: blog.tags || [],
+        status: blog.status || 'draft',
+        publishDate: blog.publishDate ? new Date(blog.publishDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        featuredImage: blog.featuredImage || null,
+        seo: blog.seo || { metaTitle: '', metaDescription: '', keywords: [] },
+        socialMedia: blog.socialMedia || { ogTitle: '', ogDescription: '' },
+        commentsEnabled: blog.commentsEnabled !== false
+      });
+    } else {
+      setSelectedBlog(null);
+      setBlogData({
+        title: '',
+        slug: '',
+        excerpt: '',
+        content: '',
+        category: 'general',
+        tags: [],
+        status: 'draft',
+        publishDate: new Date().toISOString().split('T')[0],
+        featuredImage: null,
+        seo: { metaTitle: '', metaDescription: '', keywords: [] },
+        socialMedia: { ogTitle: '', ogDescription: '' },
+        commentsEnabled: true
+      });
+    }
+    setBlogDialogOpen(true);
+  };
+
+  const handleCloseBlogDialog = () => {
+    setBlogDialogOpen(false);
+    setSelectedBlog(null);
+    setNewTag('');
+    setNewKeyword('');
+  };
+
+  const handleSaveBlog = async () => {
+    try {
+      if (selectedBlog) {
+        await updateBlog({ id: selectedBlog._id, ...blogData }).unwrap();
+        enqueueSnackbar('Blog updated successfully', { variant: 'success' });
+      } else {
+        await createBlog(blogData).unwrap();
+        enqueueSnackbar('Blog created successfully', { variant: 'success' });
+      }
+      handleCloseBlogDialog();
+      refetch();
+    } catch (error) {
+      enqueueSnackbar(error.data?.message || 'Error saving blog', { variant: 'error' });
+    }
+  };
+
+  const handleDeleteBlog = async (blogId) => {
+    if (window.confirm('Are you sure you want to delete this blog?')) {
+      try {
+        await deleteBlog(blogId).unwrap();
+        enqueueSnackbar('Blog deleted successfully', { variant: 'success' });
+        refetch();
+      } catch (error) {
+        enqueueSnackbar('Error deleting blog', { variant: 'error' });
+      }
+    }
+  };
+
+  const handleToggleStatus = async (blogId, currentStatus) => {
+    try {
+      const newStatus = currentStatus === 'published' ? 'draft' : 'published';
+      await toggleBlogStatus({ id: blogId, status: newStatus }).unwrap();
+      enqueueSnackbar(`Blog ${newStatus === 'published' ? 'published' : 'unpublished'} successfully`, { variant: 'success' });
+      refetch();
+    } catch (error) {
+      enqueueSnackbar('Error updating blog status', { variant: 'error' });
+    }
+  };
+
+  const handleImageUpload = async (event, isFeatured = false) => {
+    const file = event.target.files[0];
+    if (!file || !selectedBlog) return;
+
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('isFeatured', isFeatured.toString());
+    formData.append('alt', `Image for ${blogData.title}`);
+
+    try {
+      const result = await uploadBlogImage({ id: selectedBlog._id, formData }).unwrap();
+      if (isFeatured) {
+        setBlogData(prev => ({ ...prev, featuredImage: result.data }));
+      }
+      enqueueSnackbar('Image uploaded successfully', { variant: 'success' });
+    } catch (error) {
+      enqueueSnackbar('Error uploading image', { variant: 'error' });
+    }
+  };
+
+  const addTag = () => {
+    if (newTag.trim() && !blogData.tags.includes(newTag.trim().toLowerCase())) {
+      setBlogData(prev => ({
+        ...prev,
+        tags: [...prev.tags, newTag.trim().toLowerCase()]
+      }));
+      setNewTag('');
+    }
+  };
+
+  const removeTag = (tagToRemove) => {
+    setBlogData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  };
+
+  const addKeyword = () => {
+    if (newKeyword.trim() && !blogData.seo.keywords.includes(newKeyword.trim())) {
+      setBlogData(prev => ({
+        ...prev,
+        seo: {
+          ...prev.seo,
+          keywords: [...prev.seo.keywords, newKeyword.trim()]
+        }
+      }));
+      setNewKeyword('');
+    }
+  };
+
+  const removeKeyword = (keywordToRemove) => {
+    setBlogData(prev => ({
+      ...prev,
+      seo: {
+        ...prev.seo,
+        keywords: prev.seo.keywords.filter(keyword => keyword !== keywordToRemove)
+      }
+    }));
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'published': return 'success';
+      case 'draft': return 'warning';
+      case 'archived': return 'default';
+      default: return 'default';
+    }
+  };
+
+  const filteredBlogs = blogsData?.data?.filter(blog => {
+    const matchesSearch = blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         blog.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || blog.status === statusFilter;
+    const matchesCategory = categoryFilter === 'all' || blog.category === categoryFilter;
+    return matchesSearch && matchesStatus && matchesCategory;
+  }) || [];
+
+  return (
+    <Box>
+      <Typography variant="h5" gutterBottom>
+        Blog Management
+      </Typography>
+
+      {/* Blog List and Management */}
+      <Card>
+        <CardContent>
+          {/* Filters and Search */}
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                placeholder="Search blogs..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  label="Status"
+                >
+                  <MenuItem value="all">All Status</MenuItem>
+                  <MenuItem value="published">Published</MenuItem>
+                  <MenuItem value="draft">Draft</MenuItem>
+                  <MenuItem value="archived">Archived</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth>
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  label="Category"
+                >
+                  <MenuItem value="all">All Categories</MenuItem>
+                  {categories.map(category => (
+                    <MenuItem key={category.value} value={category.value}>
+                      {category.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={2}>
+              <Button
+                fullWidth
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => handleOpenBlogDialog()}
+                sx={{ height: '56px' }}
+              >
+                New Blog
+              </Button>
+            </Grid>
+          </Grid>
+
+          {/* Blog List */}
+          {isLoading ? (
+            <Typography>Loading blogs...</Typography>
+          ) : filteredBlogs.length === 0 ? (
+            <Alert severity="info">No blogs found. Create your first blog post!</Alert>
+          ) : (
+            <Grid container spacing={2}>
+              {filteredBlogs.map((blog) => (
+                <Grid item xs={12} md={6} lg={4} key={blog._id}>
+                  <Card variant="outlined">
+                    {blog.featuredImage && (
+                      <CardMedia
+                        component="img"
+                        height="140"
+                        image={blog.featuredImage.url}
+                        alt={blog.featuredImage.alt}
+                      />
+                    )}
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom noWrap>
+                        {blog.title}
+                      </Typography>
+                      
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        {blog.excerpt?.substring(0, 100)}...
+                      </Typography>
+
+                      <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                        <Chip 
+                          label={blog.status} 
+                          color={getStatusColor(blog.status)}
+                          size="small"
+                        />
+                        <Chip 
+                          label={categories.find(c => c.value === blog.category)?.label || blog.category}
+                          variant="outlined"
+                          size="small"
+                        />
+                      </Stack>
+
+                      <Stack direction="row" spacing={1} sx={{ mb: 2 }} alignItems="center">
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                          <ViewIcon fontSize="small" color="action" />
+                          <Typography variant="caption">{blog.views || 0}</Typography>
+                        </Stack>
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                          <LikeIcon fontSize="small" color="action" />
+                          <Typography variant="caption">{blog.likes || 0}</Typography>
+                        </Stack>
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                          <CommentIcon fontSize="small" color="action" />
+                          <Typography variant="caption">{blog.commentCount || 0}</Typography>
+                        </Stack>
+                      </Stack>
+
+                      <Stack direction="row" spacing={1}>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleOpenBlogDialog(blog)}
+                          color="primary"
+                        >
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleToggleStatus(blog._id, blog.status)}
+                          color={blog.status === 'published' ? 'warning' : 'success'}
+                        >
+                          {blog.status === 'published' ? <UnpublishIcon /> : <PublishIcon />}
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleDeleteBlog(blog._id)}
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Blog Create/Edit Dialog */}
+      <Dialog 
+        open={blogDialogOpen} 
+        onClose={handleCloseBlogDialog}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>
+          {selectedBlog ? 'Edit Blog Post' : 'Create New Blog Post'}
+        </DialogTitle>
+        <DialogContent>
+          <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+            <Tab label="Basic Info" />
+            <Tab label="Content" />
+            <Tab label="SEO & Social" />
+            <Tab label="Settings" />
+          </Tabs>
+
+          {/* Basic Info Tab */}
+          {activeTab === 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={8}>
+                  <TextField
+                    fullWidth
+                    label="Blog Title"
+                    value={blogData.title}
+                    onChange={(e) => setBlogData(prev => ({ ...prev, title: e.target.value }))}
+                    margin="normal"
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="URL Slug"
+                    value={blogData.slug}
+                    onChange={(e) => setBlogData(prev => ({ ...prev, slug: e.target.value }))}
+                    margin="normal"
+                    required
+                    helperText="URL-friendly version of title"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Excerpt"
+                    value={blogData.excerpt}
+                    onChange={(e) => setBlogData(prev => ({ ...prev, excerpt: e.target.value }))}
+                    multiline
+                    rows={3}
+                    margin="normal"
+                    required
+                    helperText="Short description for blog listing and SEO"
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth margin="normal">
+                    <InputLabel>Category</InputLabel>
+                    <Select
+                      value={blogData.category}
+                      onChange={(e) => setBlogData(prev => ({ ...prev, category: e.target.value }))}
+                      label="Category"
+                    >
+                      {categories.map(category => (
+                        <MenuItem key={category.value} value={category.value}>
+                          {category.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Publish Date"
+                    type="date"
+                    value={blogData.publishDate}
+                    onChange={(e) => setBlogData(prev => ({ ...prev, publishDate: e.target.value }))}
+                    margin="normal"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" gutterBottom>Tags</Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+                    {blogData.tags.map((tag, index) => (
+                      <Chip
+                        key={index}
+                        label={tag}
+                        onDelete={() => removeTag(tag)}
+                        size="small"
+                      />
+                    ))}
+                  </Box>
+                  <Stack direction="row" spacing={1}>
+                    <TextField
+                      size="small"
+                      placeholder="Add tag"
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && addTag()}
+                    />
+                    <Button onClick={addTag} variant="outlined" size="small">
+                      Add
+                    </Button>
+                  </Stack>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+
+          {/* Content Tab */}
+          {activeTab === 1 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Blog Content
+              </Typography>
+              <RichTextEditor
+                value={blogData.content}
+                onChange={(content) => setBlogData(prev => ({ ...prev, content }))}
+                placeholder="Write your blog content here..."
+              />
+              
+              {/* Featured Image */}
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Featured Image
+                </Typography>
+                {blogData.featuredImage ? (
+                  <Box sx={{ mb: 2 }}>
+                    <img
+                      src={blogData.featuredImage.url}
+                      alt={blogData.featuredImage.alt}
+                      style={{ maxWidth: '200px', height: 'auto', borderRadius: '4px' }}
+                    />
+                  </Box>
+                ) : (
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    No featured image uploaded yet
+                  </Alert>
+                )}
+                <input
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  id="featured-image-upload"
+                  type="file"
+                  onChange={(e) => handleImageUpload(e, true)}
+                />
+                <label htmlFor="featured-image-upload">
+                  <Button variant="outlined" component="span" startIcon={<ImageIcon />}>
+                    Upload Featured Image
+                  </Button>
+                </label>
+              </Box>
+            </Box>
+          )}
+
+          {/* SEO & Social Tab */}
+          {activeTab === 2 && (
+            <Box sx={{ mt: 2 }}>
+              <Accordion defaultExpanded>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography variant="subtitle1">SEO Settings</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Meta Title"
+                        value={blogData.seo.metaTitle}
+                        onChange={(e) => setBlogData(prev => ({
+                          ...prev,
+                          seo: { ...prev.seo, metaTitle: e.target.value }
+                        }))}
+                        margin="normal"
+                        helperText={`${blogData.seo.metaTitle.length}/60 characters`}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Meta Description"
+                        value={blogData.seo.metaDescription}
+                        onChange={(e) => setBlogData(prev => ({
+                          ...prev,
+                          seo: { ...prev.seo, metaDescription: e.target.value }
+                        }))}
+                        multiline
+                        rows={2}
+                        margin="normal"
+                        helperText={`${blogData.seo.metaDescription.length}/160 characters`}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle2" gutterBottom>SEO Keywords</Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+                        {blogData.seo.keywords.map((keyword, index) => (
+                          <Chip
+                            key={index}
+                            label={keyword}
+                            onDelete={() => removeKeyword(keyword)}
+                            size="small"
+                          />
+                        ))}
+                      </Box>
+                      <Stack direction="row" spacing={1}>
+                        <TextField
+                          size="small"
+                          placeholder="Add keyword"
+                          value={newKeyword}
+                          onChange={(e) => setNewKeyword(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && addKeyword()}
+                        />
+                        <Button onClick={addKeyword} variant="outlined" size="small">
+                          Add
+                        </Button>
+                      </Stack>
+                    </Grid>
+                  </Grid>
+                </AccordionDetails>
+              </Accordion>
+
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography variant="subtitle1">Social Media</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Social Media Title"
+                        value={blogData.socialMedia.ogTitle}
+                        onChange={(e) => setBlogData(prev => ({
+                          ...prev,
+                          socialMedia: { ...prev.socialMedia, ogTitle: e.target.value }
+                        }))}
+                        margin="normal"
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Social Media Description"
+                        value={blogData.socialMedia.ogDescription}
+                        onChange={(e) => setBlogData(prev => ({
+                          ...prev,
+                          socialMedia: { ...prev.socialMedia, ogDescription: e.target.value }
+                        }))}
+                        multiline
+                        rows={2}
+                        margin="normal"
+                      />
+                    </Grid>
+                  </Grid>
+                </AccordionDetails>
+              </Accordion>
+            </Box>
+          )}
+
+          {/* Settings Tab */}
+          {activeTab === 3 && (
+            <Box sx={{ mt: 2 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={blogData.commentsEnabled}
+                    onChange={(e) => setBlogData(prev => ({ ...prev, commentsEnabled: e.target.checked }))}
+                  />
+                }
+                label="Enable Comments"
+              />
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <FormControl fullWidth margin="normal">
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={blogData.status}
+                  onChange={(e) => setBlogData(prev => ({ ...prev, status: e.target.value }))}
+                  label="Status"
+                >
+                  <MenuItem value="draft">Draft</MenuItem>
+                  <MenuItem value="published">Published</MenuItem>
+                  <MenuItem value="archived">Archived</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseBlogDialog}>Cancel</Button>
+          <Button 
+            onClick={handleSaveBlog} 
+            variant="contained"
+            disabled={!blogData.title || !blogData.excerpt || !blogData.content}
+          >
+            {selectedBlog ? 'Update' : 'Create'} Blog
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+};
+
+export default BlogSettings; 

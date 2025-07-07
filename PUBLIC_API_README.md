@@ -1957,3 +1957,568 @@ For API support or questions:
 **Last Updated**: July 3, 2025
 **API Version**: v1
 **Status**: ✅ All endpoints operational 
+
+## Blog Endpoints
+
+The blog system provides comprehensive content management capabilities for rental companies. All blog endpoints are tenant-specific and filtered by the user email parameter.
+
+### 15. Get Public Blogs
+**GET** `/users/:email/blogs`
+
+Returns published blog posts for a specific tenant with filtering and pagination.
+
+**Parameters:**
+- `email` (string, required): User's email to identify tenant
+
+**Query Parameters:**
+- `category` (string, optional): Filter by blog category
+- `tags` (string[], optional): Filter by blog tags (comma-separated)
+- `search` (string, optional): Search in title, excerpt, content, and tags
+- `page` (number, optional): Page number for pagination (default: 1)
+- `limit` (number, optional): Number of blogs per page (default: 10)
+- `sort` (string, optional): Sort order (default: '-publishDate')
+
+**Available Categories:**
+- `company-news` - Firemné novinky
+- `car-tips` - Tipy pre vodičov
+- `travel-guides` - Cestovné sprievodcovia
+- `maintenance` - Údržba vozidiel
+- `industry-news` - Novinky z odvetvia
+- `promotions` - Akcie a zľavy
+- `customer-stories` - Príbehy zákazníkov
+- `general` - Všeobecné
+
+**Example Request:**
+```bash
+curl "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/blogs?category=car-tips&limit=5"
+```
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "count": 3,
+  "total": 15,
+  "pagination": {
+    "next": {
+      "page": 2,
+      "limit": 5
+    }
+  },
+  "data": [
+    {
+      "_id": "64f5b8c2e1234567890abcde",
+      "title": "Zimné pneumatiky: Kedy ich vymeníť?",
+      "slug": "zimne-pneumatiky-kedy-ich-vymenit",
+      "excerpt": "Kompletný sprievodca výmenou pneumatík na zimu. Zistite, kedy je ideálny čas na výmenu.",
+      "featuredImage": {
+        "url": "https://storage.googleapis.com/carflow-images/blogs/winter-tires.jpg",
+        "alt": "Zimné pneumatiky na aute"
+      },
+      "category": "car-tips",
+      "tags": ["pneumatiky", "zima", "bezpečnosť"],
+      "publishDate": "2024-01-15T10:00:00.000Z",
+      "readingTime": 5,
+      "views": 1250,
+      "likes": 45,
+      "author": {
+        "_id": "64f5b8c2e1234567890abcdf",
+        "firstName": "Peter",
+        "lastName": "Novák"
+      },
+      "seo": {
+        "metaTitle": "Zimné pneumatiky: Kedy ich vymeníť? | Rival Car Rental",
+        "metaDescription": "Kompletný sprievodca výmenou pneumatík na zimu. Zistite, kedy je ideálny čas na výmenu a ako si vybrať správne pneumatiky."
+      },
+      "socialMedia": {
+        "ogTitle": "Zimné pneumatiky: Kedy ich vymeníť?",
+        "ogDescription": "Kompletný sprievodca výmenou pneumatík na zimu."
+      }
+    }
+  ]
+}
+```
+
+### 16. Get Single Blog Post
+**GET** `/users/:email/blogs/:slug`
+
+Get a specific blog post by its URL slug.
+
+**Parameters:**
+- `email` (string, required): User's email to identify tenant
+- `slug` (string, required): Blog post URL slug
+
+**Example Request:**
+```bash
+curl "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/blogs/zimne-pneumatiky-kedy-ich-vymenit"
+```
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "64f5b8c2e1234567890abcde",
+    "title": "Zimné pneumatiky: Kedy ich vymeníť?",
+    "slug": "zimne-pneumatiky-kedy-ich-vymenit",
+    "excerpt": "Kompletný sprievodca výmenou pneumatík na zimu.",
+    "content": "<h2>Úvod</h2><p>Zimné pneumatiky sú kľúčové pre bezpečnú jazdu...</p>",
+    "featuredImage": {
+      "url": "https://storage.googleapis.com/carflow-images/blogs/winter-tires.jpg",
+      "alt": "Zimné pneumatiky na aute",
+      "caption": "Kvalitné zimné pneumatiky pre bezpečnú jazdu"
+    },
+    "category": "car-tips",
+    "tags": ["pneumatiky", "zima", "bezpečnosť"],
+    "publishDate": "2024-01-15T10:00:00.000Z",
+    "readingTime": 5,
+    "views": 1251,
+    "likes": 45,
+    "author": {
+      "_id": "64f5b8c2e1234567890abcdf",
+      "firstName": "Peter",
+      "lastName": "Novák"
+    },
+    "relatedBlogs": [
+      {
+        "_id": "64f5b8c2e1234567890abce0",
+        "title": "Letné pneumatiky: Sprievodca výberom",
+        "slug": "letne-pneumatiky-sprievodca-vyberom",
+        "excerpt": "Ako si vybrať správne letné pneumatiky.",
+        "featuredImage": {
+          "url": "https://storage.googleapis.com/carflow-images/blogs/summer-tires.jpg",
+          "alt": "Letné pneumatiky"
+        },
+        "publishDate": "2024-01-10T09:00:00.000Z",
+        "readingTime": 4
+      }
+    ],
+    "comments": [
+      {
+        "_id": "64f5b8c2e1234567890abce1",
+        "author": {
+          "name": "Mária Svobodová",
+          "email": "maria@example.com"
+        },
+        "content": "Veľmi užitočný článok! Ďakujem za rady.",
+        "createdAt": "2024-01-16T14:30:00.000Z"
+      }
+    ],
+    "seo": {
+      "metaTitle": "Zimné pneumatiky: Kedy ich vymeníť? | Rival Car Rental",
+      "metaDescription": "Kompletný sprievodca výmenou pneumatík na zimu. Zistite, kedy je ideálny čas na výmenu a ako si vybrať správne pneumatiky.",
+      "keywords": ["zimné pneumatiky", "výmena pneumatík", "bezpečnosť"],
+      "canonicalUrl": "https://rival.carflow.sk/blog/zimne-pneumatiky-kedy-ich-vymenit"
+    }
+  }
+}
+```
+
+### 17. Get Blog Categories
+**GET** `/users/:email/blog-categories`
+
+Get available blog categories with post counts for a specific tenant.
+
+**Parameters:**
+- `email` (string, required): User's email to identify tenant
+
+**Example Request:**
+```bash
+curl "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/blog-categories"
+```
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "value": "car-tips",
+      "label": "Tipy pre vodičov",
+      "count": 12,
+      "latestPost": "2024-01-15T10:00:00.000Z"
+    },
+    {
+      "value": "company-news",
+      "label": "Firemné novinky",
+      "count": 8,
+      "latestPost": "2024-01-12T15:30:00.000Z"
+    },
+    {
+      "value": "promotions",
+      "label": "Akcie a zľavy",
+      "count": 6,
+      "latestPost": "2024-01-10T11:00:00.000Z"
+    }
+  ]
+}
+```
+
+### 18. Get Blog Tags
+**GET** `/users/:email/blog-tags`
+
+Get popular blog tags with usage counts for a specific tenant.
+
+**Parameters:**
+- `email` (string, required): User's email to identify tenant
+
+**Example Request:**
+```bash
+curl "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/blog-tags"
+```
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "name": "pneumatiky",
+      "count": 8
+    },
+    {
+      "name": "bezpečnosť",
+      "count": 6
+    },
+    {
+      "name": "údržba",
+      "count": 5
+    },
+    {
+      "name": "zima",
+      "count": 4
+    }
+  ]
+}
+```
+
+### 19. Like Blog Post
+**POST** `/users/:email/blogs/:slug/like`
+
+Increment the like count for a specific blog post.
+
+**Parameters:**
+- `email` (string, required): User's email to identify tenant
+- `slug` (string, required): Blog post URL slug
+
+**Example Request:**
+```bash
+curl -X POST "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/blogs/zimne-pneumatiky-kedy-ich-vymenit/like"
+```
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "likes": 46
+  },
+  "message": "Blog liked successfully"
+}
+```
+
+### 20. Add Blog Comment
+**POST** `/users/:email/blogs/:slug/comments`
+
+Add a comment to a blog post (requires approval).
+
+**Parameters:**
+- `email` (string, required): User's email to identify tenant
+- `slug` (string, required): Blog post URL slug
+
+**Request Body:**
+```json
+{
+  "name": "Mária Svobodová",
+  "email": "maria@example.com",
+  "website": "https://maria-blog.sk",
+  "content": "Veľmi užitočný článok! Ďakujem za rady.",
+  "parentComment": null
+}
+```
+
+**Request Body Parameters:**
+- `name` (string, required): Commenter's name
+- `email` (string, required): Commenter's email
+- `website` (string, optional): Commenter's website
+- `content` (string, required): Comment content
+- `parentComment` (string, optional): Parent comment ID for replies
+
+**Example Request:**
+```bash
+curl -X POST "https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/blogs/zimne-pneumatiky-kedy-ich-vymenit/comments" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Mária Svobodová",
+    "email": "maria@example.com",
+    "content": "Veľmi užitočný článok! Ďakujem za rady."
+  }'
+```
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "message": "Comment submitted successfully. It will be reviewed before publication."
+}
+```
+
+## Blog Integration Examples
+
+### JavaScript Integration
+```javascript
+// Fetch latest blog posts
+async function getLatestBlogs() {
+  try {
+    const response = await fetch(
+      'https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/blogs?limit=5'
+    );
+    const data = await response.json();
+    
+    if (data.success) {
+      displayBlogs(data.data);
+    }
+  } catch (error) {
+    console.error('Error fetching blogs:', error);
+  }
+}
+
+// Display blogs on website
+function displayBlogs(blogs) {
+  const blogContainer = document.getElementById('blog-posts');
+  
+  blogs.forEach(blog => {
+    const blogElement = document.createElement('article');
+    blogElement.className = 'blog-post';
+    blogElement.innerHTML = `
+      <div class="blog-image">
+        <img src="${blog.featuredImage?.url}" alt="${blog.featuredImage?.alt}" />
+      </div>
+      <div class="blog-content">
+        <h3><a href="/blog/${blog.slug}">${blog.title}</a></h3>
+        <p class="blog-excerpt">${blog.excerpt}</p>
+        <div class="blog-meta">
+          <span class="author">By ${blog.author.firstName} ${blog.author.lastName}</span>
+          <span class="date">${new Date(blog.publishDate).toLocaleDateString('sk-SK')}</span>
+          <span class="reading-time">${blog.readingTime} min read</span>
+        </div>
+        <div class="blog-stats">
+          <span class="views">${blog.views} views</span>
+          <span class="likes">${blog.likes} likes</span>
+        </div>
+      </div>
+    `;
+    
+    blogContainer.appendChild(blogElement);
+  });
+}
+
+// Get single blog post
+async function getBlogPost(slug) {
+  try {
+    const response = await fetch(
+      `https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/blogs/${slug}`
+    );
+    const data = await response.json();
+    
+    if (data.success) {
+      displayBlogPost(data.data);
+    }
+  } catch (error) {
+    console.error('Error fetching blog post:', error);
+  }
+}
+
+// Like a blog post
+async function likeBlogPost(slug) {
+  try {
+    const response = await fetch(
+      `https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/blogs/${slug}/like`,
+      { method: 'POST' }
+    );
+    const data = await response.json();
+    
+    if (data.success) {
+      document.querySelector('.like-count').textContent = data.data.likes;
+    }
+  } catch (error) {
+    console.error('Error liking blog post:', error);
+  }
+}
+
+// Submit comment
+async function submitComment(slug, commentData) {
+  try {
+    const response = await fetch(
+      `https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/blogs/${slug}/comments`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(commentData)
+      }
+    );
+    const data = await response.json();
+    
+    if (data.success) {
+      alert('Comment submitted successfully! It will be reviewed before publication.');
+      document.getElementById('comment-form').reset();
+    }
+  } catch (error) {
+    console.error('Error submitting comment:', error);
+  }
+}
+```
+
+### React Integration
+```jsx
+import React, { useState, useEffect } from 'react';
+
+const BlogList = () => {
+  const [blogs, setBlogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    category: '',
+    search: '',
+    page: 1
+  });
+
+  useEffect(() => {
+    fetchBlogs();
+  }, [filters]);
+
+  const fetchBlogs = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (filters.category) params.append('category', filters.category);
+      if (filters.search) params.append('search', filters.search);
+      params.append('page', filters.page);
+      params.append('limit', '6');
+
+      const response = await fetch(
+        `https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/blogs?${params}`
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        setBlogs(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching blogs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLike = async (slug) => {
+    try {
+      const response = await fetch(
+        `https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/blogs/${slug}/like`,
+        { method: 'POST' }
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        setBlogs(prev => prev.map(blog => 
+          blog.slug === slug 
+            ? { ...blog, likes: data.data.likes }
+            : blog
+        ));
+      }
+    } catch (error) {
+      console.error('Error liking blog:', error);
+    }
+  };
+
+  if (loading) return <div>Loading blogs...</div>;
+
+  return (
+    <div className="blog-list">
+      <div className="blog-filters">
+        <input
+          type="text"
+          placeholder="Search blogs..."
+          value={filters.search}
+          onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value, page: 1 }))}
+        />
+        <select
+          value={filters.category}
+          onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value, page: 1 }))}
+        >
+          <option value="">All Categories</option>
+          <option value="car-tips">Tipy pre vodičov</option>
+          <option value="company-news">Firemné novinky</option>
+          <option value="promotions">Akcie a zľavy</option>
+        </select>
+      </div>
+
+      <div className="blog-grid">
+        {blogs.map(blog => (
+          <article key={blog._id} className="blog-card">
+            {blog.featuredImage && (
+              <img 
+                src={blog.featuredImage.url} 
+                alt={blog.featuredImage.alt}
+                className="blog-image"
+              />
+            )}
+            <div className="blog-content">
+              <h3>
+                <a href={`/blog/${blog.slug}`}>{blog.title}</a>
+              </h3>
+              <p className="blog-excerpt">{blog.excerpt}</p>
+              <div className="blog-meta">
+                <span>By {blog.author.firstName} {blog.author.lastName}</span>
+                <span>{new Date(blog.publishDate).toLocaleDateString('sk-SK')}</span>
+                <span>{blog.readingTime} min read</span>
+              </div>
+              <div className="blog-actions">
+                <button onClick={() => handleLike(blog.slug)}>
+                  👍 {blog.likes}
+                </button>
+                <span>👁 {blog.views}</span>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default BlogList;
+```
+
+## Blog SEO Integration
+
+All blog posts include comprehensive SEO metadata that can be used for search engine optimization:
+
+```html
+<!-- Meta tags for blog post -->
+<title>{{ blog.seo.metaTitle }}</title>
+<meta name="description" content="{{ blog.seo.metaDescription }}" />
+<meta name="keywords" content="{{ blog.seo.keywords.join(', ') }}" />
+<link rel="canonical" href="{{ blog.seo.canonicalUrl }}" />
+
+<!-- Open Graph tags -->
+<meta property="og:title" content="{{ blog.socialMedia.ogTitle }}" />
+<meta property="og:description" content="{{ blog.socialMedia.ogDescription }}" />
+<meta property="og:image" content="{{ blog.featuredImage.url }}" />
+<meta property="og:url" content="https://rival.carflow.sk/blog/{{ blog.slug }}" />
+<meta property="og:type" content="article" />
+
+<!-- Twitter Card tags -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="{{ blog.socialMedia.ogTitle }}" />
+<meta name="twitter:description" content="{{ blog.socialMedia.ogDescription }}" />
+<meta name="twitter:image" content="{{ blog.featuredImage.url }}" />
+
+<!-- Article metadata -->
+<meta property="article:author" content="{{ blog.author.firstName }} {{ blog.author.lastName }}" />
+<meta property="article:published_time" content="{{ blog.publishDate }}" />
+<meta property="article:section" content="{{ blog.category }}" />
+<meta property="article:tag" content="{{ blog.tags.join('", "') }}" />
+```
+
+This comprehensive blog system enables rental companies to create engaging content that drives traffic, improves SEO, and builds customer relationships through valuable automotive and travel content. 

@@ -18,7 +18,7 @@ const baseQuery = fetchBaseQuery({
 export const api = createApi({
   reducerPath: 'api',
   baseQuery,
-  tagTypes: ['User', 'Car', 'Reservation', 'Payment', 'WebsiteSettings', 'DiscountCode', 'Banner', 'Contract'],
+  tagTypes: ['User', 'Car', 'Reservation', 'Payment', 'WebsiteSettings', 'DiscountCode', 'Banner', 'Contract', 'Blog', 'PublicBlog', 'BlogCategory', 'BlogTag'],
   endpoints: (builder) => ({
     // Auth endpoints
     login: builder.mutation({
@@ -513,6 +513,93 @@ export const api = createApi({
     getContractStats: builder.query({
       query: () => 'contracts/stats',
     }),
+
+    // Blog endpoints
+    getBlogs: builder.query({
+      query: (params = {}) => ({
+        url: 'blogs',
+        params,
+      }),
+      providesTags: ['Blog'],
+    }),
+    getBlog: builder.query({
+      query: (id) => `blogs/${id}`,
+      providesTags: (result, error, id) => [{ type: 'Blog', id }],
+    }),
+    createBlog: builder.mutation({
+      query: (blogData) => ({
+        url: 'blogs',
+        method: 'POST',
+        body: blogData,
+      }),
+      invalidatesTags: ['Blog'],
+    }),
+    updateBlog: builder.mutation({
+      query: ({ id, ...blogData }) => ({
+        url: `blogs/${id}`,
+        method: 'PUT',
+        body: blogData,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Blog', id }, 'Blog'],
+    }),
+    deleteBlog: builder.mutation({
+      query: (id) => ({
+        url: `blogs/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Blog'],
+    }),
+    toggleBlogStatus: builder.mutation({
+      query: ({ id, status, publishDate }) => ({
+        url: `blogs/${id}/publish`,
+        method: 'PATCH',
+        body: { status, publishDate },
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Blog', id }, 'Blog'],
+    }),
+    uploadBlogImage: builder.mutation({
+      query: ({ id, formData }) => ({
+        url: `blogs/${id}/upload-image`,
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Blog', id }],
+    }),
+    
+    // Public Blog endpoints
+    getPublicBlogs: builder.query({
+      query: ({ userEmail, ...params }) => ({
+        url: `public/users/${userEmail}/blogs`,
+        params,
+      }),
+      providesTags: ['PublicBlog'],
+    }),
+    getPublicBlogBySlug: builder.query({
+      query: ({ userEmail, slug }) => `public/users/${userEmail}/blogs/${slug}`,
+      providesTags: (result, error, { slug }) => [{ type: 'PublicBlog', id: slug }],
+    }),
+    getBlogCategories: builder.query({
+      query: (userEmail) => `public/users/${userEmail}/blog-categories`,
+      providesTags: ['BlogCategory'],
+    }),
+    getBlogTags: builder.query({
+      query: (userEmail) => `public/users/${userEmail}/blog-tags`,
+      providesTags: ['BlogTag'],
+    }),
+    likeBlog: builder.mutation({
+      query: ({ userEmail, slug }) => ({
+        url: `public/users/${userEmail}/blogs/${slug}/like`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, { slug }) => [{ type: 'PublicBlog', id: slug }],
+    }),
+    addBlogComment: builder.mutation({
+      query: ({ userEmail, slug, commentData }) => ({
+        url: `public/users/${userEmail}/blogs/${slug}/comments`,
+        method: 'POST',
+        body: commentData,
+      }),
+    }),
   }),
 })
 
@@ -597,6 +684,23 @@ export const {
   useSignContractStaffMutation,
   useGenerateContractPDFMutation,
   useGetContractStatsQuery,
+
+  // Blog hooks
+  useGetBlogsQuery,
+  useGetBlogQuery,
+  useCreateBlogMutation,
+  useUpdateBlogMutation,
+  useDeleteBlogMutation,
+  useToggleBlogStatusMutation,
+  useUploadBlogImageMutation,
+
+  // Public Blog hooks
+  useGetPublicBlogsQuery,
+  useGetPublicBlogBySlugQuery,
+  useGetBlogCategoriesQuery,
+  useGetBlogTagsQuery,
+  useLikeBlogMutation,
+  useAddBlogCommentMutation,
 } = api
 
 export const store = configureStore({

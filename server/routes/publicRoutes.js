@@ -22,6 +22,16 @@ const {
   getPublicCar
 } = require('../controllers/publicController');
 
+// Import blog controller functions
+const {
+  getPublicBlogsByUser,
+  getPublicBlogBySlug,
+  getBlogCategories,
+  getBlogTags,
+  likeBlog,
+  addBlogComment
+} = require('../controllers/blogController');
+
 // Import additional services controller
 const {
   getPublicServices,
@@ -64,6 +74,14 @@ router.get('/users/:email/info-bar', getInfoBarByUser);
 router.get('/users/:email/modal', getModalByUser);
 router.post('/users/:email/newsletter', subscribeToNewsletter);
 router.post('/users/:email/verify-discount', verifyDiscountCodeByUser);
+
+// Blog endpoints (public)
+router.get('/users/:email/blogs', getPublicBlogsByUser);
+router.get('/users/:email/blogs/:slug', getPublicBlogBySlug);
+router.get('/users/:email/blog-categories', getBlogCategories);
+router.get('/users/:email/blog-tags', getBlogTags);
+router.post('/users/:email/blogs/:slug/like', likeBlog);
+router.post('/users/:email/blogs/:slug/comments', addBlogComment);
 
 // User/tenant-specific services endpoints
 router.get('/users/:email/services', getPublicServices);
