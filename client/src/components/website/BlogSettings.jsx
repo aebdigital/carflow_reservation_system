@@ -64,7 +64,7 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
       placeholder={placeholder}
       fullWidth
       variant="outlined"
-      helperText="HTML tags are supported for rich formatting"
+      helperText="HTML značky są podporované pre formátovanie textu"
     />
   );
 };
@@ -274,7 +274,7 @@ const BlogSettings = () => {
     const formData = new FormData();
     formData.append('image', file);
     formData.append('isFeatured', isFeatured.toString());
-    formData.append('alt', `Image for ${blogData.title}`);
+    formData.append('alt', `Obrázok pre ${blogData.title}`);
 
     try {
       const result = await uploadBlogImage({ id: selectedBlog._id, formData }).unwrap();
@@ -339,6 +339,15 @@ const BlogSettings = () => {
     }
   };
 
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'published': return 'Publikované';
+      case 'draft': return 'Koncept';
+      case 'archived': return 'Archivované';
+      default: return status;
+    }
+  };
+
   const filteredBlogs = blogsData?.data?.filter(blog => {
     const matchesSearch = blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          blog.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
@@ -350,7 +359,7 @@ const BlogSettings = () => {
   return (
     <Box>
       <Typography variant="h5" gutterBottom>
-        Blog Management
+        Správa blogu
       </Typography>
 
       {/* Alert Messages */}
@@ -372,7 +381,7 @@ const BlogSettings = () => {
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
-                placeholder="Search blogs..."
+                placeholder="Hľadať blogy..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
@@ -382,28 +391,28 @@ const BlogSettings = () => {
             </Grid>
             <Grid item xs={12} md={3}>
               <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
+                <InputLabel>Stav</InputLabel>
                 <Select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  label="Status"
+                  label="Stav"
                 >
-                  <MenuItem value="all">All Status</MenuItem>
-                  <MenuItem value="published">Published</MenuItem>
-                  <MenuItem value="draft">Draft</MenuItem>
-                  <MenuItem value="archived">Archived</MenuItem>
+                  <MenuItem value="all">Všetky stavy</MenuItem>
+                  <MenuItem value="published">Publikované</MenuItem>
+                  <MenuItem value="draft">Koncept</MenuItem>
+                  <MenuItem value="archived">Archivované</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12} md={3}>
               <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
+                <InputLabel>Kategória</InputLabel>
                 <Select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  label="Category"
+                  label="Kategória"
                 >
-                  <MenuItem value="all">All Categories</MenuItem>
+                  <MenuItem value="all">Všetky kategórie</MenuItem>
                   {categories.map(category => (
                     <MenuItem key={category.value} value={category.value}>
                       {category.label}
@@ -420,16 +429,16 @@ const BlogSettings = () => {
                 onClick={() => handleOpenBlogDialog()}
                 sx={{ height: '56px' }}
               >
-                New Blog
+                Nový blog
               </Button>
             </Grid>
           </Grid>
 
           {/* Blog List */}
           {isLoading ? (
-            <Typography>Loading blogs...</Typography>
+            <Typography>Načítavam blogy...</Typography>
           ) : filteredBlogs.length === 0 ? (
-            <Alert severity="info">No blogs found. Create your first blog post!</Alert>
+            <Alert severity="info">Nenašli sa žiadne blogy. Vytvorte svoj prvý blog!</Alert>
           ) : (
             <Grid container spacing={2}>
               {filteredBlogs.map((blog) => (
@@ -454,7 +463,7 @@ const BlogSettings = () => {
 
                       <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
                         <Chip 
-                          label={blog.status} 
+                          label={getStatusLabel(blog.status)} 
                           color={getStatusColor(blog.status)}
                           size="small"
                         />
@@ -485,6 +494,7 @@ const BlogSettings = () => {
                           size="small" 
                           onClick={() => handleOpenBlogDialog(blog)}
                           color="primary"
+                          title="Upraviť"
                         >
                           <EditIcon />
                         </IconButton>
@@ -492,6 +502,7 @@ const BlogSettings = () => {
                           size="small" 
                           onClick={() => handleToggleStatus(blog._id, blog.status)}
                           color={blog.status === 'published' ? 'warning' : 'success'}
+                          title={blog.status === 'published' ? 'Zrušiť publikovanie' : 'Publikovať'}
                         >
                           {blog.status === 'published' ? <UnpublishIcon /> : <PublishIcon />}
                         </IconButton>
@@ -499,6 +510,7 @@ const BlogSettings = () => {
                           size="small" 
                           onClick={() => handleDeleteBlog(blog._id)}
                           color="error"
+                          title="Vymazať"
                         >
                           <DeleteIcon />
                         </IconButton>
@@ -520,14 +532,14 @@ const BlogSettings = () => {
         fullWidth
       >
         <DialogTitle>
-          {selectedBlog ? 'Edit Blog Post' : 'Create New Blog Post'}
+          {selectedBlog ? 'Upraviť blog' : 'Vytvoriť nový blog'}
         </DialogTitle>
         <DialogContent>
           <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-            <Tab label="Basic Info" />
-            <Tab label="Content" />
-            <Tab label="SEO & Social" />
-            <Tab label="Settings" />
+            <Tab label="Základné info" />
+            <Tab label="Obsah" />
+            <Tab label="SEO a sociálne siete" />
+            <Tab label="Nastavenia" />
           </Tabs>
 
           {/* Basic Info Tab */}
@@ -537,7 +549,7 @@ const BlogSettings = () => {
                 <Grid item xs={12} md={8}>
                   <TextField
                     fullWidth
-                    label="Blog Title"
+                    label="Názov blogu"
                     value={blogData.title}
                     onChange={(e) => setBlogData(prev => ({ ...prev, title: e.target.value }))}
                     margin="normal"
@@ -547,34 +559,34 @@ const BlogSettings = () => {
                 <Grid item xs={12} md={4}>
                   <TextField
                     fullWidth
-                    label="URL Slug"
+                    label="URL slug"
                     value={blogData.slug}
                     onChange={(e) => setBlogData(prev => ({ ...prev, slug: e.target.value }))}
                     margin="normal"
                     required
-                    helperText="URL-friendly version of title"
+                    helperText="URL verzia názvu"
                   />
                 </Grid>
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    label="Excerpt"
+                    label="Výpis"
                     value={blogData.excerpt}
                     onChange={(e) => setBlogData(prev => ({ ...prev, excerpt: e.target.value }))}
                     multiline
                     rows={3}
                     margin="normal"
                     required
-                    helperText="Short description for blog listing and SEO"
+                    helperText="Krátky popis pre výpis blogov a SEO"
                   />
                 </Grid>
                 <Grid item xs={12} md={6}>
                   <FormControl fullWidth margin="normal">
-                    <InputLabel>Category</InputLabel>
+                    <InputLabel>Kategória</InputLabel>
                     <Select
                       value={blogData.category}
                       onChange={(e) => setBlogData(prev => ({ ...prev, category: e.target.value }))}
-                      label="Category"
+                      label="Kategória"
                     >
                       {categories.map(category => (
                         <MenuItem key={category.value} value={category.value}>
@@ -587,7 +599,7 @@ const BlogSettings = () => {
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
-                    label="Publish Date"
+                    label="Dátum publikovania"
                     type="date"
                     value={blogData.publishDate}
                     onChange={(e) => setBlogData(prev => ({ ...prev, publishDate: e.target.value }))}
@@ -596,7 +608,7 @@ const BlogSettings = () => {
                   />
                 </Grid>
                 <Grid item xs={12}>
-                  <Typography variant="subtitle2" gutterBottom>Tags</Typography>
+                  <Typography variant="subtitle2" gutterBottom>Tagy</Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
                     {blogData.tags.map((tag, index) => (
                       <Chip
@@ -610,13 +622,13 @@ const BlogSettings = () => {
                   <Stack direction="row" spacing={1}>
                     <TextField
                       size="small"
-                      placeholder="Add tag"
+                      placeholder="Pridať tag"
                       value={newTag}
                       onChange={(e) => setNewTag(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && addTag()}
                     />
                     <Button onClick={addTag} variant="outlined" size="small">
-                      Add
+                      Pridať
                     </Button>
                   </Stack>
                 </Grid>
@@ -628,18 +640,18 @@ const BlogSettings = () => {
           {activeTab === 1 && (
             <Box sx={{ mt: 2 }}>
               <Typography variant="subtitle2" gutterBottom>
-                Blog Content
+                Obsah blogu
               </Typography>
               <RichTextEditor
                 value={blogData.content}
                 onChange={(content) => setBlogData(prev => ({ ...prev, content }))}
-                placeholder="Write your blog content here..."
+                placeholder="Napíšte obsah vášho blogu..."
               />
               
               {/* Featured Image */}
               <Box sx={{ mt: 3 }}>
                 <Typography variant="subtitle2" gutterBottom>
-                  Featured Image
+                  Hlavný obrázok
                 </Typography>
                 {blogData.featuredImage ? (
                   <Box sx={{ mb: 2 }}>
@@ -651,7 +663,7 @@ const BlogSettings = () => {
                   </Box>
                 ) : (
                   <Alert severity="info" sx={{ mb: 2 }}>
-                    No featured image uploaded yet
+                    Žiadny hlavný obrázok nie je nahraný
                   </Alert>
                 )}
                 <input
@@ -663,7 +675,7 @@ const BlogSettings = () => {
                 />
                 <label htmlFor="featured-image-upload">
                   <Button variant="outlined" component="span" startIcon={<ImageIcon />}>
-                    Upload Featured Image
+                    Nahrať hlavný obrázok
                   </Button>
                 </label>
               </Box>
@@ -675,27 +687,27 @@ const BlogSettings = () => {
             <Box sx={{ mt: 2 }}>
               <Accordion defaultExpanded>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography variant="subtitle1">SEO Settings</Typography>
+                  <Typography variant="subtitle1">SEO nastavenia</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
                   <Grid container spacing={2}>
                     <Grid item xs={12}>
                       <TextField
                         fullWidth
-                        label="Meta Title"
+                        label="Meta titulok"
                         value={blogData.seo.metaTitle}
                         onChange={(e) => setBlogData(prev => ({
                           ...prev,
                           seo: { ...prev.seo, metaTitle: e.target.value }
                         }))}
                         margin="normal"
-                        helperText={`${blogData.seo.metaTitle.length}/60 characters`}
+                        helperText={`${blogData.seo.metaTitle.length}/60 znakov`}
                       />
                     </Grid>
                     <Grid item xs={12}>
                       <TextField
                         fullWidth
-                        label="Meta Description"
+                        label="Meta popis"
                         value={blogData.seo.metaDescription}
                         onChange={(e) => setBlogData(prev => ({
                           ...prev,
@@ -704,11 +716,11 @@ const BlogSettings = () => {
                         multiline
                         rows={2}
                         margin="normal"
-                        helperText={`${blogData.seo.metaDescription.length}/160 characters`}
+                        helperText={`${blogData.seo.metaDescription.length}/160 znakov`}
                       />
                     </Grid>
                     <Grid item xs={12}>
-                      <Typography variant="subtitle2" gutterBottom>SEO Keywords</Typography>
+                      <Typography variant="subtitle2" gutterBottom>SEO kľúčové slová</Typography>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
                         {blogData.seo.keywords.map((keyword, index) => (
                           <Chip
@@ -722,13 +734,13 @@ const BlogSettings = () => {
                       <Stack direction="row" spacing={1}>
                         <TextField
                           size="small"
-                          placeholder="Add keyword"
+                          placeholder="Pridať kľúčové slovo"
                           value={newKeyword}
                           onChange={(e) => setNewKeyword(e.target.value)}
                           onKeyPress={(e) => e.key === 'Enter' && addKeyword()}
                         />
                         <Button onClick={addKeyword} variant="outlined" size="small">
-                          Add
+                          Pridať
                         </Button>
                       </Stack>
                     </Grid>
@@ -738,14 +750,14 @@ const BlogSettings = () => {
 
               <Accordion>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography variant="subtitle1">Social Media</Typography>
+                  <Typography variant="subtitle1">Sociálne siete</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
                   <Grid container spacing={2}>
                     <Grid item xs={12}>
                       <TextField
                         fullWidth
-                        label="Social Media Title"
+                        label="Titulok pre sociálne siete"
                         value={blogData.socialMedia.ogTitle}
                         onChange={(e) => setBlogData(prev => ({
                           ...prev,
@@ -757,7 +769,7 @@ const BlogSettings = () => {
                     <Grid item xs={12}>
                       <TextField
                         fullWidth
-                        label="Social Media Description"
+                        label="Popis pre sociálne siete"
                         value={blogData.socialMedia.ogDescription}
                         onChange={(e) => setBlogData(prev => ({
                           ...prev,
@@ -784,34 +796,34 @@ const BlogSettings = () => {
                     onChange={(e) => setBlogData(prev => ({ ...prev, commentsEnabled: e.target.checked }))}
                   />
                 }
-                label="Enable Comments"
+                label="Povoliť komentáre"
               />
               
               <Divider sx={{ my: 2 }} />
               
               <FormControl fullWidth margin="normal">
-                <InputLabel>Status</InputLabel>
+                <InputLabel>Stav</InputLabel>
                 <Select
                   value={blogData.status}
                   onChange={(e) => setBlogData(prev => ({ ...prev, status: e.target.value }))}
-                  label="Status"
+                  label="Stav"
                 >
-                  <MenuItem value="draft">Draft</MenuItem>
-                  <MenuItem value="published">Published</MenuItem>
-                  <MenuItem value="archived">Archived</MenuItem>
+                  <MenuItem value="draft">Koncept</MenuItem>
+                  <MenuItem value="published">Publikované</MenuItem>
+                  <MenuItem value="archived">Archivované</MenuItem>
                 </Select>
               </FormControl>
             </Box>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseBlogDialog}>Cancel</Button>
+          <Button onClick={handleCloseBlogDialog}>Zrušiť</Button>
           <Button 
             onClick={handleSaveBlog} 
             variant="contained"
             disabled={!blogData.title || !blogData.excerpt || !blogData.content}
           >
-            {selectedBlog ? 'Update' : 'Create'} Blog
+            {selectedBlog ? 'Aktualizovať' : 'Vytvoriť'} blog
           </Button>
         </DialogActions>
       </Dialog>
