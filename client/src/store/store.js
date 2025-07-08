@@ -4,7 +4,7 @@ import authSlice, { clearStateOnLogout } from './authSlice'
 
 // Base query with authentication - Fixed API URL concatenation
 const baseQuery = fetchBaseQuery({
-  baseUrl: import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api',
+  baseUrl: (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, ''),
   prepareHeaders: (headers, { getState }) => {
     const token = getState().auth.token
     if (token) {

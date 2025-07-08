@@ -176,10 +176,13 @@ export default function ModalSettings() {
       console.log('=== Testing API Connectivity ===')
       
       const state = store.getState()
-      const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api'
+      const rawBaseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api'
+      // Remove trailing slash to prevent double slashes
+      const baseUrl = rawBaseUrl.replace(/\/$/, '')
       const token = state.auth.token
       
-      console.log('Base URL:', baseUrl)
+      console.log('Raw Base URL:', rawBaseUrl)
+      console.log('Normalized Base URL:', baseUrl)
       console.log('Token available:', !!token)
       console.log('Is authenticated:', state.auth.isAuthenticated)
       
@@ -216,11 +219,14 @@ export default function ModalSettings() {
     try {
       console.log('🔧 === COMPREHENSIVE MODAL DEBUG SESSION ===')
       const state = store.getState()
-      const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api'
+      const rawBaseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api'
+      // Remove trailing slash to prevent double slashes
+      const baseUrl = rawBaseUrl.replace(/\/$/, '')
       const token = state.auth.token
       
       console.log('🔍 System Info:')
-      console.log('- Base URL:', baseUrl)
+      console.log('- Raw Base URL:', rawBaseUrl)
+      console.log('- Normalized Base URL:', baseUrl)
       console.log('- Token available:', !!token)
       console.log('- Token length:', token?.length || 0)
       console.log('- User authenticated:', state.auth.isAuthenticated)
@@ -228,18 +234,21 @@ export default function ModalSettings() {
       
       // Test 1: Health check
       console.log('\n🏥 Test 1: Health Check')
+      console.log('Health URL:', `${baseUrl}/health`)
       const healthResponse = await fetch(`${baseUrl}/health`)
       const healthData = await healthResponse.json()
       console.log('Health response:', healthData)
       
       // Test 2: CORS test
       console.log('\n🌐 Test 2: CORS Test')
+      console.log('CORS URL:', `${baseUrl}/cors-test`)
       const corsResponse = await fetch(`${baseUrl}/cors-test`)
       const corsData = await corsResponse.json()
       console.log('CORS response:', corsData)
       
       // Test 3: Get current modals
       console.log('\n📋 Test 3: Get Current Modals')
+      console.log('Modals URL:', `${baseUrl}/website/modals`)
       const modalsResponse = await fetch(`${baseUrl}/website/modals`, {
         method: 'GET',
         headers: {
@@ -260,6 +269,7 @@ export default function ModalSettings() {
           const firstModal = modalsData.data[0]
           console.log('\n🔀 Test 4: Toggle First Modal')
           console.log('Testing modal:', firstModal)
+          console.log('Toggle URL:', `${baseUrl}/website/modals/${firstModal._id}/toggle`)
           
           const toggleResponse = await fetch(`${baseUrl}/website/modals/${firstModal._id}/toggle`, {
             method: 'PATCH',
@@ -290,6 +300,7 @@ export default function ModalSettings() {
       
       // Test 5: Test modal creation
       console.log('\n➕ Test 5: Test Modal Creation')
+      console.log('Create URL:', `${baseUrl}/website/modals`)
       const testModal = {
         name: `Debug Test Modal ${Date.now()}`,
         title: 'Debug Test Modal',
@@ -318,6 +329,7 @@ export default function ModalSettings() {
         
         // Test 6: Test deleting the test modal
         console.log('\n🗑️ Test 6: Clean up test modal')
+        console.log('Delete URL:', `${baseUrl}/website/modals/${createData.data._id}`)
         const deleteResponse = await fetch(`${baseUrl}/website/modals/${createData.data._id}`, {
           method: 'DELETE',
           headers: {
@@ -525,9 +537,12 @@ export default function ModalSettings() {
         tokenLength: state.auth.token?.length || 0
       })
       
-      // Log the API base URL
-      console.log('API Base URL:', import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api')
-      console.log('Full URL would be:', `${import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api'}/website/modals/${modalId}/toggle`)
+      // Log the API base URL with normalization
+      const rawBaseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api'
+      const baseUrl = rawBaseUrl.replace(/\/$/, '')
+      console.log('Raw API Base URL:', rawBaseUrl)
+      console.log('Normalized API Base URL:', baseUrl)
+      console.log('Full toggle URL would be:', `${baseUrl}/website/modals/${modalId}/toggle`)
       
       const result = await toggleModal({ id: modalId, isActive: !isActive }).unwrap()
       
