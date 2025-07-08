@@ -55,6 +55,7 @@ import {
   useDeleteModalMutation,
   useToggleModalMutation 
 } from '../../store/store'
+import { store } from '../../store/store'
 
 const modalTypeOptions = [
   { value: 'newsletter', label: 'Newsletter' },
@@ -168,6 +169,47 @@ export default function ModalSettings() {
       return () => clearTimeout(timer)
     }
   }, [alert])
+
+  // Test API connectivity function
+  const testApiConnectivity = async () => {
+    try {
+      console.log('=== Testing API Connectivity ===')
+      
+      const state = store.getState()
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api'
+      const token = state.auth.token
+      
+      console.log('Base URL:', baseUrl)
+      console.log('Token available:', !!token)
+      console.log('Is authenticated:', state.auth.isAuthenticated)
+      
+      // Test basic fetch to website settings
+      const response = await fetch(`${baseUrl}/website/settings`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      })
+      
+      console.log('Test response status:', response.status)
+      console.log('Test response ok:', response.ok)
+      console.log('Test response headers:', Object.fromEntries(response.headers.entries()))
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Test response data:', data)
+        setAlert({ type: 'success', message: 'API connectivity test successful!' })
+      } else {
+        const errorText = await response.text()
+        console.log('Test response error text:', errorText)
+        setAlert({ type: 'error', message: `API test failed: ${response.status} ${response.statusText}` })
+      }
+    } catch (error) {
+      console.error('API connectivity test failed:', error)
+      setAlert({ type: 'error', message: `API connectivity test failed: ${error.message}` })
+    }
+  }
 
   const handleOpenDialog = (mode, modal = null) => {
     setDialogMode(mode)
@@ -340,11 +382,27 @@ export default function ModalSettings() {
 
   const handleToggleActive = async (modalId, isActive) => {
     try {
-      console.log('Toggle modal request:', { id: modalId, isActive: !isActive })
+      console.log('=== Modal Toggle Debug Info ===')
+      console.log('Modal ID:', modalId)
+      console.log('Current isActive:', isActive)
+      console.log('New isActive will be:', !isActive)
+      console.log('Request payload:', { id: modalId, isActive: !isActive })
+      
+      // Check authentication state
+      const state = store.getState()
+      console.log('Auth state:', {
+        isAuthenticated: state.auth.isAuthenticated,
+        hasToken: !!state.auth.token,
+        tokenLength: state.auth.token?.length || 0
+      })
+      
+      // Log the API base URL
+      console.log('API Base URL:', import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api')
+      console.log('Full URL would be:', `${import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api'}/website/modals/${modalId}/toggle`)
       
       const result = await toggleModal({ id: modalId, isActive: !isActive }).unwrap()
       
-      console.log('Toggle modal response:', result)
+      console.log('Toggle modal SUCCESS response:', result)
       
       setAlert({ 
         type: 'success', 
@@ -352,7 +410,20 @@ export default function ModalSettings() {
       })
       refetch()
     } catch (error) {
-      console.error('Error toggling modal status:', error)
+      console.error('=== Modal Toggle ERROR Details ===')
+      console.error('Full error object:', error)
+      console.error('Error type:', typeof error)
+      console.error('Error constructor:', error?.constructor?.name)
+      console.error('Error status:', error?.status)
+      console.error('Error data:', error?.data)
+      console.error('Error message:', error?.message)
+      console.error('Error originalStatus:', error?.originalStatus)
+      console.error('Network error info:', {
+        isFetchError: error?.name === 'FetchError',
+        hasResponse: !!error?.response,
+        status: error?.status || error?.response?.status,
+        statusText: error?.statusText || error?.response?.statusText
+      })
       
       // Better error handling with fallbacks
       let errorMessage = 'Neznáma chyba pri zmene stavu modalu'
@@ -365,6 +436,10 @@ export default function ModalSettings() {
         errorMessage = error
       } else if (error?.status) {
         errorMessage = `Server error (${error.status}): ${error.statusText || 'Unknown error'}`
+      } else if (error?.originalStatus) {
+        errorMessage = `Network error (${error.originalStatus}): Connection failed`
+      } else if (error?.name === 'FetchError') {
+        errorMessage = 'Network connection failed - server may be unreachable'
       }
       
       setAlert({ 
@@ -515,14 +590,24 @@ export default function ModalSettings() {
             </Typography>
           </Box>
           
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => handleOpenDialog('create')}
-            sx={{ borderRadius: 2 }}
-          >
-            Nový Modal
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="outlined"
+              color="info"
+              onClick={testApiConnectivity}
+              sx={{ borderRadius: 2 }}
+            >
+              Test API
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => handleOpenDialog('create')}
+              sx={{ borderRadius: 2 }}
+            >
+              Nový Modal
+            </Button>
+          </Box>
         </Box>
 
         {/* Modals Table */}
