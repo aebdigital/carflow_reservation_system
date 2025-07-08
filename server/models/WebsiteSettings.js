@@ -430,12 +430,6 @@ const discountCodeModel = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for better performance
-websiteSettingsSchema.index({ tenantId: 1 });
-discountCodeModel.index({ tenantId: 1, code: 1 }, { unique: true });
-discountCodeModel.index({ tenantId: 1, isActive: 1 });
-discountCodeModel.index({ tenantId: 1, endDate: 1 });
-
 // Methods for discount code validation
 discountCodeModel.methods.isValid = function() {
   if (!this.isActive) return false;
@@ -562,6 +556,12 @@ const websiteSettingsSchema = new mongoose.Schema({
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
+
+// Indexes for better performance (moved here after schema definitions)
+websiteSettingsSchema.index({ tenantId: 1 });
+discountCodeModel.index({ tenantId: 1, code: 1 }, { unique: true });
+discountCodeModel.index({ tenantId: 1, isActive: 1 });
+discountCodeModel.index({ tenantId: 1, endDate: 1 });
 
 // Static method to get active modals for a tenant and page
 websiteSettingsSchema.methods.getActiveModals = function(page = 'homepage') {
