@@ -211,6 +211,135 @@ export default function ModalSettings() {
     }
   }
 
+  // Comprehensive modal debugging function
+  const runCompleteModalDebug = async () => {
+    try {
+      console.log('🔧 === COMPREHENSIVE MODAL DEBUG SESSION ===')
+      const state = store.getState()
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api'
+      const token = state.auth.token
+      
+      console.log('🔍 System Info:')
+      console.log('- Base URL:', baseUrl)
+      console.log('- Token available:', !!token)
+      console.log('- Token length:', token?.length || 0)
+      console.log('- User authenticated:', state.auth.isAuthenticated)
+      console.log('- User info:', state.auth.user)
+      
+      // Test 1: Health check
+      console.log('\n🏥 Test 1: Health Check')
+      const healthResponse = await fetch(`${baseUrl}/health`)
+      const healthData = await healthResponse.json()
+      console.log('Health response:', healthData)
+      
+      // Test 2: CORS test
+      console.log('\n🌐 Test 2: CORS Test')
+      const corsResponse = await fetch(`${baseUrl}/cors-test`)
+      const corsData = await corsResponse.json()
+      console.log('CORS response:', corsData)
+      
+      // Test 3: Get current modals
+      console.log('\n📋 Test 3: Get Current Modals')
+      const modalsResponse = await fetch(`${baseUrl}/website/modals`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      })
+      console.log('Modals response status:', modalsResponse.status)
+      console.log('Modals response headers:', Object.fromEntries(modalsResponse.headers.entries()))
+      
+      if (modalsResponse.ok) {
+        const modalsData = await modalsResponse.json()
+        console.log('Current modals data:', modalsData)
+        console.log('Number of modals:', modalsData.data?.length || 0)
+        
+        // Test 4: If modals exist, test toggle on the first one
+        if (modalsData.data && modalsData.data.length > 0) {
+          const firstModal = modalsData.data[0]
+          console.log('\n🔀 Test 4: Toggle First Modal')
+          console.log('Testing modal:', firstModal)
+          
+          const toggleResponse = await fetch(`${baseUrl}/website/modals/${firstModal._id}/toggle`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': token ? `Bearer ${token}` : ''
+            },
+            body: JSON.stringify({ isActive: !firstModal.isActive })
+          })
+          
+          console.log('Toggle response status:', toggleResponse.status)
+          console.log('Toggle response headers:', Object.fromEntries(toggleResponse.headers.entries()))
+          
+          if (toggleResponse.ok) {
+            const toggleData = await toggleResponse.json()
+            console.log('Toggle response data:', toggleData)
+          } else {
+            const toggleError = await toggleResponse.text()
+            console.log('Toggle error response:', toggleError)
+          }
+        } else {
+          console.log('❌ No modals found to test toggle')
+        }
+      } else {
+        const modalsError = await modalsResponse.text()
+        console.log('Modals error response:', modalsError)
+      }
+      
+      // Test 5: Test modal creation
+      console.log('\n➕ Test 5: Test Modal Creation')
+      const testModal = {
+        name: `Debug Test Modal ${Date.now()}`,
+        title: 'Debug Test Modal',
+        content: 'This is a test modal created for debugging purposes.',
+        type: 'info',
+        displayLocation: 'all-pages',
+        triggerRule: { type: 'time', value: 5 },
+        frequency: 'every-visit',
+        priority: 5,
+        isActive: true
+      }
+      
+      const createResponse = await fetch(`${baseUrl}/website/modals`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify(testModal)
+      })
+      
+      console.log('Create response status:', createResponse.status)
+      if (createResponse.ok) {
+        const createData = await createResponse.json()
+        console.log('Create response data:', createData)
+        
+        // Test 6: Test deleting the test modal
+        console.log('\n🗑️ Test 6: Clean up test modal')
+        const deleteResponse = await fetch(`${baseUrl}/website/modals/${createData.data._id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+          }
+        })
+        console.log('Delete response status:', deleteResponse.status)
+      } else {
+        const createError = await createResponse.text()
+        console.log('Create error response:', createError)
+      }
+      
+      console.log('\n✅ === DEBUG SESSION COMPLETE ===')
+      setAlert({ type: 'success', message: 'Complete modal debug finished! Check console for detailed results.' })
+      
+    } catch (error) {
+      console.error('❌ Debug session failed:', error)
+      setAlert({ type: 'error', message: `Debug session failed: ${error.message}` })
+    }
+  }
+
   const handleOpenDialog = (mode, modal = null) => {
     setDialogMode(mode)
     setSelectedModal(modal)
@@ -600,9 +729,17 @@ export default function ModalSettings() {
               Test API
             </Button>
             <Button
+              variant="outlined"
+              color="warning"
+              onClick={runCompleteModalDebug}
+              sx={{ borderRadius: 2 }}
+            >
+              Complete Debug
+            </Button>
+            <Button
               variant="contained"
-              startIcon={<AddIcon />}
               onClick={() => handleOpenDialog('create')}
+              startIcon={<AddIcon />}
               sx={{ borderRadius: 2 }}
             >
               Nový Modal
