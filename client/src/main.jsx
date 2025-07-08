@@ -1,3 +1,4 @@
+// Updated: 2025-07-09 - Trigger deployment for URL fix
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { Provider } from 'react-redux'
