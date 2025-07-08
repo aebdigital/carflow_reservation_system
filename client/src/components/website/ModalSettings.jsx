@@ -287,9 +287,23 @@ export default function ModalSettings() {
       refetch()
     } catch (error) {
       console.error('Error saving modal:', error)
+      
+      // Better error handling with fallbacks
+      let errorMessage = 'Neznáma chyba'
+      
+      if (error?.data?.message) {
+        errorMessage = error.data.message
+      } else if (error?.message) {
+        errorMessage = error.message
+      } else if (typeof error === 'string') {
+        errorMessage = error
+      } else if (error?.status) {
+        errorMessage = `Server error (${error.status}): ${error.statusText || 'Unknown error'}`
+      }
+      
       setAlert({ 
         type: 'error', 
-        message: `Chyba pri ukladaní modalu: ${error.data?.message || error.message}` 
+        message: `Chyba pri ukladaní modalu: ${errorMessage}` 
       })
     }
   }
@@ -302,9 +316,23 @@ export default function ModalSettings() {
         refetch()
       } catch (error) {
         console.error('Error deleting modal:', error)
+        
+        // Better error handling with fallbacks
+        let errorMessage = 'Neznáma chyba'
+        
+        if (error?.data?.message) {
+          errorMessage = error.data.message
+        } else if (error?.message) {
+          errorMessage = error.message
+        } else if (typeof error === 'string') {
+          errorMessage = error
+        } else if (error?.status) {
+          errorMessage = `Server error (${error.status}): ${error.statusText || 'Unknown error'}`
+        }
+        
         setAlert({ 
           type: 'error', 
-          message: `Chyba pri mazaní modalu: ${error.data?.message || error.message}` 
+          message: `Chyba pri mazaní modalu: ${errorMessage}` 
         })
       }
     }
@@ -312,7 +340,12 @@ export default function ModalSettings() {
 
   const handleToggleActive = async (modalId, isActive) => {
     try {
-      await toggleModal({ id: modalId, isActive: !isActive }).unwrap()
+      console.log('Toggle modal request:', { id: modalId, isActive: !isActive })
+      
+      const result = await toggleModal({ id: modalId, isActive: !isActive }).unwrap()
+      
+      console.log('Toggle modal response:', result)
+      
       setAlert({ 
         type: 'success', 
         message: `Modal bol ${!isActive ? 'aktivovaný' : 'deaktivovaný'}!` 
@@ -320,9 +353,23 @@ export default function ModalSettings() {
       refetch()
     } catch (error) {
       console.error('Error toggling modal status:', error)
+      
+      // Better error handling with fallbacks
+      let errorMessage = 'Neznáma chyba pri zmene stavu modalu'
+      
+      if (error?.data?.message) {
+        errorMessage = error.data.message
+      } else if (error?.message) {
+        errorMessage = error.message
+      } else if (typeof error === 'string') {
+        errorMessage = error
+      } else if (error?.status) {
+        errorMessage = `Server error (${error.status}): ${error.statusText || 'Unknown error'}`
+      }
+      
       setAlert({ 
         type: 'error', 
-        message: `Chyba pri zmene stavu modalu: ${error.data?.message || error.message}` 
+        message: `Chyba pri zmene stavu modalu: ${errorMessage}` 
       })
     }
   }
