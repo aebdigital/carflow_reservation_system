@@ -333,18 +333,40 @@ export const api = createApi({
       }),
       invalidatesTags: ['WebsiteSettings'],
     }),
-    updateModal: builder.mutation({
+
+    // Modal CRUD endpoints
+    getModals: builder.query({
+      query: () => 'website/modals',
+      providesTags: ['WebsiteSettings'],
+    }),
+    createModal: builder.mutation({
       query: (modalData) => ({
-        url: 'website/settings/modal',
-        method: 'PUT',
+        url: 'website/modals',
+        method: 'POST',
         body: modalData,
       }),
       invalidatesTags: ['WebsiteSettings'],
     }),
+    updateModal: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `website/modals/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['WebsiteSettings'],
+    }),
+    deleteModal: builder.mutation({
+      query: (id) => ({
+        url: `website/modals/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['WebsiteSettings'],
+    }),
     toggleModal: builder.mutation({
-      query: () => ({
-        url: 'website/settings/modal/toggle',
+      query: ({ id, isActive }) => ({
+        url: `website/modals/${id}/toggle`,
         method: 'PATCH',
+        body: { isActive },
       }),
       invalidatesTags: ['WebsiteSettings'],
     }),
@@ -651,7 +673,12 @@ export const {
   useUpdateWebsiteSettingsMutation,
   useUpdateInfoBarMutation,
   useToggleInfoBarMutation,
+
+  // Modal CRUD hooks
+  useGetModalsQuery,
+  useCreateModalMutation,
   useUpdateModalMutation,
+  useDeleteModalMutation,
   useToggleModalMutation,
 
   // Discount Codes hooks

@@ -13,7 +13,8 @@ const getWebsiteSettings = asyncHandler(async (req, res, next) => {
   if (!settings) {
     settings = await WebsiteSettings.create({
       tenantId: req.user.tenantId,
-      lastUpdatedBy: req.user._id
+      lastUpdatedBy: req.user._id,
+      modals: [] // Initialize with empty modals array
     });
   }
 
@@ -90,71 +91,269 @@ const updateInfoBar = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Update modal settings
-// @route   PUT /api/website/settings/modal
-// @access  Private/Admin
-const updateModal = asyncHandler(async (req, res, next) => {
-  const { 
-    title, 
-    content, 
-    type, 
-    displayLocation, 
-    triggerRule, 
-    isActive, 
-    startDate, 
-    endDate,
-    emailPlaceholder,
-    buttonText,
-    discountCode,
-    discountPercentage,
-    backgroundColor,
-    textColor,
-    buttonColor
-  } = req.body;
+// MODAL CRUD OPERATIONS
 
-  // Validate required fields
-  if (!title || !content || !type) {
-    return next(new AppError('Title, content, and type are required', 400));
+// @desc    Get all modals for tenant
+// @route   GET /api/website/modals
+// @access  Private
+const getModals = asyncHandler(async (req, res, next) => {
+  const settings = await WebsiteSettings.findOne({ 
+    tenantId: req.user.tenantId 
+  }).populate('modals.createdBy modals.lastUpdatedBy', 'firstName lastName email');
+
+  if (!settings) {
+    return res.status(200).json({
+      success: true,
+      data: []
+    });
   }
-
-  const updateData = {
-    'modal.title': title,
-    'modal.content': content,
-    'modal.type': type,
-    'modal.displayLocation': displayLocation || 'all-pages',
-    'modal.isActive': isActive !== undefined ? isActive : true,
-    'modal.emailPlaceholder': emailPlaceholder || 'Zadajte váš email',
-    'modal.buttonText': buttonText || 'Získať zľavu',
-    'modal.backgroundColor': backgroundColor || '#ffffff',
-    'modal.textColor': textColor || '#333333',
-    'modal.buttonColor': buttonColor || '#1976d2',
-    lastUpdatedBy: req.user._id
-  };
-
-  if (triggerRule) {
-    updateData['modal.triggerRule'] = triggerRule;
-  }
-
-  if (startDate) updateData['modal.startDate'] = new Date(startDate);
-  if (endDate) updateData['modal.endDate'] = new Date(endDate);
-  
-  if (discountCode) updateData['modal.discountCode'] = discountCode;
-  if (discountPercentage) updateData['modal.discountPercentage'] = discountPercentage;
-
-  const settings = await WebsiteSettings.findOneAndUpdate(
-    { tenantId: req.user.tenantId },
-    updateData,
-    {
-      new: true,
-      runValidators: true,
-      upsert: true
-    }
-  ).populate('lastUpdatedBy', 'firstName lastName email');
 
   res.status(200).json({
     success: true,
-    data: settings.modal,
-    message: 'Modal settings updated successfully'
+    data: settings.modals || []
+  });
+});
+
+// @desc    Create new modal
+// @route   POST /api/website/modals
+// @access  Private/Admin
+const createModal = asyncHandler(async (req, res, next) => {
+  const modalData = {
+    ...req.body,
+    createdBy: req.user._id,
+    lastUpdatedBy: req.user._id
+  };
+
+  // Validate required fields
+  if (!modalData.name || !modalData.title || !modalData.content || !modalData.type) {
+    return next(new AppError('Name, title, content, and type are required', 400));
+  }
+
+  let settings = await WebsiteSettings.findOne({ tenantId: req.user.tenantId });
+  
+  if (!settings) {
+    settings = await WebsiteSettings.create({
+      tenantId: req.user.tenantId,
+      lastUpdatedBy: req.user._id,
+      modals: [modalData]
+    });
+  } else {
+    // Check if modal name already exists
+    const nameExists = settings.modals.some(modal => 
+      modal.name.toLowerCase() === modalData.name.toLowerCase()
+    );
+    
+    if (nameExists) {
+      return next(new AppError('Modal with this name already exists', 400));
+    }
+
+    settings.modals.push(modalData);
+    settings.lastUpdatedBy = req.user._id;
+    await settings.save();
+  }
+
+  // Get the newly created modal
+  const newModal = settings.modals[settings.modals.length - 1];
+
+  res.status(201).json({
+    success: true,
+    data: newModal,
+    message: 'Modal created successfully'
+  });
+});
+
+// @desc    Update existing modal
+// @route   PUT /api/website/modals/:id
+// @access  Private/Admin
+const updateModal = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const updateData = {
+    ...req.body,
+    lastUpdatedBy: req.user._id
+  };
+
+  const settings = await WebsiteSettings.findOne({ tenantId: req.user.tenantId });
+  
+  if (!settings) {
+    return next(new AppError('Website settings not found', 404));
+  }
+
+  const modalIndex = settings.modals.findIndex(modal => modal._id.toString() === id);
+  
+  if (modalIndex === -1) {
+    return next(new AppError('Modal not found', 404));
+  }
+
+  // Check if updating name would create a duplicate
+  if (updateData.name && updateData.name !== settings.modals[modalIndex].name) {
+    const nameExists = settings.modals.some((modal, index) => 
+      index !== modalIndex && modal.name.toLowerCase() === updateData.name.toLowerCase()
+    );
+    
+    if (nameExists) {
+      return next(new AppError('Modal with this name already exists', 400));
+    }
+  }
+
+  // Update the modal
+  Object.assign(settings.modals[modalIndex], updateData);
+  settings.lastUpdatedBy = req.user._id;
+  
+  await settings.save();
+
+  res.status(200).json({
+    success: true,
+    data: settings.modals[modalIndex],
+    message: 'Modal updated successfully'
+  });
+});
+
+// @desc    Delete modal
+// @route   DELETE /api/website/modals/:id
+// @access  Private/Admin
+const deleteModal = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  const settings = await WebsiteSettings.findOne({ tenantId: req.user.tenantId });
+  
+  if (!settings) {
+    return next(new AppError('Website settings not found', 404));
+  }
+
+  const modalIndex = settings.modals.findIndex(modal => modal._id.toString() === id);
+  
+  if (modalIndex === -1) {
+    return next(new AppError('Modal not found', 404));
+  }
+
+  const deletedModal = settings.modals[modalIndex];
+  settings.modals.splice(modalIndex, 1);
+  settings.lastUpdatedBy = req.user._id;
+  
+  await settings.save();
+
+  res.status(200).json({
+    success: true,
+    data: deletedModal,
+    message: 'Modal deleted successfully'
+  });
+});
+
+// @desc    Toggle modal status
+// @route   PATCH /api/website/modals/:id/toggle
+// @access  Private/Admin
+const toggleModal = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { isActive } = req.body;
+
+  const settings = await WebsiteSettings.findOne({ tenantId: req.user.tenantId });
+  
+  if (!settings) {
+    return next(new AppError('Website settings not found', 404));
+  }
+
+  const modalIndex = settings.modals.findIndex(modal => modal._id.toString() === id);
+  
+  if (modalIndex === -1) {
+    return next(new AppError('Modal not found', 404));
+  }
+
+  // Toggle status or set to specific value
+  const newStatus = isActive !== undefined ? isActive : !settings.modals[modalIndex].isActive;
+  
+  settings.modals[modalIndex].isActive = newStatus;
+  settings.modals[modalIndex].lastUpdatedBy = req.user._id;
+  settings.lastUpdatedBy = req.user._id;
+  
+  await settings.save();
+
+  res.status(200).json({
+    success: true,
+    data: { 
+      id: settings.modals[modalIndex]._id,
+      isActive: newStatus,
+      name: settings.modals[modalIndex].name
+    },
+    message: `Modal ${newStatus ? 'activated' : 'deactivated'} successfully`
+  });
+});
+
+// @desc    Get active modals for specific page
+// @route   GET /api/website/modals/active/:page?
+// @access  Public
+const getActiveModals = asyncHandler(async (req, res, next) => {
+  const { page = 'homepage' } = req.params;
+  const { tenantId } = req.query;
+
+  if (!tenantId) {
+    return next(new AppError('Tenant ID is required', 400));
+  }
+
+  const settings = await WebsiteSettings.findOne({ tenantId });
+  
+  if (!settings || !settings.modals) {
+    return res.status(200).json({
+      success: true,
+      data: []
+    });
+  }
+
+  const activeModals = settings.getActiveModals(page);
+
+  res.status(200).json({
+    success: true,
+    data: activeModals
+  });
+});
+
+// @desc    Record modal analytics
+// @route   POST /api/website/modals/:id/analytics
+// @access  Public
+const recordModalAnalytics = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { action, tenantId } = req.body; // action: 'impression', 'click', 'conversion', 'dismissal'
+
+  if (!tenantId) {
+    return next(new AppError('Tenant ID is required', 400));
+  }
+
+  if (!['impression', 'click', 'conversion', 'dismissal'].includes(action)) {
+    return next(new AppError('Invalid action type', 400));
+  }
+
+  const settings = await WebsiteSettings.findOne({ tenantId });
+  
+  if (!settings) {
+    return next(new AppError('Website settings not found', 404));
+  }
+
+  const modal = settings.modals.id(id);
+  
+  if (!modal) {
+    return next(new AppError('Modal not found', 404));
+  }
+
+  // Record the analytics
+  switch (action) {
+    case 'impression':
+      modal.recordImpression();
+      break;
+    case 'click':
+      modal.recordClick();
+      break;
+    case 'conversion':
+      modal.recordConversion();
+      break;
+    case 'dismissal':
+      modal.recordDismissal();
+      break;
+  }
+
+  await settings.save();
+
+  res.status(200).json({
+    success: true,
+    message: `${action} recorded successfully`
   });
 });
 
@@ -186,39 +385,17 @@ const toggleInfoBar = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Toggle modal status
-// @route   PATCH /api/website/settings/modal/toggle
-// @access  Private/Admin
-const toggleModal = asyncHandler(async (req, res, next) => {
-  const settings = await WebsiteSettings.findOne({ tenantId: req.user.tenantId });
-  
-  if (!settings) {
-    return next(new AppError('Website settings not found', 404));
-  }
-
-  const newStatus = !settings.modal?.isActive;
-  
-  const updatedSettings = await WebsiteSettings.findOneAndUpdate(
-    { tenantId: req.user.tenantId },
-    { 
-      'modal.isActive': newStatus,
-      lastUpdatedBy: req.user._id
-    },
-    { new: true }
-  );
-
-  res.status(200).json({
-    success: true,
-    data: { isActive: newStatus },
-    message: `Modal ${newStatus ? 'activated' : 'deactivated'} successfully`
-  });
-});
-
 module.exports = {
   getWebsiteSettings,
   updateWebsiteSettings,
   updateInfoBar,
-  updateModal,
   toggleInfoBar,
-  toggleModal
+  // Modal CRUD operations
+  getModals,
+  createModal,
+  updateModal,
+  deleteModal,
+  toggleModal,
+  getActiveModals,
+  recordModalAnalytics
 }; 

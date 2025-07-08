@@ -38,8 +38,14 @@ const infoBarSchema = new mongoose.Schema({
   }
 });
 
-// Modal Schema
+// Enhanced Modal Schema for multiple modals
 const modalSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, 'Modal name is required'],
+    maxLength: [50, 'Modal name cannot exceed 50 characters'],
+    trim: true
+  },
   title: {
     type: String,
     required: [true, 'Modal title is required'],
@@ -52,18 +58,22 @@ const modalSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['newsletter', 'info', 'discount'],
+    enum: ['newsletter', 'info', 'discount', 'announcement', 'promotion'],
     required: [true, 'Modal type is required']
   },
   displayLocation: {
     type: String,
-    enum: ['all-pages', 'homepage', 'pricing'],
+    enum: ['all-pages', 'homepage', 'pricing', 'contact', 'about', 'cars'],
     default: 'all-pages'
   },
+  targetPages: [{
+    type: String,
+    enum: ['homepage', 'pricing', 'contact', 'about', 'cars', 'reservation']
+  }],
   triggerRule: {
     type: {
       type: String,
-      enum: ['time', 'scroll', 'exit'],
+      enum: ['time', 'scroll', 'exit', 'page-load', 'manual'],
       default: 'time'
     },
     value: {
@@ -71,9 +81,24 @@ const modalSchema = new mongoose.Schema({
       default: 5 // 5 seconds for time, 50% for scroll
     }
   },
+  frequency: {
+    type: String,
+    enum: ['every-visit', 'once-per-session', 'once-per-day', 'once-per-week', 'once-ever'],
+    default: 'every-visit'
+  },
+  priority: {
+    type: Number,
+    default: 1,
+    min: 1,
+    max: 10
+  },
   isActive: {
     type: Boolean,
     default: true
+  },
+  isScheduled: {
+    type: Boolean,
+    default: false
   },
   startDate: {
     type: Date,
@@ -82,7 +107,7 @@ const modalSchema = new mongoose.Schema({
   endDate: {
     type: Date
   },
-  // For newsletter type
+  // Newsletter specific fields
   emailPlaceholder: {
     type: String,
     default: 'Zadajte váš email'
@@ -91,29 +116,196 @@ const modalSchema = new mongoose.Schema({
     type: String,
     default: 'Získať zľavu'
   },
-  // For discount type
+  secondaryButtonText: {
+    type: String,
+    default: 'Možno neskôr'
+  },
+  // Discount specific fields
   discountCode: {
-    type: String
+    type: String,
+    trim: true,
+    uppercase: true
   },
   discountPercentage: {
     type: Number,
     min: 0,
     max: 100
   },
-  // Styling
-  backgroundColor: {
+  discountType: {
     type: String,
-    default: '#ffffff'
+    enum: ['percentage', 'fixed-amount'],
+    default: 'percentage'
   },
-  textColor: {
-    type: String,
-    default: '#333333'
+  discountValue: {
+    type: Number,
+    min: 0
   },
-  buttonColor: {
-    type: String,
-    default: '#1976d2'
+  // Styling options
+  styling: {
+    backgroundColor: {
+      type: String,
+      default: '#ffffff'
+    },
+    textColor: {
+      type: String,
+      default: '#333333'
+    },
+    buttonColor: {
+      type: String,
+      default: '#1976d2'
+    },
+    buttonTextColor: {
+      type: String,
+      default: '#ffffff'
+    },
+    borderColor: {
+      type: String,
+      default: '#e0e0e0'
+    },
+    borderRadius: {
+      type: Number,
+      default: 8
+    },
+    fontSize: {
+      type: String,
+      default: '16px'
+    },
+    width: {
+      type: String,
+      default: '400px'
+    },
+    position: {
+      type: String,
+      enum: ['center', 'top-right', 'top-left', 'bottom-right', 'bottom-left'],
+      default: 'center'
+    }
+  },
+  // Advanced settings
+  settings: {
+    showCloseButton: {
+      type: Boolean,
+      default: true
+    },
+    closeable: {
+      type: Boolean,
+      default: true
+    },
+    overlay: {
+      type: Boolean,
+      default: true
+    },
+    overlayOpacity: {
+      type: Number,
+      default: 0.5,
+      min: 0,
+      max: 1
+    },
+    animation: {
+      type: String,
+      enum: ['fade', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'zoom'],
+      default: 'fade'
+    },
+    exitIntent: {
+      type: Boolean,
+      default: false
+    },
+    mobileResponsive: {
+      type: Boolean,
+      default: true
+    }
+  },
+  // Analytics and tracking
+  analytics: {
+    impressions: {
+      type: Number,
+      default: 0
+    },
+    clicks: {
+      type: Number,
+      default: 0
+    },
+    conversions: {
+      type: Number,
+      default: 0
+    },
+    dismissals: {
+      type: Number,
+      default: 0
+    },
+    lastShown: {
+      type: Date
+    }
+  },
+  // Creation tracking
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  lastUpdatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }
+}, {
+  timestamps: true
 });
+
+// Virtual for conversion rate
+modalSchema.virtual('conversionRate').get(function() {
+  if (this.analytics.impressions === 0) return 0;
+  return ((this.analytics.conversions / this.analytics.impressions) * 100).toFixed(2);
+});
+
+// Virtual for click-through rate
+modalSchema.virtual('clickThroughRate').get(function() {
+  if (this.analytics.impressions === 0) return 0;
+  return ((this.analytics.clicks / this.analytics.impressions) * 100).toFixed(2);
+});
+
+// Method to check if modal should be displayed
+modalSchema.methods.shouldDisplay = function(page = 'homepage', userTimezone = 'Europe/Bratislava') {
+  const now = new Date();
+  
+  // Check if active
+  if (!this.isActive) return false;
+  
+  // Check date range
+  if (this.startDate && now < this.startDate) return false;
+  if (this.endDate && now > this.endDate) return false;
+  
+  // Check display location
+  if (this.displayLocation !== 'all-pages') {
+    if (this.displayLocation !== page) return false;
+  }
+  
+  // Check target pages
+  if (this.targetPages && this.targetPages.length > 0) {
+    if (!this.targetPages.includes(page)) return false;
+  }
+  
+  return true;
+};
+
+// Method to increment analytics
+modalSchema.methods.recordImpression = function() {
+  this.analytics.impressions += 1;
+  this.analytics.lastShown = new Date();
+  return this;
+};
+
+modalSchema.methods.recordClick = function() {
+  this.analytics.clicks += 1;
+  return this;
+};
+
+modalSchema.methods.recordConversion = function() {
+  this.analytics.conversions += 1;
+  return this;
+};
+
+modalSchema.methods.recordDismissal = function() {
+  this.analytics.dismissals += 1;
+  return this;
+};
 
 // Discount Code Schema
 const discountCodeSchema = new mongoose.Schema({
@@ -213,64 +405,6 @@ const discountCodeSchema = new mongoose.Schema({
   }]
 });
 
-// Main Website Settings Schema
-const websiteSettingsSchema = new mongoose.Schema({
-  // Tenant separation
-  tenantId: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    index: true
-  },
-  
-  // Info Bar Settings
-  infoBar: infoBarSchema,
-  
-  // Modal Settings
-  modal: modalSchema,
-  
-  // General Website Settings
-  siteName: {
-    type: String,
-    default: 'CarFlow Rental'
-  },
-  siteDescription: {
-    type: String,
-    default: 'Professional car rental service'
-  },
-  contactEmail: {
-    type: String
-  },
-  contactPhone: {
-    type: String
-  },
-  
-  // Social Media Links
-  socialLinks: {
-    facebook: String,
-    instagram: String,
-    twitter: String,
-    linkedin: String
-  },
-  
-  // SEO Settings
-  metaTitle: {
-    type: String,
-    maxLength: [60, 'Meta title cannot exceed 60 characters']
-  },
-  metaDescription: {
-    type: String,
-    maxLength: [160, 'Meta description cannot exceed 160 characters']
-  },
-  
-  // Last updated
-  lastUpdatedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }
-}, {
-  timestamps: true
-});
-
 // Separate Discount Code Model for better organization
 const discountCodeModel = new mongoose.Schema({
   // Tenant separation
@@ -367,6 +501,98 @@ discountCodeModel.methods.calculateDiscount = function(reservationAmount, reserv
   discount = Math.min(discount, reservationAmount);
   
   return { discount, reason: null };
+};
+
+// Main Website Settings Schema
+const websiteSettingsSchema = new mongoose.Schema({
+  // Tenant separation
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    index: true
+  },
+  
+  // Info Bar Settings
+  infoBar: infoBarSchema,
+  
+  // Multiple Modals Settings (changed from single modal to array)
+  modals: [modalSchema],
+  
+  // General Website Settings
+  siteName: {
+    type: String,
+    default: 'CarFlow Rental'
+  },
+  siteDescription: {
+    type: String,
+    default: 'Professional car rental service'
+  },
+  contactEmail: {
+    type: String
+  },
+  contactPhone: {
+    type: String
+  },
+  
+  // Social Media Links
+  socialLinks: {
+    facebook: String,
+    instagram: String,
+    twitter: String,
+    linkedin: String
+  },
+  
+  // SEO Settings
+  metaTitle: {
+    type: String,
+    maxLength: [60, 'Meta title cannot exceed 60 characters']
+  },
+  metaDescription: {
+    type: String,
+    maxLength: [160, 'Meta description cannot exceed 160 characters']
+  },
+  
+  // Last updated
+  lastUpdatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }
+}, {
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Static method to get active modals for a tenant and page
+websiteSettingsSchema.methods.getActiveModals = function(page = 'homepage') {
+  return this.modals.filter(modal => {
+    const now = new Date();
+    
+    // Check if active
+    if (!modal.isActive) return false;
+    
+    // Check date range
+    if (modal.startDate && now < modal.startDate) return false;
+    if (modal.endDate && now > modal.endDate) return false;
+    
+    // Check display location
+    if (modal.displayLocation !== 'all-pages') {
+      if (modal.displayLocation !== page) return false;
+    }
+    
+    // Check target pages
+    if (modal.targetPages && modal.targetPages.length > 0) {
+      if (!modal.targetPages.includes(page)) return false;
+    }
+    
+    return true;
+  }).sort((a, b) => {
+    // Sort by priority (descending) then by creation date (newest first)
+    if (a.priority !== b.priority) {
+      return b.priority - a.priority;
+    }
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
 };
 
 const WebsiteSettings = mongoose.model('WebsiteSettings', websiteSettingsSchema);
