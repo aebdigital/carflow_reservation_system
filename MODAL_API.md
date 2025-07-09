@@ -11,6 +11,11 @@ https://carflow-reservation-system.onrender.com/api
 
 ## Recent Updates & Fixes
 
+### ✅ Public Modal System Fix (July 2025)
+- **Fixed**: Critical system mismatch between admin (multi-modal) and public (single modal) endpoints
+- **Resolved**: Public endpoint now properly accesses the new modals array instead of legacy modal field
+- **Result**: Public modal access is now fully functional
+
 ### ✅ URL Normalization (July 2025)
 - **Fixed**: Double slash URL issues (`/api//modals`) that caused 404 errors
 - **Improved**: Automatic URL normalization in frontend and Redux store
@@ -21,10 +26,11 @@ https://carflow-reservation-system.onrender.com/api
 - **Resolved**: Cross-origin request issues for modal toggle functionality
 - **Enhanced**: Better error handling and debugging information
 
-### ✅ Debugging Tools (July 2025)
+### ✅ Enhanced Debugging Tools (July 2025)
 - **Added**: "Test API" button for basic connectivity testing
 - **Added**: "Complete Debug" button for comprehensive system analysis
-- **Enhanced**: Detailed console logging for all API operations
+- **Added**: Detailed modal configuration analysis to identify issues
+- **Enhanced**: User ID/Tenant ID extraction for public endpoint configuration
 
 ## Authentication
 Most modal management endpoints require authentication. Include the Bearer token in the Authorization header:
@@ -259,55 +265,68 @@ PATCH /website/modals/:id/toggle
 
 ## Public Endpoints (No Authentication Required)
 
-### 6. Get Active Modals for Page
+### 6. Get Active Modal by Email (Recommended)
 ```http
-GET /website/modals/active/:page?tenantId=TENANT_ID
+GET /public/users/:email/modal?page=PAGENAME
 ```
 
+**✅ FIXED & WORKING**: This endpoint now properly accesses the new multi-modal system.
+
 **Parameters:**
-- `page` (path): Optional page name (default: 'homepage')
+- `email` (path): User email to identify tenant (e.g., `rival@test.sk`)
+- `page` (query): Optional page name (default: 'homepage')
   - Valid values: 'homepage', 'pricing', 'contact', 'about', 'cars', 'reservation'
-- `tenantId` (query): Required tenant ID
 
 **Example:**
 ```javascript
-// Get active modals for homepage
-fetch('https://carflow-reservation-system.onrender.com/api/website/modals/active/homepage?tenantId=admin@example.com')
+// Get active modal for homepage
+fetch('https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/modal?page=homepage')
 
-// Get active modals for all pages
-fetch('https://carflow-reservation-system.onrender.com/api/website/modals/active?tenantId=admin@example.com')
+// Get active modal for pricing page  
+fetch('https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/modal?page=pricing')
 ```
 
 **Response:**
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "_id": "modal_id",
-      "title": "Special Offer!",
-      "content": "Get 15% off your first rental!",
-      "type": "discount",
-      "triggerRule": {
-        "type": "time",
-        "value": 3
-      },
-      "styling": {
-        "backgroundColor": "#ffffff",
-        "textColor": "#333333",
-        "buttonColor": "#1976d2",
-        "position": "center"
-      },
-      "settings": {
-        "overlay": true,
-        "animation": "fade"
-      }
-    }
-  ]
+  "data": {
+    "title": "Special Offer!",
+    "content": "Get 15% off your first rental!",
+    "type": "discount",
+    "displayLocation": "all-pages",
+    "triggerRule": {
+      "type": "time",
+      "value": 3
+    },
+    "styling": {
+      "backgroundColor": "#ffffff",
+      "textColor": "#333333",
+      "buttonColor": "#1976d2",
+      "position": "center"
+    },
+    "settings": {
+      "overlay": true,
+      "animation": "fade"
+    },
+    "buttonText": "Get Discount",
+    "secondaryButtonText": "Maybe Later",
+    "discountCode": "WELCOME15",
+    "discountPercentage": 15,
+    "priority": 7,
+    "frequency": "once-per-day"
+  }
 }
 ```
 
-### 7. Record Modal Analytics
+### 7. Get Active Modals by Tenant ID
+```http
+GET /website/modals/active/:page?tenantId=TENANT_ID
+```
+
+**Note**: This endpoint requires authentication for security. Use the email-based endpoint above for public access.
+
+### 8. Record Modal Analytics
 ```http
 POST /website/modals/:id/analytics
 ```
@@ -316,7 +335,7 @@ POST /website/modals/:id/analytics
 ```json
 {
   "action": "impression",
-  "tenantId": "admin@example.com"
+  "tenantId": "TENANT_ID"
 }
 ```
 
@@ -336,7 +355,7 @@ POST /website/modals/:id/analytics
 
 ## Debugging and Testing Endpoints
 
-### 8. Health Check
+### 9. Health Check
 ```http
 GET /health
 ```
@@ -352,7 +371,7 @@ GET /health
 }
 ```
 
-### 9. CORS Test
+### 10. CORS Test
 ```http
 GET /cors-test
 ```
@@ -379,29 +398,38 @@ GET /cors-test
 
 ## JavaScript Integration Examples
 
-### Basic Modal Display with URL Normalization
+### Basic Modal Display with URL Normalization (Updated)
 ```javascript
 class ModalManager {
-  constructor(tenantId) {
-    this.tenantId = tenantId;
+  constructor(userEmail) {
+    this.userEmail = userEmail; // e.g., 'rival@test.sk'
     // URL normalization to prevent double slashes
     this.baseURL = (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, '');
     this.displayedModals = new Set();
   }
 
-  async getActiveModals(page = 'homepage') {
+  async getActiveModal(page = 'homepage') {
     try {
-      const response = await fetch(`${this.baseURL}/website/modals/active/${page}?tenantId=${this.tenantId}`);
+      // ✅ WORKING: Use email-based public endpoint
+      const response = await fetch(`${this.baseURL}/public/users/${this.userEmail}/modal?page=${page}`);
       const data = await response.json();
-      return data.success ? data.data : [];
+      
+      if (data.success && data.data) {
+        console.log('✅ Modal loaded:', data.data.title);
+        return data.data;
+      } else {
+        console.log('ℹ️ No active modal found for', page);
+        return null;
+      }
     } catch (error) {
-      console.error('Error fetching modals:', error);
-      return [];
+      console.error('❌ Error fetching modal:', error);
+      return null;
     }
   }
 
   async recordAnalytics(modalId, action) {
     try {
+      // Note: Analytics require tenant ID - you'll need to get this from your admin
       await fetch(`${this.baseURL}/website/modals/${modalId}/analytics`, {
         method: 'POST',
         headers: {
@@ -409,7 +437,7 @@ class ModalManager {
         },
         body: JSON.stringify({
           action,
-          tenantId: this.tenantId
+          tenantId: 'YOUR_TENANT_ID' // Get from admin panel or debug tools
         })
       });
     } catch (error) {
@@ -418,7 +446,7 @@ class ModalManager {
   }
 
   shouldShowModal(modal) {
-    const modalKey = `modal_${modal._id}`;
+    const modalKey = `modal_${modal._id || 'default'}`;
     
     // Check frequency restrictions
     switch (modal.frequency) {
@@ -447,7 +475,7 @@ class ModalManager {
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0, 0, 0, ${modal.settings.overlayOpacity || 0.5});
+      background-color: rgba(0, 0, 0, ${modal.settings?.overlayOpacity || 0.5});
       z-index: 10000;
       display: flex;
       align-items: center;
@@ -458,11 +486,11 @@ class ModalManager {
     const modalEl = document.createElement('div');
     modalEl.className = 'modal-container';
     modalEl.style.cssText = `
-      background-color: ${modal.styling.backgroundColor};
-      color: ${modal.styling.textColor};
+      background-color: ${modal.styling?.backgroundColor || '#ffffff'};
+      color: ${modal.styling?.textColor || '#333333'};
       padding: 30px;
-      border-radius: ${modal.styling.borderRadius}px;
-      max-width: ${modal.styling.width || '400px'};
+      border-radius: ${modal.styling?.borderRadius || 8}px;
+      max-width: ${modal.styling?.width || '400px'};
       width: 90%;
       position: relative;
       animation: modalFadeIn 0.3s ease-out;
@@ -473,7 +501,7 @@ class ModalManager {
       <h2>${modal.title}</h2>
       <p>${modal.content}</p>
       ${modal.type === 'newsletter' ? `
-        <input type="email" placeholder="${modal.emailPlaceholder}" 
+        <input type="email" placeholder="${modal.emailPlaceholder || 'Enter your email'}" 
                style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px;">
       ` : ''}
       ${modal.type === 'discount' && modal.discountCode ? `
@@ -484,8 +512,8 @@ class ModalManager {
       ` : ''}
       <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
         <button class="modal-primary-btn" style="
-          background-color: ${modal.styling.buttonColor};
-          color: ${modal.styling.buttonTextColor};
+          background-color: ${modal.styling?.buttonColor || '#1976d2'};
+          color: ${modal.styling?.buttonTextColor || '#ffffff'};
           border: none;
           padding: 12px 24px;
           border-radius: 5px;
@@ -494,15 +522,15 @@ class ModalManager {
         ${modal.secondaryButtonText ? `
           <button class="modal-secondary-btn" style="
             background: transparent;
-            color: ${modal.styling.textColor};
-            border: 1px solid ${modal.styling.textColor};
+            color: ${modal.styling?.textColor || '#333333'};
+            border: 1px solid ${modal.styling?.textColor || '#333333'};
             padding: 12px 24px;
             border-radius: 5px;
             cursor: pointer;
           ">${modal.secondaryButtonText}</button>
         ` : ''}
       </div>
-      ${modal.settings.showCloseButton ? `
+      ${modal.settings?.showCloseButton ? `
         <button class="modal-close" style="
           position: absolute;
           top: 10px;
@@ -511,7 +539,7 @@ class ModalManager {
           border: none;
           font-size: 20px;
           cursor: pointer;
-          color: ${modal.styling.textColor};
+          color: ${modal.styling?.textColor || '#333333'};
         ">&times;</button>
       ` : ''}
     `;
@@ -526,11 +554,11 @@ class ModalManager {
     const modalElement = this.createModalElement(modal);
     document.body.appendChild(modalElement);
 
-    // Record impression
-    await this.recordAnalytics(modal._id, 'impression');
+    // Record impression (if you have the modal ID and tenant ID)
+    // await this.recordAnalytics(modal._id, 'impression');
 
     // Mark as shown
-    const modalKey = `modal_${modal._id}`;
+    const modalKey = `modal_${modal._id || 'default'}`;
     if (modal.frequency === 'once-ever') {
       localStorage.setItem(`${modalKey}_shown`, 'true');
     } else if (modal.frequency === 'once-per-day') {
@@ -545,22 +573,22 @@ class ModalManager {
     const closeBtn = modalElement.querySelector('.modal-close');
 
     const closeModal = async () => {
-      await this.recordAnalytics(modal._id, 'dismissal');
+      // await this.recordAnalytics(modal._id, 'dismissal');
       modalElement.remove();
     };
 
     const handlePrimaryAction = async () => {
-      await this.recordAnalytics(modal._id, 'click');
+      // await this.recordAnalytics(modal._id, 'click');
       
       if (modal.type === 'newsletter') {
         const emailInput = modalElement.querySelector('input[type="email"]');
         if (emailInput && emailInput.value) {
-          await this.recordAnalytics(modal._id, 'conversion');
+          // await this.recordAnalytics(modal._id, 'conversion');
           // Handle newsletter signup here
           console.log('Newsletter signup:', emailInput.value);
         }
       } else {
-        await this.recordAnalytics(modal._id, 'conversion');
+        // await this.recordAnalytics(modal._id, 'conversion');
       }
       
       modalElement.remove();
@@ -571,7 +599,7 @@ class ModalManager {
     closeBtn?.addEventListener('click', closeModal);
 
     // Close on overlay click (if closeable)
-    if (modal.settings.closeable) {
+    if (modal.settings?.closeable !== false) {
       modalElement.addEventListener('click', (e) => {
         if (e.target === modalElement) closeModal();
       });
@@ -580,15 +608,11 @@ class ModalManager {
 
   async initializeModals(currentPage = 'homepage') {
     try {
-      const modals = await this.getActiveModals(currentPage);
+      const modal = await this.getActiveModal(currentPage);
       
-      // Sort by priority (highest first)
-      modals.sort((a, b) => (b.priority || 5) - (a.priority || 5));
-
-      // Set up triggers for each modal
-      modals.forEach(modal => {
+      if (modal) {
         this.setupTrigger(modal);
-      });
+      }
 
     } catch (error) {
       console.error('Error initializing modals:', error);
@@ -596,15 +620,15 @@ class ModalManager {
   }
 
   setupTrigger(modal) {
-    switch (modal.triggerRule.type) {
+    switch (modal.triggerRule?.type) {
       case 'time':
-        setTimeout(() => this.displayModal(modal), modal.triggerRule.value * 1000);
+        setTimeout(() => this.displayModal(modal), (modal.triggerRule.value || 5) * 1000);
         break;
       
       case 'scroll':
         const scrollHandler = () => {
           const scrollPercent = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
-          if (scrollPercent >= modal.triggerRule.value) {
+          if (scrollPercent >= (modal.triggerRule.value || 50)) {
             this.displayModal(modal);
             window.removeEventListener('scroll', scrollHandler);
           }
@@ -632,8 +656,8 @@ class ModalManager {
 }
 
 // Usage
-const modalManager = new ModalManager('your-tenant-id');
-modalManager.initializeModals(window.location.pathname);
+const modalManager = new ModalManager('rival@test.sk'); // Replace with your email
+modalManager.initializeModals(window.location.pathname.includes('pricing') ? 'pricing' : 'homepage');
 ```
 
 ### React Component Example with Enhanced Error Handling
@@ -641,18 +665,18 @@ modalManager.initializeModals(window.location.pathname);
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, Button, TextField, Box } from '@mui/material';
 
-const ModalDisplay = ({ tenantId, currentPage = 'homepage' }) => {
+const ModalDisplay = ({ userEmail, currentPage = 'homepage' }) => {
   const [activeModal, setActiveModal] = useState(null);
   const [email, setEmail] = useState('');
   
   // URL normalization to prevent double slashes
   const baseURL = (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, '');
 
-  const fetchModals = async () => {
+  const fetchModal = async () => {
     try {
-      console.log(`Fetching modals from: ${baseURL}/website/modals/active/${currentPage}`);
+      console.log(`Fetching modal from: ${baseURL}/public/users/${userEmail}/modal?page=${currentPage}`);
       
-      const response = await fetch(`${baseURL}/website/modals/active/${currentPage}?tenantId=${tenantId}`);
+      const response = await fetch(`${baseURL}/public/users/${userEmail}/modal?page=${currentPage}`);
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -660,49 +684,24 @@ const ModalDisplay = ({ tenantId, currentPage = 'homepage' }) => {
       
       const data = await response.json();
       
-      if (data.success && data.data.length > 0) {
-        // Sort by priority and show highest priority modal
-        const sortedModals = data.data.sort((a, b) => (b.priority || 5) - (a.priority || 5));
-        return sortedModals;
+      if (data.success && data.data) {
+        return data.data;
       }
       
-      return [];
+      return null;
     } catch (error) {
-      console.error('Error fetching modals:', error);
-      return [];
-    }
-  };
-
-  const recordAnalytics = async (modalId, action) => {
-    try {
-      const response = await fetch(`${baseURL}/website/modals/${modalId}/analytics`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action,
-          tenantId
-        })
-      });
-      
-      if (!response.ok) {
-        console.warn(`Failed to record ${action} for modal ${modalId}`);
-      }
-    } catch (error) {
-      console.error('Error recording analytics:', error);
+      console.error('Error fetching modal:', error);
+      return null;
     }
   };
 
   useEffect(() => {
-    const initializeModals = async () => {
-      const modals = await fetchModals();
+    const initializeModal = async () => {
+      const modal = await fetchModal();
       
-      if (modals.length > 0) {
-        const modal = modals[0]; // Show highest priority modal
-        
+      if (modal) {
         // Check if should show based on frequency
-        const modalKey = `modal_${modal._id}`;
+        const modalKey = `modal_${modal._id || 'default'}`;
         let shouldShow = true;
         
         switch (modal.frequency) {
@@ -724,13 +723,13 @@ const ModalDisplay = ({ tenantId, currentPage = 'homepage' }) => {
       }
     };
 
-    initializeModals();
-  }, [tenantId, currentPage]);
+    initializeModal();
+  }, [userEmail, currentPage]);
 
   const setupModalTrigger = (modal) => {
-    switch (modal.triggerRule.type) {
+    switch (modal.triggerRule?.type) {
       case 'time':
-        setTimeout(() => showModal(modal), modal.triggerRule.value * 1000);
+        setTimeout(() => showModal(modal), (modal.triggerRule.value || 5) * 1000);
         break;
       case 'page-load':
         showModal(modal);
@@ -741,10 +740,9 @@ const ModalDisplay = ({ tenantId, currentPage = 'homepage' }) => {
 
   const showModal = (modal) => {
     setActiveModal(modal);
-    recordAnalytics(modal._id, 'impression');
     
     // Mark as shown
-    const modalKey = `modal_${modal._id}`;
+    const modalKey = `modal_${modal._id || 'default'}`;
     if (modal.frequency === 'once-ever') {
       localStorage.setItem(`${modalKey}_shown`, 'true');
     } else if (modal.frequency === 'once-per-day') {
@@ -755,23 +753,18 @@ const ModalDisplay = ({ tenantId, currentPage = 'homepage' }) => {
   };
 
   const closeModal = () => {
-    if (activeModal) {
-      recordAnalytics(activeModal._id, 'dismissal');
-    }
     setActiveModal(null);
     setEmail('');
   };
 
   const handlePrimaryAction = () => {
     if (activeModal) {
-      recordAnalytics(activeModal._id, 'click');
-      
       if (activeModal.type === 'newsletter' && email) {
-        recordAnalytics(activeModal._id, 'conversion');
         // Handle newsletter signup
         console.log('Newsletter signup:', email);
       } else {
-        recordAnalytics(activeModal._id, 'conversion');
+        // Handle other modal actions
+        console.log('Modal action:', activeModal.type);
       }
     }
     closeModal();
@@ -787,13 +780,13 @@ const ModalDisplay = ({ tenantId, currentPage = 'homepage' }) => {
       fullWidth
       PaperProps={{
         style: {
-          backgroundColor: activeModal.styling.backgroundColor,
-          color: activeModal.styling.textColor,
-          borderRadius: activeModal.styling.borderRadius,
+          backgroundColor: activeModal.styling?.backgroundColor || '#ffffff',
+          color: activeModal.styling?.textColor || '#333333',
+          borderRadius: activeModal.styling?.borderRadius || 8,
         }
       }}
     >
-      <DialogTitle style={{ color: activeModal.styling.textColor }}>
+      <DialogTitle style={{ color: activeModal.styling?.textColor || '#333333' }}>
         {activeModal.title}
       </DialogTitle>
       <DialogContent>
@@ -803,7 +796,7 @@ const ModalDisplay = ({ tenantId, currentPage = 'homepage' }) => {
           <TextField
             fullWidth
             type="email"
-            placeholder={activeModal.emailPlaceholder}
+            placeholder={activeModal.emailPlaceholder || 'Enter your email'}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             margin="normal"
@@ -832,18 +825,18 @@ const ModalDisplay = ({ tenantId, currentPage = 'homepage' }) => {
             variant="contained"
             onClick={handlePrimaryAction}
             style={{
-              backgroundColor: activeModal.styling.buttonColor,
-              color: activeModal.styling.buttonTextColor,
+              backgroundColor: activeModal.styling?.buttonColor || '#1976d2',
+              color: activeModal.styling?.buttonTextColor || '#ffffff',
             }}
           >
-            {activeModal.buttonText}
+            {activeModal.buttonText || 'OK'}
           </Button>
           
           {activeModal.secondaryButtonText && (
             <Button
               variant="outlined"
               onClick={closeModal}
-              style={{ color: activeModal.styling.textColor }}
+              style={{ color: activeModal.styling?.textColor || '#333333' }}
             >
               {activeModal.secondaryButtonText}
             </Button>
@@ -888,85 +881,96 @@ export default ModalDisplay;
 
 ### Common Issues and Solutions
 
-#### 1. 404 "Route not found" Errors
+#### 1. "No active modal found" Error ✅ FIXED
+**Symptoms:**
+- Public endpoint returns `"No active modal found"`
+- Modal exists in admin but doesn't show on website
+
+**✅ Solution Applied:**
+- Fixed system mismatch between admin (modals array) and public (modal object) endpoints
+- Public endpoint now properly accesses the new multi-modal system
+
+**Verification:**
+```javascript
+// Test the fixed endpoint
+fetch('https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/modal?page=homepage')
+  .then(r => r.json())
+  .then(data => console.log('Modal data:', data.data))
+```
+
+#### 2. 404 "Route not found" Errors ✅ FIXED
 **Symptoms:**
 - API calls failing with 404 status
 - URLs showing double slashes (e.g., `/api//modals`)
 
-**Solutions:**
-- ✅ **Check URL normalization**: Ensure your base URL doesn't have trailing slashes
-- ✅ **Update frontend**: Make sure you're using the latest version with URL fixes
-- ✅ **Use debugging tools**: Click "Complete Debug" in admin panel to test
+**✅ Solutions Applied:**
+- URL normalization in frontend and Redux store
+- Enhanced debugging tools to identify URL issues
 
+**Best Practices:**
 ```javascript
-// ❌ Wrong - can cause double slashes
-const baseURL = 'https://carflow-reservation-system.onrender.com/api/'
-
 // ✅ Correct - normalize URL
 const baseURL = (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, '')
 ```
 
-#### 2. CORS Errors
+#### 3. CORS Errors ✅ FIXED
 **Symptoms:**
 - "CORS policy" errors in browser console
 - "Method not allowed" errors for PATCH requests
 
-**Solutions:**
-- ✅ **Check allowed origins**: Your domain should be in the allowed list
-- ✅ **Verify PATCH method**: Should be included in allowed methods
-- ✅ **Test CORS**: Use `/cors-test` endpoint to verify configuration
+**✅ Solutions Applied:**
+- Added PATCH method to allowed CORS methods
+- Enhanced CORS configuration for all required methods
 
-#### 3. Modal Toggle Issues
+#### 4. Modal Configuration Issues
 **Symptoms:**
-- Modals not activating/deactivating
-- "FETCH_ERROR" messages
+- Modal exists but isn't active
+- Wrong page settings
+- Date/scheduling conflicts
 
 **Solutions:**
-- ✅ **Check authentication**: Ensure valid JWT token
-- ✅ **Verify URL structure**: No double slashes in request URL
-- ✅ **Use debugging tools**: Check console for detailed error info
+- **Status**: Ensure modal `isActive: true`
+- **Page Settings**: Use "all-pages" or specific page names
+- **Scheduling**: Disable scheduling or verify dates
+- **Priority**: Higher numbers = higher priority
 
-#### 4. Modals Not Displaying
-**Symptoms:**
-- Modals exist in admin but don't show on website
-- No errors in console
+### Enhanced Debugging Tools
 
-**Solutions:**
-- ✅ **Check modal status**: Ensure `isActive: true`
-- ✅ **Verify page matching**: Check `displayLocation` settings
-- ✅ **Review frequency rules**: Check if modal was already shown
-- ✅ **Inspect trigger rules**: Verify timing/scroll thresholds
-
-### Debugging Tools
-
-#### Admin Panel Debugging
+#### Admin Panel Debugging ✅ AVAILABLE
 1. **Go to**: Modal Settings page in admin panel
 2. **Click "Test API"**: Basic connectivity check
-3. **Click "Complete Debug"**: Comprehensive 6-step analysis
+3. **Click "Complete Debug"**: Comprehensive 6-step analysis including:
+   - User ID/Tenant ID extraction
+   - Both public endpoints testing
+   - Detailed modal configuration analysis
+   - Health and CORS verification
 
-**Debug Output Example:**
+**Enhanced Debug Output:**
 ```
 🔧 === COMPREHENSIVE MODAL DEBUG SESSION ===
-🔍 System Info:
-- Raw Base URL: https://carflow-reservation-system.onrender.com/api/
-- Normalized Base URL: https://carflow-reservation-system.onrender.com/api
-🏥 Test 1: Health Check ✅
-🌐 Test 2: CORS Test ✅
-📋 Test 3: Get Current Modals ✅
-🔀 Test 4: Toggle First Modal ✅
-➕ Test 5: Test Modal Creation ✅
-🗑️ Test 6: Clean up test modal ✅
+👤 USER INFO:
+- User ID (Your Tenant ID): 685ddbc2979b5b9b6c4b8264
+- User Email: rival@test.sk
+
+🔍 DETAILED MODAL ANALYSIS:
+--- Modal 1: test modal ---
+- Is Active: ✅ true
+- Display Location: ✅ all-pages  
+- Public Access Check: ✅ All conditions met
+
+📋 Test: Get Modals with Old Endpoint (email)
+✅ Working: Returns modal data
 ```
 
 #### Browser Console Debugging
 ```javascript
-// Test API connectivity manually
-fetch('https://carflow-reservation-system.onrender.com/api/health')
+// Test public endpoint directly
+fetch('https://carflow-reservation-system.onrender.com/api/public/users/rival@test.sk/modal?page=homepage')
   .then(r => r.json())
   .then(console.log)
 
-// Test modal retrieval
-fetch('https://carflow-reservation-system.onrender.com/api/website/modals/active/homepage?tenantId=YOUR_TENANT_ID')
+// Test health endpoint
+fetch('https://carflow-reservation-system.onrender.com/api/health')
   .then(r => r.json())
   .then(console.log)
 ```
@@ -1000,7 +1004,7 @@ fetch('https://carflow-reservation-system.onrender.com/api/website/modals/active
 - Record conversions for successful actions
 - Monitor dismissal rates to optimize timing
 
-### 6. URL Best Practices
+### 6. URL Best Practices ✅ IMPLEMENTED
 - ✅ **Always normalize URLs**: Remove trailing slashes
 - ✅ **Use environment variables**: `VITE_API_URL` for base URL
 - ✅ **Check for double slashes**: Monitor network requests
@@ -1131,7 +1135,7 @@ const sanitizeInput = (input) => {
 ```
 
 ### 3. Tenant Isolation
-- Always include `tenantId` in public requests
+- Always include `userEmail` in public requests
 - Validate tenant permissions on server side
 - Use scoped analytics to prevent data leakage
 
@@ -1140,7 +1144,14 @@ const sanitizeInput = (input) => {
 ## Support and Updates
 
 - **Last Updated**: July 2025
-- **Version**: 1.1.0
+- **Version**: 1.2.0
 - **Status**: ✅ All systems operational
+
+### Recent System Status
+- ✅ **Public Modal System**: Fully functional
+- ✅ **Admin Modal Management**: Fully functional  
+- ✅ **URL Normalization**: Implemented
+- ✅ **CORS Configuration**: Fixed
+- ✅ **Enhanced Debugging**: Available
 
 For technical support or feature requests, contact the development team or check the project repository for updates. 

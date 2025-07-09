@@ -257,7 +257,45 @@ export default function ModalSettings() {
       const oldResponse = await fetch(oldEndpointUrl)
       const oldData = await oldResponse.json()
       console.log('Old endpoint response:', oldData)
+      console.log('')
+
+      // ✅ ADD DETAILED PUBLIC ENDPOINT DEBUGGING
+      console.log('🔍 DEBUGGING PUBLIC ENDPOINT ISSUE:')
       
+      if (oldData.success && !oldData.data) {
+        console.log('⚠️ Public endpoint returns success but no modal data')
+        console.log('This means:')
+        console.log('  - API is working ✅')
+        console.log('  - Tenant found ✅') 
+        console.log('  - But modal failed filtering criteria ❌')
+        console.log('')
+        console.log('Let me test different page parameters:')
+        
+        // Test all possible page values
+        const testPages = ['homepage', 'all-pages', 'pricing', 'contact', 'about', 'cars', '']
+        
+        for (const testPage of testPages) {
+          try {
+            const testUrl = `${baseUrl}/public/users/${userEmail}/modal${testPage ? `?page=${testPage}` : ''}`
+            console.log(`Testing: ${testUrl}`)
+            
+            const testResponse = await fetch(testUrl)
+            const testData = await testResponse.json()
+            
+            console.log(`  → ${testPage || 'no-page'}: ${testData.data ? '✅ FOUND' : '❌ null'}`)
+            
+            if (testData.data) {
+              console.log(`  → Modal found with page="${testPage}":`, testData.data.title)
+              console.log(`  → Display Location:`, testData.data.displayLocation)
+              console.log(`  → Priority:`, testData.data.priority)
+            }
+          } catch (error) {
+            console.log(`  → ${testPage || 'no-page'}: ❌ ERROR`)
+          }
+        }
+      }
+      console.log('')
+
       // Test 1: Health check
       console.log('\n🏥 Test 1: Health Check')
       console.log('Health URL:', `${baseUrl}/health`)
