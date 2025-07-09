@@ -511,12 +511,54 @@ const getBannersByPosition = asyncHandler(async (req, res, next) => {
     return next(new AppError('Tenant ID is required', 400));
   }
   
+  console.log(`🔍 [BANNER BY POSITION] Fetching banners for position: ${position}, tenantId: ${tenantId}`);
+  
   const banners = await Banner.getActiveByPosition(tenantId, position);
   
-  // Filter out banners with no images to prevent frontend errors
-  const validBanners = banners.filter(banner => {
-    return banner.images && banner.images.length > 0 && banner.images[0] && banner.images[0].url;
+  console.log(`🔍 [BANNER BY POSITION] Found ${banners.length} total banners for position: ${position}`);
+  banners.forEach((banner, index) => {
+    console.log(`🔍 [BANNER ${index + 1}] ID: ${banner._id}, position: ${banner.position}, isActive: ${banner.isActive}`);
+    console.log(`🔍 [BANNER ${index + 1}] Images array length: ${banner.images ? banner.images.length : 'undefined'}`);
+    if (banner.images && banner.images.length > 0) {
+      banner.images.forEach((img, imgIndex) => {
+        console.log(`🔍 [BANNER ${index + 1}] Image ${imgIndex + 1}: url=${img.url ? 'present' : 'missing'}, _id=${img._id}`);
+      });
+    }
+    console.log(`🔍 [BANNER ${index + 1}] Virtual imageUrl: ${banner.imageUrl}`);
+    console.log(`🔍 [BANNER ${index + 1}] Virtual hasImages: ${banner.hasImages}`);
   });
+  
+  // Improved filtering - less strict and with better logging
+  const validBanners = banners.filter((banner, index) => {
+    // Check if banner has images array
+    if (!banner.images || !Array.isArray(banner.images)) {
+      console.log(`❌ [BANNER ${index + 1}] Filtered out: No images array`);
+      return false;
+    }
+    
+    // Check if images array is not empty
+    if (banner.images.length === 0) {
+      console.log(`❌ [BANNER ${index + 1}] Filtered out: Empty images array`);
+      return false;
+    }
+    
+    // Check if first image exists and has URL
+    const firstImage = banner.images[0];
+    if (!firstImage) {
+      console.log(`❌ [BANNER ${index + 1}] Filtered out: First image is null/undefined`);
+      return false;
+    }
+    
+    if (!firstImage.url || firstImage.url.trim() === '') {
+      console.log(`❌ [BANNER ${index + 1}] Filtered out: First image has no URL`);
+      return false;
+    }
+    
+    console.log(`✅ [BANNER ${index + 1}] Valid banner included`);
+    return true;
+  });
+
+  console.log(`🔍 [BANNER BY POSITION] After filtering: ${validBanners.length} valid banners`);
 
   res.status(200).json({
     success: true,
@@ -620,6 +662,8 @@ const getPublicBannersByUser = asyncHandler(async (req, res, next) => {
   const { email } = req.params;
   const { page, position } = req.query;
   
+  console.log(`🔍 [BANNER BY USER] Fetching banners for email: ${email}, position: ${position || 'all'}`);
+  
   // Find user to get tenant ID
   const User = require('../models/User');
   const user = await User.findOne({ email }).select('tenantId');
@@ -627,6 +671,8 @@ const getPublicBannersByUser = asyncHandler(async (req, res, next) => {
   if (!user) {
     return next(new AppError('User not found', 404));
   }
+
+  console.log(`🔍 [BANNER BY USER] Found user with tenantId: ${user.tenantId}`);
 
   let query = {
     tenantId: user.tenantId,
@@ -638,19 +684,91 @@ const getPublicBannersByUser = asyncHandler(async (req, res, next) => {
     query.position = position;
   }
   
+  console.log(`🔍 [BANNER BY USER] Query:`, query);
+  
   const banners = await Banner.find(query)
     .sort({ position: 1, sortOrder: 1 })
     .populate('createdBy', 'name email');
   
-  // Filter out banners with no images to prevent frontend errors
-  const validBanners = banners.filter(banner => {
-    return banner.images && banner.images.length > 0 && banner.images[0] && banner.images[0].url;
+  console.log(`🔍 [BANNER BY USER] Found ${banners.length} total banners`);
+  banners.forEach((banner, index) => {
+    console.log(`🔍 [BANNER ${index + 1}] ID: ${banner._id}, position: ${banner.position}, isActive: ${banner.isActive}`);
+    console.log(`🔍 [BANNER ${index + 1}] Images array length: ${banner.images ? banner.images.length : 'undefined'}`);
   });
+  
+  // Improved filtering - less strict and with better logging
+  const validBanners = banners.filter((banner, index) => {
+    // Check if banner has images array
+    if (!banner.images || !Array.isArray(banner.images)) {
+      console.log(`❌ [BANNER ${index + 1}] Filtered out: No images array`);
+      return false;
+    }
+    
+    // Check if images array is not empty
+    if (banner.images.length === 0) {
+      console.log(`❌ [BANNER ${index + 1}] Filtered out: Empty images array`);
+      return false;
+    }
+    
+    // Check if first image exists and has URL
+    const firstImage = banner.images[0];
+    if (!firstImage) {
+      console.log(`❌ [BANNER ${index + 1}] Filtered out: First image is null/undefined`);
+      return false;
+    }
+    
+    if (!firstImage.url || firstImage.url.trim() === '') {
+      console.log(`❌ [BANNER ${index + 1}] Filtered out: First image has no URL`);
+      return false;
+    }
+    
+    console.log(`✅ [BANNER ${index + 1}] Valid banner included`);
+    return true;
+  });
+
+  console.log(`🔍 [BANNER BY USER] After filtering: ${validBanners.length} valid banners`);
 
   res.status(200).json({
     success: true,
     count: validBanners.length,
     data: validBanners
+  });
+});
+
+// @desc    DEBUG: Get all banners for debugging
+// @route   GET /api/debug/banners
+// @access  Public (temporary)
+const debugBanners = asyncHandler(async (req, res, next) => {
+  console.log('🐛 [DEBUG] Fetching ALL banners for debugging...');
+  
+  const allBanners = await Banner.find({})
+    .populate('createdBy', 'name email');
+  
+  console.log(`🐛 [DEBUG] Total banners in database: ${allBanners.length}`);
+  
+  const bannersGrouped = {};
+  allBanners.forEach((banner, index) => {
+    const key = `${banner.tenantId}-${banner.position}`;
+    if (!bannersGrouped[key]) {
+      bannersGrouped[key] = [];
+    }
+    bannersGrouped[key].push({
+      id: banner._id,
+      position: banner.position,
+      isActive: banner.isActive,
+      sortOrder: banner.sortOrder,
+      imageCount: banner.images ? banner.images.length : 0,
+      hasValidImages: banner.images && banner.images.length > 0 && banner.images[0] && banner.images[0].url,
+      firstImageUrl: banner.images && banner.images.length > 0 && banner.images[0] ? banner.images[0].url : null
+    });
+  });
+  
+  res.status(200).json({
+    success: true,
+    message: 'Debug information for all banners',
+    totalBanners: allBanners.length,
+    groupedByTenantAndPosition: bannersGrouped,
+    rawData: allBanners
   });
 });
 
@@ -668,5 +786,6 @@ module.exports = {
   addBannerImages,
   removeBannerImage,
   reorderBannerImages,
-  updateBannerImage
+  updateBannerImage,
+  debugBanners
 }; 

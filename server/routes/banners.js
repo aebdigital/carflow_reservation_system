@@ -12,7 +12,8 @@ const {
   addBannerImages,
   removeBannerImage,
   reorderBannerImages,
-  updateBannerImage
+  updateBannerImage,
+  debugBanners
 } = require('../controllers/bannerController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -36,6 +37,10 @@ const upload = multer({
     }
   }
 });
+
+// DEBUG route (temporary - no authentication)
+router.route('/debug')
+  .get(debugBanners);
 
 // Public routes (no authentication required)
 router.route('/position/:position')
