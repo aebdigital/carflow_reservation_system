@@ -290,6 +290,65 @@ export default function ModalSettings() {
         console.log('Current modals data:', modalsData)
         console.log('Number of modals:', modalsData.data?.length || 0)
         
+        // ✅ DETAILED MODAL ANALYSIS
+        if (modalsData.data && modalsData.data.length > 0) {
+          console.log('\n🔍 DETAILED MODAL ANALYSIS:')
+          modalsData.data.forEach((modal, index) => {
+            console.log(`\n--- Modal ${index + 1}: ${modal.name} ---`)
+            console.log('- ID:', modal._id)
+            console.log('- Title:', modal.title)
+            console.log('- Type:', modal.type)
+            console.log('- Is Active:', modal.isActive)
+            console.log('- Display Location:', modal.displayLocation)
+            console.log('- Trigger Rule:', modal.triggerRule)
+            console.log('- Frequency:', modal.frequency)
+            console.log('- Priority:', modal.priority)
+            console.log('- Is Scheduled:', modal.isScheduled)
+            console.log('- Start Date:', modal.startDate)
+            console.log('- End Date:', modal.endDate)
+            console.log('- Created At:', modal.createdAt)
+            console.log('- Updated At:', modal.updatedAt)
+            console.log('- Full Modal Object:', modal)
+            
+            // Check why it might not be showing publicly
+            console.log('\n🔍 PUBLIC ACCESS CHECK:')
+            if (!modal.isActive) {
+              console.log('❌ ISSUE: Modal is NOT ACTIVE')
+            } else {
+              console.log('✅ Modal is active')
+            }
+            
+            if (modal.displayLocation === 'homepage') {
+              console.log('✅ Modal is set for homepage')
+            } else if (modal.displayLocation === 'all-pages') {
+              console.log('✅ Modal is set for all pages')
+            } else {
+              console.log('⚠️ Modal is set for:', modal.displayLocation, '(not homepage)')
+            }
+            
+            if (modal.isScheduled) {
+              const now = new Date()
+              const startDate = modal.startDate ? new Date(modal.startDate) : null
+              const endDate = modal.endDate ? new Date(modal.endDate) : null
+              
+              console.log('📅 SCHEDULING CHECK:')
+              console.log('- Current time:', now.toISOString())
+              console.log('- Start date:', startDate?.toISOString() || 'None')
+              console.log('- End date:', endDate?.toISOString() || 'None')
+              
+              if (startDate && now < startDate) {
+                console.log('❌ ISSUE: Modal not yet started')
+              } else if (endDate && now > endDate) {
+                console.log('❌ ISSUE: Modal has expired')
+              } else {
+                console.log('✅ Modal is within date range')
+              }
+            } else {
+              console.log('✅ Modal is not scheduled (always active)')
+            }
+          })
+        }
+        
         // Test 4: If modals exist, test toggle on the first one
         if (modalsData.data && modalsData.data.length > 0) {
           const firstModal = modalsData.data[0]
