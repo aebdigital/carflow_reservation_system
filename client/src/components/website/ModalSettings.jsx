@@ -259,40 +259,62 @@ export default function ModalSettings() {
       console.log('Old endpoint response:', oldData)
       console.log('')
 
-      // ✅ ADD DETAILED PUBLIC ENDPOINT DEBUGGING
-      console.log('🔍 DEBUGGING PUBLIC ENDPOINT ISSUE:')
+      // ✅ ALWAYS SHOW MODAL DATA - EVEN WHEN IT EXISTS
+      console.log('🔍 PUBLIC ENDPOINT ANALYSIS:')
       
-      if (oldData.success && !oldData.data) {
-        console.log('⚠️ Public endpoint returns success but no modal data')
-        console.log('This means:')
-        console.log('  - API is working ✅')
-        console.log('  - Tenant found ✅') 
-        console.log('  - But modal failed filtering criteria ❌')
-        console.log('')
-        console.log('Let me test different page parameters:')
-        
-        // Test all possible page values
-        const testPages = ['homepage', 'all-pages', 'pricing', 'contact', 'about', 'cars', '']
-        
-        for (const testPage of testPages) {
-          try {
-            const testUrl = `${baseUrl}/public/users/${userEmail}/modal${testPage ? `?page=${testPage}` : ''}`
-            console.log(`Testing: ${testUrl}`)
-            
-            const testResponse = await fetch(testUrl)
-            const testData = await testResponse.json()
-            
-            console.log(`  → ${testPage || 'no-page'}: ${testData.data ? '✅ FOUND' : '❌ null'}`)
-            
-            if (testData.data) {
-              console.log(`  → Modal found with page="${testPage}":`, testData.data.title)
-              console.log(`  → Display Location:`, testData.data.displayLocation)
-              console.log(`  → Priority:`, testData.data.priority)
+      if (oldData.success) {
+        if (oldData.data) {
+          console.log('✅ PUBLIC ENDPOINT IS WORKING!')
+          console.log('📄 Modal data received:')
+          console.log('  - Title:', oldData.data.title)
+          console.log('  - Content:', oldData.data.content)
+          console.log('  - Type:', oldData.data.type)
+          console.log('  - Display Location:', oldData.data.displayLocation)
+          console.log('  - Trigger Rule:', oldData.data.triggerRule)
+          console.log('  - Button Text:', oldData.data.buttonText)
+          console.log('  - Priority:', oldData.data.priority)
+          console.log('  - Frequency:', oldData.data.frequency)
+          console.log('  - Styling:', oldData.data.styling)
+          console.log('  - Settings:', oldData.data.settings)
+          console.log('  - Full Modal Object:', oldData.data)
+          console.log('')
+          console.log('🚀 INTEGRATION READY:')
+          console.log('The modal data is now available for your website integration!')
+          console.log('Use this URL in your website:', oldEndpointUrl)
+        } else {
+          console.log('⚠️ Public endpoint returns success but no modal data')
+          console.log('This means:')
+          console.log('  - API is working ✅')
+          console.log('  - Tenant found ✅') 
+          console.log('  - But modal failed filtering criteria ❌')
+          console.log('')
+          console.log('Let me test different page parameters:')
+          
+          // Test all possible page values
+          const testPages = ['homepage', 'all-pages', 'pricing', 'contact', 'about', 'cars', '']
+          
+          for (const testPage of testPages) {
+            try {
+              const testUrl = `${baseUrl}/public/users/${userEmail}/modal${testPage ? `?page=${testPage}` : ''}`
+              console.log(`Testing: ${testUrl}`)
+              
+              const testResponse = await fetch(testUrl)
+              const testData = await testResponse.json()
+              
+              console.log(`  → ${testPage || 'no-page'}: ${testData.data ? '✅ FOUND' : '❌ null'}`)
+              
+              if (testData.data) {
+                console.log(`  → Modal found with page="${testPage}":`, testData.data.title)
+                console.log(`  → Display Location:`, testData.data.displayLocation)
+                console.log(`  → Priority:`, testData.data.priority)
+              }
+            } catch (error) {
+              console.log(`  → ${testPage || 'no-page'}: ❌ ERROR`)
             }
-          } catch (error) {
-            console.log(`  → ${testPage || 'no-page'}: ❌ ERROR`)
           }
         }
+      } else {
+        console.log('❌ Public endpoint failed:', oldData.message)
       }
       console.log('')
 
