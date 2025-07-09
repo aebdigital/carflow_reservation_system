@@ -512,11 +512,16 @@ const getBannersByPosition = asyncHandler(async (req, res, next) => {
   }
   
   const banners = await Banner.getActiveByPosition(tenantId, position);
+  
+  // Filter out banners with no images to prevent frontend errors
+  const validBanners = banners.filter(banner => {
+    return banner.images && banner.images.length > 0 && banner.images[0] && banner.images[0].url;
+  });
 
   res.status(200).json({
     success: true,
-    count: banners.length,
-    data: banners
+    count: validBanners.length,
+    data: validBanners
   });
 });
 
@@ -532,11 +537,16 @@ const getActiveBanners = asyncHandler(async (req, res, next) => {
   }
   
   const banners = await Banner.getActiveForTenant(tenantId);
+  
+  // Filter out banners with no images to prevent frontend errors
+  const validBanners = banners.filter(banner => {
+    return banner.images && banner.images.length > 0 && banner.images[0] && banner.images[0].url;
+  });
 
   res.status(200).json({
     success: true,
-    count: banners.length,
-    data: banners
+    count: validBanners.length,
+    data: validBanners
   });
 });
 
@@ -590,11 +600,16 @@ const getPublicBanners = asyncHandler(async (req, res, next) => {
   const banners = await Banner.find(query)
     .sort({ position: 1, sortOrder: 1 })
     .populate('createdBy', 'name email');
+  
+  // Filter out banners with no images to prevent frontend errors
+  const validBanners = banners.filter(banner => {
+    return banner.images && banner.images.length > 0 && banner.images[0] && banner.images[0].url;
+  });
 
   res.status(200).json({
     success: true,
-    count: banners.length,
-    data: banners
+    count: validBanners.length,
+    data: validBanners
   });
 });
 
@@ -626,11 +641,16 @@ const getPublicBannersByUser = asyncHandler(async (req, res, next) => {
   const banners = await Banner.find(query)
     .sort({ position: 1, sortOrder: 1 })
     .populate('createdBy', 'name email');
+  
+  // Filter out banners with no images to prevent frontend errors
+  const validBanners = banners.filter(banner => {
+    return banner.images && banner.images.length > 0 && banner.images[0] && banner.images[0].url;
+  });
 
   res.status(200).json({
     success: true,
-    count: banners.length,
-    data: banners
+    count: validBanners.length,
+    data: validBanners
   });
 });
 

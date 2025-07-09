@@ -104,6 +104,28 @@ bannerSchema.virtual('image').get(function() {
   return this.images && this.images.length > 0 ? this.images[0] : null;
 });
 
+// Virtual for checking if banner has any images
+bannerSchema.virtual('hasImages').get(function() {
+  return this.images && this.images.length > 0;
+});
+
+// Virtual for getting primary image with fallback structure
+bannerSchema.virtual('primaryImage').get(function() {
+  if (this.images && this.images.length > 0) {
+    return this.images[0];
+  }
+  // Return a null object for safety
+  return null;
+});
+
+// Virtual for getting all image URLs as array
+bannerSchema.virtual('imageUrls').get(function() {
+  if (this.images && this.images.length > 0) {
+    return this.images.map(img => img.url);
+  }
+  return [];
+});
+
 // Method to get active banners for specific position
 bannerSchema.statics.getActiveByPosition = function(tenantId, position) {
   return this.find({

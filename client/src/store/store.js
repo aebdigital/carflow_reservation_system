@@ -509,6 +509,36 @@ export const api = createApi({
       invalidatesTags: (result, error, { bannerId }) => [{ type: 'Banner', id: bannerId }, 'Banner'],
     }),
 
+    // Public Banner endpoints (for website frontend)
+    getBannersByPosition: builder.query({
+      query: ({ position, tenantId }) => ({
+        url: `banners/position/${position}`,
+        headers: tenantId ? { 'x-tenant-id': tenantId } : {},
+      }),
+      providesTags: ['Banner'],
+    }),
+    getActiveBanners: builder.query({
+      query: ({ tenantId }) => ({
+        url: 'banners/active',
+        headers: tenantId ? { 'x-tenant-id': tenantId } : {},
+      }),
+      providesTags: ['Banner'],
+    }),
+    getPublicBanners: builder.query({
+      query: ({ tenantId, position }) => ({
+        url: 'public/banners',
+        params: { tenantId, position },
+      }),
+      providesTags: ['Banner'],
+    }),
+    getPublicBannersByUser: builder.query({
+      query: ({ userEmail, position }) => ({
+        url: `public/users/${userEmail}/banners`,
+        params: { position },
+      }),
+      providesTags: ['Banner'],
+    }),
+
     // Contract endpoints
     getContracts: builder.query({
       query: (params = {}) => ({
@@ -737,6 +767,10 @@ export const {
   useRemoveBannerImageMutation,
   useReorderBannerImagesMutation,
   useUpdateBannerImageMutation,
+  useGetBannersByPositionQuery,
+  useGetActiveBannersQuery,
+  useGetPublicBannersQuery,
+  useGetPublicBannersByUserQuery,
 
   // Contract hooks
   useGetContractsQuery,
