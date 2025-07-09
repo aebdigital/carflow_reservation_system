@@ -130,6 +130,37 @@ const BlogSettings = () => {
   const [toggleBlogStatus] = useToggleBlogStatusMutation();
   const [uploadBlogImage] = useUploadBlogImageMutation();
 
+  // Test function to create a simple blog
+  const createTestBlog = async () => {
+    try {
+      setAlert({ type: 'info', message: 'Vytváram test blog...' });
+      
+      const testBlogData = {
+        title: 'Test Blog - ' + new Date().toLocaleString(),
+        slug: 'test-blog-' + Date.now(),
+        excerpt: 'Toto je testovací blog post na overenie funkcionality systému.',
+        content: '<p>Toto je obsah testovacieho blog postu. <strong>Systém funguje správne!</strong></p>',
+        category: 'general',
+        tags: ['test', 'debug'],
+        status: 'published',
+        publishDate: new Date().toISOString().split('T')[0]
+      };
+      
+      console.log('🧪 Creating test blog:', testBlogData);
+      const result = await createBlog(testBlogData).unwrap();
+      console.log('🧪 Test blog created:', result);
+      
+      setAlert({ type: 'success', message: 'Test blog bol úspešne vytvorený!' });
+      refetch();
+    } catch (error) {
+      console.error('🧪 Error creating test blog:', error);
+      setAlert({ 
+        type: 'error', 
+        message: `Chyba pri vytváraní test blogu: ${error.data?.message || error.message}` 
+      });
+    }
+  };
+
   // Clear alert after 5 seconds
   useEffect(() => {
     if (alert) {
@@ -507,7 +538,7 @@ const BlogSettings = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={2}>
+            <Grid item xs={6} md={2}>
               <Button
                 fullWidth
                 variant="contained"
@@ -516,6 +547,17 @@ const BlogSettings = () => {
                 sx={{ height: '56px' }}
               >
                 Nový blog
+              </Button>
+            </Grid>
+            <Grid item xs={6} md={2}>
+              <Button
+                fullWidth
+                variant="outlined"
+                color="secondary"
+                onClick={createTestBlog}
+                sx={{ height: '56px' }}
+              >
+                Test blog
               </Button>
             </Grid>
           </Grid>
