@@ -101,6 +101,18 @@ const getBanner = asyncHandler(async (req, res, next) => {
 const createBanner = asyncHandler(async (req, res, next) => {
   try {
     console.log('🖼️ [BANNER CREATE] Starting banner creation process...');
+    console.log('🖼️ [BANNER CREATE] Files received:', req.files ? req.files.length : 0);
+    console.log('🖼️ [BANNER CREATE] Body:', req.body);
+    
+    // Validate that at least one image is provided
+    if (!req.files || req.files.length === 0) {
+      return next(new AppError('At least one banner image is required', 400));
+    }
+    
+    // Validate maximum 6 images
+    if (req.files.length > 6) {
+      return next(new AppError('Maximum 6 images allowed per banner', 400));
+    }
     
     // Add tenant information and creator
     const bannerData = { 
@@ -108,63 +120,65 @@ const createBanner = asyncHandler(async (req, res, next) => {
       isActive: req.body.isActive !== undefined ? req.body.isActive : true,
       sortOrder: parseInt(req.body.sortOrder) || 0,
       tenantId: req.user.tenantId,
-      createdBy: req.user._id
+      createdBy: req.user._id,
+      images: []
     };
     
-    // Handle image upload if present
-    if (req.file) {
+    // Handle multiple image uploads
+    console.log('🖼️ [BANNER CREATE] Processing multiple images...');
+    const imageUploadPromises = req.files.map(async (file, index) => {
       try {
-        console.log('🖼️ [BANNER CREATE] Uploading banner image...');
+        console.log(`🖼️ [BANNER CREATE] Uploading image ${index + 1}/${req.files.length}...`);
+        
+        // Get custom title and description from request body if provided
+        const titles = req.body.titles ? (Array.isArray(req.body.titles) ? req.body.titles : [req.body.titles]) : [];
+        const descriptions = req.body.descriptions ? (Array.isArray(req.body.descriptions) ? req.body.descriptions : [req.body.descriptions]) : [];
+        
         const result = await cloudStorage.uploadBannerImage(
-          req.file.buffer,
-          req.file.originalname,
-          req.user, // Pass user for tenant-specific folder
-          `Banner ${bannerData.position}`
+          file.buffer,
+          file.originalname,
+          req.user,
+          `Banner ${bannerData.position} - Image ${index + 1}`
         );
 
-        bannerData.image = {
+        return {
           url: result.urls.medium,
           filename: result.filename,
-          alt: `Banner image for ${bannerData.position}`,
+          alt: `Banner image ${index + 1} for ${bannerData.position}`,
+          title: titles[index] || '',
+          description: descriptions[index] || '',
+          sortOrder: index,
           uploadDate: result.uploadDate
         };
-        console.log('🖼️ [BANNER CREATE] Image uploaded successfully');
       } catch (error) {
-        console.error('🖼️ [BANNER CREATE] Image upload failed:', error);
-        return next(new AppError('Failed to upload banner image', 400));
+        console.error(`🖼️ [BANNER CREATE] Failed to upload image ${index + 1}:`, error);
+        throw error;
       }
-    } else {
-      return next(new AppError('Banner image is required', 400));
-    }
+    });
     
-    console.log('🖼️ [BANNER CREATE] Creating banner...');
+    try {
+      bannerData.images = await Promise.all(imageUploadPromises);
+      console.log('🖼️ [BANNER CREATE] All images uploaded successfully');
+    } catch (error) {
+      console.error('🖼️ [BANNER CREATE] Image upload failed:', error);
+      return next(new AppError('Failed to upload banner images', 400));
+    }
+
+    // Create banner with multiple images
     const banner = await Banner.create(bannerData);
     
-    console.log('🖼️ [BANNER CREATE] Banner created successfully! ID:', banner._id);
-    
-    // Populate created banner for response
-    const populatedBanner = await Banner.findById(banner._id)
-      .populate('createdBy', 'name email');
+    const populatedBanner = await Banner.findById(banner._id).populate('createdBy', 'firstName lastName email');
+
+    console.log('🖼️ [BANNER CREATE] Banner created successfully with', bannerData.images.length, 'images');
 
     res.status(201).json({
       success: true,
-      data: populatedBanner
+      data: populatedBanner,
+      message: `Banner created successfully with ${bannerData.images.length} image(s)`
     });
   } catch (error) {
     console.error('🖼️ [BANNER CREATE] Error:', error);
-    
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern)[0];
-      const value = error.keyValue[field];
-      return next(new AppError(`${field} '${value}' already exists. Please use a different value.`, 400));
-    }
-    
-    if (error.name === 'ValidationError') {
-      const errors = Object.values(error.errors).map(err => err.message);
-      return next(new AppError(`Validation failed: ${errors.join(', ')}`, 400));
-    }
-    
-    return next(new AppError('Failed to create banner. Please check your input and try again.', 400));
+    return next(new AppError(error.message || 'Failed to create banner', 400));
   }
 });
 
@@ -174,6 +188,7 @@ const createBanner = asyncHandler(async (req, res, next) => {
 const updateBanner = asyncHandler(async (req, res, next) => {
   try {
     console.log('🖼️ [BANNER UPDATE] Starting banner update process...');
+    console.log('🖼️ [BANNER UPDATE] Files received:', req.files ? req.files.length : 0);
     
     let banner = await Banner.findOne({ 
       _id: req.params.id, 
@@ -184,41 +199,58 @@ const updateBanner = asyncHandler(async (req, res, next) => {
       return next(new AppError(`Banner not found with id of ${req.params.id}`, 404));
     }
 
-    // Prepare update data
+    // Prepare update data (non-image fields)
     const updateData = {
       position: req.body.position || banner.position,
       isActive: req.body.isActive !== undefined ? req.body.isActive : banner.isActive,
       sortOrder: req.body.sortOrder !== undefined ? parseInt(req.body.sortOrder) : banner.sortOrder,
     };
     
-    // Handle image update if present
-    if (req.file) {
-      try {
-        console.log('🖼️ [BANNER UPDATE] Uploading new banner image...');
-        
-        // Delete old image if exists
-        if (banner.image && banner.image.filename) {
-          await cloudStorage.deleteFile(banner.image.filename);
-        }
-        
-        const result = await cloudStorage.uploadBannerImage(
-          req.file.buffer,
-          req.file.originalname,
-          req.user,
-          `Banner ${updateData.position}`
-        );
+    // Handle new image uploads if present
+    if (req.files && req.files.length > 0) {
+      console.log('🖼️ [BANNER UPDATE] Adding new images...');
+      
+      // Check if adding new images would exceed the 6 image limit
+      const currentImageCount = banner.images ? banner.images.length : 0;
+      if (currentImageCount + req.files.length > 6) {
+        return next(new AppError(`Cannot add ${req.files.length} images. Maximum 6 images per banner. Current: ${currentImageCount}`, 400));
+      }
+      
+      // Upload new images
+      const newImagePromises = req.files.map(async (file, index) => {
+        try {
+          console.log(`🖼️ [BANNER UPDATE] Uploading new image ${index + 1}/${req.files.length}...`);
+          
+          const result = await cloudStorage.uploadBannerImage(
+            file.buffer,
+            file.originalname,
+            req.user,
+            `Banner ${updateData.position} - Image ${currentImageCount + index + 1}`
+          );
 
-        updateData.image = {
-          url: result.urls.medium,
-          filename: result.filename,
-          alt: `Banner image for ${updateData.position}`,
-          uploadDate: result.uploadDate
-        };
-        console.log('🖼️ [BANNER UPDATE] Image uploaded successfully');
+          return {
+            url: result.urls.medium,
+            filename: result.filename,
+            alt: `Banner image ${currentImageCount + index + 1} for ${updateData.position}`,
+            title: '',
+            description: '',
+            sortOrder: currentImageCount + index,
+            uploadDate: result.uploadDate
+          };
+        } catch (error) {
+          console.error(`🖼️ [BANNER UPDATE] Failed to upload new image ${index + 1}:`, error);
+          throw error;
+        }
+      });
+      
+      try {
+        const newImages = await Promise.all(newImagePromises);
+        updateData.images = [...(banner.images || []), ...newImages];
+        console.log('🖼️ [BANNER UPDATE] New images uploaded successfully');
       } catch (error) {
-        console.error('🖼️ [BANNER UPDATE] Image upload failed:', error);
-        return next(new AppError('Failed to upload banner image', 400));
-    }
+        console.error('🖼️ [BANNER UPDATE] New image upload failed:', error);
+        return next(new AppError('Failed to upload new banner images', 400));
+      }
     }
 
     // Update banner
@@ -226,23 +258,207 @@ const updateBanner = asyncHandler(async (req, res, next) => {
       { _id: req.params.id, tenantId: req.user.tenantId },
       updateData,
       { new: true, runValidators: true }
-    ).populate('createdBy', 'name email');
+    ).populate('createdBy', 'firstName lastName email');
 
-    console.log('🖼️ [BANNER UPDATE] Banner updated successfully! ID:', banner._id);
+    console.log('🖼️ [BANNER UPDATE] Banner updated successfully');
 
     res.status(200).json({
       success: true,
-      data: banner
+      data: banner,
+      message: 'Banner updated successfully'
     });
   } catch (error) {
     console.error('🖼️ [BANNER UPDATE] Error:', error);
+    return next(new AppError(error.message || 'Failed to update banner', 400));
+  }
+});
+
+// @desc    Add images to existing banner
+// @route   POST /api/banners/:id/images
+// @access  Private/Admin
+const addBannerImages = asyncHandler(async (req, res, next) => {
+  try {
+    console.log('🖼️ [BANNER ADD IMAGES] Starting image addition process...');
     
-    if (error.name === 'ValidationError') {
-      const errors = Object.values(error.errors).map(err => err.message);
-      return next(new AppError(`Validation failed: ${errors.join(', ')}`, 400));
+    const banner = await Banner.findOne({ 
+      _id: req.params.id, 
+      tenantId: req.user.tenantId 
+    });
+
+    if (!banner) {
+      return next(new AppError(`Banner not found with id of ${req.params.id}`, 404));
     }
+
+    if (!req.files || req.files.length === 0) {
+      return next(new AppError('No images provided', 400));
+    }
+
+    // Check image limit
+    const currentCount = banner.images.length;
+    if (currentCount + req.files.length > 6) {
+      return next(new AppError(`Cannot add ${req.files.length} images. Maximum 6 images per banner. Current: ${currentCount}`, 400));
+    }
+
+    // Upload new images
+    const imageUploadPromises = req.files.map(async (file, index) => {
+      const result = await cloudStorage.uploadBannerImage(
+        file.buffer,
+        file.originalname,
+        req.user,
+        `Banner ${banner.position} - Image ${currentCount + index + 1}`
+      );
+
+      return {
+        url: result.urls.medium,
+        filename: result.filename,
+        alt: `Banner image ${currentCount + index + 1} for ${banner.position}`,
+        title: '',
+        description: '',
+        sortOrder: currentCount + index,
+        uploadDate: result.uploadDate
+      };
+    });
+
+    const newImages = await Promise.all(imageUploadPromises);
+    banner.images = [...banner.images, ...newImages];
+    await banner.save();
+
+    res.status(200).json({
+      success: true,
+      data: banner,
+      message: `${newImages.length} image(s) added successfully`
+    });
+  } catch (error) {
+    console.error('🖼️ [BANNER ADD IMAGES] Error:', error);
+    return next(new AppError(error.message || 'Failed to add images', 400));
+  }
+});
+
+// @desc    Remove specific image from banner
+// @route   DELETE /api/banners/:id/images/:imageId
+// @access  Private/Admin
+const removeBannerImage = asyncHandler(async (req, res, next) => {
+  try {
+    console.log('🖼️ [BANNER REMOVE IMAGE] Starting image removal...');
     
-    return next(new AppError('Failed to update banner. Please check your input and try again.', 400));
+    const banner = await Banner.findOne({ 
+      _id: req.params.id, 
+      tenantId: req.user.tenantId 
+    });
+
+    if (!banner) {
+      return next(new AppError(`Banner not found with id of ${req.params.id}`, 404));
+    }
+
+    const imageToRemove = banner.images.find(img => img._id.toString() === req.params.imageId);
+    if (!imageToRemove) {
+      return next(new AppError(`Image not found with id of ${req.params.imageId}`, 404));
+    }
+
+    // Check if this is the last image
+    if (banner.images.length <= 1) {
+      return next(new AppError('Cannot remove the last image. Banner must have at least one image.', 400));
+    }
+
+    // Delete image from cloud storage
+    if (imageToRemove.filename) {
+      try {
+        await cloudStorage.deleteFile(imageToRemove.filename);
+      } catch (error) {
+        console.warn('🖼️ [BANNER REMOVE IMAGE] Failed to delete image from cloud storage:', error);
+      }
+    }
+
+    // Remove image from banner
+    await banner.removeImage(req.params.imageId);
+
+    res.status(200).json({
+      success: true,
+      data: banner,
+      message: 'Image removed successfully'
+    });
+  } catch (error) {
+    console.error('🖼️ [BANNER REMOVE IMAGE] Error:', error);
+    return next(new AppError(error.message || 'Failed to remove image', 400));
+  }
+});
+
+// @desc    Reorder banner images
+// @route   PUT /api/banners/:id/images/reorder
+// @access  Private/Admin
+const reorderBannerImages = asyncHandler(async (req, res, next) => {
+  try {
+    console.log('🖼️ [BANNER REORDER] Starting image reordering...');
+    
+    const banner = await Banner.findOne({ 
+      _id: req.params.id, 
+      tenantId: req.user.tenantId 
+    });
+
+    if (!banner) {
+      return next(new AppError(`Banner not found with id of ${req.params.id}`, 404));
+    }
+
+    const { imageIds } = req.body;
+    if (!imageIds || !Array.isArray(imageIds)) {
+      return next(new AppError('Image IDs array is required', 400));
+    }
+
+    if (imageIds.length !== banner.images.length) {
+      return next(new AppError('Image IDs count must match current images count', 400));
+    }
+
+    // Reorder images
+    await banner.reorderImages(imageIds);
+
+    res.status(200).json({
+      success: true,
+      data: banner,
+      message: 'Images reordered successfully'
+    });
+  } catch (error) {
+    console.error('🖼️ [BANNER REORDER] Error:', error);
+    return next(new AppError(error.message || 'Failed to reorder images', 400));
+  }
+});
+
+// @desc    Update specific banner image details
+// @route   PUT /api/banners/:id/images/:imageId
+// @access  Private/Admin
+const updateBannerImage = asyncHandler(async (req, res, next) => {
+  try {
+    console.log('🖼️ [BANNER UPDATE IMAGE] Starting image update...');
+    
+    const banner = await Banner.findOne({ 
+      _id: req.params.id, 
+      tenantId: req.user.tenantId 
+    });
+
+    if (!banner) {
+      return next(new AppError(`Banner not found with id of ${req.params.id}`, 404));
+    }
+
+    const image = banner.images.find(img => img._id.toString() === req.params.imageId);
+    if (!image) {
+      return next(new AppError(`Image not found with id of ${req.params.imageId}`, 404));
+    }
+
+    // Update image details
+    const { title, description, alt } = req.body;
+    if (title !== undefined) image.title = title;
+    if (description !== undefined) image.description = description;
+    if (alt !== undefined) image.alt = alt;
+
+    await banner.save();
+
+    res.status(200).json({
+      success: true,
+      data: banner,
+      message: 'Image details updated successfully'
+    });
+  } catch (error) {
+    console.error('🖼️ [BANNER UPDATE IMAGE] Error:', error);
+    return next(new AppError(error.message || 'Failed to update image details', 400));
   }
 });
 
@@ -428,5 +644,9 @@ module.exports = {
   getActiveBanners,
   updateSortOrder,
   getPublicBanners,
-  getPublicBannersByUser
+  getPublicBannersByUser,
+  addBannerImages,
+  removeBannerImage,
+  reorderBannerImages,
+  updateBannerImage
 }; 

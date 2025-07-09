@@ -476,6 +476,39 @@ export const api = createApi({
       invalidatesTags: ['Banner'],
     }),
 
+    // Banner Image Management endpoints
+    addBannerImages: builder.mutation({
+      query: ({ bannerId, formData }) => ({
+        url: `banners/${bannerId}/images`,
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: (result, error, { bannerId }) => [{ type: 'Banner', id: bannerId }, 'Banner'],
+    }),
+    removeBannerImage: builder.mutation({
+      query: ({ bannerId, imageId }) => ({
+        url: `banners/${bannerId}/images/${imageId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (result, error, { bannerId }) => [{ type: 'Banner', id: bannerId }, 'Banner'],
+    }),
+    reorderBannerImages: builder.mutation({
+      query: ({ bannerId, imageIds }) => ({
+        url: `banners/${bannerId}/images/reorder`,
+        method: 'PUT',
+        body: { imageIds },
+      }),
+      invalidatesTags: (result, error, { bannerId }) => [{ type: 'Banner', id: bannerId }, 'Banner'],
+    }),
+    updateBannerImage: builder.mutation({
+      query: ({ bannerId, imageId, imageData }) => ({
+        url: `banners/${bannerId}/images/${imageId}`,
+        method: 'PUT',
+        body: imageData,
+      }),
+      invalidatesTags: (result, error, { bannerId }) => [{ type: 'Banner', id: bannerId }, 'Banner'],
+    }),
+
     // Contract endpoints
     getContracts: builder.query({
       query: (params = {}) => ({
@@ -700,6 +733,10 @@ export const {
   useGetBannersByPageQuery,
   useGetCarouselBannersQuery,
   useUpdateBannerSortOrderMutation,
+  useAddBannerImagesMutation,
+  useRemoveBannerImageMutation,
+  useReorderBannerImagesMutation,
+  useUpdateBannerImageMutation,
 
   // Contract hooks
   useGetContractsQuery,

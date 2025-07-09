@@ -8,7 +8,11 @@ const {
   deleteBanner,
   getBannersByPosition,
   getActiveBanners,
-  updateSortOrder
+  updateSortOrder,
+  addBannerImages,
+  removeBannerImage,
+  reorderBannerImages,
+  updateBannerImage
 } = require('../controllers/bannerController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -20,7 +24,8 @@ const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    fileSize: 5 * 1024 * 1024, // 5MB limit per file
+    files: 6 // Maximum 6 files per request
   },
   fileFilter: (req, file, cb) => {
     // Check file type
@@ -46,12 +51,23 @@ router.use(authorize('admin', 'super_admin'));
 // CRUD Routes
 router.route('/')
   .get(getBanners)
-  .post(upload.single('image'), createBanner);
+  .post(upload.array('images', 6), createBanner); // Support multiple files (max 6)
 
 router.route('/:id')
   .get(getBanner)
-  .put(upload.single('image'), updateBanner)
+  .put(upload.array('images', 6), updateBanner) // Support adding multiple new images
   .delete(deleteBanner);
+
+// Image management routes
+router.route('/:id/images')
+  .post(upload.array('images', 6), addBannerImages); // Add new images to existing banner
+
+router.route('/:id/images/reorder')
+  .put(reorderBannerImages); // Reorder images
+
+router.route('/:id/images/:imageId')
+  .put(updateBannerImage) // Update image details (title, description, alt)
+  .delete(removeBannerImage); // Remove specific image
 
 // Admin-only routes
 router.route('/sort-order')
