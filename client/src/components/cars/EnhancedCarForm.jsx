@@ -42,6 +42,7 @@ import {
   Star as StarIcon,
   LocalOffer as TagIcon
 } from '@mui/icons-material';
+import DamageModal from './DamageModal';
 
 // Enhanced car form with comprehensive features
 const EnhancedCarForm = ({ 
@@ -57,6 +58,9 @@ const EnhancedCarForm = ({
   const [tabValue, setTabValue] = useState(0);
   const [equipmentDialogOpen, setEquipmentDialogOpen] = useState(false);
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
+  const [damageModalOpen, setDamageModalOpen] = useState(false);
+  const [selectedDamage, setSelectedDamage] = useState(null);
+  const [damageModalMode, setDamageModalMode] = useState('add');
 
   // Enhanced options with new categories
   const categoryOptions = [
@@ -152,6 +156,74 @@ const EnhancedCarForm = ({
       {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
     </div>
   ), []);
+
+  // Damage management handlers
+  const handleAddDamage = () => {
+    setSelectedDamage(null);
+    setDamageModalMode('add');
+    setDamageModalOpen(true);
+  };
+
+  const handleEditDamage = (damage, index) => {
+    setSelectedDamage({ ...damage, index });
+    setDamageModalMode('edit');
+    setDamageModalOpen(true);
+  };
+
+  const handleDeleteDamage = (index) => {
+    const updatedDamages = [...(formData.damages || [])];
+    updatedDamages.splice(index, 1);
+    setFormData(prev => ({ ...prev, damages: updatedDamages }));
+  };
+
+  const handleDamageSubmit = (damageData) => {
+    const currentDamages = formData.damages || [];
+    
+    if (damageModalMode === 'add') {
+      // Add new damage
+      const newDamage = {
+        ...damageData,
+        reportedDate: new Date().toISOString(),
+        // reportedBy will be set by the backend
+      };
+      setFormData(prev => ({ 
+        ...prev, 
+        damages: [...currentDamages, newDamage] 
+      }));
+    } else if (damageModalMode === 'edit' && selectedDamage) {
+      // Update existing damage
+      const updatedDamages = [...currentDamages];
+      updatedDamages[selectedDamage.index] = {
+        ...updatedDamages[selectedDamage.index],
+        ...damageData
+      };
+      setFormData(prev => ({ 
+        ...prev, 
+        damages: updatedDamages 
+      }));
+    }
+    
+    setDamageModalOpen(false);
+    setSelectedDamage(null);
+  };
+
+  const getSeverityColor = (severity) => {
+    switch (severity) {
+      case 'minor': return '#4caf50';
+      case 'moderate': return '#ff9800';
+      case 'major': return '#f44336';
+      default: return '#757575';
+    }
+  };
+
+  const getSeverityLabel = (severity) => {
+    switch (severity) {
+      case 'minor': return 'Menšie';
+      case 'moderate': return 'Stredné';
+      case 'major': return 'Vážne';
+      default: return severity;
+    }
+  };
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -594,25 +666,73 @@ const EnhancedCarForm = ({
                   <Card key={index} sx={{ mb: 2 }}>
                     <CardContent>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                        <Box>
-                          <Typography variant="subtitle1">{damage.description}</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Závažnosť: {damage.severity} | Miesto: {damage.location}
+                        <Box sx={{ flexGrow: 1 }}>
+                          <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                            {damage.description}
                           </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <Box
+                                sx={{
+                                  width: 12,
+                                  height: 12,
+                                  borderRadius: '50%',
+                                  backgroundColor: getSeverityColor(damage.severity)
+                                }}
+                              />
+                              <Typography variant="body2" color="text.secondary">
+                                {getSeverityLabel(damage.severity)}
+                              </Typography>
+                            </Box>
+                            {damage.location && (
+                              <Typography variant="body2" color="text.secondary">
+                                Miesto: {damage.location}
+                              </Typography>
+                            )}
+                          </Box>
                           <Typography variant="body2" color="text.secondary">
                             Nahlásené: {new Date(damage.reportedDate).toLocaleDateString('sk-SK')}
                           </Typography>
                           {damage.cost && (
                             <Typography variant="body2" color="text.secondary">
-                              Náklady: {damage.cost}€
+                              Odhadovaná cena: {damage.cost}€
+                            </Typography>
+                          )}
+                          {damage.repaired && damage.repairedDate && (
+                            <Typography variant="body2" color="text.secondary">
+                              Opravené: {new Date(damage.repairedDate).toLocaleDateString('sk-SK')}
                             </Typography>
                           )}
                         </Box>
-                        <Chip
-                          label={damage.repaired ? 'Opravené' : 'Neopravené'}
-                          color={damage.repaired ? 'success' : 'error'}
-                          size="small"
-                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Chip
+                            label={damage.repaired ? 'Opravené' : 'Neopravené'}
+                            color={damage.repaired ? 'success' : 'error'}
+                            size="small"
+                          />
+                          {dialogMode !== 'view' && (
+                            <Box>
+                              <Tooltip title="Upraviť">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleEditDamage(damage, index)}
+                                  sx={{ ml: 1 }}
+                                >
+                                  <EditIcon />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Zmazať">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDeleteDamage(index)}
+                                  color="error"
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                          )}
+                        </Box>
                       </Box>
                     </CardContent>
                   </Card>
@@ -625,9 +745,10 @@ const EnhancedCarForm = ({
               {dialogMode !== 'view' && (
                 <Button
                   startIcon={<AddIcon />}
-                  onClick={() => {/* Handle add damage */}}
+                  onClick={handleAddDamage}
                   variant="outlined"
                   size="small"
+                  sx={{ mt: 2 }}
                 >
                   Pridať poškodenie
                 </Button>
@@ -1180,6 +1301,15 @@ const EnhancedCarForm = ({
           </Grid>
         </Box>
       </TabPanel>
+
+      {/* Damage Modal */}
+      <DamageModal
+        open={damageModalOpen}
+        onClose={() => setDamageModalOpen(false)}
+        onSubmit={handleDamageSubmit}
+        damage={selectedDamage}
+        mode={damageModalMode}
+      />
     </Box>
   );
 };

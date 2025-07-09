@@ -112,6 +112,7 @@ function Cars() {
     equipment: [],
     badges: [],
     features: [],
+    damages: [],
     maintenance: {
       lastServiceDate: '',
       nextServiceDate: '',
@@ -436,14 +437,7 @@ function Cars() {
           equipment: car.equipment || [],
           badges: car.badges || [],
           features: car.features || [],
-          statistics: {
-            totalBookings: car.statistics?.totalBookings || car.totalBookings || 0,
-            totalRevenue: car.statistics?.totalRevenue || car.totalRevenue || 0,
-            totalRentalDays: car.statistics?.totalRentalDays || 0,
-            averageDailyRate: car.statistics?.averageDailyRate || 0,
-            nextReservation: car.statistics?.nextReservation || null,
-            lastReservation: car.statistics?.lastReservation || null
-          },
+          damages: car.damages || [],
           maintenance: {
             lastServiceDate: car.maintenance?.lastServiceDate || '',
             nextServiceDate: car.maintenance?.nextServiceDate || '',
@@ -525,14 +519,7 @@ function Cars() {
           equipment: car.equipment || [],
           badges: car.badges || [],
           features: car.features || [],
-          statistics: {
-            totalBookings: car.statistics?.totalBookings || car.totalBookings || 0,
-            totalRevenue: car.statistics?.totalRevenue || car.totalRevenue || 0,
-            totalRentalDays: car.statistics?.totalRentalDays || 0,
-            averageDailyRate: car.statistics?.averageDailyRate || 0,
-            nextReservation: car.statistics?.nextReservation || null,
-            lastReservation: car.statistics?.lastReservation || null
-          },
+          damages: car.damages || [],
           maintenance: {
             lastServiceDate: car.maintenance?.lastServiceDate || '',
             nextServiceDate: car.maintenance?.nextServiceDate || '',
@@ -621,6 +608,13 @@ function Cars() {
             formData[key].forEach(feature => {
               formDataToSend.append('features[]', feature);
             });
+          } else if (key === 'damages') {
+            // Handle damages array
+            formData[key].forEach((damage, index) => {
+              Object.keys(damage).forEach(damageKey => {
+                formDataToSend.append(`damages[${index}][${damageKey}]`, damage[damageKey]);
+              });
+            });
           } else {
             formDataToSend.append(key, formData[key]);
           }
@@ -680,6 +674,13 @@ function Cars() {
               formData[key].forEach(feature => {
                 formDataToSend.append('features[]', feature);
               });
+            } else if (key === 'damages') {
+              // Handle damages array
+              formData[key].forEach((damage, index) => {
+                Object.keys(damage).forEach(damageKey => {
+                  formDataToSend.append(`damages[${index}][${damageKey}]`, damage[damageKey]);
+                });
+              });
             } else {
               formDataToSend.append(key, formData[key]);
             }
@@ -727,6 +728,13 @@ function Cars() {
               // Handle array
               formData[key].forEach(feature => {
                 formDataToSend.append('features[]', feature);
+              });
+            } else if (key === 'damages') {
+              // Handle damages array
+              formData[key].forEach((damage, index) => {
+                Object.keys(damage).forEach(damageKey => {
+                  formDataToSend.append(`damages[${index}][${damageKey}]`, damage[damageKey]);
+                });
               });
             } else {
               formDataToSend.append(key, formData[key]);
