@@ -1148,6 +1148,10 @@ const getModalByUser = asyncHandler(async (req, res, next) => {
   const userEmail = req.params.email;
   const currentPage = req.query.page || 'homepage'; // homepage, pricing, all-pages
   
+  console.log('🔍 PUBLIC MODAL REQUEST DEBUG:');
+  console.log('📧 User Email:', userEmail);
+  console.log('📄 Requested Page:', currentPage);
+  
   if (!userEmail) {
     return next(new AppError('User email is required', 400));
   }
@@ -1156,15 +1160,18 @@ const getModalByUser = asyncHandler(async (req, res, next) => {
     const tenantId = await getTenantByUserEmail(userEmail);
     
     if (!tenantId) {
+      console.log('❌ Tenant not found for email:', userEmail);
       return next(new AppError('Tenant not found for this user', 404));
     }
+
+    console.log('✅ Tenant found:', tenantId);
 
     const { WebsiteSettings } = require('../models/WebsiteSettings');
     
     const settings = await WebsiteSettings.findOne({ tenantId });
     
-    // ✅ FIXED: Use new multi-modal system instead of old single modal
-    if (!settings || !settings.modals || settings.modals.length === 0) {
+    if (!settings) {
+      console.log('❌ No website settings found for tenant:', tenantId);
       return res.status(200).json({
         success: true,
         data: null,
@@ -1172,10 +1179,63 @@ const getModalByUser = asyncHandler(async (req, res, next) => {
       });
     }
 
+    console.log('✅ Website settings found');
+    console.log('📋 Total modals in settings:', settings.modals ? settings.modals.length : 0);
+
+    // ✅ FIXED: Use new multi-modal system instead of old single modal
+    if (!settings.modals || settings.modals.length === 0) {
+      console.log('❌ No modals array or empty modals array');
+      return res.status(200).json({
+        success: true,
+        data: null,
+        message: 'No active modal found'
+      });
+    }
+
+    // ✅ ADD DETAILED MODAL ANALYSIS BEFORE FILTERING
+    console.log('🔍 ANALYZING ALL MODALS BEFORE FILTERING:');
+    settings.modals.forEach((modal, index) => {
+      console.log(`--- Modal ${index + 1}: ${modal.name} ---`);
+      console.log(`  ID: ${modal._id}`);
+      console.log(`  Title: ${modal.title}`);
+      console.log(`  Is Active: ${modal.isActive}`);
+      console.log(`  Display Location: ${modal.displayLocation}`);
+      console.log(`  Target Pages: ${modal.targetPages}`);
+      console.log(`  Is Scheduled: ${modal.isScheduled}`);
+      console.log(`  Start Date: ${modal.startDate}`);
+      console.log(`  End Date: ${modal.endDate}`);
+      console.log(`  Priority: ${modal.priority}`);
+      
+      // Manual filtering check
+      const now = new Date();
+      console.log(`  🔍 MANUAL FILTER CHECK:`);
+      console.log(`    - Active check: ${modal.isActive} ✅`);
+      console.log(`    - Start date check: ${modal.startDate ? `${modal.startDate} <= ${now}? ${now >= modal.startDate}` : 'No start date ✅'}`);
+      console.log(`    - End date check: ${modal.endDate ? `${modal.endDate} >= ${now}? ${now <= modal.endDate}` : 'No end date ✅'}`);
+      console.log(`    - Display location check: ${modal.displayLocation} !== 'all-pages'? ${modal.displayLocation !== 'all-pages'}`);
+      if (modal.displayLocation !== 'all-pages') {
+        console.log(`      → Does '${modal.displayLocation}' === '${currentPage}'? ${modal.displayLocation === currentPage}`);
+      }
+      console.log(`    - Target pages check: ${modal.targetPages ? `Has target pages: ${modal.targetPages.includes(currentPage)}` : 'No target pages ✅'}`);
+    });
+
     // Get active modals using the existing method from WebsiteSettings model
+    console.log(`🔍 CALLING getActiveModals('${currentPage}')...`);
     const activeModals = settings.getActiveModals(currentPage);
     
+    console.log('📊 FILTERING RESULTS:');
+    console.log(`  - Input page: '${currentPage}'`);
+    console.log(`  - Active modals found: ${activeModals ? activeModals.length : 0}`);
+    
+    if (activeModals && activeModals.length > 0) {
+      console.log('✅ Active modals details:');
+      activeModals.forEach((modal, index) => {
+        console.log(`  ${index + 1}. ${modal.name} (Priority: ${modal.priority}, Location: ${modal.displayLocation})`);
+      });
+    }
+    
     if (!activeModals || activeModals.length === 0) {
+      console.log('❌ No active modals found after filtering');
       return res.status(200).json({
         success: true,
         data: null,
@@ -1185,6 +1245,7 @@ const getModalByUser = asyncHandler(async (req, res, next) => {
 
     // Return the highest priority modal (getActiveModals already sorts by priority)
     const modal = activeModals[0];
+    console.log(`✅ Returning modal: ${modal.name} (Priority: ${modal.priority})`);
 
     res.status(200).json({
       success: true,
@@ -1209,7 +1270,7 @@ const getModalByUser = asyncHandler(async (req, res, next) => {
     });
 
   } catch (error) {
-    console.error('Error fetching modal:', error);
+    console.error('❌ Error fetching modal:', error);
     return next(new AppError('Error fetching modal', 500));
   }
 });
