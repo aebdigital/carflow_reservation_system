@@ -219,6 +219,16 @@ export default function ModalSettings() {
     try {
       console.log('🔧 === COMPREHENSIVE MODAL DEBUG SESSION ===')
       const state = store.getState()
+      
+      // ✅ EXTRACT USER ID / TENANT ID
+      const userId = state.auth.user?._id
+      const userEmail = state.auth.user?.email
+      
+      console.log('👤 USER INFO:')
+      console.log('- User ID (Your Tenant ID):', userId)
+      console.log('- User Email:', userEmail)
+      console.log('- Full User Object:', state.auth.user)
+      
       const rawBaseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api'
       // Remove trailing slash to prevent double slashes
       const baseUrl = rawBaseUrl.replace(/\/$/, '')
@@ -230,7 +240,23 @@ export default function ModalSettings() {
       console.log('- Token available:', !!token)
       console.log('- Token length:', token?.length || 0)
       console.log('- User authenticated:', state.auth.isAuthenticated)
-      console.log('- User info:', state.auth.user)
+      
+      // Test with BOTH endpoints
+      console.log('\n📋 Test: Get Modals with New Endpoint (tenantId)')
+      const newEndpointUrl = `${baseUrl}/website/modals/active/homepage?tenantId=${userId}`
+      console.log('New endpoint URL:', newEndpointUrl)
+      
+      const newResponse = await fetch(newEndpointUrl)
+      const newData = await newResponse.json()
+      console.log('New endpoint response:', newData)
+      
+      console.log('\n📋 Test: Get Modals with Old Endpoint (email)')
+      const oldEndpointUrl = `${baseUrl}/public/users/${userEmail}/modal?page=homepage`
+      console.log('Old endpoint URL:', oldEndpointUrl)
+      
+      const oldResponse = await fetch(oldEndpointUrl)
+      const oldData = await oldResponse.json()
+      console.log('Old endpoint response:', oldData)
       
       // Test 1: Health check
       console.log('\n🏥 Test 1: Health Check')
