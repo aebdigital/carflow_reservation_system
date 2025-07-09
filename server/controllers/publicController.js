@@ -1163,7 +1163,8 @@ const getModalByUser = asyncHandler(async (req, res, next) => {
     
     const settings = await WebsiteSettings.findOne({ tenantId });
     
-    if (!settings || !settings.modal || !settings.modal.isActive) {
+    // ✅ FIXED: Use new multi-modal system instead of old single modal
+    if (!settings || !settings.modals || settings.modals.length === 0) {
       return res.status(200).json({
         success: true,
         data: null,
@@ -1171,42 +1172,19 @@ const getModalByUser = asyncHandler(async (req, res, next) => {
       });
     }
 
-    const modal = settings.modal;
+    // Get active modals using the existing method from WebsiteSettings model
+    const activeModals = settings.getActiveModals(currentPage);
     
-    // Check if modal should be displayed on current page
-    if (modal.displayLocation === 'homepage' && currentPage !== 'homepage') {
+    if (!activeModals || activeModals.length === 0) {
       return res.status(200).json({
         success: true,
         data: null,
-        message: 'Modal not configured for this page'
-      });
-    }
-    
-    if (modal.displayLocation === 'pricing' && currentPage !== 'pricing') {
-      return res.status(200).json({
-        success: true,
-        data: null,
-        message: 'Modal not configured for this page'
+        message: 'No active modal found'
       });
     }
 
-    // Check date restrictions
-    const now = new Date();
-    if (modal.startDate && now < new Date(modal.startDate)) {
-      return res.status(200).json({
-        success: true,
-        data: null,
-        message: 'Modal not yet active'
-      });
-    }
-    
-    if (modal.endDate && now > new Date(modal.endDate)) {
-      return res.status(200).json({
-        success: true,
-        data: null,
-        message: 'Modal has expired'
-      });
-    }
+    // Return the highest priority modal (getActiveModals already sorts by priority)
+    const modal = activeModals[0];
 
     res.status(200).json({
       success: true,
@@ -1218,11 +1196,15 @@ const getModalByUser = asyncHandler(async (req, res, next) => {
         triggerRule: modal.triggerRule,
         emailPlaceholder: modal.emailPlaceholder,
         buttonText: modal.buttonText,
+        secondaryButtonText: modal.secondaryButtonText,
         discountCode: modal.discountCode,
         discountPercentage: modal.discountPercentage,
-        backgroundColor: modal.backgroundColor,
-        textColor: modal.textColor,
-        buttonColor: modal.buttonColor
+        discountType: modal.discountType,
+        discountValue: modal.discountValue,
+        styling: modal.styling,
+        settings: modal.settings,
+        priority: modal.priority,
+        frequency: modal.frequency
       }
     });
 
