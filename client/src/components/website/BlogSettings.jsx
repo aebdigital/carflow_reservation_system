@@ -106,11 +106,23 @@ const BlogSettings = () => {
   const [selectedImageFile, setSelectedImageFile] = useState(null); // Add this to store selected image file
 
   // API hooks
-  const { data: blogsData, isLoading, refetch } = useGetBlogsQuery({
-    search: searchTerm,
-    status: statusFilter !== 'all' ? statusFilter : undefined,
-    category: categoryFilter !== 'all' ? categoryFilter : undefined
+  const { data: blogsData, isLoading, error, refetch } = useGetBlogsQuery({
+    ...(searchTerm && { search: searchTerm }),
+    ...(statusFilter !== 'all' && { status: statusFilter }),
+    ...(categoryFilter !== 'all' && { category: categoryFilter })
   });
+
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 Blog Query Debug:', {
+      blogsData,
+      isLoading,
+      error,
+      searchTerm,
+      statusFilter,
+      categoryFilter
+    });
+  }, [blogsData, isLoading, error, searchTerm, statusFilter, categoryFilter]);
 
   const [createBlog] = useCreateBlogMutation();
   const [updateBlog] = useUpdateBlogMutation();
@@ -408,12 +420,27 @@ const BlogSettings = () => {
   };
 
   const filteredBlogs = blogsData?.data?.filter(blog => {
-    const matchesSearch = blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         blog.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!blog) return false;
+    
+    const matchesSearch = !searchTerm || 
+      blog.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      blog.excerpt?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (blog.tags && blog.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
+    
     const matchesStatus = statusFilter === 'all' || blog.status === statusFilter;
     const matchesCategory = categoryFilter === 'all' || blog.category === categoryFilter;
+    
     return matchesSearch && matchesStatus && matchesCategory;
   }) || [];
+
+  // Debug filtered blogs
+  useEffect(() => {
+    console.log('🔍 Filtered Blogs:', {
+      totalBlogs: blogsData?.data?.length || 0,
+      filteredCount: filteredBlogs.length,
+      filteredBlogs
+    });
+  }, [blogsData, filteredBlogs]);
 
   return (
     <Box>
@@ -495,9 +522,27 @@ const BlogSettings = () => {
 
           {/* Blog List */}
           {isLoading ? (
-            <Typography>Načítavam blogy...</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <Typography>Načítavam blogy...</Typography>
+            </Box>
+          ) : error ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              Chyba pri načítavaní blogov: {error.data?.message || error.message || 'Neznáma chyba'}
+              <Button 
+                onClick={() => refetch()} 
+                size="small" 
+                sx={{ ml: 2 }}
+              >
+                Skúsiť znova
+              </Button>
+            </Alert>
           ) : filteredBlogs.length === 0 ? (
-            <Alert severity="info">Nenašli sa žiadne blogy. Vytvorte svoj prvý blog!</Alert>
+            <Alert severity="info">
+              {searchTerm || statusFilter !== 'all' || categoryFilter !== 'all' 
+                ? 'Nenašli sa žiadne blogy zodpovedajúce filtru. Skúste zmeniť filter alebo vytvoriť nový blog.'
+                : 'Nenašli sa žiadne blogy. Vytvorte svoj prvý blog!'
+              }
+            </Alert>
           ) : (
             <Grid container spacing={2}>
               {filteredBlogs.map((blog) => (
@@ -716,9 +761,27 @@ const BlogSettings = () => {
                   <Box sx={{ mb: 2 }}>
                     <img
                       src={blogData.featuredImage.url}
-                      alt={blogData.featuredImage.alt}
-                      style={{ maxWidth: '200px', height: 'auto', borderRadius: '4px' }}
+                      alt={blogData.featuredImage.alt || 'Obrázok blogu'}
+                      style={{ 
+                        maxWidth: '200px', 
+                        height: 'auto', 
+                        borderRadius: '4px',
+                        border: '1px solid #ddd',
+                        padding: '4px'
+                      }}
+                      onError={(e) => {
+                        console.error('🖼️ Image failed to load:', blogData.featuredImage.url);
+                        e.target.style.display = 'none';
+                      }}
+                      onLoad={() => {
+                        console.log('🖼️ Image loaded successfully:', blogData.featuredImage.url);
+                      }}
                     />
+                    {blogData.featuredImage.isPreview && (
+                      <Typography variant="caption" display="block" color="info.main">
+                        Náhľad - obrázok bude nahraný po uložení blogu
+                      </Typography>
+                    )}
                   </Box>
                 ) : (
                   <Alert severity="info" sx={{ mb: 2 }}>
@@ -734,7 +797,7 @@ const BlogSettings = () => {
                 />
                 <label htmlFor="featured-image-upload">
                   <Button variant="outlined" component="span" startIcon={<ImageIcon />}>
-                    Nahrať hlavný obrázok
+                    {blogData.featuredImage ? 'Zmeniť hlavný obrázok' : 'Nahrať hlavný obrázok'}
                   </Button>
                 </label>
               </Box>
