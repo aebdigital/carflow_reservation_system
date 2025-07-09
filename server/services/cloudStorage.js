@@ -567,8 +567,8 @@ class CloudStorageService {
       // Use user-specific folder path for complete tenant separation
       const folderPath = `${user.storageFolder}/banners`;
 
-      // Process and upload different sizes (banners often need larger sizes)
-      const uploadPromises = await this.processAndUploadSizes(
+      // Process and upload different sizes (banners need higher quality and larger sizes)
+      const uploadPromises = await this.processAndUploadBannerSizes(
         fileBuffer, 
         folderPath, 
         baseFileName
@@ -595,6 +595,82 @@ class CloudStorageService {
       console.error('Error uploading banner image:', error);
       throw new Error(`Failed to upload banner image: ${error.message}`);
     }
+  }
+
+  /**
+   * Process banner image into different sizes with higher quality settings
+   */
+  async processAndUploadBannerSizes(fileBuffer, folderPath, baseFileName) {
+    const name = path.parse(baseFileName).name;
+    const ext = path.parse(baseFileName).ext;
+
+    const promises = [];
+
+    // Banner-specific sizes (larger and higher quality for display)
+    const bannerSizes = {
+      thumbnail: { width: 400, height: 250 }, // Larger thumbnail for previews
+      medium: { width: 1200, height: 800 },   // Higher medium for desktop
+      large: { width: 1920, height: 1080 },   // Full HD for large displays
+      quality: 95 // Higher quality for banners (vs 85 for regular images)
+    };
+
+    // Thumbnail
+    const thumbnailBuffer = await sharp(fileBuffer)
+      .resize(bannerSizes.thumbnail.width, bannerSizes.thumbnail.height, {
+        fit: 'cover',
+        position: 'center'
+      })
+      .jpeg({ quality: bannerSizes.quality })
+      .toBuffer();
+    
+    promises.push(this.uploadToGCS(
+      thumbnailBuffer, 
+      `${folderPath}/${name}_thumbnail${ext}`,
+      'image/jpeg'
+    ));
+
+    // Medium (higher resolution than standard)
+    const mediumBuffer = await sharp(fileBuffer)
+      .resize(bannerSizes.medium.width, bannerSizes.medium.height, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .jpeg({ quality: bannerSizes.quality })
+      .toBuffer();
+    
+    promises.push(this.uploadToGCS(
+      mediumBuffer, 
+      `${folderPath}/${name}_medium${ext}`,
+      'image/jpeg'
+    ));
+
+    // Large (Full HD)
+    const largeBuffer = await sharp(fileBuffer)
+      .resize(bannerSizes.large.width, bannerSizes.large.height, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .jpeg({ quality: bannerSizes.quality })
+      .toBuffer();
+    
+    promises.push(this.uploadToGCS(
+      largeBuffer, 
+      `${folderPath}/${name}_large${ext}`,
+      'image/jpeg'
+    ));
+
+    // Original (highest quality compressed)
+    const originalBuffer = await sharp(fileBuffer)
+      .jpeg({ quality: bannerSizes.quality })
+      .toBuffer();
+    
+    promises.push(this.uploadToGCS(
+      originalBuffer, 
+      `${folderPath}/${baseFileName}`,
+      'image/jpeg'
+    ));
+
+    return promises;
   }
 
   /**

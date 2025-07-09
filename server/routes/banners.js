@@ -13,7 +13,8 @@ const {
   removeBannerImage,
   reorderBannerImages,
   updateBannerImage,
-  debugBanners
+  debugBanners,
+  migrateBannersToHighRes
 } = require('../controllers/bannerController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -52,6 +53,10 @@ router.route('/active')
 // Protected routes require authentication and admin privileges
 router.use(protect);
 router.use(authorize('admin', 'super_admin'));
+
+// Migration route for upgrading to high resolution
+router.route('/migrate-to-high-res')
+  .post(migrateBannersToHighRes);
 
 // CRUD Routes
 router.route('/')

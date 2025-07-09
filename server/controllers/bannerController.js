@@ -142,7 +142,7 @@ const createBanner = asyncHandler(async (req, res, next) => {
         );
 
         return {
-          url: result.urls.medium,
+          url: result.urls.large, // Changed from medium to large for better quality
           filename: result.filename,
           alt: `Banner image ${index + 1} for ${bannerData.position}`,
           title: titles[index] || '',
@@ -229,7 +229,7 @@ const updateBanner = asyncHandler(async (req, res, next) => {
           );
 
           return {
-            url: result.urls.medium,
+            url: result.urls.large, // Changed from medium to large for better quality
             filename: result.filename,
             alt: `Banner image ${currentImageCount + index + 1} for ${updateData.position}`,
             title: '',
@@ -309,7 +309,7 @@ const addBannerImages = asyncHandler(async (req, res, next) => {
       );
 
       return {
-        url: result.urls.medium,
+        url: result.urls.large, // Changed from medium to large for better quality
         filename: result.filename,
         alt: `Banner image ${currentCount + index + 1} for ${banner.position}`,
         title: '',
@@ -511,54 +511,12 @@ const getBannersByPosition = asyncHandler(async (req, res, next) => {
     return next(new AppError('Tenant ID is required', 400));
   }
   
-  console.log(`🔍 [BANNER BY POSITION] Fetching banners for position: ${position}, tenantId: ${tenantId}`);
-  
   const banners = await Banner.getActiveByPosition(tenantId, position);
   
-  console.log(`🔍 [BANNER BY POSITION] Found ${banners.length} total banners for position: ${position}`);
-  banners.forEach((banner, index) => {
-    console.log(`🔍 [BANNER ${index + 1}] ID: ${banner._id}, position: ${banner.position}, isActive: ${banner.isActive}`);
-    console.log(`🔍 [BANNER ${index + 1}] Images array length: ${banner.images ? banner.images.length : 'undefined'}`);
-    if (banner.images && banner.images.length > 0) {
-      banner.images.forEach((img, imgIndex) => {
-        console.log(`🔍 [BANNER ${index + 1}] Image ${imgIndex + 1}: url=${img.url ? 'present' : 'missing'}, _id=${img._id}`);
-      });
-    }
-    console.log(`🔍 [BANNER ${index + 1}] Virtual imageUrl: ${banner.imageUrl}`);
-    console.log(`🔍 [BANNER ${index + 1}] Virtual hasImages: ${banner.hasImages}`);
+  // Filter out banners with no images to prevent frontend errors
+  const validBanners = banners.filter((banner) => {
+    return banner.images && banner.images.length > 0 && banner.images[0] && banner.images[0].url;
   });
-  
-  // Improved filtering - less strict and with better logging
-  const validBanners = banners.filter((banner, index) => {
-    // Check if banner has images array
-    if (!banner.images || !Array.isArray(banner.images)) {
-      console.log(`❌ [BANNER ${index + 1}] Filtered out: No images array`);
-      return false;
-    }
-    
-    // Check if images array is not empty
-    if (banner.images.length === 0) {
-      console.log(`❌ [BANNER ${index + 1}] Filtered out: Empty images array`);
-      return false;
-    }
-    
-    // Check if first image exists and has URL
-    const firstImage = banner.images[0];
-    if (!firstImage) {
-      console.log(`❌ [BANNER ${index + 1}] Filtered out: First image is null/undefined`);
-      return false;
-    }
-    
-    if (!firstImage.url || firstImage.url.trim() === '') {
-      console.log(`❌ [BANNER ${index + 1}] Filtered out: First image has no URL`);
-      return false;
-    }
-    
-    console.log(`✅ [BANNER ${index + 1}] Valid banner included`);
-    return true;
-  });
-
-  console.log(`🔍 [BANNER BY POSITION] After filtering: ${validBanners.length} valid banners`);
 
   res.status(200).json({
     success: true,
@@ -662,8 +620,6 @@ const getPublicBannersByUser = asyncHandler(async (req, res, next) => {
   const { email } = req.params;
   const { page, position } = req.query;
   
-  console.log(`🔍 [BANNER BY USER] Fetching banners for email: ${email}, position: ${position || 'all'}`);
-  
   // Find user to get tenant ID
   const User = require('../models/User');
   const user = await User.findOne({ email }).select('tenantId');
@@ -671,8 +627,6 @@ const getPublicBannersByUser = asyncHandler(async (req, res, next) => {
   if (!user) {
     return next(new AppError('User not found', 404));
   }
-
-  console.log(`🔍 [BANNER BY USER] Found user with tenantId: ${user.tenantId}`);
 
   let query = {
     tenantId: user.tenantId,
@@ -684,49 +638,14 @@ const getPublicBannersByUser = asyncHandler(async (req, res, next) => {
     query.position = position;
   }
   
-  console.log(`🔍 [BANNER BY USER] Query:`, query);
-  
   const banners = await Banner.find(query)
     .sort({ position: 1, sortOrder: 1 })
     .populate('createdBy', 'name email');
   
-  console.log(`🔍 [BANNER BY USER] Found ${banners.length} total banners`);
-  banners.forEach((banner, index) => {
-    console.log(`🔍 [BANNER ${index + 1}] ID: ${banner._id}, position: ${banner.position}, isActive: ${banner.isActive}`);
-    console.log(`🔍 [BANNER ${index + 1}] Images array length: ${banner.images ? banner.images.length : 'undefined'}`);
+  // Filter out banners with no images to prevent frontend errors
+  const validBanners = banners.filter((banner) => {
+    return banner.images && banner.images.length > 0 && banner.images[0] && banner.images[0].url;
   });
-  
-  // Improved filtering - less strict and with better logging
-  const validBanners = banners.filter((banner, index) => {
-    // Check if banner has images array
-    if (!banner.images || !Array.isArray(banner.images)) {
-      console.log(`❌ [BANNER ${index + 1}] Filtered out: No images array`);
-      return false;
-    }
-    
-    // Check if images array is not empty
-    if (banner.images.length === 0) {
-      console.log(`❌ [BANNER ${index + 1}] Filtered out: Empty images array`);
-      return false;
-    }
-    
-    // Check if first image exists and has URL
-    const firstImage = banner.images[0];
-    if (!firstImage) {
-      console.log(`❌ [BANNER ${index + 1}] Filtered out: First image is null/undefined`);
-      return false;
-    }
-    
-    if (!firstImage.url || firstImage.url.trim() === '') {
-      console.log(`❌ [BANNER ${index + 1}] Filtered out: First image has no URL`);
-      return false;
-    }
-    
-    console.log(`✅ [BANNER ${index + 1}] Valid banner included`);
-    return true;
-  });
-
-  console.log(`🔍 [BANNER BY USER] After filtering: ${validBanners.length} valid banners`);
 
   res.status(200).json({
     success: true,
@@ -772,6 +691,59 @@ const debugBanners = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Migrate existing banners to use higher resolution images
+// @route   POST /api/banners/migrate-to-high-res
+// @access  Private/Admin
+const migrateBannersToHighRes = asyncHandler(async (req, res, next) => {
+  try {
+    console.log('🔄 [BANNER MIGRATE] Starting migration to high resolution images...');
+    
+    // Find all banners with medium resolution URLs
+    const banners = await Banner.find({
+      tenantId: req.user.tenantId,
+      'images.url': { $regex: '_medium\\.' }
+    });
+    
+    console.log(`🔄 [BANNER MIGRATE] Found ${banners.length} banners to migrate`);
+    
+    let migratedCount = 0;
+    
+    for (const banner of banners) {
+      let hasChanges = false;
+      
+      // Update each image URL from medium to large
+      banner.images.forEach((image, index) => {
+        if (image.url && image.url.includes('_medium.')) {
+          const newUrl = image.url.replace('_medium.', '_large.');
+          console.log(`🔄 [BANNER MIGRATE] Updating image ${index + 1} in banner ${banner._id}`);
+          console.log(`   From: ${image.url}`);
+          console.log(`   To: ${newUrl}`);
+          image.url = newUrl;
+          hasChanges = true;
+        }
+      });
+      
+      if (hasChanges) {
+        await banner.save();
+        migratedCount++;
+        console.log(`✅ [BANNER MIGRATE] Migrated banner ${banner._id}`);
+      }
+    }
+    
+    console.log(`🔄 [BANNER MIGRATE] Migration completed! Updated ${migratedCount} banners`);
+    
+    res.status(200).json({
+      success: true,
+      message: `Successfully migrated ${migratedCount} banners to high resolution`,
+      migratedCount,
+      totalFound: banners.length
+    });
+  } catch (error) {
+    console.error('🔄 [BANNER MIGRATE] Error:', error);
+    return next(new AppError(error.message || 'Failed to migrate banners', 400));
+  }
+});
+
 module.exports = {
   getBanners,
   getBanner,
@@ -787,5 +759,6 @@ module.exports = {
   removeBannerImage,
   reorderBannerImages,
   updateBannerImage,
-  debugBanners
+  debugBanners,
+  migrateBannersToHighRes
 }; 
