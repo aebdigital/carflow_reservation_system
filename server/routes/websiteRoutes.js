@@ -18,7 +18,14 @@ const router = express.Router();
 
 const { protect, requireAdmin, requireStaff } = require('../middleware/authMiddleware');
 
-// Apply authentication to all routes
+// PUBLIC MODAL ROUTES (NO AUTHENTICATION REQUIRED) - Must be before protect middleware
+router.route('/modals/active/:page?')
+  .get(getActiveModals);
+
+router.route('/modals/:id/analytics')
+  .post(recordModalAnalytics);
+
+// Apply authentication to all routes below this point
 router.use(protect);
 
 // General website settings routes
@@ -44,12 +51,5 @@ router.route('/modals/:id')
 
 router.route('/modals/:id/toggle')
   .patch(requireAdmin, toggleModal);
-
-// Public modal routes (no authentication required)
-router.route('/modals/active/:page?')
-  .get(getActiveModals);
-
-router.route('/modals/:id/analytics')
-  .post(recordModalAnalytics);
 
 module.exports = router; 
