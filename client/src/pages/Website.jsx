@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import {
   Box,
-  Container,
   Typography,
   Paper,
   Tabs,
@@ -63,39 +62,31 @@ export default function Website() {
 
   if (settingsLoading) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-          <CircularProgress />
-        </Box>
-      </Container>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <CircularProgress />
+      </Box>
     )
   }
 
   if (settingsError) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Alert severity="error">
-          Chyba pri načítavaní nastavení webstránky: {settingsError.message}
-        </Alert>
-      </Container>
+      <Alert severity="error">
+        Chyba pri načítavaní nastavení webstránky: {settingsError.message}
+      </Alert>
     )
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom sx={{ 
-        fontWeight: 700,
-        background: 'linear-gradient(45deg, #1976d2, #42a5f5)',
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-        mb: 3 
-      }}>
-        Nastavenia Webstránky
-      </Typography>
-
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        Spravujte vzhľad a funkcionalitu vašej webstránky vrátane info pásikov, modalov, bannerov a zľavových kódov.
-      </Typography>
+    <Box>
+      {/* Header */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
+          Nastavenia Webstránky
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Spravujte vzhľad a funkcionalitu vašej webstránky vrátane info pásikov, modalov, bannerov a zľavových kódov.
+        </Typography>
+      </Box>
 
       <Paper sx={{ width: '100%', backgroundColor: 'white' }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -165,6 +156,6 @@ export default function Website() {
           <DiscountCodes />
         </TabPanel>
       </Paper>
-    </Container>
+    </Box>
   )
 } 
