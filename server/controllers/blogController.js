@@ -111,32 +111,75 @@ const getBlog = asyncHandler(async (req, res, next) => {
 // @route   POST /api/blogs
 // @access  Private/Staff
 const createBlog = asyncHandler(async (req, res, next) => {
-  // Add tenant information to blog data
-  const blogData = { 
-    ...req.body,
-    tenantId: req.user.tenantId,
-    author: req.user._id,
-    createdBy: req.user._id,
-    lastModifiedBy: req.user._id
-  };
+  try {
+    console.log('📝 [BLOG CREATE] Starting blog creation process...');
+    console.log('📝 [BLOG CREATE] Request body:', JSON.stringify(req.body, null, 2));
+    console.log('📝 [BLOG CREATE] User info:', {
+      id: req.user._id,
+      tenantId: req.user.tenantId,
+      email: req.user.email
+    });
 
-  // Initialize nested objects if not provided
-  if (!blogData.seo) blogData.seo = {};
-  if (!blogData.socialMedia) blogData.socialMedia = {};
-  if (!blogData.analytics) blogData.analytics = {};
+    // Add tenant information to blog data
+    const blogData = { 
+      ...req.body,
+      tenantId: req.user.tenantId,
+      author: req.user._id,
+      createdBy: req.user._id,
+      lastModifiedBy: req.user._id
+    };
 
-  const blog = await Blog.create(blogData);
+    // Initialize nested objects if not provided
+    if (!blogData.seo) blogData.seo = {};
+    if (!blogData.socialMedia) blogData.socialMedia = {};
+    if (!blogData.analytics) blogData.analytics = {};
 
-  // Populate the created blog
-  const populatedBlog = await Blog.findById(blog._id)
-    .populate('author', 'firstName lastName email')
-    .populate('createdBy', 'firstName lastName email');
+    console.log('📝 [BLOG CREATE] Final blog data to save:', JSON.stringify(blogData, null, 2));
 
-  res.status(201).json({
-    success: true,
-    data: populatedBlog,
-    message: 'Blog created successfully'
-  });
+    const blog = await Blog.create(blogData);
+
+    console.log('📝 [BLOG CREATE] Blog created successfully! ID:', blog._id);
+    console.log('📝 [BLOG CREATE] ======= SAVED BLOG DATA =======');
+    console.log('📝 [BLOG CREATE] What was saved in MongoDB:');
+    console.log(JSON.stringify(blog.toObject(), null, 2));
+    console.log('📝 [BLOG CREATE] ================================');
+
+    // Populate the created blog
+    const populatedBlog = await Blog.findById(blog._id)
+      .populate('author', 'firstName lastName email')
+      .populate('createdBy', 'firstName lastName email');
+
+    console.log('📝 [BLOG CREATE] Populated blog for response:', populatedBlog ? 'Success' : 'Failed');
+
+    res.status(201).json({
+      success: true,
+      data: populatedBlog,
+      message: 'Blog created successfully'
+    });
+  } catch (error) {
+    console.error('📝 [BLOG CREATE] Error caught:', error.name);
+    console.error('📝 [BLOG CREATE] Error message:', error.message);
+    console.error('📝 [BLOG CREATE] Error code:', error.code);
+    console.error('📝 [BLOG CREATE] Full error:', error);
+    
+    // Handle specific MongoDB errors
+    if (error.code === 11000) {
+      // Duplicate key error
+      const field = Object.keys(error.keyPattern)[0];
+      const value = error.keyValue[field];
+      return next(new AppError(`${field} '${value}' already exists. Please use a different value.`, 400));
+    }
+    
+    if (error.name === 'ValidationError') {
+      // Validation error - extract meaningful message
+      const errors = Object.values(error.errors).map(err => err.message);
+      return next(new AppError(`Validation failed: ${errors.join(', ')}`, 400));
+    }
+    
+    // Log the error for debugging but don't expose details to user
+    console.error('Blog creation error:', error);
+    return next(new AppError('Failed to create blog. Please check your input and try again.', 400));
+  }
 });
 
 // @desc    Update blog (admin)
@@ -214,52 +257,86 @@ const deleteBlog = asyncHandler(async (req, res, next) => {
 // @route   POST /api/blogs/:id/upload-image
 // @access  Private/Staff
 const uploadBlogImageHandler = asyncHandler(async (req, res, next) => {
-  const blog = await Blog.findOne({ 
-    _id: req.params.id, 
-    tenantId: req.user.tenantId 
-  });
+  try {
+    console.log('🖼️ [BLOG IMAGE] Starting image upload process...');
+    console.log('🖼️ [BLOG IMAGE] Blog ID:', req.params.id);
+    console.log('🖼️ [BLOG IMAGE] User:', req.user.email);
+    console.log('🖼️ [BLOG IMAGE] Request body:', req.body);
+    console.log('🖼️ [BLOG IMAGE] File info:', req.file ? {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    } : 'No file');
 
-  if (!blog) {
-    return next(new AppError(`Blog not found with id of ${req.params.id}`, 404));
+    const blog = await Blog.findOne({ 
+      _id: req.params.id, 
+      tenantId: req.user.tenantId 
+    });
+
+    if (!blog) {
+      console.log('🖼️ [BLOG IMAGE] Blog not found');
+      return next(new AppError(`Blog not found with id of ${req.params.id}`, 404));
+    }
+
+    if (!req.file) {
+      console.log('🖼️ [BLOG IMAGE] No file provided');
+      return next(new AppError('Please upload an image file', 400));
+    }
+
+    console.log('🖼️ [BLOG IMAGE] Uploading to Google Cloud...');
+
+    // Upload image to cloud storage
+    const uploadResult = await cloudStorage.uploadBlogImage(
+      req.file.buffer,
+      req.file.originalname,
+      req.user,
+      req.body.alt || req.body.description || ''
+    );
+
+    console.log('🖼️ [BLOG IMAGE] Upload successful! Result:', uploadResult);
+
+    const imageData = {
+      url: uploadResult.urls.large, // Use large size for featured images, medium for content
+      filename: uploadResult.filename,
+      alt: req.body.alt || '',
+      caption: req.body.caption || '',
+      uploadDate: new Date()
+    };
+
+    console.log('🖼️ [BLOG IMAGE] Image data to save:', imageData);
+
+    // Determine if this is featured image or additional image
+    if (req.body.isFeatured === 'true') {
+      console.log('🖼️ [BLOG IMAGE] Setting as featured image');
+      blog.featuredImage = imageData;
+    } else {
+      console.log('🖼️ [BLOG IMAGE] Adding to images array');
+      blog.images.push(imageData);
+    }
+
+    await blog.save();
+
+    console.log('🖼️ [BLOG IMAGE] Blog updated with image data');
+
+    res.status(200).json({
+      success: true,
+      data: {
+        ...imageData,
+        urls: uploadResult.urls // Return all sizes for flexibility
+      },
+      message: 'Image uploaded successfully'
+    });
+  } catch (error) {
+    console.error('🖼️ [BLOG IMAGE] Error during image upload:', error);
+    console.error('🖼️ [BLOG IMAGE] Error name:', error.name);
+    console.error('🖼️ [BLOG IMAGE] Error message:', error.message);
+    
+    if (error.message.includes('Failed to upload')) {
+      return next(new AppError('Failed to upload image to cloud storage. Please try again.', 500));
+    }
+    
+    return next(new AppError('Image upload failed. Please check your image and try again.', 400));
   }
-
-  if (!req.file) {
-    return next(new AppError('Please upload an image file', 400));
-  }
-
-  // Upload image to cloud storage
-  const uploadResult = await cloudStorage.uploadBlogImage(
-    req.file.buffer,
-    req.file.originalname,
-    req.user,
-    req.body.alt || req.body.description || ''
-  );
-
-  const imageData = {
-    url: uploadResult.urls.large, // Use large size for featured images, medium for content
-    filename: uploadResult.filename,
-    alt: req.body.alt || '',
-    caption: req.body.caption || '',
-    uploadDate: new Date()
-  };
-
-  // Determine if this is featured image or additional image
-  if (req.body.isFeatured === 'true') {
-    blog.featuredImage = imageData;
-  } else {
-    blog.images.push(imageData);
-  }
-
-  await blog.save();
-
-  res.status(200).json({
-    success: true,
-    data: {
-      ...imageData,
-      urls: uploadResult.urls // Return all sizes for flexibility
-    },
-    message: 'Image uploaded successfully'
-  });
 });
 
 // @desc    Publish/unpublish blog (admin)

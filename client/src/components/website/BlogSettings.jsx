@@ -103,6 +103,7 @@ const BlogSettings = () => {
 
   const [newTag, setNewTag] = useState('');
   const [newKeyword, setNewKeyword] = useState('');
+  const [selectedImageFile, setSelectedImageFile] = useState(null); // Add this to store selected image file
 
   // API hooks
   const { data: blogsData, isLoading, refetch } = useGetBlogsQuery({
@@ -173,6 +174,14 @@ const BlogSettings = () => {
   }, [blogData.title, blogData.excerpt]);
 
   const handleOpenBlogDialog = (blog = null) => {
+    // Clean up any existing preview URL
+    if (selectedImageFile) {
+      setSelectedImageFile(null);
+    }
+    if (blogData.featuredImage?.isPreview) {
+      URL.revokeObjectURL(blogData.featuredImage.url);
+    }
+
     if (blog) {
       setSelectedBlog(blog);
       setBlogData({
@@ -210,21 +219,51 @@ const BlogSettings = () => {
   };
 
   const handleCloseBlogDialog = () => {
+    // Clean up preview URL if it exists
+    if (blogData.featuredImage?.isPreview) {
+      URL.revokeObjectURL(blogData.featuredImage.url);
+    }
+    
     setBlogDialogOpen(false);
     setSelectedBlog(null);
+    setSelectedImageFile(null);
     setNewTag('');
     setNewKeyword('');
   };
 
   const handleSaveBlog = async () => {
     try {
+      let savedBlog;
+      
       if (selectedBlog) {
-        await updateBlog({ id: selectedBlog._id, ...blogData }).unwrap();
+        // Updating existing blog
+        savedBlog = await updateBlog({ id: selectedBlog._id, ...blogData }).unwrap();
         setAlert({ type: 'success', message: 'Blog bol úspešne aktualizovaný!' });
       } else {
-        await createBlog(blogData).unwrap();
+        // Creating new blog
+        savedBlog = await createBlog(blogData).unwrap();
         setAlert({ type: 'success', message: 'Blog bol úspešne vytvorený!' });
       }
+      
+      // If there's a selected image file and we have a blog ID, upload it
+      if (selectedImageFile && savedBlog.data) {
+        try {
+          const formData = new FormData();
+          formData.append('image', selectedImageFile);
+          formData.append('isFeatured', 'true');
+          formData.append('alt', `Obrázok pre ${blogData.title}`);
+          
+          await uploadBlogImage({ id: savedBlog.data._id, formData }).unwrap();
+          setAlert({ type: 'success', message: 'Blog a obrázok boli úspešne uložené!' });
+        } catch (imageError) {
+          console.error('Error uploading image:', imageError);
+          setAlert({ 
+            type: 'warning', 
+            message: 'Blog bol uložený, ale pri nahrávaní obrázka došlo k chybe. Môžete ho pridať neskôr.' 
+          });
+        }
+      }
+      
       handleCloseBlogDialog();
       refetch();
     } catch (error) {
@@ -269,24 +308,44 @@ const BlogSettings = () => {
 
   const handleImageUpload = async (event, isFeatured = false) => {
     const file = event.target.files[0];
-    if (!file || !selectedBlog) return;
+    if (!file) return;
 
-    const formData = new FormData();
-    formData.append('image', file);
-    formData.append('isFeatured', isFeatured.toString());
-    formData.append('alt', `Obrázok pre ${blogData.title}`);
+    // If this is an existing blog, upload immediately
+    if (selectedBlog) {
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('isFeatured', isFeatured.toString());
+      formData.append('alt', `Obrázok pre ${blogData.title}`);
 
-    try {
-      const result = await uploadBlogImage({ id: selectedBlog._id, formData }).unwrap();
-      if (isFeatured) {
-        setBlogData(prev => ({ ...prev, featuredImage: result.data }));
+      try {
+        const result = await uploadBlogImage({ id: selectedBlog._id, formData }).unwrap();
+        if (isFeatured) {
+          setBlogData(prev => ({ ...prev, featuredImage: result.data }));
+        }
+        setAlert({ type: 'success', message: 'Obrázok bol úspešne nahraný!' });
+      } catch (error) {
+        setAlert({ 
+          type: 'error', 
+          message: `Chyba pri nahrávaní obrázka: ${error.data?.message || error.message}` 
+        });
       }
-      setAlert({ type: 'success', message: 'Obrázok bol úspešne nahraný!' });
-    } catch (error) {
-      setAlert({ 
-        type: 'error', 
-        message: `Chyba pri nahrávaní obrázka: ${error.data?.message || error.message}` 
-      });
+    } else {
+      // For new blogs, just store the file to upload later
+      if (isFeatured) {
+        setSelectedImageFile(file);
+        // Create a preview URL for display
+        const previewUrl = URL.createObjectURL(file);
+        setBlogData(prev => ({ 
+          ...prev, 
+          featuredImage: { 
+            url: previewUrl, 
+            filename: file.name,
+            alt: `Obrázok pre ${blogData.title}`,
+            isPreview: true // Flag to indicate this is a preview
+          } 
+        }));
+        setAlert({ type: 'info', message: 'Obrázok bude nahraný po uložení blogu.' });
+      }
     }
   };
 
