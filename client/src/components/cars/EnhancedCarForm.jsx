@@ -639,6 +639,11 @@ const EnhancedCarForm = ({
               onChange={(e) => handleNestedChange('documentValidity.technicalInspection.expiryDate', e.target.value)}
               disabled={dialogMode === 'view'}
               InputLabelProps={{ shrink: true }}
+              helperText={
+                <a href="https://www.stkonline.sk/overenie-stk" target="_blank" rel="noopener noreferrer">
+                  Overiť STK online
+                </a>
+              }
             />
           </Grid>
 
@@ -651,6 +656,11 @@ const EnhancedCarForm = ({
               onChange={(e) => handleNestedChange('documentValidity.emissionInspection.expiryDate', e.target.value)}
               disabled={dialogMode === 'view'}
               InputLabelProps={{ shrink: true }}
+              helperText={
+                <a href="https://www.stkonline.sk/overenie-stk" target="_blank" rel="noopener noreferrer">
+                  Overiť EK online
+                </a>
+              }
             />
           </Grid>
 
