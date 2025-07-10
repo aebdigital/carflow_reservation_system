@@ -85,16 +85,12 @@ const createPaymentIntent = asyncHandler(async (req, res, next) => {
     },
     stripePaymentIntentId: paymentIntent.id,
     breakdown: {
-      subtotal: reservation.pricing?.subtotal || paymentAmount * 0.9,
+      subtotal: reservation.pricing?.subtotal || paymentAmount, // 🔧 FULL AMOUNT - No tax assumptions
       taxes: reservation.pricing?.taxes ? [{ 
         name: 'Tax', 
         rate: 0.1, 
         amount: reservation.pricing.taxes 
-      }] : [{ 
-        name: 'Tax', 
-        rate: 0.1, 
-        amount: paymentAmount * 0.1 
-      }],
+      }] : [], // 🔧 REMOVED DEFAULT TAX - No taxes applied when not in reservation
       fees: reservation.pricing?.fees || [],
       discounts: reservation.pricing?.discounts || []
     },

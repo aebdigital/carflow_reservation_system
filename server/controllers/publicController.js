@@ -653,8 +653,8 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
         console.log('🔄 [PRICING DEBUG] Fallback calculation:', `${dailyRate} × ${durationDays} = ${subtotal}`);
       }
 
-      // Calculate taxes (assuming 10% tax rate)
-      const taxes = subtotal * 0.10;
+      // 🔧 REMOVED TAX CALCULATION - No taxes added in admin
+      const taxes = 0; // No taxes applied
       
       // Initialize pricing object
       finalPricing = {
@@ -664,11 +664,11 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
         taxes: taxes,
         fees: [],
         discounts: [],
-        totalAmount: subtotal + taxes,
+        totalAmount: subtotal + taxes, // Just subtotal since taxes = 0
         source: 'backend' // Mark as backend-calculated
       };
       
-      console.log('📊 [PRICING DEBUG] Backend calculated pricing:', JSON.stringify(finalPricing, null, 2));
+      console.log('📊 [PRICING DEBUG] Backend calculated pricing (no taxes):', JSON.stringify(finalPricing, null, 2));
     }
 
     let appliedDiscountCodes = [];
@@ -755,7 +755,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       endDate: end,
       pickupLocation: defaultPickup,
       dropoffLocation: defaultDropoff,
-      status: 'pending',
+      status: 'confirmed', // 🔧 AUTO-CONFIRM: Set to confirmed instead of pending
       pricing: finalPricing, // Use calculated or frontend pricing
       appliedDiscountCodes,
       additionalDrivers: additionalDrivers || [],
@@ -813,7 +813,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: 'Reservation request submitted successfully! You will receive a confirmation email shortly.',
+      message: 'Reservation confirmed successfully! You will receive a confirmation email shortly.',
       data: {
         reservation: populatedReservation,
         customer: {
@@ -1025,9 +1025,10 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
         console.log('🔄 [PRICING DEBUG] Fallback calculation:', `${dailyRate} × ${durationDays} = ${subtotal}`);
       }
 
-      const taxes = subtotal * 0.10;
-      const totalAmount = subtotal + taxes;
-
+      // 🔧 REMOVED TAX CALCULATION - No taxes added in admin
+      const taxes = 0; // No taxes applied
+      
+      // Initialize pricing object
       finalPricing = {
         dailyRate: car.pricing?.dailyRate || car.dailyRate || 50,
         totalDays: durationDays,
@@ -1035,11 +1036,11 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
         taxes: taxes,
         fees: [],
         discounts: [],
-        totalAmount: totalAmount,
+        totalAmount: subtotal + taxes, // Just subtotal since taxes = 0
         source: 'backend' // Mark as backend-calculated
       };
       
-      console.log('📊 [PRICING DEBUG] Backend calculated pricing:', JSON.stringify(finalPricing, null, 2));
+      console.log('📊 [PRICING DEBUG] Backend calculated pricing (no taxes):', JSON.stringify(finalPricing, null, 2));
     }
 
     // Default pickup/dropoff locations if not provided
@@ -1065,7 +1066,7 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       endDate: end,
       pickupLocation: defaultPickup,
       dropoffLocation: defaultDropoff,
-      status: 'pending', // Pending approval from staff
+      status: 'confirmed', // 🔧 AUTO-CONFIRM: Set to confirmed instead of pending
       pricing: finalPricing, // Use calculated or frontend pricing
       additionalDrivers: additionalDrivers || [],
       specialRequests: specialRequests || '',
@@ -1099,7 +1100,7 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: 'Reservation request submitted successfully! You will receive a confirmation email shortly.',
+      message: 'Reservation confirmed successfully! You will receive a confirmation email shortly.',
       data: {
         reservation: populatedReservation,
         customer: {

@@ -191,7 +191,7 @@ const createReservation = asyncHandler(async (req, res, next) => {
   const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
   const dailyRate = carDoc.dailyRate;
   const subtotal = carDoc.calculateRate(days);
-  const taxes = subtotal * 0.1; // 10% tax
+  const taxes = 0; // 🔧 REMOVED TAX CALCULATION - No taxes added in admin
   
   // Initialize pricing object
   let pricing = {
@@ -200,7 +200,7 @@ const createReservation = asyncHandler(async (req, res, next) => {
     subtotal,
     taxes,
     discounts: [],
-    totalAmount: subtotal + taxes
+    totalAmount: subtotal + taxes // Just subtotal since taxes = 0
   };
 
   let appliedDiscountCodes = [];
@@ -367,7 +367,7 @@ const updateReservation = asyncHandler(async (req, res, next) => {
       const car = await Car.findById(reservation.car);
       const days = Math.ceil((newEndDate - newStartDate) / (1000 * 60 * 60 * 24));
       const subtotal = car.calculateRate(days);
-      const taxes = subtotal * 0.1;
+      const taxes = 0; // 🔧 REMOVED TAX CALCULATION - No taxes added in admin
       const totalAmount = subtotal + taxes;
 
       req.body.pricing = {
