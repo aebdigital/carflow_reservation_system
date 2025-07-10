@@ -53,6 +53,9 @@ const router = express.Router();
 router.get('/cars', getPublicCars); // Get all cars (public)
 router.get('/cars/:id', getPublicCar); // Get single car (public)
 
+// Public reservation endpoints (no authentication required)
+router.post('/reservations', createPublicReservation); // Create general public reservation
+
 // Public Additional Services endpoints (no authentication required)
 router.get('/services', getPublicServices); // Get all public additional services
 router.get('/services/vehicle/:vehicleId', getServicesForVehiclePublic); // Get services for specific vehicle
