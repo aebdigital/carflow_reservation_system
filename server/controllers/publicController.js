@@ -1811,6 +1811,316 @@ const getPublicCar = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Get car booking calendar for a specific user/tenant (public)
+// @route   GET /api/public/users/:email/cars/:carId/calendar
+// @access  Public
+const getCarCalendarByUser = asyncHandler(async (req, res, next) => {
+  const { email, carId } = req.params;
+  const { startDate, endDate, includePending } = req.query;
+  
+  // Get tenant ID from user email
+  const tenantId = await getTenantByUserEmail(email);
+  
+  const car = await Car.findOne({ 
+    _id: carId, 
+    tenantId,
+    isActive: true 
+  }).select('brand model year status tenantId');
+  
+  if (!car) {
+    return next(new AppError(`Car not found with id: ${carId}`, 404));
+  }
+  
+  // Default to next 6 months if no dates provided
+  const start = startDate ? new Date(startDate) : new Date();
+  const end = endDate ? new Date(endDate) : new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000);
+
+  // Validate date range
+  if (start >= end) {
+    return next(new AppError('End date must be after start date', 400));
+  }
+
+  // Determine which reservation statuses to include
+  const statusesToInclude = ['confirmed', 'ongoing'];
+  if (includePending === 'true') {
+    statusesToInclude.push('pending');
+  }
+
+  // Get all reservations for this car in the date range (tenant-specific)
+  const reservations = await Reservation.find({
+    car: carId,
+    tenantId,
+    status: { $in: statusesToInclude },
+    $or: [
+      {
+        startDate: { $lte: end },
+        endDate: { $gte: start }
+      }
+    ]
+  }).select('startDate endDate status reservationNumber customer')
+    .populate('customer', 'firstName lastName');
+
+  // Create calendar data with booked dates
+  const bookedDates = [];
+  const reservationDetails = [];
+  
+  reservations.forEach(reservation => {
+    const reservationStart = new Date(Math.max(reservation.startDate, start));
+    const reservationEnd = new Date(Math.min(reservation.endDate, end));
+    
+    // Add reservation summary
+    reservationDetails.push({
+      reservationNumber: reservation.reservationNumber,
+      startDate: reservation.startDate,
+      endDate: reservation.endDate,
+      status: reservation.status,
+      customerName: reservation.customer ? 
+        `${reservation.customer.firstName} ${reservation.customer.lastName}` : 
+        'Unknown Customer'
+    });
+    
+    // Generate daily entries for calendar
+    for (let d = new Date(reservationStart); d <= reservationEnd; d.setDate(d.getDate() + 1)) {
+      bookedDates.push({
+        date: new Date(d).toISOString().split('T')[0],
+        reservationNumber: reservation.reservationNumber,
+        status: reservation.status,
+        isStartDate: d.getTime() === reservation.startDate.getTime(),
+        isEndDate: d.getTime() === reservation.endDate.getTime()
+      });
+    }
+  });
+
+  // Sort booked dates chronologically
+  bookedDates.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  res.status(200).json({
+    success: true,
+    data: {
+      carId: car._id,
+      car: {
+        brand: car.brand,
+        model: car.model,
+        year: car.year,
+        status: car.status
+      },
+      isOperational: car.status === 'active',
+      calendar: {
+        startDate: start,
+        endDate: end,
+        bookedDates: bookedDates,
+        totalBookedDays: bookedDates.length,
+        uniqueReservations: reservationDetails.length
+      },
+      reservations: reservationDetails
+    }
+  });
+});
+
+// @desc    Get reserved dates for multiple cars by user/tenant (public)
+// @route   GET /api/public/users/:email/cars/reserved-dates
+// @access  Public
+const getReservedDatesByUser = asyncHandler(async (req, res, next) => {
+  const { email } = req.params;
+  const { carIds, startDate, endDate, includePending } = req.query;
+  
+  // Get tenant ID from user email
+  const tenantId = await getTenantByUserEmail(email);
+  
+  // Default to next 3 months if no dates provided
+  const start = startDate ? new Date(startDate) : new Date();
+  const end = endDate ? new Date(endDate) : new Date(Date.now() + 3 * 30 * 24 * 60 * 60 * 1000);
+
+  // Validate date range
+  if (start >= end) {
+    return next(new AppError('End date must be after start date', 400));
+  }
+
+  // Build car filter
+  let carFilter = { tenantId, isActive: true };
+  if (carIds) {
+    const carIdArray = Array.isArray(carIds) ? carIds : carIds.split(',');
+    carFilter._id = { $in: carIdArray };
+  }
+
+  // Get cars for this tenant
+  const cars = await Car.find(carFilter).select('brand model year status');
+
+  if (cars.length === 0) {
+    return res.status(200).json({
+      success: true,
+      data: {
+        cars: [],
+        reservations: [],
+        summary: {
+          totalCars: 0,
+          totalReservations: 0,
+          dateRange: { start, end }
+        }
+      }
+    });
+  }
+
+  // Determine which reservation statuses to include
+  const statusesToInclude = ['confirmed', 'ongoing'];
+  if (includePending === 'true') {
+    statusesToInclude.push('pending');
+  }
+
+  // Get all reservations for these cars in the date range
+  const reservations = await Reservation.find({
+    car: { $in: cars.map(car => car._id) },
+    tenantId,
+    status: { $in: statusesToInclude },
+    $or: [
+      {
+        startDate: { $lte: end },
+        endDate: { $gte: start }
+      }
+    ]
+  }).select('car startDate endDate status reservationNumber customer')
+    .populate('car', 'brand model year')
+    .populate('customer', 'firstName lastName')
+    .sort({ startDate: 1 });
+
+  // Group reservations by car
+  const carReservations = {};
+  cars.forEach(car => {
+    carReservations[car._id] = {
+      car: {
+        id: car._id,
+        brand: car.brand,
+        model: car.model,
+        year: car.year,
+        status: car.status
+      },
+      reservations: [],
+      bookedDays: 0
+    };
+  });
+
+  // Process reservations
+  reservations.forEach(reservation => {
+    const carId = reservation.car._id.toString();
+    if (carReservations[carId]) {
+      const reservationStart = new Date(Math.max(reservation.startDate, start));
+      const reservationEnd = new Date(Math.min(reservation.endDate, end));
+      const days = Math.ceil((reservationEnd - reservationStart) / (1000 * 60 * 60 * 24)) + 1;
+      
+      carReservations[carId].reservations.push({
+        reservationNumber: reservation.reservationNumber,
+        startDate: reservation.startDate,
+        endDate: reservation.endDate,
+        status: reservation.status,
+        customerName: reservation.customer ? 
+          `${reservation.customer.firstName} ${reservation.customer.lastName}` : 
+          'Unknown Customer',
+        daysInRange: days
+      });
+      
+      carReservations[carId].bookedDays += days;
+    }
+  });
+
+  res.status(200).json({
+    success: true,
+    data: {
+      cars: Object.values(carReservations),
+      summary: {
+        totalCars: cars.length,
+        totalReservations: reservations.length,
+        dateRange: { start, end },
+        totalBookedDays: Object.values(carReservations).reduce((sum, car) => sum + car.bookedDays, 0)
+      }
+    }
+  });
+});
+
+// @desc    Get general car calendar (public - no tenant restriction)
+// @route   GET /api/public/cars/:id/calendar  
+// @access  Public
+const getPublicCarCalendar = asyncHandler(async (req, res, next) => {
+  const car = await Car.findOne({ 
+    _id: req.params.id,
+    status: 'active',
+    isActive: true
+  }).select('brand model year status tenantId');
+
+  if (!car) {
+    return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
+  }
+
+  const { startDate, endDate, includePending } = req.query;
+  
+  // Default to next 6 months if no dates provided
+  const start = startDate ? new Date(startDate) : new Date();
+  const end = endDate ? new Date(endDate) : new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000);
+
+  // Validate date range
+  if (start >= end) {
+    return next(new AppError('End date must be after start date', 400));
+  }
+
+  // Determine which reservation statuses to include
+  const statusesToInclude = ['confirmed', 'ongoing'];
+  if (includePending === 'true') {
+    statusesToInclude.push('pending');
+  }
+
+  // Get all reservations for this car in the date range
+  const reservations = await Reservation.find({
+    car: req.params.id,
+    tenantId: car.tenantId, // Ensure tenant consistency
+    status: { $in: statusesToInclude },
+    $or: [
+      {
+        startDate: { $lte: end },
+        endDate: { $gte: start }
+      }
+    ]
+  }).select('startDate endDate status reservationNumber');
+
+  // Create calendar data
+  const bookedDates = [];
+  reservations.forEach(reservation => {
+    const reservationStart = new Date(Math.max(reservation.startDate, start));
+    const reservationEnd = new Date(Math.min(reservation.endDate, end));
+    
+    for (let d = new Date(reservationStart); d <= reservationEnd; d.setDate(d.getDate() + 1)) {
+      bookedDates.push({
+        date: new Date(d).toISOString().split('T')[0],
+        reservationNumber: reservation.reservationNumber,
+        status: reservation.status,
+        isStartDate: d.getTime() === reservation.startDate.getTime(),
+        isEndDate: d.getTime() === reservation.endDate.getTime()
+      });
+    }
+  });
+
+  // Sort booked dates chronologically
+  bookedDates.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  res.status(200).json({
+    success: true,
+    data: {
+      carId: car._id,
+      car: {
+        brand: car.brand,
+        model: car.model,
+        year: car.year,
+        status: car.status
+      },
+      isOperational: car.status === 'active',
+      calendar: {
+        startDate: start,
+        endDate: end,
+        bookedDates: bookedDates,
+        totalBookedDays: bookedDates.length
+      }
+    }
+  });
+});
+
 module.exports = {
   createPublicReservation,
   getCarsByUser,
@@ -1825,5 +2135,8 @@ module.exports = {
   subscribeToNewsletter,
   verifyDiscountCodeByUser,
   getPublicCars,
-  getPublicCar
+  getPublicCar,
+  getCarCalendarByUser,
+  getReservedDatesByUser,
+  getPublicCarCalendar
 }; 

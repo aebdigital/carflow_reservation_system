@@ -2,9 +2,9 @@
 // This script finds reservations without tenantId and assigns them to the correct tenant based on their car
 
 const mongoose = require('mongoose');
-const Car = require('./server/models/Car');
-const Reservation = require('./server/models/Reservation');
-const User = require('./server/models/User');
+const Car = require('./models/Car');
+const Reservation = require('./models/Reservation');
+const User = require('./models/User');
 require('dotenv').config();
 
 const fixOrphanedReservations = async () => {

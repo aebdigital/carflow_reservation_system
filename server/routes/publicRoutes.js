@@ -1,8 +1,7 @@
 const express = require('express');
 const {
   getCarAvailability,
-  getCarsByLocation,
-  getCarCalendar
+  getCarsByLocation
 } = require('../controllers/carController');
 
 const {
@@ -19,7 +18,10 @@ const {
   subscribeToNewsletter,
   verifyDiscountCodeByUser,
   getPublicCars,
-  getPublicCar
+  getPublicCar,
+  getCarCalendarByUser,
+  getReservedDatesByUser,
+  getPublicCarCalendar
 } = require('../controllers/publicController');
 
 // Import blog controller functions
@@ -52,6 +54,7 @@ const router = express.Router();
 // Public car browsing endpoints (no authentication required)
 router.get('/cars', getPublicCars); // Get all cars (public)
 router.get('/cars/:id', getPublicCar); // Get single car (public)
+router.get('/cars/:id/calendar', getPublicCarCalendar); // Get car calendar (public)
 
 // Public reservation endpoints (no authentication required)
 router.post('/reservations', createPublicReservation); // Create general public reservation
@@ -65,18 +68,26 @@ router.post('/services/calculate-price', calculateServicePricePublic); // Calcul
 router.get('/banners', getPublicBanners); // Get public banners
 router.get('/banners/page/:page', getPublicBanners); // Get banners by page
 
-// User/tenant-specific endpoints (public access but filtered by tenant)
-router.get('/users/:email/cars', getCarsByUser);
-router.get('/users/:email/cars/:carId', getCarByUser);
-router.get('/users/:email/cars/:carId/availability', getCarAvailabilityByUser);
-router.get('/users/:email/cars/category/:category', getCarsByCategoryAndUser);
-router.get('/users/:email/features', getAvailableFeaturesByUser);
-router.post('/users/:email/reservations', createReservationByUser);
-router.get('/users/:email/website-settings', getWebsiteSettingsByUser);
-router.get('/users/:email/info-bar', getInfoBarByUser);
-router.get('/users/:email/modal', getModalByUser);
-router.post('/users/:email/newsletter', subscribeToNewsletter);
-router.post('/users/:email/verify-discount', verifyDiscountCodeByUser);
+// Tenant-specific endpoints (identified by user email)
+router.get('/users/:email/cars', getCarsByUser); // Get cars for tenant
+router.get('/users/:email/cars/:carId', getCarByUser); // Get single car for tenant
+router.get('/users/:email/cars/:carId/availability', getCarAvailabilityByUser); // Check car availability
+router.get('/users/:email/cars/:carId/calendar', getCarCalendarByUser); // Get car booking calendar
+router.get('/users/:email/cars/category/:category', getCarsByCategoryAndUser); // Get cars by category
+router.get('/users/:email/cars/reserved-dates', getReservedDatesByUser); // Get reserved dates for multiple cars
+router.get('/users/:email/features', getAvailableFeaturesByUser); // Get available features
+
+// Reservation endpoints
+router.post('/users/:email/reservations', createReservationByUser); // Create reservation for tenant
+
+// Website settings endpoints
+router.get('/users/:email/website-settings', getWebsiteSettingsByUser); // Get website settings
+router.get('/users/:email/info-bar', getInfoBarByUser); // Get active info bar
+router.get('/users/:email/modal', getModalByUser); // Get active modal
+
+// Newsletter and discount endpoints
+router.post('/users/:email/newsletter', subscribeToNewsletter); // Subscribe to newsletter
+router.post('/users/:email/verify-discount', verifyDiscountCodeByUser); // Verify discount code
 
 // Blog endpoints (public)
 router.get('/users/:email/blogs', getPublicBlogsByUser);
@@ -98,6 +109,5 @@ router.get('/users/:email/banners/page/:page', getPublicBannersByUser);
 // Availability check endpoint (utility)
 router.get('/availability', getCarAvailability);
 router.get('/cars/location/:location', getCarsByLocation);
-router.get('/cars/:id/calendar', getCarCalendar);
 
 module.exports = router; 
