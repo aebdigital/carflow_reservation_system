@@ -837,6 +837,12 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     return next(new AppError('Car is not available for booking', 400));
   }
 
+  // 🔧 FIX: Get tenantId from the car to ensure proper assignment
+  const tenantId = car.tenantId;
+  if (!tenantId) {
+    return next(new AppError('Car has no associated tenant', 400));
+  }
+
   // Validate dates
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -850,18 +856,39 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     return next(new AppError('End date must be after start date', 400));
   }
 
-  // Check for overlapping reservations
-  const overlappingReservations = await Reservation.findOverlapping(carId, start, end);
+  // Check for overlapping reservations within the same tenant
+  const overlappingReservations = await Reservation.find({
+    car: carId,
+    tenantId,
+    status: { $in: ['confirmed', 'ongoing', 'pending'] },
+    $or: [
+      {
+        startDate: { $lte: start },
+        endDate: { $gte: start }
+      },
+      {
+        startDate: { $lte: end },
+        endDate: { $gte: end }
+      },
+      {
+        startDate: { $gte: start },
+        endDate: { $lte: end }
+      }
+    ]
+  });
   if (overlappingReservations.length > 0) {
     return next(new AppError('Car is not available for the selected dates', 400));
   }
 
   try {
-    // Check if user already exists
-    let customer = await User.findOne({ email: email.toLowerCase() });
+    // Check if user already exists for this tenant
+    let customer = await User.findOne({ 
+      email: email.toLowerCase(),
+      tenantId 
+    });
 
     if (!customer) {
-      // Create new customer
+      // Create new customer with tenantId
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash('customer123', salt); // Default password
 
@@ -882,7 +909,8 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
         licenseNumber,
         licenseExpiry: licenseExpiry ? new Date(licenseExpiry) : undefined,
         role: 'customer',
-        isActive: true
+        isActive: true,
+        tenantId // 🔧 FIX: Assign tenantId to customer
       });
     } else {
       // Update existing customer with new information if provided
@@ -939,6 +967,7 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     const reservation = await Reservation.create({
       customer: customer._id,
       car: carId,
+      tenantId, // 🔧 FIX: Assign tenantId to reservation
       startDate: start,
       endDate: end,
       pickupLocation: defaultPickup,
