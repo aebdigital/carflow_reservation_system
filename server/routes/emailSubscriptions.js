@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
-const auth = require('../middleware/auth');
+const { protect } = require('../middleware/authMiddleware');
 const emailSubscriptionController = require('../controllers/emailSubscriptionController');
 
 // Validation middleware
@@ -34,31 +34,31 @@ const validatePublicSubscription = [
 // === ADMIN ROUTES (require authentication) ===
 
 // GET /api/email-subscriptions - Get all email subscriptions
-router.get('/', auth, emailSubscriptionController.getEmailSubscriptions);
+router.get('/', protect, emailSubscriptionController.getEmailSubscriptions);
 
 // GET /api/email-subscriptions/stats - Get email subscription statistics
-router.get('/stats', auth, emailSubscriptionController.getEmailSubscriptionStats);
+router.get('/stats', protect, emailSubscriptionController.getEmailSubscriptionStats);
 
 // GET /api/email-subscriptions/export - Export email subscriptions to CSV
-router.get('/export', auth, emailSubscriptionController.exportEmailSubscriptions);
+router.get('/export', protect, emailSubscriptionController.exportEmailSubscriptions);
 
 // GET /api/email-subscriptions/:id - Get single email subscription
-router.get('/:id', auth, emailSubscriptionController.getEmailSubscription);
+router.get('/:id', protect, emailSubscriptionController.getEmailSubscription);
 
 // POST /api/email-subscriptions - Create new email subscription
-router.post('/', auth, validateEmailSubscription, emailSubscriptionController.createEmailSubscription);
+router.post('/', protect, validateEmailSubscription, emailSubscriptionController.createEmailSubscription);
 
 // PUT /api/email-subscriptions/:id - Update email subscription
-router.put('/:id', auth, validateEmailSubscription, emailSubscriptionController.updateEmailSubscription);
+router.put('/:id', protect, validateEmailSubscription, emailSubscriptionController.updateEmailSubscription);
 
 // POST /api/email-subscriptions/:id/toggle - Toggle active/inactive status
-router.post('/:id/toggle', auth, emailSubscriptionController.toggleEmailSubscription);
+router.post('/:id/toggle', protect, emailSubscriptionController.toggleEmailSubscription);
 
 // DELETE /api/email-subscriptions/:id - Delete email subscription
-router.delete('/:id', auth, emailSubscriptionController.deleteEmailSubscription);
+router.delete('/:id', protect, emailSubscriptionController.deleteEmailSubscription);
 
 // POST /api/email-subscriptions/bulk-import - Bulk import emails from CSV
-router.post('/bulk-import', auth, emailSubscriptionController.bulkImportEmails);
+router.post('/bulk-import', protect, emailSubscriptionController.bulkImportEmails);
 
 // === PUBLIC ROUTES (no authentication required) ===
 
