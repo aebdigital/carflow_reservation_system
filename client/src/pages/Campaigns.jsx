@@ -25,6 +25,11 @@ import {
   IconButton,
   Chip,
   Alert,
+  Tabs,
+  Tab,
+  Switch,
+  FormControlLabel,
+  Tooltip
 } from '@mui/material'
 import {
   Add as AddIcon,
@@ -33,18 +38,56 @@ import {
   Send as SendIcon,
   Schedule as ScheduleIcon,
   Visibility as ViewIcon,
+  Email as EmailIcon,
+  Download as DownloadIcon,
+  Upload as UploadIcon,
+  Block as BlockIcon,
+  CheckCircle as CheckCircleIcon,
+  Schedule as ScheduleIcon2
 } from '@mui/icons-material'
 import { t } from '../utils/translations'
 
+function TabPanel({ children, value, index, ...other }) {
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`campaigns-tabpanel-${index}`}
+      aria-labelledby={`campaigns-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ p: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  )
+}
+
 function Campaigns() {
+  const [tabValue, setTabValue] = useState(0)
   const [openDialog, setOpenDialog] = useState(false)
+  const [openEmailDialog, setOpenEmailDialog] = useState(false)
   const [dialogMode, setDialogMode] = useState('create') // 'create', 'edit', 'view'
+  const [emailDialogMode, setEmailDialogMode] = useState('create') // 'create', 'edit', 'view'
+  const [selectedEmail, setSelectedEmail] = useState(null)
   const [formData, setFormData] = useState({
     name: '',
     subject: '',
     content: '',
     targetCustomers: 'all',
     scheduledDate: '',
+  })
+  const [emailFormData, setEmailFormData] = useState({
+    email: '',
+    firstName: '',
+    lastName: '',
+    phone: '',
+    source: 'manual',
+    tags: [],
+    isActive: true,
+    notes: ''
   })
 
   // Mock data for campaigns
@@ -77,6 +120,49 @@ function Campaigns() {
     },
   ]
 
+  // Mock data for email database
+  const emailSubscriptions = [
+    {
+      id: 1,
+      email: 'john.doe@example.com',
+      firstName: 'John',
+      lastName: 'Doe',
+      phone: '+421123456789',
+      source: 'website',
+      tags: ['customer', 'premium'],
+      isActive: true,
+      subscribedDate: '2024-01-15',
+      lastEmailDate: '2024-06-15',
+      notes: 'VIP zákazník'
+    },
+    {
+      id: 2,
+      email: 'jane.smith@example.com',
+      firstName: 'Jane',
+      lastName: 'Smith',
+      phone: '+421987654321',
+      source: 'newsletter',
+      tags: ['newsletter'],
+      isActive: true,
+      subscribedDate: '2024-02-10',
+      lastEmailDate: '2024-06-10',
+      notes: ''
+    },
+    {
+      id: 3,
+      email: 'inactive@example.com',
+      firstName: 'Inactive',
+      lastName: 'User',
+      phone: '',
+      source: 'manual',
+      tags: ['old-customer'],
+      isActive: false,
+      subscribedDate: '2024-01-01',
+      lastEmailDate: '2024-03-01',
+      notes: 'Už nie je zákazník'
+    }
+  ]
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'sent': return 'success'
@@ -92,6 +178,26 @@ function Campaigns() {
       case 'scheduled': return t('scheduled')
       case 'draft': return t('draft')
       default: return status
+    }
+  }
+
+  const getSourceColor = (source) => {
+    switch (source) {
+      case 'website': return 'primary'
+      case 'newsletter': return 'secondary'
+      case 'manual': return 'default'
+      case 'import': return 'info'
+      default: return 'default'
+    }
+  }
+
+  const getSourceText = (source) => {
+    switch (source) {
+      case 'website': return 'Webstránka'
+      case 'newsletter': return 'Newsletter'
+      case 'manual': return 'Manuálne'
+      case 'import': return 'Import'
+      default: return source
     }
   }
 
@@ -128,11 +234,69 @@ function Campaigns() {
     })
   }
 
+  const handleOpenEmailDialog = (mode, email = null) => {
+    setEmailDialogMode(mode)
+    setSelectedEmail(email)
+    if (email) {
+      setEmailFormData({
+        email: email.email || '',
+        firstName: email.firstName || '',
+        lastName: email.lastName || '',
+        phone: email.phone || '',
+        source: email.source || 'manual',
+        tags: email.tags || [],
+        isActive: email.isActive !== undefined ? email.isActive : true,
+        notes: email.notes || ''
+      })
+    } else {
+      setEmailFormData({
+        email: '',
+        firstName: '',
+        lastName: '',
+        phone: '',
+        source: 'manual',
+        tags: [],
+        isActive: true,
+        notes: ''
+      })
+    }
+    setOpenEmailDialog(true)
+  }
+
+  const handleCloseEmailDialog = () => {
+    setOpenEmailDialog(false)
+    setSelectedEmail(null)
+    setEmailFormData({
+      email: '',
+      firstName: '',
+      lastName: '',
+      phone: '',
+      source: 'manual',
+      tags: [],
+      isActive: true,
+      notes: ''
+    })
+  }
+
   const handleSubmit = () => {
     // Here you would implement the campaign creation/update logic
     console.log('Campaign data:', formData)
     handleCloseDialog()
   }
+
+  const handleEmailSubmit = () => {
+    // Here you would implement the email subscription creation/update logic
+    console.log('Email subscription data:', emailFormData)
+    handleCloseEmailDialog()
+  }
+
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue)
+  }
+
+  const getActiveEmails = () => emailSubscriptions.filter(email => email.isActive)
+  const getInactiveEmails = () => emailSubscriptions.filter(email => !email.isActive)
+  const getEmailsBySource = (source) => emailSubscriptions.filter(email => email.source === source)
 
   return (
     <Box>
@@ -150,142 +314,324 @@ function Campaigns() {
             {t('emailCampaigns')}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Vytvárajte a spravujte e-mailové kampane pre vašich zákazníkov.
+            Vytvárajte e-mailové kampane a spravujte databázu emailov pre marketing.
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog('create')}
-          sx={{ 
-            borderRadius: 2,
-            alignSelf: { xs: 'flex-start', sm: 'auto' },
-            mt: { xs: 1, sm: 0 }
-          }}
-        >
-          {t('createCampaign')}
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {tabValue === 0 && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => handleOpenDialog('create')}
+              sx={{ borderRadius: 2 }}
+            >
+              {t('createCampaign')}
+            </Button>
+          )}
+          {tabValue === 1 && (
+            <Button
+              variant="contained"
+              startIcon={<EmailIcon />}
+              onClick={() => handleOpenEmailDialog('create')}
+              sx={{ borderRadius: 2 }}
+            >
+              Pridať email
+            </Button>
+          )}
+        </Box>
       </Box>
 
-      {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4, ml: 0 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                {campaigns.length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Celkový počet kampaní
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.main' }}>
-                {campaigns.filter(c => c.status === 'sent').length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Odoslané kampane
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                {campaigns.filter(c => c.status === 'scheduled').length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Naplánované kampane
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'warning.main' }}>
-                {campaigns.filter(c => c.status === 'draft').length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Koncepty
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      {/* Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={tabValue} onChange={handleTabChange} aria-label="campaigns tabs">
+          <Tab label={`E-mailové kampane (${campaigns.length})`} />
+          <Tab label={`Databáza emailov (${emailSubscriptions.length})`} />
+        </Tabs>
+      </Box>
 
-      {/* Integration Notice */}
-      <Alert severity="info" sx={{ mb: 3 }}>
-        💡 Integrácia so SendGrid bude pridaná neskôr pre odosielanie hromadných e-mailov.
-      </Alert>
+      {/* Tab 1: Email Campaigns */}
+      <TabPanel value={tabValue} index={0}>
+        {/* Stats Cards */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                  {campaigns.length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Celkový počet kampaní
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.main' }}>
+                  {campaigns.filter(c => c.status === 'sent').length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Odoslané kampane
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                  {campaigns.filter(c => c.status === 'scheduled').length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Naplánované kampane
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: 'warning.main' }}>
+                  {campaigns.filter(c => c.status === 'draft').length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Koncepty
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
 
-      {/* Campaigns Table */}
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-            {t('campaigns')}
-          </Typography>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>{t('campaignName')}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{t('campaignSubject')}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{t('targetCustomers')}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{t('campaignStatus')}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Príjemcovia</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Dátum</TableCell>
-                  <TableCell></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {campaigns.map((campaign) => (
-                  <TableRow key={campaign.id}>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {campaign.name}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>{campaign.subject}</TableCell>
-                    <TableCell>
-                      {campaign.targetCustomers === 'all' ? t('allCustomers') : t('activeCustomersOnly')}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={getStatusText(campaign.status)}
-                        size="small"
-                        color={getStatusColor(campaign.status)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {campaign.recipientCount > 0 ? campaign.recipientCount : '—'}
-                    </TableCell>
-                    <TableCell>
-                      {campaign.sentDate || campaign.scheduledDate || '—'}
-                    </TableCell>
-                    <TableCell>
-                      <IconButton size="small" onClick={() => handleOpenDialog('view', campaign)}>
-                        <ViewIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small" onClick={() => handleOpenDialog('edit', campaign)}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small" color="error">
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </TableCell>
+        {/* Integration Notice */}
+        <Alert severity="info" sx={{ mb: 3 }}>
+          💡 Integrácia so SendGrid bude pridaná neskôr pre odosielanie hromadných e-mailov.
+        </Alert>
+
+        {/* Campaigns Table */}
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+              {t('campaigns')}
+            </Typography>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600 }}>{t('campaignName')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{t('campaignSubject')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{t('targetCustomers')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{t('campaignStatus')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Príjemcovia</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Dátum</TableCell>
+                    <TableCell></TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
+                </TableHead>
+                <TableBody>
+                  {campaigns.map((campaign) => (
+                    <TableRow key={campaign.id}>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {campaign.name}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{campaign.subject}</TableCell>
+                      <TableCell>
+                        {campaign.targetCustomers === 'all' ? t('allCustomers') : t('activeCustomersOnly')}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={getStatusText(campaign.status)}
+                          size="small"
+                          color={getStatusColor(campaign.status)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {campaign.recipientCount > 0 ? campaign.recipientCount : '—'}
+                      </TableCell>
+                      <TableCell>
+                        {campaign.sentDate || campaign.scheduledDate || '—'}
+                      </TableCell>
+                      <TableCell>
+                        <IconButton size="small" onClick={() => handleOpenDialog('view', campaign)}>
+                          <ViewIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton size="small" onClick={() => handleOpenDialog('edit', campaign)}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton size="small" color="error">
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      </TabPanel>
+
+      {/* Tab 2: Email Database */}
+      <TabPanel value={tabValue} index={1}>
+        {/* Email Stats Cards */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                  {emailSubscriptions.length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Celkový počet emailov
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.main' }}>
+                  {getActiveEmails().length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Aktívne odberateľky
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: 'info.main' }}>
+                  {getEmailsBySource('website').length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Z webstránky
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: 'secondary.main' }}>
+                  {getEmailsBySource('newsletter').length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Newsletter
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Action Buttons */}
+        <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+          <Button
+            variant="outlined"
+            startIcon={<UploadIcon />}
+            onClick={() => {
+              // Handle CSV import
+              console.log('Import CSV')
+            }}
+          >
+            Importovať CSV
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<DownloadIcon />}
+            onClick={() => {
+              // Handle export
+              console.log('Export emails')
+            }}
+          >
+            Exportovať
+          </Button>
+        </Box>
+
+        {/* Email Database Table */}
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+              Databáza emailov
+            </Typography>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Meno</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Telefón</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Zdroj</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Značky</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Stav</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Dátum registrácie</TableCell>
+                    <TableCell></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {emailSubscriptions.map((email) => (
+                    <TableRow key={email.id}>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {email.email}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {email.firstName} {email.lastName}
+                      </TableCell>
+                      <TableCell>{email.phone || '—'}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={getSourceText(email.source)}
+                          size="small"
+                          color={getSourceColor(email.source)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                          {email.tags.map((tag, index) => (
+                            <Chip key={index} label={tag} size="small" variant="outlined" />
+                          ))}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={email.isActive ? 'Aktívny' : 'Neaktívny'}
+                          size="small"
+                          color={email.isActive ? 'success' : 'error'}
+                          icon={email.isActive ? <CheckCircleIcon /> : <BlockIcon />}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {new Date(email.subscribedDate).toLocaleDateString('sk-SK')}
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip title="Zobraziť">
+                          <IconButton size="small" onClick={() => handleOpenEmailDialog('view', email)}>
+                            <ViewIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Upraviť">
+                          <IconButton size="small" onClick={() => handleOpenEmailDialog('edit', email)}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Deaktivovať">
+                          <IconButton size="small" color="error">
+                            <BlockIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      </TabPanel>
 
       {/* Campaign Dialog */}
       <Dialog 
@@ -381,6 +727,131 @@ function Campaigns() {
                 {dialogMode === 'create' ? t('sendCampaign') : t('save')}
               </Button>
             </>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Email Dialog */}
+      <Dialog 
+        open={openEmailDialog} 
+        onClose={handleCloseEmailDialog}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          {emailDialogMode === 'create' && 'Pridať email'}
+          {emailDialogMode === 'edit' && 'Upraviť email'}
+          {emailDialogMode === 'view' && 'Zobraziť email'}
+        </DialogTitle>
+        
+        <DialogContent sx={{ pt: 3 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Email adresa *"
+                type="email"
+                value={emailFormData.email}
+                onChange={(e) => setEmailFormData({ ...emailFormData, email: e.target.value })}
+                disabled={emailDialogMode === 'view'}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Meno"
+                value={emailFormData.firstName}
+                onChange={(e) => setEmailFormData({ ...emailFormData, firstName: e.target.value })}
+                disabled={emailDialogMode === 'view'}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Priezvisko"
+                value={emailFormData.lastName}
+                onChange={(e) => setEmailFormData({ ...emailFormData, lastName: e.target.value })}
+                disabled={emailDialogMode === 'view'}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Telefón"
+                value={emailFormData.phone}
+                onChange={(e) => setEmailFormData({ ...emailFormData, phone: e.target.value })}
+                disabled={emailDialogMode === 'view'}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Zdroj</InputLabel>
+                <Select
+                  value={emailFormData.source}
+                  onChange={(e) => setEmailFormData({ ...emailFormData, source: e.target.value })}
+                  disabled={emailDialogMode === 'view'}
+                  label="Zdroj"
+                >
+                  <MenuItem value="website">Webstránka</MenuItem>
+                  <MenuItem value="newsletter">Newsletter</MenuItem>
+                  <MenuItem value="manual">Manuálne</MenuItem>
+                  <MenuItem value="import">Import</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Značky (oddelené čiarkou)"
+                value={emailFormData.tags.join(', ')}
+                onChange={(e) => setEmailFormData({ 
+                  ...emailFormData, 
+                  tags: e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag) 
+                })}
+                disabled={emailDialogMode === 'view'}
+                placeholder="customer, premium, newsletter"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={emailFormData.isActive}
+                    onChange={(e) => setEmailFormData({ ...emailFormData, isActive: e.target.checked })}
+                    disabled={emailDialogMode === 'view'}
+                  />
+                }
+                label="Aktívny odberateľ"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Poznámky"
+                multiline
+                rows={3}
+                value={emailFormData.notes}
+                onChange={(e) => setEmailFormData({ ...emailFormData, notes: e.target.value })}
+                disabled={emailDialogMode === 'view'}
+                placeholder="Dodatočné informácie o odberateľovi..."
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        
+        <DialogActions sx={{ p: 3 }}>
+          <Button onClick={handleCloseEmailDialog}>
+            Zrušiť
+          </Button>
+          {emailDialogMode !== 'view' && (
+            <Button 
+              variant="contained" 
+              onClick={handleEmailSubmit}
+              startIcon={<EmailIcon />}
+            >
+              {emailDialogMode === 'create' ? 'Pridať email' : 'Uložiť zmeny'}
+            </Button>
           )}
         </DialogActions>
       </Dialog>

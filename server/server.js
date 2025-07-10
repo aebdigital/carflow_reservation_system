@@ -22,6 +22,7 @@ const bannerRoutes = require('./routes/banners');
 const emailRoutes = require('./routes/emailRoutes');
 const contractRoutes = require('./routes/contractRoutes');
 const blogRoutes = require('./routes/blogRoutes');
+const emailSubscriptionRoutes = require('./routes/emailSubscriptions');
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
@@ -149,6 +150,7 @@ app.use('/api/emails', emailRoutes);
 app.use('/api/send-email', emailRoutes); // Direct endpoint for frontend compatibility
 app.use('/api/contracts', contractRoutes);
 app.use('/api/blogs', blogRoutes);
+app.use('/api/email-subscriptions', emailSubscriptionRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
