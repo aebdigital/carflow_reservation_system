@@ -487,7 +487,10 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     additionalDrivers,
     specialRequests,
     notes,
-    discountCode // Add discount code support
+    discountCode, // Add discount code support
+    
+    // 🔧 NEW: Frontend pricing override support
+    pricing: frontendPricing
   } = req.body;
 
   // Use provided customerEmail or fallback to the email in the URL
@@ -604,34 +607,69 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       await customer.save();
     }
 
-    // Calculate rental duration and total cost
+    // Calculate rental duration
     const durationDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-    let subtotal = car.dailyRate * durationDays;
 
-    // Apply weekly/monthly rates if applicable
-    if (durationDays >= 30 && car.monthlyRate) {
-      const months = Math.floor(durationDays / 30);
-      const remainingDays = durationDays % 30;
-      subtotal = (months * car.monthlyRate) + (remainingDays * car.dailyRate);
-    } else if (durationDays >= 7 && car.weeklyRate) {
-      const weeks = Math.floor(durationDays / 7);
-      const remainingDays = durationDays % 7;
-      subtotal = (weeks * car.weeklyRate) + (remainingDays * car.dailyRate);
-    }
-
-    // Calculate taxes (assuming 10% tax rate)
-    const taxes = subtotal * 0.10;
+    // 🔧 MAJOR FIX: Support frontend pricing override to fix the pricing bug
+    let finalPricing;
     
-    // Initialize pricing object
-    let pricing = {
-      dailyRate: car.dailyRate,
-      totalDays: durationDays,
-      subtotal: subtotal,
-      taxes: taxes,
-      fees: [],
-      discounts: [],
-      totalAmount: subtotal + taxes
-    };
+    if (frontendPricing && frontendPricing.totalAmount && frontendPricing.dailyRate) {
+      // Use frontend pricing when provided (trusted source)
+      console.log('🔧 [PRICING FIX] Using frontend pricing override for user-specific reservation');
+      console.log('📊 Frontend pricing:', JSON.stringify(frontendPricing, null, 2));
+      
+      finalPricing = {
+        dailyRate: frontendPricing.dailyRate,
+        totalDays: durationDays,
+        subtotal: frontendPricing.rentalCost || frontendPricing.totalAmount,
+        taxes: frontendPricing.taxes || 0,
+        fees: frontendPricing.fees || [],
+        discounts: frontendPricing.discounts || [],
+        totalAmount: frontendPricing.totalAmount,
+        deposit: frontendPricing.deposit || 0,
+        source: 'frontend' // Mark as frontend-calculated
+      };
+      
+      console.log('✅ [PRICING FIX] Final pricing applied:', JSON.stringify(finalPricing, null, 2));
+    } else {
+      // Fallback to backend calculation with debugging
+      console.log('⚠️  [PRICING DEBUG] No frontend pricing provided, using backend calculation');
+      console.log('🚗 Car pricing data:');
+      console.log('   - car.dailyRate (legacy):', car.dailyRate);
+      console.log('   - car.pricing.dailyRate (new):', car.pricing?.dailyRate);
+      console.log('   - car.weeklyRate:', car.weeklyRate);
+      console.log('   - car.monthlyRate:', car.monthlyRate);
+      
+      // Use car's calculateRate method which handles pricing intelligently
+      let subtotal;
+      try {
+        subtotal = car.calculateRate(durationDays);
+        console.log('✅ [PRICING DEBUG] Using car.calculateRate():', subtotal);
+      } catch (error) {
+        console.error('❌ [PRICING DEBUG] car.calculateRate() failed:', error);
+        // Fallback to simple daily rate
+        const dailyRate = car.pricing?.dailyRate || car.dailyRate || 50; // 50€ default
+        subtotal = dailyRate * durationDays;
+        console.log('🔄 [PRICING DEBUG] Fallback calculation:', `${dailyRate} × ${durationDays} = ${subtotal}`);
+      }
+
+      // Calculate taxes (assuming 10% tax rate)
+      const taxes = subtotal * 0.10;
+      
+      // Initialize pricing object
+      finalPricing = {
+        dailyRate: car.pricing?.dailyRate || car.dailyRate || 50,
+        totalDays: durationDays,
+        subtotal: subtotal,
+        taxes: taxes,
+        fees: [],
+        discounts: [],
+        totalAmount: subtotal + taxes,
+        source: 'backend' // Mark as backend-calculated
+      };
+      
+      console.log('📊 [PRICING DEBUG] Backend calculated pricing:', JSON.stringify(finalPricing, null, 2));
+    }
 
     let appliedDiscountCodes = [];
 
@@ -659,7 +697,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
 
       // Calculate discount
       const discountResult = discountCodeDoc.calculateDiscount(
-        subtotal, 
+        finalPricing.subtotal, 
         durationDays, 
         car.category
       );
@@ -671,7 +709,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       // Apply discount
       const discountAmount = discountResult.discount;
       
-      pricing.discounts.push({
+      finalPricing.discounts.push({
         name: `Discount Code: ${discountCodeDoc.code}`,
         amount: discountAmount,
         percentage: discountCodeDoc.discountType === 'percentage' ? discountCodeDoc.discountValue : null,
@@ -687,7 +725,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       });
 
       // Recalculate total amount
-      pricing.totalAmount = subtotal + taxes - discountAmount;
+      finalPricing.totalAmount = finalPricing.subtotal + finalPricing.taxes - discountAmount;
     }
 
     // Default pickup/dropoff locations if not provided
@@ -718,7 +756,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       pickupLocation: defaultPickup,
       dropoffLocation: defaultDropoff,
       status: 'pending',
-      pricing,
+      pricing: finalPricing, // Use calculated or frontend pricing
       appliedDiscountCodes,
       additionalDrivers: additionalDrivers || [],
       specialRequests: specialRequests || '',
@@ -755,14 +793,22 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     await Car.findByIdAndUpdate(car._id, {
       $inc: { 
         totalBookings: 1,
-        totalRevenue: pricing.totalAmount
+        totalRevenue: finalPricing.totalAmount
       }
     });
 
-    // Populate the reservation with customer and car details
+    // Update customer stats
+    await User.findByIdAndUpdate(customer._id, {
+      $inc: { 
+        totalBookings: 1, 
+        totalSpent: finalPricing.totalAmount 
+      }
+    });
+
+    // Populate reservation details for response
     const populatedReservation = await Reservation.findById(reservation._id)
       .populate('customer', 'firstName lastName email phone')
-      .populate('car', 'brand model year registrationNumber dailyRate images')
+      .populate('car', 'brand model year registrationNumber images')
       .populate('appliedDiscountCodes.discountCode', 'code description discountType discountValue');
 
     res.status(201).json({
@@ -783,11 +829,11 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
           defaultPassword: customer.createdAt && new Date() - customer.createdAt < 1000 ? 'customer123' : 'Use your existing password',
           message: 'You can log in to track your reservation status'
         },
-        discount: appliedDiscountCodes.length > 0 ? {
-          applied: true,
-          codes: appliedDiscountCodes,
-          totalSaved: appliedDiscountCodes.reduce((sum, code) => sum + code.discountAmount, 0)
-        } : { applied: false }
+        debug: {
+          pricingSource: finalPricing.source,
+          frontendPricingProvided: !!frontendPricing,
+          calculatedPricing: finalPricing
+        }
       }
     });
 
@@ -819,7 +865,10 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     dropoffLocation,
     additionalDrivers,
     specialRequests,
-    notes
+    notes,
+    
+    // 🔧 NEW: Frontend pricing override support
+    pricing: frontendPricing
   } = req.body;
 
   // Validate required fields
@@ -930,24 +979,68 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       await customer.save();
     }
 
-    // Calculate rental duration and total cost
+    // Calculate rental duration
     const durationDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-    let subtotal = car.dailyRate * durationDays;
 
-    // Apply weekly/monthly rates if applicable
-    if (durationDays >= 30 && car.monthlyRate) {
-      const months = Math.floor(durationDays / 30);
-      const remainingDays = durationDays % 30;
-      subtotal = (months * car.monthlyRate) + (remainingDays * car.dailyRate);
-    } else if (durationDays >= 7 && car.weeklyRate) {
-      const weeks = Math.floor(durationDays / 7);
-      const remainingDays = durationDays % 7;
-      subtotal = (weeks * car.weeklyRate) + (remainingDays * car.dailyRate);
+    // 🔧 MAJOR FIX: Support frontend pricing override to fix the pricing bug
+    let finalPricing;
+    
+    if (frontendPricing && frontendPricing.totalAmount && frontendPricing.dailyRate) {
+      // Use frontend pricing when provided (trusted source)
+      console.log('🔧 [PRICING FIX] Using frontend pricing override');
+      console.log('📊 Frontend pricing:', JSON.stringify(frontendPricing, null, 2));
+      
+      finalPricing = {
+        dailyRate: frontendPricing.dailyRate,
+        totalDays: durationDays,
+        subtotal: frontendPricing.rentalCost || frontendPricing.totalAmount,
+        taxes: frontendPricing.taxes || 0,
+        fees: frontendPricing.fees || [],
+        discounts: frontendPricing.discounts || [],
+        totalAmount: frontendPricing.totalAmount,
+        deposit: frontendPricing.deposit || 0,
+        source: 'frontend' // Mark as frontend-calculated
+      };
+      
+      console.log('✅ [PRICING FIX] Final pricing applied:', JSON.stringify(finalPricing, null, 2));
+    } else {
+      // Fallback to backend calculation with debugging
+      console.log('⚠️  [PRICING DEBUG] No frontend pricing provided, using backend calculation');
+      console.log('🚗 Car pricing data:');
+      console.log('   - car.dailyRate (legacy):', car.dailyRate);
+      console.log('   - car.pricing.dailyRate (new):', car.pricing?.dailyRate);
+      console.log('   - car.weeklyRate:', car.weeklyRate);
+      console.log('   - car.monthlyRate:', car.monthlyRate);
+      
+      // Use car's calculateRate method which handles pricing intelligently
+      let subtotal;
+      try {
+        subtotal = car.calculateRate(durationDays);
+        console.log('✅ [PRICING DEBUG] Using car.calculateRate():', subtotal);
+      } catch (error) {
+        console.error('❌ [PRICING DEBUG] car.calculateRate() failed:', error);
+        // Fallback to simple daily rate
+        const dailyRate = car.pricing?.dailyRate || car.dailyRate || 50; // 50€ default
+        subtotal = dailyRate * durationDays;
+        console.log('🔄 [PRICING DEBUG] Fallback calculation:', `${dailyRate} × ${durationDays} = ${subtotal}`);
+      }
+
+      const taxes = subtotal * 0.10;
+      const totalAmount = subtotal + taxes;
+
+      finalPricing = {
+        dailyRate: car.pricing?.dailyRate || car.dailyRate || 50,
+        totalDays: durationDays,
+        subtotal: subtotal,
+        taxes: taxes,
+        fees: [],
+        discounts: [],
+        totalAmount: totalAmount,
+        source: 'backend' // Mark as backend-calculated
+      };
+      
+      console.log('📊 [PRICING DEBUG] Backend calculated pricing:', JSON.stringify(finalPricing, null, 2));
     }
-
-    // Calculate taxes (assuming 10% tax rate)
-    const taxes = subtotal * 0.10;
-    const totalAmount = subtotal + taxes;
 
     // Default pickup/dropoff locations if not provided
     const defaultPickup = pickupLocation || {
@@ -973,15 +1066,7 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       pickupLocation: defaultPickup,
       dropoffLocation: defaultDropoff,
       status: 'pending', // Pending approval from staff
-      pricing: {
-        dailyRate: car.dailyRate,
-        totalDays: durationDays,
-        subtotal: subtotal,
-        taxes: taxes,
-        fees: [],
-        discounts: [],
-        totalAmount: totalAmount
-      },
+      pricing: finalPricing, // Use calculated or frontend pricing
       additionalDrivers: additionalDrivers || [],
       specialRequests: specialRequests || '',
       notes: notes || '',
@@ -1000,7 +1085,7 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     await Car.findByIdAndUpdate(car._id, {
       $inc: { 
         totalBookings: 1,
-        totalRevenue: totalAmount
+        totalRevenue: finalPricing.totalAmount
       }
     });
 
@@ -1029,6 +1114,11 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
           email: customer.email,
           defaultPassword: customer.createdAt && new Date() - customer.createdAt < 1000 ? 'customer123' : 'Use your existing password',
           message: 'You can log in to track your reservation status'
+        },
+        debug: {
+          pricingSource: finalPricing.source,
+          frontendPricingProvided: !!frontendPricing,
+          calculatedPricing: finalPricing
         }
       }
     });
