@@ -1232,14 +1232,20 @@ const updateCar = asyncHandler(async (req, res, next) => {
 
     try {
       console.log('🚗 [CAR UPDATE] Step 8a: Inside try block, calling findOneAndUpdate...');
-  car = await Car.findOneAndUpdate(
-    { _id: req.params.id, tenantId: req.user.tenantId },
-    req.body,
-    {
-    new: true,
-    runValidators: true
-    }
-  );
+      car = await Car.findOneAndUpdate(
+        { _id: req.params.id, tenantId: req.user.tenantId },
+        req.body,
+        {
+          new: true,
+          runValidators: true
+        }
+      );
+      
+      if (!car) {
+        console.log('🚗 [CAR UPDATE] Car not found after update attempt');
+        return next(new AppError('Car not found or you do not have permission to update it', 404));
+      }
+      
       console.log('🚗 [CAR UPDATE] Step 8b: Car updated successfully! ID:', car._id);
     } catch (error) {
       console.log('🚗 [CAR UPDATE] Error caught in inner try-catch block:', error.name);
@@ -1247,23 +1253,66 @@ const updateCar = asyncHandler(async (req, res, next) => {
       console.log('🚗 [CAR UPDATE] Error code:', error.code);
       console.log('🚗 [CAR UPDATE] Full error:', error);
       
-      // Handle specific MongoDB errors
+      // Handle specific MongoDB errors with detailed messages
       if (error.code === 11000) {
         // Duplicate key error
-        const field = Object.keys(error.keyPattern)[0];
-        const value = error.keyValue[field];
+        const field = Object.keys(error.keyPattern || {})[0] || 'field';
+        const value = (error.keyValue && error.keyValue[field]) || 'value';
+        console.log('🚗 [CAR UPDATE] Duplicate key error:', field, value);
         return next(new AppError(`${field} '${value}' already exists. Please use a different value.`, 400));
       }
       
       if (error.name === 'ValidationError') {
         // Validation error - extract meaningful message
-        const errors = Object.values(error.errors).map(err => err.message);
-        return next(new AppError(`Validation failed: ${errors.join(', ')}`, 400));
+        console.log('🚗 [CAR UPDATE] Validation error details:', error.errors);
+        const errors = Object.values(error.errors).map(err => {
+          // Provide more user-friendly error messages
+          if (err.path === 'year' && err.kind === 'min') {
+            return 'Year must be 1990 or later';
+          }
+          if (err.path === 'year' && err.kind === 'max') {
+            return 'Year cannot be in the future';
+          }
+          if (err.path === 'seats' && err.kind === 'min') {
+            return 'Car must have at least 1 seat';
+          }
+          if (err.path === 'seats' && err.kind === 'max') {
+            return 'Car cannot have more than 9 seats';
+          }
+          if (err.path === 'doors' && err.kind === 'min') {
+            return 'Car must have at least 2 doors';
+          }
+          if (err.path === 'doors' && err.kind === 'max') {
+            return 'Car cannot have more than 5 doors';
+          }
+          if (err.path && err.message) {
+            return `${err.path}: ${err.message}`;
+          }
+          return err.message || 'Validation error';
+        });
+        
+        const validationMessage = errors.length > 0 ? errors.join(', ') : 'Validation failed';
+        console.log('🚗 [CAR UPDATE] Processed validation message:', validationMessage);
+        return next(new AppError(`Validation failed: ${validationMessage}`, 400));
       }
       
-      // Log the error for debugging but don't expose details to user
-      console.error('Car update error:', error);
-      return next(new AppError('Failed to update car. Please check your input and try again.', 400));
+      if (error.name === 'CastError') {
+        // Handle invalid ObjectId or type casting errors
+        console.log('🚗 [CAR UPDATE] Cast error:', error.path, error.value);
+        return next(new AppError(`Invalid value for ${error.path}: ${error.value}`, 400));
+      }
+      
+      if (error.message && error.message.includes('Cast to Number failed')) {
+        // Handle number conversion errors
+        const fieldMatch = error.message.match(/path "([^"]+)"/);
+        const field = fieldMatch ? fieldMatch[1] : 'field';
+        console.log('🚗 [CAR UPDATE] Number cast error for field:', field);
+        return next(new AppError(`Invalid number value for ${field}. Please enter a valid number.`, 400));
+      }
+      
+      // Log the error for debugging but provide user-friendly message
+      console.error('🚗 [CAR UPDATE] Unexpected car update error:', error);
+      return next(new AppError(`Failed to update car: ${error.message || 'Please check your input and try again.'}`, 400));
     }
 
     console.log('🚗 [CAR UPDATE] Step 9: Checking document validity notifications...');
@@ -1314,33 +1363,71 @@ const deleteCar = asyncHandler(async (req, res, next) => {
     return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
   }
 
-  // Check if car has active reservations (tenant-scoped)
+  // Check if car has truly active reservations (only pending, confirmed, ongoing)
   const activeReservations = await Reservation.find({
     car: req.params.id,
     tenantId: req.user.tenantId,
     status: { $in: ['pending', 'confirmed', 'ongoing'] }
   });
 
+  // Allow deletion if only completed/cancelled reservations exist
   if (activeReservations.length > 0) {
-    return next(new AppError('Cannot delete car with active reservations', 400));
+    // Get count of different reservation types for better error message
+    const pendingCount = await Reservation.countDocuments({
+      car: req.params.id,
+      tenantId: req.user.tenantId,
+      status: 'pending'
+    });
+    
+    const confirmedCount = await Reservation.countDocuments({
+      car: req.params.id,
+      tenantId: req.user.tenantId,
+      status: 'confirmed'
+    });
+    
+    const ongoingCount = await Reservation.countDocuments({
+      car: req.params.id,
+      tenantId: req.user.tenantId,
+      status: 'ongoing'
+    });
+
+    let errorMessage = 'Cannot delete car with active reservations: ';
+    const details = [];
+    
+    if (pendingCount > 0) details.push(`${pendingCount} pending`);
+    if (confirmedCount > 0) details.push(`${confirmedCount} confirmed`);
+    if (ongoingCount > 0) details.push(`${ongoingCount} ongoing`);
+    
+    errorMessage += details.join(', ');
+    errorMessage += '. Please complete or cancel these reservations first.';
+
+    return next(new AppError(errorMessage, 400));
   }
 
   // Delete associated images from tenant-specific storage
   if (car.images && car.images.length > 0) {
     try {
+      console.log(`🗑️ [DELETE CAR] Deleting ${car.images.length} images for car ${car._id}`);
       await cloudStorage.deleteCarImages(car._id.toString(), req.user);
+      console.log(`✅ [DELETE CAR] Successfully deleted images for car ${car._id}`);
     } catch (error) {
       console.error('Failed to delete car images from cloud storage:', error);
-      }
+      // Continue with car deletion even if image deletion fails
+      console.log(`⚠️ [DELETE CAR] Continuing with car deletion despite image deletion failure`);
+    }
   }
 
+  // Delete the car
   await Car.findOneAndDelete({ 
     _id: req.params.id, 
     tenantId: req.user.tenantId 
   });
 
+  console.log(`✅ [DELETE CAR] Successfully deleted car ${req.params.id} for tenant ${req.user.tenantId}`);
+
   res.status(200).json({
     success: true,
+    message: 'Car deleted successfully',
     data: {}
   });
 });
@@ -1707,6 +1794,85 @@ const getCarCalendar = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Get car status and reservation details for debugging
+// @route   GET /api/cars/:id/status
+// @access  Private/Admin
+const getCarStatus = asyncHandler(async (req, res, next) => {
+  const car = await Car.findOne({ 
+    _id: req.params.id, 
+    tenantId: req.user.tenantId 
+  });
+
+  if (!car) {
+    return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
+  }
+
+  // Get all reservations for this car
+  const allReservations = await Reservation.find({
+    car: req.params.id,
+    tenantId: req.user.tenantId
+  }).select('status startDate endDate reservationNumber customer')
+    .populate('customer', 'firstName lastName email')
+    .sort({ startDate: -1 });
+
+  // Count reservations by status
+  const reservationCounts = {
+    pending: 0,
+    confirmed: 0,
+    ongoing: 0,
+    completed: 0,
+    cancelled: 0,
+    total: allReservations.length
+  };
+
+  allReservations.forEach(reservation => {
+    if (reservationCounts[reservation.status] !== undefined) {
+      reservationCounts[reservation.status]++;
+    }
+  });
+
+  // Check if car can be deleted
+  const activeReservations = allReservations.filter(r => 
+    ['pending', 'confirmed', 'ongoing'].includes(r.status)
+  );
+
+  const canDelete = activeReservations.length === 0;
+
+  res.status(200).json({
+    success: true,
+    data: {
+      car: {
+        id: car._id,
+        brand: car.brand,
+        model: car.model,
+        year: car.year,
+        registrationNumber: car.registrationNumber,
+        status: car.status,
+        isActive: car.isActive
+      },
+      reservationCounts,
+      canDelete,
+      deleteBlockedBy: canDelete ? null : `${activeReservations.length} active reservations`,
+      activeReservations: activeReservations.map(r => ({
+        id: r._id,
+        reservationNumber: r.reservationNumber,
+        status: r.status,
+        startDate: r.startDate,
+        endDate: r.endDate,
+        customer: r.customer ? `${r.customer.firstName} ${r.customer.lastName}` : 'Unknown'
+      })),
+      allReservations: allReservations.map(r => ({
+        id: r._id,
+        reservationNumber: r.reservationNumber,
+        status: r.status,
+        startDate: r.startDate,
+        endDate: r.endDate,
+        customer: r.customer ? `${r.customer.firstName} ${r.customer.lastName}` : 'Unknown'
+      }))
+    }
+  });
+});
+
 module.exports = {
   getCars,
   getCar,
@@ -1719,5 +1885,6 @@ module.exports = {
   getCarsByLocation,
   getCarStats,
   setPrimaryImage,
-  getCarCalendar
+  getCarCalendar,
+  getCarStatus
 }; 

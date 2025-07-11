@@ -296,19 +296,40 @@ const refreshToken = asyncHandler(async (req, res, next) => {
 // @route   POST /api/auth/logout
 // @access  Private
 const logout = asyncHandler(async (req, res, next) => {
-  // Clear refresh token from user
-  await User.findByIdAndUpdate(req.user._id, { refreshToken: null });
+  try {
+    // Clear refresh token from user if user exists and is authenticated
+    if (req.user && req.user._id) {
+      await User.findByIdAndUpdate(req.user._id, { refreshToken: null });
+      console.log(`✅ [LOGOUT] Successfully cleared refresh token for user ${req.user._id}`);
+    } else {
+      console.log(`ℹ️ [LOGOUT] No authenticated user found, clearing cookies only`);
+    }
 
-  res
-    .status(200)
-    .cookie('refreshToken', 'none', {
-      expires: new Date(Date.now() + 10 * 1000),
-      httpOnly: true,
-    })
-    .json({
-      success: true,
-      message: 'User logged out successfully'
-    });
+    res
+      .status(200)
+      .cookie('refreshToken', 'none', {
+        expires: new Date(Date.now() + 10 * 1000),
+        httpOnly: true,
+      })
+      .json({
+        success: true,
+        message: 'User logged out successfully'
+      });
+  } catch (error) {
+    console.error('❌ [LOGOUT] Error during logout:', error);
+    // Even if database update fails, still clear cookies and return success
+    // This ensures logout always works from frontend perspective
+    res
+      .status(200)
+      .cookie('refreshToken', 'none', {
+        expires: new Date(Date.now() + 10 * 1000),
+        httpOnly: true,
+      })
+      .json({
+        success: true,
+        message: 'User logged out successfully (local only)'
+      });
+  }
 });
 
 module.exports = {

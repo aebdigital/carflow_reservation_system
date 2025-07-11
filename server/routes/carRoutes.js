@@ -10,7 +10,8 @@ const {
   deleteCarImage,
   getCarsByLocation,
   getCarStats,
-  setPrimaryImage
+  setPrimaryImage,
+  getCarStatus
 } = require('../controllers/carController');
 
 const { protect, requireAdmin, requireStaff, addTenantFilter, restrictRivalDomain } = require('../middleware/authMiddleware');
@@ -39,6 +40,7 @@ router.route('/:id')
 
 // Special routes
 router.get('/:id/availability', getCarAvailability);
+router.get('/:id/status', requireStaff, getCarStatus);
 
 // Image management routes
 router.post('/:id/images', requireStaff, uploadMultipleCarImages, handleMulterError, uploadCarImages);
