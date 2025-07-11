@@ -816,23 +816,22 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
       doc.fontSize(11).font('Helvetica').fillColor('#333333').text('Zakladna cena:', margin + 15, yPos + 15);
       doc.fontSize(11).font('Helvetica').fillColor('#333333').text(`${(pricing.subtotal || 0).toFixed(2)} EUR`, pageWidth - margin - 80, yPos + 15, { align: 'right' });
       
-      doc.fontSize(11).font('Helvetica').fillColor('#333333').text('DPH (20%):', margin + 15, yPos + 30);
-      doc.fontSize(11).font('Helvetica').fillColor('#333333').text(`${(pricing.taxes || 0).toFixed(2)} EUR`, pageWidth - margin - 80, yPos + 30, { align: 'right' });
+      // VAT/DPH line removed since taxes are always 0
       
       // Additional fees (if any, limited to 1 line)
       if (pricing.fees && pricing.fees.length > 0) {
         const totalFees = pricing.fees.reduce((sum, fee) => sum + (fee.amount || 0), 0);
         if (totalFees > 0) {
-          doc.fontSize(11).font('Helvetica').fillColor('#333333').text('Dodatocne poplatky:', margin + 15, yPos + 45);
-          doc.fontSize(11).font('Helvetica').fillColor('#333333').text(`${totalFees.toFixed(2)} EUR`, pageWidth - margin - 80, yPos + 45, { align: 'right' });
+          doc.fontSize(11).font('Helvetica').fillColor('#333333').text('Dodatocne poplatky:', margin + 15, yPos + 30);
+          doc.fontSize(11).font('Helvetica').fillColor('#333333').text(`${totalFees.toFixed(2)} EUR`, pageWidth - margin - 80, yPos + 30, { align: 'right' });
         }
       }
       
       // Total line
-      addLine(margin + 15, yPos + 60, pageWidth - margin - 15, yPos + 60, '#1976D2');
+      addLine(margin + 15, yPos + 45, pageWidth - margin - 15, yPos + 45, '#1976D2');
       
-      doc.fontSize(13).font('Helvetica-Bold').fillColor('#1976D2').text('CELKOVA SUMA:', margin + 15, yPos + 65);
-      doc.fontSize(14).font('Helvetica-Bold').fillColor('#1976D2').text(`${(pricing.totalAmount || 0).toFixed(2)} EUR`, pageWidth - margin - 80, yPos + 65, { align: 'right' });
+      doc.fontSize(13).font('Helvetica-Bold').fillColor('#1976D2').text('CELKOVA SUMA:', margin + 15, yPos + 50);
+      doc.fontSize(14).font('Helvetica-Bold').fillColor('#1976D2').text(`${(pricing.totalAmount || 0).toFixed(2)} EUR`, pageWidth - margin - 80, yPos + 50, { align: 'right' });
     }
 
     yPos += 100;
