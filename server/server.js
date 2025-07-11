@@ -61,44 +61,46 @@ const allowedOrigins = [
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('CORS: Allowing request with no origin (mobile/curl)');
+      return callback(null, true);
+    }
     
     if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log(`CORS: Allowing origin: ${origin}`);
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
+      console.log('Allowed origins:', allowedOrigins);
+      callback(new Error(`Not allowed by CORS: ${origin}`));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers'
+  ],
   exposedHeaders: ['Content-Range', 'X-Content-Range'],
   preflightContinue: false,
   optionsSuccessStatus: 200
 }));
 
-// Additional CORS headers for preflight requests
+// Additional debugging for CORS (but no conflicting headers)
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  console.log(`CORS Debug: ${req.method} ${req.url} from origin: ${origin}`);
+  console.log(`🌐 [CORS DEBUG] ${req.method} ${req.url} from origin: ${origin || 'no-origin'}`);
   
-  if (allowedOrigins.includes(origin)) {
-    console.log(`CORS: Origin ${origin} is allowed`);
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else {
-    console.log(`CORS: Origin ${origin} is NOT in allowed list:`, allowedOrigins);
-  }
-  
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  
+  // Only log, don't set headers (let cors library handle them)
   if (req.method === 'OPTIONS') {
-    console.log(`CORS: Handling OPTIONS preflight request for ${req.url}`);
-    res.status(200).end();
-    return;
+    console.log(`🌐 [CORS] Preflight OPTIONS request for ${req.url}`);
   }
+  
   next();
 });
 
