@@ -50,6 +50,7 @@ import {
   DirectionsCar as CarIcon,
   EventNote as EventIcon,
   MonetizationOn as MoneyIcon,
+  MonetizationOn as MonetizationOnIcon,
   Rule as RuleIcon,
   Assignment as AssignmentIcon,
 } from '@mui/icons-material'
@@ -87,26 +88,36 @@ function Contracts() {
         zipCode: '',
         country: 'Slovensko'
       },
-      ico: ''
+      idNumber: '' // cislo op - ID number
     },
     vehicle: {
       brand: '',
       model: '',
       year: '',
-      registrationNumber: '',
-      vin: '',
+      registrationNumber: '', // ECV
+      vin: '', // VIN
       category: '',
       fuelType: '',
-      transmission: ''
+      transmission: '',
+      color: '' // farba - color
     },
     rental: {
-      startDate: '',
-      endDate: '',
+      startDate: '', // zaciatok najmu
+      endDate: '', // koniec najmu
       pickupLocation: '',
       returnLocation: '',
-      totalDays: 0,
-      dailyRate: 0,
-      totalAmount: 0
+      totalDays: 0, // pocet dni
+      dailyRate: 0, // denna sadzba
+      totalAmount: 0 // cena bez depozitu
+    },
+    services: {
+      additionalServices: [], // sluzby a priplatky
+      servicesTotal: 0 // sluzby a priplatky cena
+    },
+    pricing: {
+      subtotal: 0, // cena bez depozitu
+      servicesTotal: 0, // sluzby a priplatky cena  
+      totalAmount: 0 // spolu cena
     },
     additionalServices: [],
     specialServices: {
@@ -160,6 +171,23 @@ function Contracts() {
     }
   }, [alert])
 
+  // Automatically calculate total pricing when values change
+  useEffect(() => {
+    const subtotal = formData.rental.totalAmount || 0;
+    const servicesTotal = formData.services.servicesTotal || 0;
+    const totalAmount = subtotal + servicesTotal;
+
+    setFormData(prev => ({
+      ...prev,
+      pricing: {
+        ...prev.pricing,
+        subtotal: subtotal,
+        servicesTotal: servicesTotal,
+        totalAmount: totalAmount
+      }
+    }));
+  }, [formData.rental.totalAmount, formData.services.servicesTotal]);
+
   // Handlers
   const handleOpenDialog = (mode, contract = null) => {
     setDialogMode(mode)
@@ -180,7 +208,7 @@ function Contracts() {
             zipCode: '',
             country: 'Slovensko'
           },
-          ico: ''
+          idNumber: ''
         },
         vehicle: {
           brand: '',
@@ -190,7 +218,8 @@ function Contracts() {
           vin: '',
           category: '',
           fuelType: '',
-          transmission: ''
+          transmission: '',
+          color: ''
         },
         rental: {
           startDate: '',
@@ -199,6 +228,15 @@ function Contracts() {
           returnLocation: '',
           totalDays: 0,
           dailyRate: 0,
+          totalAmount: 0
+        },
+        services: {
+          additionalServices: [],
+          servicesTotal: 0
+        },
+        pricing: {
+          subtotal: 0,
+          servicesTotal: 0,
           totalAmount: 0
         },
         additionalServices: [],
@@ -244,6 +282,12 @@ function Contracts() {
   const handleReservationChange = (reservationId) => {
     const reservation = availableReservations.find(r => r._id === reservationId)
     if (reservation) {
+      const days = Math.ceil((new Date(reservation.endDate) - new Date(reservation.startDate)) / (1000 * 60 * 60 * 24));
+      const dailyRate = reservation.car?.dailyRate || 0;
+      const subtotal = dailyRate * days;
+      const servicesTotal = 0; // Will be set manually
+      const totalAmount = subtotal + servicesTotal;
+
       setFormData(prev => ({
         ...prev,
         reservationId,
@@ -259,7 +303,7 @@ function Contracts() {
             zipCode: '',
             country: 'Slovensko'
           },
-          ico: reservation.customer?.ico || ''
+          idNumber: reservation.customer?.idNumber || ''
         },
         vehicle: {
           brand: reservation.car?.brand || '',
@@ -269,16 +313,26 @@ function Contracts() {
           vin: reservation.car?.vin || '',
           category: reservation.car?.category || '',
           fuelType: reservation.car?.fuelType || '',
-          transmission: reservation.car?.transmission || ''
+          transmission: reservation.car?.transmission || '',
+          color: reservation.car?.color || ''
         },
         rental: {
           startDate: reservation.startDate || '',
           endDate: reservation.endDate || '',
           pickupLocation: reservation.pickupLocation?.name || '',
           returnLocation: reservation.dropoffLocation?.name || '',
-          totalDays: reservation.pricing?.totalDays || 0,
-          dailyRate: reservation.pricing?.dailyRate || 0,
-          totalAmount: reservation.pricing?.totalAmount || 0
+          totalDays: days,
+          dailyRate: dailyRate,
+          totalAmount: subtotal
+        },
+        services: {
+          additionalServices: [],
+          servicesTotal: 0
+        },
+        pricing: {
+          subtotal: subtotal,
+          servicesTotal: 0,
+          totalAmount: totalAmount
         }
       }))
     }
@@ -289,10 +343,22 @@ function Contracts() {
     
     try {
       if (dialogMode === 'create') {
-        await createContract(formData).unwrap()
+        // For create mode, send only what the backend expects
+        const contractData = {
+          reservationId: formData.reservationId,
+          additionalServices: formData.additionalServices || [],
+          specialServices: formData.specialServices || {},
+          rentalRules: formData.rentalRules || {},
+          notes: formData.notes || ''
+        };
+        
+        console.log('Creating contract with data:', contractData);
+        await createContract(contractData).unwrap()
         setAlert({ type: 'success', message: 'Zmluva bola úspešne vytvorená!' })
       } else if (dialogMode === 'edit') {
-        await updateContract({ id: selectedContract._id, ...formData }).unwrap()
+        // For edit mode, send the full formData but exclude reservationId
+        const { reservationId, ...updateData } = formData;
+        await updateContract({ id: selectedContract._id, ...updateData }).unwrap()
         setAlert({ type: 'success', message: 'Zmluva bola úspešne aktualizovaná!' })
       }
       
@@ -748,11 +814,11 @@ function Contracts() {
                   <Grid item xs={12} md={4}>
                     <TextField
                       fullWidth
-                      label="IČO (voliteľné)"
-                      value={formData.customer.ico}
+                      label="Číslo OP (voliteľné)"
+                      value={formData.customer.idNumber}
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
-                        customer: { ...prev.customer, ico: e.target.value }
+                        customer: { ...prev.customer, idNumber: e.target.value }
                       }))}
                       disabled={dialogMode === 'view'}
                     />
@@ -814,6 +880,18 @@ function Contracts() {
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
                         vehicle: { ...prev.vehicle, year: e.target.value }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Farba"
+                      value={formData.vehicle.color}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        vehicle: { ...prev.vehicle, color: e.target.value }
                       }))}
                       disabled={dialogMode === 'view'}
                     />
@@ -919,6 +997,108 @@ function Contracts() {
                         rental: { ...prev.rental, totalAmount: parseFloat(e.target.value) || 0 }
                       }))}
                       disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                </Grid>
+              </AccordionDetails>
+            </Accordion>
+
+            {/* Services and Additional Charges */}
+            <Accordion defaultExpanded>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <MoneyIcon sx={{ mr: 1 }} />
+                <Typography variant="h6">Služby a priplatky</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      Dodatočné služby a priplatky:
+                    </Typography>
+                    <List dense>
+                      {formData.services.additionalServices.map((service, index) => (
+                        <ListItem key={index}>
+                          <ListItemText primary={service.name} secondary={`${service.price}€`} />
+                          <ListItemSecondaryAction>
+                            <IconButton
+                              size="small"
+                              onClick={() => setFormData(prev => ({
+                                ...prev,
+                                services: {
+                                  ...prev.services,
+                                  additionalServices: prev.services.additionalServices.filter((_, i) => i !== index)
+                                }
+                              }))}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </ListItemSecondaryAction>
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Dodatočná služba/priplátky (€)"
+                      type="number"
+                      value={formData.services.servicesTotal}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        services: {
+                          ...prev.services,
+                          servicesTotal: parseFloat(e.target.value) || 0
+                        }
+                      }))}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Celková suma služieb a priplatkov (€)"
+                      type="number"
+                      value={formData.services.servicesTotal}
+                      disabled
+                    />
+                  </Grid>
+                </Grid>
+              </AccordionDetails>
+            </Accordion>
+
+            {/* Pricing */}
+            <Accordion defaultExpanded>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <MonetizationOnIcon sx={{ mr: 1 }} />
+                <Typography variant="h6">Cena</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Cena bez depozitu (€)"
+                      type="number"
+                      value={formData.pricing.subtotal}
+                      disabled
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Celková suma služieb a priplatkov (€)"
+                      type="number"
+                      value={formData.pricing.servicesTotal}
+                      disabled
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Celková suma (€)"
+                      type="number"
+                      value={formData.pricing.totalAmount}
+                      disabled
                     />
                   </Grid>
                 </Grid>

@@ -60,6 +60,11 @@ const userSchema = new mongoose.Schema({
     type: Date,
     required: function() { return this.role === 'customer'; }
   },
+  idNumber: {
+    type: String, // Číslo OP (ID card number)
+    sparse: true,
+    trim: true
+  },
   dateOfBirth: {
     type: Date,
     required: false

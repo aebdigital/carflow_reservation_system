@@ -46,8 +46,8 @@ const contractSchema = new mongoose.Schema({
       zipCode: String,
       country: String
     },
-    ico: {
-      type: String, // Business ID if provided
+    idNumber: {
+      type: String, // Číslo OP (ID card number)
       sparse: true
     }
   },
@@ -70,7 +70,8 @@ const contractSchema = new mongoose.Schema({
     vin: String,
     category: String,
     fuelType: String,
-    transmission: String
+    transmission: String,
+    color: String // Farba vozidla
   },
   
   // Rental details (Prenájom)
@@ -333,12 +334,15 @@ contractSchema.statics.createFromReservation = async function(reservationId, ten
   const User = require('./User');
   
   const reservation = await Reservation.findById(reservationId)
-    .populate('customer', 'firstName lastName email phone address')
-    .populate('car', 'brand model year registrationNumber vin category fuelType transmission');
+    .populate('customer', 'firstName lastName email phone address idNumber')
+    .populate('car', 'brand model year registrationNumber vin category fuelType transmission color');
   
   if (!reservation) {
     throw new Error('Reservation not found');
   }
+  
+  // Calculate days for the rental
+  const days = Math.ceil((new Date(reservation.endDate) - new Date(reservation.startDate)) / (1000 * 60 * 60 * 24));
   
   const contractData = {
     tenantId,
@@ -348,7 +352,8 @@ contractSchema.statics.createFromReservation = async function(reservationId, ten
       lastName: reservation.customer.lastName,
       phone: reservation.customer.phone,
       email: reservation.customer.email,
-      address: reservation.customer.address || {}
+      address: reservation.customer.address || {},
+      idNumber: reservation.customer.idNumber || ''
     },
     vehicle: {
       brand: reservation.car.brand,
@@ -358,14 +363,15 @@ contractSchema.statics.createFromReservation = async function(reservationId, ten
       vin: reservation.car.vin,
       category: reservation.car.category,
       fuelType: reservation.car.fuelType,
-      transmission: reservation.car.transmission
+      transmission: reservation.car.transmission,
+      color: reservation.car.color || ''
     },
     rental: {
       startDate: reservation.startDate,
       endDate: reservation.endDate,
       pickupLocation: reservation.pickupLocation.name,
       returnLocation: reservation.dropoffLocation.name,
-      totalDays: reservation.pricing.totalDays,
+      totalDays: days,
       dailyRate: reservation.pricing.dailyRate,
       totalAmount: reservation.pricing.totalAmount
     },
