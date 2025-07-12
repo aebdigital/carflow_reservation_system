@@ -22,7 +22,9 @@ const {
   getPublicCar,
   getCarCalendarByUser,
   getReservedDatesByUser,
-  getPublicCarCalendar
+  getPublicCarCalendar,
+  getReservationQR,
+  getReservationQRByUser
 } = require('../controllers/publicController');
 
 // Import blog controller functions
@@ -59,6 +61,7 @@ router.get('/cars/:id/calendar', getPublicCarCalendar); // Get car calendar (pub
 
 // Public reservation endpoints (no authentication required)
 router.post('/reservations', createPublicReservation); // Create general public reservation
+router.get('/reservations/:id/qr', getReservationQR); // Get QR payment codes for reservation
 
 // Public Additional Services endpoints (no authentication required)
 router.get('/services', getPublicServices); // Get all public additional services
@@ -80,6 +83,7 @@ router.get('/users/:email/features', getAvailableFeaturesByUser); // Get availab
 
 // Reservation endpoints
 router.post('/users/:email/reservations', createReservationByUser); // Create reservation for tenant
+router.get('/users/:email/reservations/:id/qr', getReservationQRByUser); // Get QR payment codes for tenant reservation
 
 // Website settings endpoints
 router.get('/users/:email/website-settings', getWebsiteSettingsByUser); // Get website settings

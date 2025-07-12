@@ -277,6 +277,41 @@ const createReservation = asyncHandler(async (req, res, next) => {
 
   const reservation = await Reservation.create(reservationData);
 
+  // 🆕 Generate bySquare QR payment codes for admin reservations
+  try {
+    const bySquareService = require('../services/bySquareService');
+    
+    if (bySquareService.isConfigured()) {
+      console.log('🔄 [QR] Generating bySquare QR codes for admin reservation...');
+      
+      const qrResult = await bySquareService.generateReservationQR(reservation, carDoc, customerDoc);
+      
+      if (qrResult.success && qrResult.qrCodes) {
+        // Update reservation with QR codes
+        reservation.qrCodes = {
+          payBySquare: qrResult.qrCodes.payBySquare,
+          qrPlatbaCz: qrResult.qrCodes.qrPlatbaCz,
+          invoiceBySquare: qrResult.qrCodes.invoiceBySquare,
+          generatedAt: new Date(),
+          lastUpdated: new Date(),
+          isActive: true,
+          amount: pricing.totalAmount,
+          paymentNote: `Car rental: ${carDoc.brand} ${carDoc.model} (${start.toISOString().split('T')[0]} - ${end.toISOString().split('T')[0]})`
+        };
+        
+        await reservation.save();
+        console.log('✅ [QR] bySquare QR codes generated and saved for admin reservation');
+      } else {
+        console.warn('⚠️ [QR] Failed to generate bySquare QR codes:', qrResult.error);
+      }
+    } else {
+      console.log('ℹ️ [QR] bySquare not configured, skipping QR generation');
+    }
+  } catch (qrError) {
+    console.error('❌ [QR] Error generating QR codes for admin reservation:', qrError.message);
+    // Don't fail the reservation if QR generation fails
+  }
+
   // Update discount code usage if applied
   if (appliedDiscountCodes.length > 0) {
     for (const appliedCode of appliedDiscountCodes) {

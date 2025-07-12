@@ -769,6 +769,44 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       }
     });
 
+    // 🆕 Generate bySquare QR payment codes
+    try {
+      const bySquareService = require('../services/bySquareService');
+      
+      if (bySquareService.isConfigured()) {
+        console.log('🔄 [QR] Generating bySquare QR codes for tenant reservation...');
+        
+        const qrResult = await bySquareService.generateReservationQR(reservation, car, customer);
+        
+        if (qrResult.success && qrResult.qrCodes) {
+          // Update reservation with QR codes
+          reservation.qrCodes = {
+            payBySquare: qrResult.qrCodes.payBySquare,
+            qrPlatbaCz: qrResult.qrCodes.qrPlatbaCz,
+            invoiceBySquare: qrResult.qrCodes.invoiceBySquare,
+            generatedAt: new Date(),
+            lastUpdated: new Date(),
+            isActive: true,
+            amount: finalPricing.totalAmount,
+            paymentNote: `Car rental: ${car.brand} ${car.model} (${start.toISOString().split('T')[0]} - ${end.toISOString().split('T')[0]})`
+          };
+          
+          await reservation.save();
+          console.log('✅ [QR] bySquare QR codes generated and saved for tenant reservation');
+        } else {
+          console.warn('⚠️ [QR] Failed to generate bySquare QR codes:', qrResult.error);
+        }
+      } else {
+        console.log('ℹ️ [QR] bySquare not configured, skipping QR generation');
+      }
+    } catch (qrError) {
+      console.error('❌ [QR] Error generating QR codes for tenant reservation:', qrError.message);
+      // Don't fail the reservation if QR generation fails
+    }
+
+    // Save the reservation
+    const savedReservation = await reservation.save();
+
     // Update discount code usage if applied
     if (appliedDiscountCodes.length > 0) {
       for (const appliedCode of appliedDiscountCodes) {
@@ -779,7 +817,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
             $push: {
               usedBy: {
                 customer: customer._id,
-                reservation: reservation._id,
+                reservation: savedReservation._id,
                 discountApplied: appliedCode.discountAmount,
                 usedAt: new Date()
               }
@@ -806,7 +844,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     });
 
     // Populate reservation details for response
-    const populatedReservation = await Reservation.findById(reservation._id)
+    const populatedReservation = await Reservation.findById(savedReservation._id)
       .populate('customer', 'firstName lastName email phone')
       .populate('car', 'brand model year registrationNumber images')
       .populate('appliedDiscountCodes.discountCode', 'code description discountType discountValue');
@@ -1079,6 +1117,41 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       }
     });
 
+    // 🆕 Generate bySquare QR payment codes
+    try {
+      const bySquareService = require('../services/bySquareService');
+      
+      if (bySquareService.isConfigured()) {
+        console.log('🔄 [QR] Generating bySquare QR codes for tenant reservation...');
+        
+        const qrResult = await bySquareService.generateReservationQR(reservation, car, customer);
+        
+        if (qrResult.success && qrResult.qrCodes) {
+          // Update reservation with QR codes
+          reservation.qrCodes = {
+            payBySquare: qrResult.qrCodes.payBySquare,
+            qrPlatbaCz: qrResult.qrCodes.qrPlatbaCz,
+            invoiceBySquare: qrResult.qrCodes.invoiceBySquare,
+            generatedAt: new Date(),
+            lastUpdated: new Date(),
+            isActive: true,
+            amount: finalPricing.totalAmount,
+            paymentNote: `Car rental: ${car.brand} ${car.model} (${start.toISOString().split('T')[0]} - ${end.toISOString().split('T')[0]})`
+          };
+          
+          await reservation.save();
+          console.log('✅ [QR] bySquare QR codes generated and saved for tenant reservation');
+        } else {
+          console.warn('⚠️ [QR] Failed to generate bySquare QR codes:', qrResult.error);
+        }
+      } else {
+        console.log('ℹ️ [QR] bySquare not configured, skipping QR generation');
+      }
+    } catch (qrError) {
+      console.error('❌ [QR] Error generating QR codes for tenant reservation:', qrError.message);
+      // Don't fail the reservation if QR generation fails
+    }
+
     // Save the reservation
     const savedReservation = await reservation.save();
 
@@ -1094,7 +1167,7 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     let payment = null;
 
     // Populate the reservation with customer and car details
-    const populatedReservation = await Reservation.findById(reservation._id)
+    const populatedReservation = await Reservation.findById(savedReservation._id)
       .populate('customer', 'firstName lastName email phone')
       .populate('car', 'brand model year registrationNumber dailyRate images');
 
@@ -2409,6 +2482,259 @@ const subscribeToNewsletterSimple = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Get QR payment codes for reservation (public)
+// @route   GET /api/public/reservations/:id/qr
+// @access  Public
+const getReservationQR = asyncHandler(async (req, res, next) => {
+  const reservationId = req.params.id;
+  
+  if (!reservationId) {
+    return next(new AppError('Reservation ID is required', 400));
+  }
+
+  try {
+    // Find reservation with QR codes
+    const reservation = await Reservation.findById(reservationId)
+      .select('qrCodes pricing status customer car startDate endDate reservationNumber')
+      .populate('customer', 'firstName lastName email')
+      .populate('car', 'brand model year');
+    
+    if (!reservation) {
+      return next(new AppError('Reservation not found', 404));
+    }
+
+    // Check if reservation has QR codes
+    if (!reservation.qrCodes || !reservation.qrCodes.payBySquare) {
+      return res.status(200).json({
+        success: true,
+        message: 'QR codes not available for this reservation',
+        data: {
+          hasQRCodes: false,
+          reservation: {
+            id: reservation._id,
+            reservationNumber: reservation.reservationNumber,
+            status: reservation.status,
+            amount: reservation.pricing?.totalAmount || 0
+          }
+        }
+      });
+    }
+
+    // Generate QR code image URLs for display
+    const bySquareService = require('../services/bySquareService');
+    
+    const qrImageUrls = {
+      payBySquare: bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquare, 'png', 300),
+      qrPlatbaCz: reservation.qrCodes.qrPlatbaCz ? 
+        bySquareService.generateQRImageUrl(reservation.qrCodes.qrPlatbaCz, 'png', 300) : null
+    };
+
+    res.status(200).json({
+      success: true,
+      data: {
+        hasQRCodes: true,
+        reservation: {
+          id: reservation._id,
+          reservationNumber: reservation.reservationNumber,
+          status: reservation.status,
+          customer: reservation.customer ? {
+            name: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
+            email: reservation.customer.email
+          } : null,
+          car: reservation.car ? {
+            brand: reservation.car.brand,
+            model: reservation.car.model,
+            year: reservation.car.year
+          } : null,
+          startDate: reservation.startDate,
+          endDate: reservation.endDate,
+          amount: reservation.qrCodes.amount || reservation.pricing?.totalAmount || 0
+        },
+        qrCodes: {
+          payBySquare: {
+            code: reservation.qrCodes.payBySquare,
+            imageUrl: qrImageUrls.payBySquare,
+            format: 'Slovak PayBySquare'
+          },
+          qrPlatbaCz: reservation.qrCodes.qrPlatbaCz ? {
+            code: reservation.qrCodes.qrPlatbaCz,
+            imageUrl: qrImageUrls.qrPlatbaCz,
+            format: 'Czech QR Platba'
+          } : null
+        },
+        paymentDetails: {
+          amount: reservation.qrCodes.amount,
+          bankAccount: reservation.qrCodes.bankAccount,
+          variableSymbol: reservation.qrCodes.variableSymbol,
+          constantSymbol: reservation.qrCodes.constantSymbol,
+          specificSymbol: reservation.qrCodes.specificSymbol,
+          beneficiaryName: reservation.qrCodes.beneficiaryName,
+          paymentNote: reservation.qrCodes.paymentNote
+        },
+        metadata: {
+          generatedAt: reservation.qrCodes.generatedAt,
+          lastUpdated: reservation.qrCodes.lastUpdated,
+          isActive: reservation.qrCodes.isActive
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching QR codes for reservation:', error);
+    return next(new AppError('Error fetching QR codes', 500));
+  }
+});
+
+// @desc    Get QR payment codes for reservation by user email (public)
+// @route   GET /api/public/users/:email/reservations/:id/qr
+// @access  Public
+const getReservationQRByUser = asyncHandler(async (req, res, next) => {
+  const userEmail = req.params.email;
+  const reservationId = req.params.id;
+  
+  if (!userEmail || !reservationId) {
+    return next(new AppError('User email and reservation ID are required', 400));
+  }
+
+  try {
+    const tenantId = await getTenantByUserEmail(userEmail);
+    
+    if (!tenantId) {
+      return next(new AppError('Tenant not found for this user', 404));
+    }
+
+    // Find reservation with QR codes (tenant-scoped)
+    const reservation = await Reservation.findOne({
+      _id: reservationId,
+      tenantId: tenantId
+    })
+      .select('qrCodes pricing status customer car startDate endDate reservationNumber')
+      .populate('customer', 'firstName lastName email')
+      .populate('car', 'brand model year');
+    
+    if (!reservation) {
+      return next(new AppError('Reservation not found', 404));
+    }
+
+    // Check if reservation has QR codes
+    if (!reservation.qrCodes || !reservation.qrCodes.payBySquare) {
+      // Try to generate QR codes if they don't exist
+      try {
+        const bySquareService = require('../services/bySquareService');
+        
+        if (bySquareService.isConfigured()) {
+          console.log('🔄 [QR] Attempting to generate missing QR codes...');
+          
+          const qrResult = await bySquareService.generateReservationQR(
+            reservation, 
+            reservation.car, 
+            reservation.customer
+          );
+          
+          if (qrResult.success && qrResult.qrCodes) {
+            // Update reservation with QR codes
+            reservation.qrCodes = {
+              payBySquare: qrResult.qrCodes.payBySquare,
+              qrPlatbaCz: qrResult.qrCodes.qrPlatbaCz,
+              invoiceBySquare: qrResult.qrCodes.invoiceBySquare,
+              generatedAt: new Date(),
+              lastUpdated: new Date(),
+              isActive: true,
+              amount: reservation.pricing?.totalAmount || 0,
+              paymentNote: `Car rental: ${reservation.car.brand} ${reservation.car.model}`
+            };
+            
+            await reservation.save();
+            console.log('✅ [QR] Missing QR codes generated successfully');
+          }
+        }
+      } catch (qrError) {
+        console.error('❌ [QR] Failed to generate missing QR codes:', qrError.message);
+      }
+      
+      // If still no QR codes after attempt
+      if (!reservation.qrCodes || !reservation.qrCodes.payBySquare) {
+        return res.status(200).json({
+          success: true,
+          message: 'QR codes not available for this reservation',
+          data: {
+            hasQRCodes: false,
+            reservation: {
+              id: reservation._id,
+              reservationNumber: reservation.reservationNumber,
+              status: reservation.status,
+              amount: reservation.pricing?.totalAmount || 0
+            }
+          }
+        });
+      }
+    }
+
+    // Generate QR code image URLs for display
+    const bySquareService = require('../services/bySquareService');
+    
+    const qrImageUrls = {
+      payBySquare: bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquare, 'png', 300),
+      qrPlatbaCz: reservation.qrCodes.qrPlatbaCz ? 
+        bySquareService.generateQRImageUrl(reservation.qrCodes.qrPlatbaCz, 'png', 300) : null
+    };
+
+    res.status(200).json({
+      success: true,
+      data: {
+        hasQRCodes: true,
+        reservation: {
+          id: reservation._id,
+          reservationNumber: reservation.reservationNumber,
+          status: reservation.status,
+          customer: reservation.customer ? {
+            name: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
+            email: reservation.customer.email
+          } : null,
+          car: reservation.car ? {
+            brand: reservation.car.brand,
+            model: reservation.car.model,
+            year: reservation.car.year
+          } : null,
+          startDate: reservation.startDate,
+          endDate: reservation.endDate,
+          amount: reservation.qrCodes.amount || reservation.pricing?.totalAmount || 0
+        },
+        qrCodes: {
+          payBySquare: {
+            code: reservation.qrCodes.payBySquare,
+            imageUrl: qrImageUrls.payBySquare,
+            format: 'Slovak PayBySquare'
+          },
+          qrPlatbaCz: reservation.qrCodes.qrPlatbaCz ? {
+            code: reservation.qrCodes.qrPlatbaCz,
+            imageUrl: qrImageUrls.qrPlatbaCz,
+            format: 'Czech QR Platba'
+          } : null
+        },
+        paymentDetails: {
+          amount: reservation.qrCodes.amount,
+          bankAccount: reservation.qrCodes.bankAccount,
+          variableSymbol: reservation.qrCodes.variableSymbol,
+          constantSymbol: reservation.qrCodes.constantSymbol,
+          specificSymbol: reservation.qrCodes.specificSymbol,
+          beneficiaryName: reservation.qrCodes.beneficiaryName,
+          paymentNote: reservation.qrCodes.paymentNote
+        },
+        metadata: {
+          generatedAt: reservation.qrCodes.generatedAt,
+          lastUpdated: reservation.qrCodes.lastUpdated,
+          isActive: reservation.qrCodes.isActive
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching QR codes for user reservation:', error);
+    return next(new AppError('Error fetching QR codes', 500));
+  }
+});
+
 module.exports = {
   createPublicReservation,
   getCarsByUser,
@@ -2427,5 +2753,7 @@ module.exports = {
   getCarCalendarByUser,
   getReservedDatesByUser,
   getPublicCarCalendar,
-  subscribeToNewsletterSimple
+  subscribeToNewsletterSimple,
+  getReservationQR,
+  getReservationQRByUser
 }; 

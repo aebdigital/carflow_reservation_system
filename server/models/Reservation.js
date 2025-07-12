@@ -116,6 +116,63 @@ const reservationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Payment'
   },
+  
+  // BySquare QR payment codes
+  qrCodes: {
+    payBySquare: {
+      type: String,
+      default: null
+    },
+    qrPlatbaCz: {
+      type: String,
+      default: null
+    },
+    invoiceBySquare: {
+      type: String,
+      default: null
+    },
+    generatedAt: {
+      type: Date,
+      default: null
+    },
+    lastUpdated: {
+      type: Date,
+      default: null
+    },
+    isActive: {
+      type: Boolean,
+      default: true
+    },
+    bankAccount: {
+      type: String,
+      default: null
+    },
+    variableSymbol: {
+      type: String,
+      default: null
+    },
+    constantSymbol: {
+      type: String,
+      default: null
+    },
+    specificSymbol: {
+      type: String,
+      default: null
+    },
+    amount: {
+      type: Number,
+      default: null
+    },
+    beneficiaryName: {
+      type: String,
+      default: null
+    },
+    paymentNote: {
+      type: String,
+      default: null
+    }
+  },
+  
   additionalDrivers: [{
     firstName: String,
     lastName: String,
