@@ -11,10 +11,18 @@
     "install-all": "npm install && cd server && npm install && cd ../client && npm install",
     "build": "cd server && npm install --production"
   },
-  "keywords": ["car-rental", "admin-panel", "react", "nodejs"],
+  "keywords": [
+    "car-rental",
+    "admin-panel",
+    "react",
+    "nodejs"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1"
   }
-} 
+}

@@ -4,6 +4,7 @@ const Reservation = require('../models/Reservation');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const bcrypt = require('bcryptjs');
 const { DiscountCode } = require('../models/WebsiteSettings');
+const pdfService = require('../services/pdfService');
 
 // Helper function to get tenant by user email
 const getTenantByUserEmail = async (email) => {
@@ -2735,6 +2736,126 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Get Slovak rental agreement PDF by reservation ID (public)
+// @route   GET /api/public/reservations/:id/slovak-agreement
+// @access  Public
+const getReservationSlovakAgreement = asyncHandler(async (req, res, next) => {
+  const reservationId = req.params.id;
+  
+  if (!reservationId) {
+    return next(new AppError('Reservation ID is required', 400));
+  }
+
+  try {
+    // Find reservation with all necessary data
+    const reservation = await Reservation.findById(reservationId)
+      .select('reservationNumber customer car startDate endDate pricing status tenantId')
+      .populate('customer', 'firstName lastName email phone address licenseNumber')
+      .populate('car', 'brand model year registrationNumber vin color category');
+    
+    if (!reservation) {
+      return next(new AppError('Reservation not found', 404));
+    }
+
+    console.log('🔄 [PDF] Generating Slovak rental agreement for public reservation:', reservationId);
+
+    // Generate the PDF using the PDF service
+    const pdfBuffer = await pdfService.generateRentalAgreement(
+      reservation, 
+      reservation.car, 
+      reservation.customer
+    );
+
+    // Set response headers for PDF
+    const isPreviewing = req.query.preview === 'true';
+    const filename = `zmluva-o-najme-${reservation.reservationNumber || reservationId}.pdf`;
+    
+    if (isPreviewing) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    } else {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    }
+    
+    res.setHeader('Content-Length', pdfBuffer.length);
+    
+    // Send the PDF
+    res.send(pdfBuffer);
+
+    console.log('✅ [PDF] Slovak rental agreement sent successfully (public)');
+
+  } catch (error) {
+    console.error('❌ [PDF] Error generating Slovak rental agreement (public):', error);
+    return next(new AppError('Error generating rental agreement', 500));
+  }
+});
+
+// @desc    Get Slovak rental agreement PDF by user email and reservation ID (public)
+// @route   GET /api/public/users/:email/reservations/:id/slovak-agreement
+// @access  Public
+const getReservationSlovakAgreementByUser = asyncHandler(async (req, res, next) => {
+  const userEmail = req.params.email;
+  const reservationId = req.params.id;
+  
+  if (!userEmail || !reservationId) {
+    return next(new AppError('User email and reservation ID are required', 400));
+  }
+
+  try {
+    const tenantId = await getTenantByUserEmail(userEmail);
+    
+    if (!tenantId) {
+      return next(new AppError('Tenant not found for this user', 404));
+    }
+
+    // Find reservation with tenant scope
+    const reservation = await Reservation.findOne({
+      _id: reservationId,
+      tenantId: tenantId
+    })
+      .select('reservationNumber customer car startDate endDate pricing status tenantId')
+      .populate('customer', 'firstName lastName email phone address licenseNumber')
+      .populate('car', 'brand model year registrationNumber vin color category');
+    
+    if (!reservation) {
+      return next(new AppError('Reservation not found', 404));
+    }
+
+    console.log('🔄 [PDF] Generating Slovak rental agreement for tenant reservation:', reservationId);
+
+    // Generate the PDF using the PDF service
+    const pdfBuffer = await pdfService.generateRentalAgreement(
+      reservation, 
+      reservation.car, 
+      reservation.customer
+    );
+
+    // Set response headers for PDF
+    const isPreviewing = req.query.preview === 'true';
+    const filename = `zmluva-o-najme-${reservation.reservationNumber || reservationId}.pdf`;
+    
+    if (isPreviewing) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    } else {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    }
+    
+    res.setHeader('Content-Length', pdfBuffer.length);
+    
+    // Send the PDF
+    res.send(pdfBuffer);
+
+    console.log('✅ [PDF] Slovak rental agreement sent successfully (tenant-scoped)');
+
+  } catch (error) {
+    console.error('❌ [PDF] Error generating Slovak rental agreement (tenant-scoped):', error);
+    return next(new AppError('Error generating rental agreement', 500));
+  }
+});
+
 module.exports = {
   createPublicReservation,
   getCarsByUser,
@@ -2755,5 +2876,7 @@ module.exports = {
   getPublicCarCalendar,
   subscribeToNewsletterSimple,
   getReservationQR,
-  getReservationQRByUser
+  getReservationQRByUser,
+  getReservationSlovakAgreement,
+  getReservationSlovakAgreementByUser
 }; 

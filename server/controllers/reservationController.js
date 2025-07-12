@@ -5,6 +5,7 @@ const Payment = require('../models/Payment');
 const { DiscountCode } = require('../models/WebsiteSettings');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const PDFDocument = require('pdfkit');
+const pdfService = require('../services/pdfService');
 
 // @desc    Get all reservations (tenant-scoped)
 // @route   GET /api/reservations
@@ -941,6 +942,80 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Generate Slovak rental agreement PDF
+// @route   GET /api/reservations/:id/slovak-agreement
+// @access  Private
+const generateSlovakAgreement = asyncHandler(async (req, res, next) => {
+  try {
+    const reservation = await Reservation.findOne({
+      _id: req.params.id,
+      tenantId: req.user.tenantId
+    })
+      .populate('customer', 'firstName lastName email phone address licenseNumber')
+      .populate('car', 'brand model year registrationNumber vin color category')
+      .populate('createdBy', 'firstName lastName');
+
+    if (!reservation) {
+      return next(new AppError(`Rezervácia s ID ${req.params.id} nebola nájdená`, 404));
+    }
+
+    // Check if user owns the reservation or is staff
+    if (req.user.role === 'customer' && reservation.customer._id.toString() !== req.user._id.toString()) {
+      return next(new AppError('Nemáte oprávnenie na prístup k tejto rezervácii', 403));
+    }
+
+    console.log('🔄 [PDF] Generating Slovak rental agreement for reservation:', req.params.id);
+
+    // Generate the PDF using the PDF service
+    const pdfBuffer = await pdfService.generateRentalAgreement(
+      reservation, 
+      reservation.car, 
+      reservation.customer
+    );
+
+    // Set response headers for PDF
+    const isPreviewing = req.query.preview === 'true';
+    const filename = `zmluva-o-najme-${reservation.reservationNumber || req.params.id}.pdf`;
+    
+    if (isPreviewing) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    } else {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    }
+    
+    res.setHeader('Content-Length', pdfBuffer.length);
+    
+    // Send the PDF
+    res.send(pdfBuffer);
+
+    console.log('✅ [PDF] Slovak rental agreement sent successfully');
+
+  } catch (error) {
+    console.error('❌ [PDF] Error generating Slovak rental agreement:', error);
+    return next(new AppError('Chyba pri generovaní zmluvy o nájme', 500));
+  }
+});
+
+// @desc    Get PDF template fields (for debugging)
+// @route   GET /api/reservations/pdf-fields
+// @access  Private/Staff
+const getPDFTemplateFields = asyncHandler(async (req, res, next) => {
+  try {
+    const fields = await pdfService.getTemplateFields();
+    
+    res.status(200).json({
+      success: true,
+      count: fields.length,
+      data: fields
+    });
+  } catch (error) {
+    console.error('❌ [PDF] Error getting template fields:', error);
+    return next(new AppError('Chyba pri čítaní šablóny PDF', 500));
+  }
+});
+
 module.exports = {
   getReservations,
   getReservation,
@@ -950,5 +1025,7 @@ module.exports = {
   checkInReservation,
   checkOutReservation,
   getReservationStats,
-  generateReservationContract
+  generateReservationContract,
+  generateSlovakAgreement,
+  getPDFTemplateFields
 }; 
