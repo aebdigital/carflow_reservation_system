@@ -299,19 +299,33 @@ class CloudStorageService {
   async uploadToGCS(buffer, fileName, contentType) {
     const file = this.bucket.file(fileName);
     
-    await file.save(buffer, {
-      metadata: {
-        contentType: contentType,
-        cacheControl: 'public, max-age=31536000' // Cache for 1 year
-      },
-      public: true // Make file publicly accessible
-    });
+    try {
+      // Upload file without predefined ACL to avoid permission issues
+      await file.save(buffer, {
+        metadata: {
+          contentType: contentType,
+          cacheControl: 'public, max-age=31536000' // Cache for 1 year
+        }
+      });
 
-    // Return public URL
-    return {
-      url: `https://storage.googleapis.com/${this.bucketName}/${fileName}`,
-      fileName: fileName
-    };
+      // Try to make the file public after upload
+      try {
+        await file.makePublic();
+      } catch (aclError) {
+        console.warn('⚠️  Could not make file public:', aclError.message);
+        console.warn('   File was uploaded but may not be publicly accessible');
+        console.warn('   Check your Google Cloud Storage bucket permissions');
+      }
+
+      // Return public URL
+      return {
+        url: `https://storage.googleapis.com/${this.bucketName}/${fileName}`,
+        fileName: fileName
+      };
+    } catch (error) {
+      console.error('❌ Failed to upload to GCS:', error.message);
+      throw error;
+    }
   }
 
   /**

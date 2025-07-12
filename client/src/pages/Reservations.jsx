@@ -42,7 +42,8 @@ import {
   Visibility as ViewIcon,
   Receipt as ReceiptIcon,
   Download as DownloadIcon,
-  Description as ContractIcon
+  Description as ContractIcon,
+  Assignment as SlovakAgreementIcon,
 } from '@mui/icons-material'
 import {
   useGetReservationsQuery,
@@ -53,7 +54,8 @@ import {
   useCheckOutReservationMutation,
   useGetCarsQuery,
   useGetUsersQuery,
-  useGetPaymentsQuery
+  useGetPaymentsQuery,
+  useGenerateReservationSlovakAgreementMutation,
 } from '../store/store'
 import { useNavigate } from 'react-router-dom'
 import { t } from '../utils/translations'
@@ -143,6 +145,7 @@ function Reservations() {
   const [cancelReservation] = useCancelReservationMutation()
   const [checkInReservation] = useCheckInReservationMutation()
   const [checkOutReservation] = useCheckOutReservationMutation()
+  const [generateSlovakAgreement] = useGenerateReservationSlovakAgreementMutation()
 
   const reservations = reservationsData?.data || []
   const cars = carsData?.data || []
@@ -362,6 +365,33 @@ function Reservations() {
     console.log('PDF preview temporarily disabled');
   };
 
+  const handleDownloadSlovakAgreement = async (reservationId) => {
+    try {
+      // Open the Slovak agreement PDF in a new tab
+      const url = `/api/reservations/${reservationId}/slovak-agreement?preview=true`
+      window.open(url, '_blank')
+    } catch (error) {
+      console.error('Error generating Slovak agreement:', error)
+      alert('Chyba pri generovaní slovenskej zmluvy')
+    }
+  }
+
+  const handleDownloadSlovakAgreementFile = async (reservationId) => {
+    try {
+      // Download the Slovak agreement PDF
+      const url = `/api/reservations/${reservationId}/slovak-agreement`
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `zmluva-o-najme-${reservationId}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    } catch (error) {
+      console.error('Error downloading Slovak agreement:', error)
+      alert('Chyba pri sťahovaní slovenskej zmluvy')
+    }
+  }
+
   return (
     <Box>
       <Box sx={{ 
@@ -571,6 +601,24 @@ function Reservations() {
                               </IconButton>
                             </span>
                           </Tooltip>
+                          <Tooltip title="Generovanie Slovenskej zmluvy">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleDownloadSlovakAgreement(reservation._id)}
+                              color="primary"
+                            >
+                              <SlovakAgreementIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Stiahnuť Slovensku zmluvu">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleDownloadSlovakAgreementFile(reservation._id)}
+                              color="secondary"
+                            >
+                              <DownloadIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -705,6 +753,24 @@ function Reservations() {
                               </IconButton>
                             </span>
                           </Tooltip>
+                          <Tooltip title="Generovanie Slovenskej zmluvy">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleDownloadSlovakAgreement(reservation._id)}
+                              color="primary"
+                            >
+                              <SlovakAgreementIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Stiahnuť Slovensku zmluvu">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleDownloadSlovakAgreementFile(reservation._id)}
+                              color="secondary"
+                            >
+                              <DownloadIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -812,6 +878,24 @@ function Reservations() {
                               <EditIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          <Tooltip title="Náhľad slovenskej zmluvy">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleDownloadSlovakAgreement(reservation._id)}
+                              color="primary"
+                            >
+                              <SlovakAgreementIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Stiahnuť slovenskú zmluvu">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleDownloadSlovakAgreementFile(reservation._id)}
+                              color="secondary"
+                            >
+                              <DownloadIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                           <Tooltip title="Cancel">
                             <IconButton
                               size="small"
@@ -820,30 +904,6 @@ function Reservations() {
                             >
                               <CancelIcon fontSize="small" />
                             </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Generovanie PDF bude dostupné a prispôsobené podľa Vašej predlohy">
-                            <span>
-                              <IconButton
-                                size="small"
-                                onClick={() => handlePreviewContract(reservation._id)}
-                                color="primary"
-                                disabled={true}
-                              >
-                                <ContractIcon fontSize="small" />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-                          <Tooltip title="Generovanie PDF bude dostupné a prispôsobené podľa Vašej predlohy">
-                            <span>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDownloadContract(reservation._id)}
-                                color="secondary"
-                                disabled={true}
-                              >
-                                <DownloadIcon fontSize="small" />
-                              </IconButton>
-                            </span>
                           </Tooltip>
                         </Box>
                       </TableCell>
@@ -911,18 +971,18 @@ function Reservations() {
                         )}
                       </TableCell>
                       <TableCell>
-                        {new Date(reservation.startDate).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(reservation.endDate).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
                         <Typography variant="body2">
                           {new Date(reservation.createdAt).toLocaleDateString('sk-SK')}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                           {new Date(reservation.createdAt).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}
                         </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(reservation.startDate).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(reservation.endDate).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
                         <Chip
@@ -944,29 +1004,23 @@ function Reservations() {
                               <ViewIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Generovanie PDF bude dostupné a prispôsobené podľa Vašej predlohy">
-                            <span>
-                              <IconButton
-                                size="small"
-                                onClick={() => handlePreviewContract(reservation._id)}
-                                color="primary"
-                                disabled={true}
-                              >
-                                <ContractIcon fontSize="small" />
-                              </IconButton>
-                            </span>
+                          <Tooltip title="Náhľad slovenskej zmluvy">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleDownloadSlovakAgreement(reservation._id)}
+                              color="primary"
+                            >
+                              <SlovakAgreementIcon fontSize="small" />
+                            </IconButton>
                           </Tooltip>
-                          <Tooltip title="Generovanie PDF bude dostupné a prispôsobené podľa Vašej predlohy">
-                            <span>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDownloadContract(reservation._id)}
-                                color="secondary"
-                                disabled={true}
-                              >
-                                <DownloadIcon fontSize="small" />
-                              </IconButton>
-                            </span>
+                          <Tooltip title="Stiahnuť slovenskú zmluvu">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleDownloadSlovakAgreementFile(reservation._id)}
+                              color="secondary"
+                            >
+                              <DownloadIcon fontSize="small" />
+                            </IconButton>
                           </Tooltip>
                         </Box>
                       </TableCell>

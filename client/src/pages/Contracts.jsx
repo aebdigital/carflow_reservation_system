@@ -64,6 +64,7 @@ import {
   useGenerateContractPDFMutation,
   useGetContractStatsQuery,
   useGetReservationsQuery,
+  useGenerateReservationSlovakAgreementMutation,
 } from '../store/store'
 import { t } from '../utils/translations'
 
@@ -146,6 +147,7 @@ function Contracts() {
   const [updateContractStatus] = useUpdateContractStatusMutation()
   const [signContractStaff] = useSignContractStaffMutation()
   const [generateContractPDF] = useGenerateContractPDFMutation()
+  const [generateSlovakAgreement] = useGenerateReservationSlovakAgreementMutation()
 
   const contracts = contractsData?.data || []
   const stats = contractStatsData?.data || {}
@@ -363,6 +365,27 @@ function Contracts() {
     }
   }
 
+  const handleDownloadSlovakAgreement = async (contract) => {
+    try {
+      if (!contract.reservationId) {
+        setAlert({ type: 'error', message: 'Zmluva nemá priradenú rezerváciu' })
+        return
+      }
+
+      // Open the Slovak agreement PDF in a new tab
+      const url = `/api/reservations/${contract.reservationId}/slovak-agreement?preview=true`
+      window.open(url, '_blank')
+      
+      setAlert({ type: 'success', message: 'Slovenská zmluva o nájme sa otvára!' })
+    } catch (error) {
+      console.error('Error generating Slovak agreement:', error)
+      setAlert({ 
+        type: 'error', 
+        message: `Chyba pri generovaní slovenskej zmluvy: ${error.data?.message || error.message}` 
+      })
+    }
+  }
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'signed': return 'success'
@@ -564,8 +587,8 @@ function Contracts() {
                               size="small" 
                               onClick={() => handleOpenDialog('view', contract)}
                             >
-                        <ViewIcon fontSize="small" />
-                      </IconButton>
+                              <ViewIcon fontSize="small" />
+                            </IconButton>
                           </Tooltip>
                           <Tooltip title="Upraviť">
                             <IconButton 
@@ -573,17 +596,26 @@ function Contracts() {
                               onClick={() => handleOpenDialog('edit', contract)}
                               disabled={contract.status === 'signed'}
                             >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
                           </Tooltip>
                           <Tooltip title="Stiahnuť PDF">
-                      <IconButton 
-                        size="small" 
+                            <IconButton 
+                              size="small" 
                               onClick={() => handleDownloadPDF(contract._id)}
-                        color="primary"
-                      >
-                        <DownloadIcon fontSize="small" />
-                      </IconButton>
+                              color="primary"
+                            >
+                              <DownloadIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Slovenská zmluva o nájme">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleDownloadSlovakAgreement(contract)}
+                              color="secondary"
+                            >
+                              <ContractIcon fontSize="small" />
+                            </IconButton>
                           </Tooltip>
                           <Tooltip title="Vymazať">
                             <IconButton 
@@ -592,8 +624,8 @@ function Contracts() {
                               color="error"
                               disabled={contract.status === 'signed'}
                             >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
                           </Tooltip>
                         </Box>
                     </TableCell>

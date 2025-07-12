@@ -599,6 +599,38 @@ export const api = createApi({
       query: () => 'contracts/stats',
     }),
 
+    // Slovak rental agreement PDF generation
+    generateReservationSlovakAgreement: builder.mutation({
+      query: ({ id, preview = false }) => ({
+        url: `reservations/${id}/slovak-agreement${preview ? '?preview=true' : ''}`,
+        method: 'GET',
+        responseHandler: (response) => {
+          // Handle PDF response
+          if (preview) {
+            // For preview, open in new tab
+            const blob = new Blob([response], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            window.open(url, '_blank');
+          } else {
+            // For download, trigger download
+            const blob = new Blob([response], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `zmluva-o-najme-${id}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          }
+          return { success: true };
+        },
+      }),
+    }),
+    getSlovakAgreementTemplateFields: builder.query({
+      query: () => 'reservations/pdf-fields',
+    }),
+
     // Blog endpoints
     getBlogs: builder.query({
       query: (params = {}) => ({
@@ -782,6 +814,8 @@ export const {
   useSignContractStaffMutation,
   useGenerateContractPDFMutation,
   useGetContractStatsQuery,
+  useGenerateReservationSlovakAgreementMutation,
+  useGetSlovakAgreementTemplateFieldsQuery,
 
   // Blog hooks
   useGetBlogsQuery,
