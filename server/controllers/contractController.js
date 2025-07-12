@@ -127,6 +127,8 @@ const getContract = asyncHandler(async (req, res, next) => {
 const createContract = asyncHandler(async (req, res, next) => {
   const { reservationId, additionalServices, specialServices, rentalRules, notes } = req.body;
   
+  console.log('🔖 [CONTRACT] Creating contract with data:', { reservationId, additionalServices, specialServices, rentalRules, notes });
+  
   if (!reservationId) {
     return next(new AppError('Reservation ID is required', 400));
   }
@@ -141,48 +143,75 @@ const createContract = asyncHandler(async (req, res, next) => {
     return next(new AppError('Contract already exists for this reservation', 400));
   }
   
-  // Create contract from reservation
-  const contract = await Contract.createFromReservation(
-    reservationId,
-    req.user.tenantId,
-    req.user._id
-  );
-  
-  // Add additional data if provided
-  if (additionalServices) {
-    contract.additionalServices = additionalServices;
-  }
-  
-  if (specialServices) {
-    contract.specialServices = { ...contract.specialServices, ...specialServices };
-  }
-  
-  if (rentalRules) {
-    contract.rentalRules = { ...contract.rentalRules, ...rentalRules };
-  }
-  
-  if (notes) {
-    contract.notes = notes;
-  }
-  
-  await contract.save();
-  
-  // Populate the contract before returning
-  const populatedContract = await Contract.findById(contract._id).populate([
-    {
-      path: 'reservation',
-      select: 'reservationNumber status startDate endDate'
-    },
-    {
-      path: 'createdBy',
-      select: 'firstName lastName email'
+  try {
+    console.log('🔖 [CONTRACT] Creating contract from reservation:', reservationId);
+    console.log('🔖 [CONTRACT] User info:', { id: req.user._id, tenantId: req.user.tenantId });
+    
+    // Create contract from reservation
+    const contract = await Contract.createFromReservation(
+      reservationId,
+      req.user.tenantId,
+      req.user._id
+    );
+    
+    console.log('🔖 [CONTRACT] Contract created successfully, ID:', contract._id);
+    console.log('🔖 [CONTRACT] Contract data:', JSON.stringify(contract.toObject(), null, 2));
+    
+    // Add additional data if provided
+    if (additionalServices) {
+      contract.additionalServices = additionalServices;
     }
-  ]);
-  
-  res.status(201).json({
-    success: true,
-    data: populatedContract
-  });
+    
+    if (specialServices) {
+      contract.specialServices = { ...contract.specialServices, ...specialServices };
+    }
+    
+    if (rentalRules) {
+      contract.rentalRules = { ...contract.rentalRules, ...rentalRules };
+    }
+    
+    if (notes) {
+      contract.notes = notes;
+    }
+    
+    console.log('🔖 [CONTRACT] Additional data added, saving contract...');
+    await contract.save();
+    console.log('🔖 [CONTRACT] Contract saved successfully');
+    
+    // Populate the contract before returning
+    const populatedContract = await Contract.findById(contract._id).populate([
+      {
+        path: 'reservation',
+        select: 'reservationNumber status startDate endDate'
+      },
+      {
+        path: 'createdBy',
+        select: 'firstName lastName email'
+      }
+    ]);
+    
+    console.log('🔖 [CONTRACT] Contract populated and ready to return');
+    
+    res.status(201).json({
+      success: true,
+      data: populatedContract
+    });
+  } catch (error) {
+    console.error('🔖 [CONTRACT] Error creating contract:', error);
+    console.error('🔖 [CONTRACT] Error stack:', error.stack);
+    
+    // More detailed error handling
+    if (error.name === 'ValidationError') {
+      const errorMessages = Object.values(error.errors).map(e => e.message);
+      return next(new AppError(`Validation failed: ${errorMessages.join(', ')}`, 400));
+    }
+    
+    if (error.code === 11000) {
+      return next(new AppError('Duplicate contract number generated. Please try again.', 400));
+    }
+    
+    return next(new AppError(`Contract creation failed: ${error.message}`, 400));
+  }
 });
 
 // @desc    Update contract

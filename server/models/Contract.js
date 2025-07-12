@@ -242,34 +242,42 @@ contractSchema.index({ tenantId: 1, createdAt: 1 });
 // Generate contract number with the format: YYYYMMDD##N
 contractSchema.pre('save', async function(next) {
   if (this.isNew && !this.contractNumber) {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    
-    // Format: YYYYMMDD
-    const datePrefix = `${year}${month}${day}`;
-    
-    // Find contracts created today for this tenant
-    const startOfDay = new Date(today);
-    startOfDay.setHours(0, 0, 0, 0);
-    
-    const endOfDay = new Date(today);
-    endOfDay.setHours(23, 59, 59, 999);
-    
-    const todayContractsCount = await this.constructor.countDocuments({
-      tenantId: this.tenantId,
-      createdAt: {
-        $gte: startOfDay,
-        $lte: endOfDay
-      }
-    });
-    
-    // Sequential number with zero padding (01, 02, 03, etc.)
-    const sequentialNumber = String(todayContractsCount + 1).padStart(2, '0');
-    
-    // Final format: YYYYMMDD##N (e.g., 2025062201N)
-    this.contractNumber = `${datePrefix}${sequentialNumber}N`;
+    try {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      
+      // Format: YYYYMMDD
+      const datePrefix = `${year}${month}${day}`;
+      
+      // Find contracts created today for this tenant
+      const startOfDay = new Date(today);
+      startOfDay.setHours(0, 0, 0, 0);
+      
+      const endOfDay = new Date(today);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      const todayContractsCount = await this.constructor.countDocuments({
+        tenantId: this.tenantId,
+        createdAt: {
+          $gte: startOfDay,
+          $lte: endOfDay
+        }
+      });
+      
+      // Sequential number with zero padding (01, 02, 03, etc.)
+      const sequentialNumber = String(todayContractsCount + 1).padStart(2, '0');
+      
+      // Final format: YYYYMMDD##N (e.g., 2025062201N)
+      this.contractNumber = `${datePrefix}${sequentialNumber}N`;
+      
+      console.log('🔖 [CONTRACT] Generated contract number:', this.contractNumber);
+    } catch (error) {
+      console.error('🔖 [CONTRACT] Error generating contract number:', error);
+      // Generate a fallback contract number
+      this.contractNumber = `${Date.now()}N`;
+    }
   }
   next();
 });
@@ -333,6 +341,10 @@ contractSchema.statics.createFromReservation = async function(reservationId, ten
   const Car = require('./Car');
   const User = require('./User');
   
+  console.log('🔖 [CONTRACT MODEL] Creating contract from reservation:', reservationId);
+  console.log('🔖 [CONTRACT MODEL] Tenant ID:', tenantId);
+  console.log('🔖 [CONTRACT MODEL] Created by:', createdBy);
+  
   const reservation = await Reservation.findById(reservationId)
     .populate('customer', 'firstName lastName email phone address idNumber')
     .populate('car', 'brand model year registrationNumber vin category fuelType transmission color');
@@ -341,43 +353,67 @@ contractSchema.statics.createFromReservation = async function(reservationId, ten
     throw new Error('Reservation not found');
   }
   
+  console.log('🔖 [CONTRACT MODEL] Reservation found:', reservation._id);
+  console.log('🔖 [CONTRACT MODEL] Reservation data:', JSON.stringify(reservation.toObject(), null, 2));
+  
+  if (!reservation.customer) {
+    throw new Error('Reservation customer not found');
+  }
+  
+  console.log('🔖 [CONTRACT MODEL] Customer data:', JSON.stringify(reservation.customer.toObject(), null, 2));
+  
+  if (!reservation.car) {
+    throw new Error('Reservation car not found');
+  }
+  
+  console.log('🔖 [CONTRACT MODEL] Car data:', JSON.stringify(reservation.car.toObject(), null, 2));
+  
   // Calculate days for the rental
   const days = Math.ceil((new Date(reservation.endDate) - new Date(reservation.startDate)) / (1000 * 60 * 60 * 24));
+  console.log('🔖 [CONTRACT MODEL] Calculated days:', days);
   
   const contractData = {
     tenantId,
     reservation: reservationId,
     customer: {
-      firstName: reservation.customer.firstName,
-      lastName: reservation.customer.lastName,
-      phone: reservation.customer.phone,
-      email: reservation.customer.email,
-      address: reservation.customer.address || {},
+      firstName: reservation.customer.firstName || 'N/A',
+      lastName: reservation.customer.lastName || 'N/A',
+      phone: reservation.customer.phone || 'N/A',
+      email: reservation.customer.email || 'N/A',
+      address: reservation.customer.address || {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'Slovensko'
+      },
       idNumber: reservation.customer.idNumber || ''
     },
     vehicle: {
-      brand: reservation.car.brand,
-      model: reservation.car.model,
-      year: reservation.car.year,
-      registrationNumber: reservation.car.registrationNumber,
-      vin: reservation.car.vin,
-      category: reservation.car.category,
-      fuelType: reservation.car.fuelType,
-      transmission: reservation.car.transmission,
-      color: reservation.car.color || ''
+      brand: reservation.car.brand || 'N/A',
+      model: reservation.car.model || 'N/A',
+      year: reservation.car.year || new Date().getFullYear(),
+      registrationNumber: reservation.car.registrationNumber || 'N/A',
+      vin: reservation.car.vin || 'N/A', // Handle missing VIN
+      category: reservation.car.category || 'economy',
+      fuelType: reservation.car.fuelType || 'gasoline',
+      transmission: reservation.car.transmission || 'manual',
+      color: reservation.car.color || 'N/A'
     },
     rental: {
       startDate: reservation.startDate,
       endDate: reservation.endDate,
-      pickupLocation: reservation.pickupLocation.name,
-      returnLocation: reservation.dropoffLocation.name,
+      pickupLocation: reservation.pickupLocation?.name || 'N/A',
+      returnLocation: reservation.dropoffLocation?.name || 'N/A',
       totalDays: days,
-      dailyRate: reservation.pricing.dailyRate,
-      totalAmount: reservation.pricing.totalAmount
+      dailyRate: reservation.pricing?.dailyRate || 0,
+      totalAmount: reservation.pricing?.totalAmount || 0
     },
     additionalServices: [], // Will be populated from reservation if needed
     createdBy
   };
+  
+  console.log('🔖 [CONTRACT MODEL] Contract data prepared:', JSON.stringify(contractData, null, 2));
   
   return new this(contractData);
 };
