@@ -1,7 +1,7 @@
 const Contract = require('../models/Contract');
 const Reservation = require('../models/Reservation');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
-const PDFDocument = require('pdfkit');
+const pdfService = require('../services/pdfService');
 
 // @desc    Get all contracts (tenant-scoped)
 // @route   GET /api/contracts
@@ -359,7 +359,7 @@ const generateContractPDF = asyncHandler(async (req, res, next) => {
   }).populate([
     {
       path: 'reservation',
-      select: 'reservationNumber status'
+      select: 'reservationNumber status startDate endDate pricing customer car'
     },
     {
       path: 'createdBy',
@@ -370,227 +370,49 @@ const generateContractPDF = asyncHandler(async (req, res, next) => {
   if (!contract) {
     return next(new AppError(`Contract not found with id of ${req.params.id}`, 404));
   }
-  
-  // Create PDF document
-  const doc = new PDFDocument({ margin: 40, size: 'A4' });
-  
-  // Set response headers
-  const isPreviewing = req.query.preview === 'true';
-  if (isPreviewing) {
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="zmluva-${contract.contractNumber}.pdf"`);
-  } else {
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="zmluva-${contract.contractNumber}.pdf"`);
-  }
-  
-  doc.pipe(res);
-  
-  // Page dimensions
-  const pageWidth = doc.page.width;
-  const margin = 40;
-  const contentWidth = pageWidth - (2 * margin);
-  let yPos = margin;
-  
-  // Helper functions for better layout
-  const addBox = (x, y, width, height, fillColor = '#F8F9FA', strokeColor = '#E0E0E0') => {
-    doc.rect(x, y, width, height).fillAndStroke(fillColor, strokeColor);
-  };
-  
-  const addLine = (x1, y1, x2, y2, color = '#E0E0E0') => {
-    doc.strokeColor(color).moveTo(x1, y1).lineTo(x2, y2).stroke();
-  };
-  
-  // HEADER SECTION
-  doc.fontSize(24).font('Helvetica-Bold').fillColor('#1976D2').text('ZMLUVA O PRENÁJME VOZIDLA', margin, yPos);
-  doc.fontSize(14).font('Helvetica').fillColor('#666666').text('CarFlow - Systém správy prenájmu vozidiel', margin, yPos + 30);
-  
-  // Contract info - right aligned
-  const docInfoX = pageWidth - 250;
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text(`Číslo zmluvy: ${contract.contractNumber}`, docInfoX, yPos + 10);
-  doc.fontSize(12).font('Helvetica').fillColor('#666666').text(`Dátum vytvorenia: ${new Date(contract.createdAt).toLocaleDateString('sk-SK')}`, docInfoX, yPos + 25);
-  doc.fontSize(12).font('Helvetica').fillColor('#666666').text(`Status: ${contract.status}`, docInfoX, yPos + 40);
-  
-  yPos += 80;
-  
-  // Divider line
-  addLine(margin, yPos, pageWidth - margin, yPos, '#1976D2');
-  yPos += 30;
-  
-  // CUSTOMER INFORMATION
-  doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('INFORMÁCIE O ZÁKAZNÍKOVI', margin, yPos);
-  yPos += 25;
-  
-  addBox(margin, yPos, contentWidth, 100, '#F8F9FA', '#E0E0E0');
-  
-  // Customer details
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Meno a priezvisko:', margin + 15, yPos + 15);
-  doc.fontSize(12).font('Helvetica').fillColor('#666666').text(`${contract.customer.firstName} ${contract.customer.lastName}`, margin + 150, yPos + 15);
-  
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Telefón:', margin + 15, yPos + 35);
-  doc.fontSize(12).font('Helvetica').fillColor('#666666').text(contract.customer.phone, margin + 150, yPos + 35);
-  
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('E-mail:', margin + 15, yPos + 55);
-  doc.fontSize(12).font('Helvetica').fillColor('#666666').text(contract.customer.email, margin + 150, yPos + 55);
-  
-  if (contract.customer.address && contract.customer.address.street) {
-    doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Adresa:', margin + 15, yPos + 75);
-    const address = `${contract.customer.address.street}, ${contract.customer.address.city || ''}`;
-    doc.fontSize(12).font('Helvetica').fillColor('#666666').text(address, margin + 150, yPos + 75);
-  }
-  
-  if (contract.customer.ico) {
-    doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('IČO:', margin + 350, yPos + 15);
-    doc.fontSize(12).font('Helvetica').fillColor('#666666').text(contract.customer.ico, margin + 380, yPos + 15);
-  }
-  
-  yPos += 120;
-  
-  // VEHICLE INFORMATION
-  doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('INFORMÁCIE O VOZIDLE', margin, yPos);
-  yPos += 25;
-  
-  addBox(margin, yPos, contentWidth, 60, '#F8F9FA', '#E0E0E0');
-  
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Značka, model:', margin + 15, yPos + 15);
-  doc.fontSize(12).font('Helvetica').fillColor('#666666').text(`${contract.vehicle.brand} ${contract.vehicle.model}`, margin + 150, yPos + 15);
-  
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Evidenčné číslo:', margin + 15, yPos + 35);
-  doc.fontSize(12).font('Helvetica').fillColor('#666666').text(contract.vehicle.registrationNumber, margin + 150, yPos + 35);
-  
-  if (contract.vehicle.year) {
-    doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Rok výroby:', margin + 350, yPos + 15);
-    doc.fontSize(12).font('Helvetica').fillColor('#666666').text(contract.vehicle.year.toString(), margin + 420, yPos + 15);
-  }
-  
-  yPos += 80;
-  
-  // RENTAL DETAILS
-  doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('DETAILY PRENÁJMU', margin, yPos);
-  yPos += 25;
-  
-  addBox(margin, yPos, contentWidth, 120, '#F8F9FA', '#E0E0E0');
-  
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Dátum a čas OD:', margin + 15, yPos + 15);
-  doc.fontSize(12).font('Helvetica').fillColor('#666666').text(new Date(contract.rental.startDate).toLocaleDateString('sk-SK'), margin + 150, yPos + 15);
-  
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Dátum a čas DO:', margin + 15, yPos + 35);
-  doc.fontSize(12).font('Helvetica').fillColor('#666666').text(new Date(contract.rental.endDate).toLocaleDateString('sk-SK'), margin + 150, yPos + 35);
-  
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Miesto prevzatia:', margin + 15, yPos + 55);
-  doc.fontSize(12).font('Helvetica').fillColor('#666666').text(contract.rental.pickupLocation, margin + 150, yPos + 55);
-  
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Miesto vrátenia:', margin + 15, yPos + 75);
-  doc.fontSize(12).font('Helvetica').fillColor('#666666').text(contract.rental.returnLocation, margin + 150, yPos + 75);
-  
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Počet dní:', margin + 15, yPos + 95);
-  doc.fontSize(12).font('Helvetica').fillColor('#666666').text(contract.rental.totalDays.toString(), margin + 150, yPos + 95);
-  
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Denná sadzba:', margin + 350, yPos + 15);
-  doc.fontSize(12).font('Helvetica').fillColor('#666666').text(`${contract.rental.dailyRate}€`, margin + 450, yPos + 15);
-  
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Výsledná suma:', margin + 350, yPos + 35);
-  doc.fontSize(14).font('Helvetica-Bold').fillColor('#1976D2').text(`${contract.calculateTotalAmount()}€`, margin + 450, yPos + 35);
-  
-  yPos += 140;
-  
-  // Check if we need a new page
-  if (yPos > pageWidth - 200) {
-    doc.addPage();
-    yPos = margin;
-  }
-  
-  // ADDITIONAL SERVICES
-  if (contract.additionalServices.length > 0 || contract.specialServices.delivery.isSelected || contract.specialServices.afterHours.isSelected) {
-    doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('DOPLNKOVÉ SLUŽBY', margin, yPos);
-    yPos += 25;
+
+  try {
+    console.log('🔄 [CONTRACT PDF] Generating Slovak rental agreement for contract:', req.params.id);
+
+    // Get the reservation data with populated customer and car
+    const reservation = await Reservation.findById(contract.reservation._id)
+      .populate('customer', 'firstName lastName email phone address licenseNumber idNumber')
+      .populate('car', 'brand model year registrationNumber vin color category');
+
+    if (!reservation) {
+      return next(new AppError('Reservation not found for this contract', 404));
+    }
+
+    // Generate the PDF using the PDF service (Slovak template)
+    const pdfBuffer = await pdfService.generateRentalAgreement(
+      reservation, 
+      reservation.car, 
+      reservation.customer
+    );
+
+    // Set response headers for PDF
+    const isPreviewing = req.query.preview === 'true';
+    const filename = `zmluva-${contract.contractNumber}.pdf`;
     
-    let servicesHeight = 40 + (contract.additionalServices.length * 20);
-    if (contract.specialServices.delivery.isSelected) servicesHeight += 20;
-    if (contract.specialServices.afterHours.isSelected) servicesHeight += 20;
-    
-    addBox(margin, yPos, contentWidth, servicesHeight, '#F8F9FA', '#E0E0E0');
-    
-    let serviceY = yPos + 15;
-    
-    // Regular additional services
-    contract.additionalServices.forEach(service => {
-      doc.fontSize(12).font('Helvetica').fillColor('#333333').text(`• ${service.name}`, margin + 15, serviceY);
-      doc.fontSize(12).font('Helvetica').fillColor('#666666').text(`${service.price}€`, margin + 450, serviceY);
-      serviceY += 20;
-    });
-    
-    // Special services
-    if (contract.specialServices.delivery.isSelected) {
-      doc.fontSize(12).font('Helvetica').fillColor('#333333').text('• Pristavenie vozidla', margin + 15, serviceY);
-      doc.fontSize(12).font('Helvetica').fillColor('#666666').text(`${contract.specialServices.delivery.price}€`, margin + 450, serviceY);
-      serviceY += 20;
+    if (isPreviewing) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    } else {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     }
     
-    if (contract.specialServices.afterHours.isSelected) {
-      doc.fontSize(12).font('Helvetica').fillColor('#333333').text('• Mimo otváracích hodín', margin + 15, serviceY);
-      doc.fontSize(12).font('Helvetica').fillColor('#666666').text(`${contract.specialServices.afterHours.price}€`, margin + 450, serviceY);
-      serviceY += 20;
-    }
+    res.setHeader('Content-Length', pdfBuffer.length);
     
-    yPos += servicesHeight + 20;
+    // Send the PDF
+    res.send(pdfBuffer);
+
+    console.log('✅ [CONTRACT PDF] Slovak rental agreement sent successfully');
+
+  } catch (error) {
+    console.error('❌ [CONTRACT PDF] Error generating contract PDF:', error);
+    return next(new AppError(`Chyba pri generovaní PDF: ${error.message}`, 500));
   }
-  
-  // RENTAL RULES
-  doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('PRAVIDLÁ PRENÁJMU', margin, yPos);
-  yPos += 25;
-  
-  addBox(margin, yPos, contentWidth, 150, '#F8F9FA', '#E0E0E0');
-  
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Denný limit km:', margin + 15, yPos + 15);
-  doc.fontSize(12).font('Helvetica').fillColor('#666666').text(`${contract.rentalRules.dailyKmLimit} km`, margin + 150, yPos + 15);
-  
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Poplatky za nadlimitné km:', margin + 15, yPos + 35);
-  doc.fontSize(12).font('Helvetica').fillColor('#666666').text(`${contract.rentalRules.excessKmFee}€/km`, margin + 200, yPos + 35);
-  
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Spoluúčasť pri poistení:', margin + 15, yPos + 55);
-  doc.fontSize(12).font('Helvetica').fillColor('#666666').text(`${contract.rentalRules.insuranceDeductible}€`, margin + 180, yPos + 55);
-  
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Zakázané činnosti:', margin + 15, yPos + 75);
-  doc.fontSize(10).font('Helvetica').fillColor('#666666').text(contract.rentalRules.prohibitedActivities.join(', '), margin + 15, yPos + 95, { width: contentWidth - 30 });
-  
-  yPos += 170;
-  
-  // CANCELLATION POLICY
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Storno podmienky:', margin, yPos);
-  yPos += 15;
-  doc.fontSize(10).font('Helvetica').fillColor('#666666').text(contract.rentalRules.cancellationPolicy, margin, yPos, { width: contentWidth });
-  
-  yPos += 60;
-  
-  // SIGNATURES
-  doc.fontSize(16).font('Helvetica-Bold').fillColor('#1976D2').text('PODPISY', margin, yPos);
-  yPos += 40;
-  
-  // Customer signature
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Podpis zákazníka:', margin, yPos);
-  doc.fontSize(10).font('Helvetica').fillColor('#666666').text('Dátum:', margin + 300, yPos);
-  addLine(margin, yPos + 40, margin + 250, yPos + 40);
-  addLine(margin + 300, yPos + 40, margin + 450, yPos + 40);
-  
-  yPos += 80;
-  
-  // Staff signature
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#333333').text('Podpis zástupcu prenajímateľa:', margin, yPos);
-  doc.fontSize(10).font('Helvetica').fillColor('#666666').text('Dátum:', margin + 300, yPos);
-  addLine(margin, yPos + 40, margin + 250, yPos + 40);
-  addLine(margin + 300, yPos + 40, margin + 450, yPos + 40);
-  
-  // Footer
-  yPos += 100;
-  doc.fontSize(8).font('Helvetica').fillColor('#999999').text(
-    `Zmluva vytvorená systémom CarFlow dňa ${new Date().toLocaleDateString('sk-SK')}`,
-    margin,
-    yPos,
-    { align: 'center', width: contentWidth }
-  );
-  
-  doc.end();
 });
 
 // @desc    Get contract statistics
