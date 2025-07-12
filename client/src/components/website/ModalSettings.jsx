@@ -1118,7 +1118,7 @@ export default function ModalSettings() {
                   <Typography variant="h6" gutterBottom>
                     Zobrazenie a spúšťanie
                   </Typography>
-                </Grid>
+                  </Grid>
 
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth>

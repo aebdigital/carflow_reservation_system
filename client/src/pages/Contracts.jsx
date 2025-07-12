@@ -1011,7 +1011,7 @@ function Contracts() {
               </AccordionSummary>
               <AccordionDetails>
                 <Grid container spacing={2}>
-                  <Grid item xs={12}>
+            <Grid item xs={12}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                       Dodatočné služby a priplatky:
                     </Typography>
