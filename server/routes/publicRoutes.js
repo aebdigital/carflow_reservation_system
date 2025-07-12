@@ -16,6 +16,7 @@ const {
   getInfoBarByUser,
   getModalByUser,
   subscribeToNewsletter,
+  subscribeToNewsletterSimple,
   verifyDiscountCodeByUser,
   getPublicCars,
   getPublicCar,
@@ -86,7 +87,8 @@ router.get('/users/:email/info-bar', getInfoBarByUser); // Get active info bar
 router.get('/users/:email/modal', getModalByUser); // Get active modal
 
 // Newsletter and discount endpoints
-router.post('/users/:email/newsletter', subscribeToNewsletter); // Subscribe to newsletter
+router.post('/users/:email/newsletter', subscribeToNewsletter); // Subscribe to newsletter (with tenant email)
+router.post('/newsletter/subscribe', subscribeToNewsletterSimple); // Simple newsletter subscription
 router.post('/users/:email/verify-discount', verifyDiscountCodeByUser); // Verify discount code
 
 // Blog endpoints (public)

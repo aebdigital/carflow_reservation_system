@@ -1400,10 +1400,16 @@ const getModalByUser = asyncHandler(async (req, res, next) => {
 // @access  Public
 const subscribeToNewsletter = asyncHandler(async (req, res, next) => {
   const userEmail = req.params.email;
-  const { subscriberEmail, firstName, lastName } = req.body;
+  const { subscriberEmail, firstName, lastName, phone, consent = true } = req.body;
   
   if (!userEmail || !subscriberEmail) {
     return next(new AppError('User email and subscriber email are required', 400));
+  }
+
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(subscriberEmail)) {
+    return next(new AppError('Please enter a valid email address', 400));
   }
 
   try {
@@ -1413,18 +1419,77 @@ const subscribeToNewsletter = asyncHandler(async (req, res, next) => {
       return next(new AppError('Tenant not found for this user', 404));
     }
 
-    // Here you could save newsletter subscriptions to a Newsletter model
-    // For now, we'll just return success
-    console.log(`Newsletter subscription for tenant ${tenantId}:`, {
+    // Import EmailSubscription model
+    const EmailSubscription = require('../models/EmailSubscription');
+
+    // Check if email already exists for this tenant
+    let subscription = await EmailSubscription.findOne({ 
+      tenantId: tenantId, 
+      email: subscriberEmail 
+    });
+
+    if (subscription) {
+      // If exists but inactive, reactivate
+      if (!subscription.isActive) {
+        await subscription.resubscribe();
+        return res.status(200).json({
+          success: true,
+          message: 'Successfully resubscribed to newsletter',
+          data: {
+            email: subscription.email,
+            firstName: subscription.firstName,
+            lastName: subscription.lastName,
+            subscribedAt: subscription.subscribedDate
+          }
+        });
+      } else {
+        return res.status(200).json({
+          success: true,
+          message: 'Email already subscribed to newsletter',
+          data: {
+            email: subscription.email,
+            firstName: subscription.firstName,
+            lastName: subscription.lastName,
+            subscribedAt: subscription.subscribedDate
+          }
+        });
+      }
+    }
+
+    // Create new subscription
+    subscription = new EmailSubscription({
+      tenantId: tenantId,
+      email: subscriberEmail,
+      firstName: firstName || '',
+      lastName: lastName || '',
+      phone: phone || '',
+      source: 'website',
+      tags: ['newsletter'],
+      isActive: true,
+      consentGiven: consent,
+      consentDate: new Date(),
+      ipAddress: req.ip || req.connection.remoteAddress || '',
+      userAgent: req.get('User-Agent') || ''
+    });
+
+    await subscription.save();
+
+    console.log(`✅ Newsletter subscription saved for tenant ${tenantId}:`, {
       subscriberEmail,
       firstName,
       lastName,
-      subscribedAt: new Date()
+      subscribedAt: subscription.subscribedDate
     });
 
-    res.status(200).json({
+    res.status(201).json({
       success: true,
-      message: 'Successfully subscribed to newsletter'
+      message: 'Successfully subscribed to newsletter',
+      data: {
+        email: subscription.email,
+        firstName: subscription.firstName,
+        lastName: subscription.lastName,
+        subscribedAt: subscription.subscribedDate
+      }
     });
 
   } catch (error) {
@@ -2212,6 +2277,138 @@ const getPublicCarCalendar = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Simple newsletter subscription (public)
+// @route   POST /api/public/newsletter/subscribe
+// @access  Public
+const subscribeToNewsletterSimple = asyncHandler(async (req, res, next) => {
+  const { email, firstName, lastName, phone, consent = true, tenantId } = req.body;
+  
+  if (!email) {
+    return next(new AppError('Email is required', 400));
+  }
+
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return next(new AppError('Please enter a valid email address', 400));
+  }
+
+  try {
+    let resolvedTenantId = tenantId;
+    
+    // If no tenant ID provided, try to resolve from headers or host
+    if (!resolvedTenantId) {
+      // Try to get tenant ID from header
+      resolvedTenantId = req.headers['x-tenant-id'];
+      
+      // If still no tenant ID, try to resolve from host/subdomain
+      if (!resolvedTenantId) {
+        const host = req.get('Host') || req.get('host');
+        if (host) {
+          // Extract subdomain
+          const subdomain = host.split('.')[0];
+          
+          // Try to find tenant by subdomain or domain
+          const User = require('../models/User');
+          const tenant = await User.findOne({ 
+            role: 'admin', 
+            $or: [
+              { subdomain: subdomain },
+              { domain: host },
+              { email: { $regex: subdomain, $options: 'i' } }
+            ]
+          });
+          
+          if (tenant) {
+            resolvedTenantId = tenant._id;
+          }
+        }
+      }
+    }
+    
+    if (!resolvedTenantId) {
+      return next(new AppError('Unable to determine tenant. Please provide tenant information.', 400));
+    }
+
+    // Import EmailSubscription model
+    const EmailSubscription = require('../models/EmailSubscription');
+
+    // Check if email already exists for this tenant
+    let subscription = await EmailSubscription.findOne({ 
+      tenantId: resolvedTenantId, 
+      email: email 
+    });
+
+    if (subscription) {
+      // If exists but inactive, reactivate
+      if (!subscription.isActive) {
+        await subscription.resubscribe();
+        return res.status(200).json({
+          success: true,
+          message: 'Successfully resubscribed to newsletter',
+          data: {
+            email: subscription.email,
+            firstName: subscription.firstName,
+            lastName: subscription.lastName,
+            subscribedAt: subscription.subscribedDate
+          }
+        });
+      } else {
+        return res.status(200).json({
+          success: true,
+          message: 'Email already subscribed to newsletter',
+          data: {
+            email: subscription.email,
+            firstName: subscription.firstName,
+            lastName: subscription.lastName,
+            subscribedAt: subscription.subscribedDate
+          }
+        });
+      }
+    }
+
+    // Create new subscription
+    subscription = new EmailSubscription({
+      tenantId: resolvedTenantId,
+      email: email,
+      firstName: firstName || '',
+      lastName: lastName || '',
+      phone: phone || '',
+      source: 'website',
+      tags: ['newsletter'],
+      isActive: true,
+      consentGiven: consent,
+      consentDate: new Date(),
+      ipAddress: req.ip || req.connection.remoteAddress || '',
+      userAgent: req.get('User-Agent') || ''
+    });
+
+    await subscription.save();
+
+    console.log(`✅ Newsletter subscription saved for tenant ${resolvedTenantId}:`, {
+      email,
+      firstName,
+      lastName,
+      subscribedAt: subscription.subscribedDate
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Successfully subscribed to newsletter',
+      data: {
+        email: subscription.email,
+        firstName: subscription.firstName,
+        lastName: subscription.lastName,
+        subscribedAt: subscription.subscribedDate
+      }
+    });
+
+  } catch (error) {
+    console.error('Error subscribing to newsletter:', error);
+    return next(new AppError('Error subscribing to newsletter', 500));
+  }
+});
+
 module.exports = {
   createPublicReservation,
   getCarsByUser,
@@ -2229,5 +2426,6 @@ module.exports = {
   getPublicCar,
   getCarCalendarByUser,
   getReservedDatesByUser,
-  getPublicCarCalendar
+  getPublicCarCalendar,
+  subscribeToNewsletterSimple
 }; 
