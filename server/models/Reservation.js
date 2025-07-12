@@ -194,6 +194,27 @@ const reservationSchema = new mongoose.Schema({
     cancellationPolicy: String,
     lateReturnFee: Number
   },
+  // Cancellation information
+  cancellation: {
+    date: Date,
+    reason: String,
+    cancelledBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
+  },
+
+  // Confirmation information
+  confirmation: {
+    date: Date,
+    notes: String,
+    confirmedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
+  },
+
+  // Check-in information
   checkIn: {
     date: Date,
     mileage: Number,

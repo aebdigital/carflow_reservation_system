@@ -105,22 +105,22 @@ const priorityOptions = [
 
 const initialFormData = {
   name: '',
-  title: '',
-  content: '',
-  type: 'info',
-  displayLocation: 'all-pages',
-  triggerRule: { type: 'time', value: 5 },
+    title: '',
+    content: '',
+    type: 'info',
+    displayLocation: 'all-pages',
+    triggerRule: { type: 'time', value: 5 },
   frequency: 'every-visit',
   priority: 5,
-  isActive: true,
+    isActive: true,
   isScheduled: false,
-  startDate: null,
-  endDate: null,
-  emailPlaceholder: 'Zadajte váš email',
-  buttonText: 'Získať zľavu',
+    startDate: null,
+    endDate: null,
+    emailPlaceholder: 'Zadajte váš email',
+    buttonText: 'Získať zľavu',
   secondaryButtonText: 'Možno neskôr',
-  discountCode: '',
-  discountPercentage: 10,
+    discountCode: '',
+    discountPercentage: 10,
   discountType: 'percentage',
   discountValue: 0,
   styling: {
@@ -840,7 +840,7 @@ export default function ModalSettings() {
   )
 
   if (modalsLoading) {
-    return (
+  return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
         <CircularProgress />
       </Box>
@@ -858,15 +858,15 @@ export default function ModalSettings() {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={sk}>
       <Box>
-        {alert && (
-          <Alert 
-            severity={alert.type} 
-            onClose={() => setAlert(null)}
-            sx={{ mb: 3 }}
-          >
-            {alert.message}
-          </Alert>
-        )}
+              {alert && (
+                <Alert 
+                  severity={alert.type} 
+                  onClose={() => setAlert(null)}
+                  sx={{ mb: 3 }}
+                >
+                  {alert.message}
+                </Alert>
+              )}
 
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -1053,17 +1053,17 @@ export default function ModalSettings() {
           
           <form onSubmit={handleSubmit}>
             <DialogContent>
-              <Grid container spacing={3}>
+                <Grid container spacing={3}>
                 {/* Basic Information */}
-                <Grid item xs={12}>
+                  <Grid item xs={12}>
                   <Typography variant="h6" gutterBottom>
                     Základné informácie
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
+                    <TextField
+                      fullWidth
                     label="Názov modalu *"
                     value={formData.name}
                     onChange={handleChange('name')}
@@ -1093,24 +1093,24 @@ export default function ModalSettings() {
                   <TextField
                     fullWidth
                     label="Titulok modalu *"
-                    value={formData.title}
-                    onChange={handleChange('title')}
-                    placeholder="napr. Získajte 10% zľavu!"
+                      value={formData.title}
+                      onChange={handleChange('title')}
+                      placeholder="napr. Získajte 10% zľavu!"
                     helperText="Zobrazí sa návštevníkom"
-                  />
-                </Grid>
+                    />
+                  </Grid>
 
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
                     label="Obsah modalu *"
-                    value={formData.content}
-                    onChange={handleChange('content')}
-                    multiline
-                    rows={4}
-                    placeholder="napr. Zadajte svoj email a získajte 10% zľavu na prvú rezerváciu!"
-                  />
-                </Grid>
+                      value={formData.content}
+                      onChange={handleChange('content')}
+                      multiline
+                      rows={4}
+                      placeholder="napr. Zadajte svoj email a získajte 10% zľavu na prvú rezerváciu!"
+                    />
+                  </Grid>
 
                 {/* Display & Trigger Settings */}
                 <Grid item xs={12}>
@@ -1120,58 +1120,58 @@ export default function ModalSettings() {
                   </Typography>
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth>
                     <InputLabel>Zobrazenie na stránkach</InputLabel>
-                    <Select
+                      <Select
                       value={formData.displayLocation}
                       onChange={handleChange('displayLocation')}
                       label="Zobrazenie na stránkach"
                     >
                       {displayLocationOptions.map((option) => (
-                        <MenuItem key={option.value} value={option.value}>
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
+                          <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
 
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth>
                     <InputLabel>Frekvencia zobrazenia</InputLabel>
-                    <Select
+                      <Select
                       value={formData.frequency}
                       onChange={handleChange('frequency')}
                       label="Frekvencia zobrazenia"
                     >
                       {frequencyOptions.map((option) => (
-                        <MenuItem key={option.value} value={option.value}>
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
+                          <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
 
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth>
                     <InputLabel>Spúšťač</InputLabel>
-                    <Select
-                      value={formData.triggerRule.type}
-                      onChange={handleTriggerChange('type')}
+                      <Select
+                        value={formData.triggerRule.type}
+                        onChange={handleTriggerChange('type')}
                       label="Spúšťač"
-                    >
-                      {triggerTypeOptions.map((option) => (
-                        <MenuItem key={option.value} value={option.value}>
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
+                      >
+                        {triggerTypeOptions.map((option) => (
+                          <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
 
-                <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} sm={6}>
                   <FormControl fullWidth>
                     <InputLabel>Priorita</InputLabel>
                     <Select
@@ -1190,20 +1190,20 @@ export default function ModalSettings() {
 
                 {(formData.triggerRule.type === 'time' || formData.triggerRule.type === 'scroll') && (
                   <Grid item xs={12}>
-                    <Typography gutterBottom>
+                      <Typography gutterBottom>
                       {formData.triggerRule.type === 'time' ? 'Oneskorenie (sekundy)' : 'Skrolovanie (%)'}
-                    </Typography>
-                    <Slider
-                      value={formData.triggerRule.value}
+                      </Typography>
+                      <Slider
+                        value={formData.triggerRule.value}
                       onChange={(e, value) => handleTriggerChange('value')(e, value)}
-                      min={formData.triggerRule.type === 'time' ? 1 : 10}
-                      max={formData.triggerRule.type === 'time' ? 60 : 100}
-                      step={formData.triggerRule.type === 'time' ? 1 : 5}
-                      marks
+                        min={formData.triggerRule.type === 'time' ? 1 : 10}
+                        max={formData.triggerRule.type === 'time' ? 60 : 100}
+                        step={formData.triggerRule.type === 'time' ? 1 : 5}
+                        marks
                       valueLabelDisplay="auto"
-                    />
-                  </Grid>
-                )}
+                      />
+                    </Grid>
+                  )}
 
                 {/* Content Specific Fields */}
                 {(formData.type === 'newsletter' || formData.type === 'discount') && (
@@ -1215,7 +1215,7 @@ export default function ModalSettings() {
                       </Typography>
                     </Grid>
 
-                    <Grid item xs={12} sm={6}>
+                      <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
                         label="Text tlačidla"
@@ -1242,18 +1242,18 @@ export default function ModalSettings() {
                           onChange={handleChange('emailPlaceholder')}
                         />
                       </Grid>
-                    )}
+                  )}
 
-                    {formData.type === 'discount' && (
-                      <>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            label="Zľavový kód"
-                            value={formData.discountCode}
-                            onChange={handleChange('discountCode')}
-                          />
-                        </Grid>
+                  {formData.type === 'discount' && (
+                    <>
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          fullWidth
+                          label="Zľavový kód"
+                          value={formData.discountCode}
+                          onChange={handleChange('discountCode')}
+                        />
+                      </Grid>
 
                         <Grid item xs={12} sm={6}>
                           <FormControl fullWidth>
@@ -1270,70 +1270,70 @@ export default function ModalSettings() {
                         </Grid>
 
                         {formData.discountType === 'percentage' ? (
-                          <Grid item xs={12} sm={6}>
-                            <TextField
-                              fullWidth
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          fullWidth
                               label="Percentuálna zľava (%)"
-                              type="number"
-                              value={formData.discountPercentage}
-                              onChange={handleChange('discountPercentage')}
-                              inputProps={{ min: 1, max: 100 }}
-                            />
-                          </Grid>
+                          type="number"
+                          value={formData.discountPercentage}
+                          onChange={handleChange('discountPercentage')}
+                          inputProps={{ min: 1, max: 100 }}
+                        />
+                      </Grid>
                         ) : (
-                          <Grid item xs={12} sm={6}>
-                            <TextField
-                              fullWidth
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
                               label="Pevná suma zľavy (€)"
                               type="number"
                               value={formData.discountValue}
                               onChange={handleChange('discountValue')}
                               inputProps={{ min: 1 }}
-                            />
-                          </Grid>
+                    />
+                  </Grid>
                         )}
                       </>
                     )}
                   </>
                 )}
 
-                {/* Styling */}
-                <Grid item xs={12}>
+                  {/* Styling */}
+                  <Grid item xs={12}>
                   <Divider sx={{ my: 2 }} />
                   <Typography variant="h6" gutterBottom>
                     Vzhľad
-                  </Typography>
-                </Grid>
+                    </Typography>
+                  </Grid>
 
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    fullWidth
-                    label="Farba pozadia"
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      fullWidth
+                      label="Farba pozadia"
                     type="color"
                     value={formData.styling.backgroundColor}
                     onChange={handleStylingChange('backgroundColor')}
-                  />
-                </Grid>
+                    />
+                  </Grid>
 
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    fullWidth
-                    label="Farba textu"
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      fullWidth
+                      label="Farba textu"
                     type="color"
                     value={formData.styling.textColor}
                     onChange={handleStylingChange('textColor')}
-                  />
-                </Grid>
+                    />
+                  </Grid>
 
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    fullWidth
-                    label="Farba tlačidla"
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      fullWidth
+                      label="Farba tlačidla"
                     type="color"
                     value={formData.styling.buttonColor}
                     onChange={handleStylingChange('buttonColor')}
-                  />
-                </Grid>
+                    />
+                  </Grid>
 
                 {/* Settings */}
                 <Grid item xs={12}>
@@ -1406,23 +1406,23 @@ export default function ModalSettings() {
 
                 {formData.isScheduled && (
                   <>
-                    <Grid item xs={12} sm={6}>
-                      <DateTimePicker
+                  <Grid item xs={12} sm={6}>
+                    <DateTimePicker
                         label="Dátum začiatku"
-                        value={formData.startDate}
-                        onChange={handleDateChange('startDate')}
+                      value={formData.startDate}
+                      onChange={handleDateChange('startDate')}
                         renderInput={(params) => <TextField {...params} fullWidth />}
-                      />
-                    </Grid>
+                    />
+                  </Grid>
 
-                    <Grid item xs={12} sm={6}>
-                      <DateTimePicker
+                  <Grid item xs={12} sm={6}>
+                    <DateTimePicker
                         label="Dátum ukončenia"
-                        value={formData.endDate}
-                        onChange={handleDateChange('endDate')}
+                      value={formData.endDate}
+                      onChange={handleDateChange('endDate')}
                         renderInput={(params) => <TextField {...params} fullWidth />}
-                      />
-                    </Grid>
+                    />
+                  </Grid>
                   </>
                 )}
               </Grid>
@@ -1435,20 +1435,20 @@ export default function ModalSettings() {
               <Button onClick={handleCloseDialog} startIcon={<CancelIcon />}>
                 Zrušiť
               </Button>
-              <Button 
-                type="submit" 
-                variant="contained" 
-                startIcon={<SaveIcon />}
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        startIcon={<SaveIcon />}
                 disabled={creating || updating}
-              >
+                      >
                 {creating || updating ? 'Ukladá sa...' : 'Uložiť'}
-              </Button>
+                      </Button>
             </DialogActions>
           </form>
         </Dialog>
 
         {/* Preview Modal */}
-        {renderPreviewModal()}
+      {renderPreviewModal()}
       </Box>
     </LocalizationProvider>
   )

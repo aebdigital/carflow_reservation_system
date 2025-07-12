@@ -587,8 +587,8 @@ function Contracts() {
                               size="small" 
                               onClick={() => handleOpenDialog('view', contract)}
                             >
-                              <ViewIcon fontSize="small" />
-                            </IconButton>
+                        <ViewIcon fontSize="small" />
+                      </IconButton>
                           </Tooltip>
                           <Tooltip title="Upraviť">
                             <IconButton 
@@ -596,17 +596,17 @@ function Contracts() {
                               onClick={() => handleOpenDialog('edit', contract)}
                               disabled={contract.status === 'signed'}
                             >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
+                        <EditIcon fontSize="small" />
+                      </IconButton>
                           </Tooltip>
                           <Tooltip title="Stiahnuť PDF">
-                            <IconButton 
-                              size="small" 
+                      <IconButton 
+                        size="small" 
                               onClick={() => handleDownloadPDF(contract._id)}
-                              color="primary"
-                            >
-                              <DownloadIcon fontSize="small" />
-                            </IconButton>
+                        color="primary"
+                      >
+                        <DownloadIcon fontSize="small" />
+                      </IconButton>
                           </Tooltip>
                           <Tooltip title="Slovenská zmluva o nájme">
                             <IconButton 
@@ -624,8 +624,8 @@ function Contracts() {
                               color="error"
                               disabled={contract.status === 'signed'}
                             >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
                           </Tooltip>
                         </Box>
                     </TableCell>

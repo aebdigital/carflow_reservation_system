@@ -44,12 +44,14 @@ import {
   Download as DownloadIcon,
   Description as ContractIcon,
   Assignment as SlovakAgreementIcon,
+  CheckCircleOutline as ConfirmIcon,
 } from '@mui/icons-material'
 import {
   useGetReservationsQuery,
   useCreateReservationMutation,
   useUpdateReservationMutation,
   useCancelReservationMutation,
+  useConfirmReservationMutation,
   useCheckInReservationMutation,
   useCheckOutReservationMutation,
   useGetCarsQuery,
@@ -143,6 +145,7 @@ function Reservations() {
   const [createReservation, { isLoading: creating }] = useCreateReservationMutation()
   const [updateReservation, { isLoading: updating }] = useUpdateReservationMutation()
   const [cancelReservation] = useCancelReservationMutation()
+  const [confirmReservation] = useConfirmReservationMutation()
   const [checkInReservation] = useCheckInReservationMutation()
   const [checkOutReservation] = useCheckOutReservationMutation()
   const [generateSlovakAgreement] = useGenerateReservationSlovakAgreementMutation()
@@ -297,6 +300,18 @@ function Reservations() {
       }).unwrap()
     } catch (error) {
       console.error('Error cancelling reservation:', error)
+    }
+  }
+
+  const handleConfirm = async (reservation) => {
+    try {
+      await confirmReservation({
+        id: reservation._id,
+        date: new Date(),
+        notes: 'Confirmed by admin'
+      }).unwrap()
+    } catch (error) {
+      console.error('Error confirming reservation:', error)
     }
   }
 
@@ -533,6 +548,17 @@ function Reservations() {
                               <EditIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          {reservation.status === 'pending' && (
+                            <Tooltip title="Potvrdiť rezerváciu">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleConfirm(reservation)}
+                                color="success"
+                              >
+                                <ConfirmIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                           {reservation.status === 'confirmed' && (
                             <Tooltip title="Check In">
                               <IconButton
@@ -876,6 +902,15 @@ function Reservations() {
                               onClick={() => handleOpenDialog('edit', reservation)}
                             >
                               <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Potvrdiť rezerváciu">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleConfirm(reservation)}
+                              color="success"
+                            >
+                              <ConfirmIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Náhľad slovenskej zmluvy">

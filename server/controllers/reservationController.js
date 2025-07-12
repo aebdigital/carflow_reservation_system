@@ -437,49 +437,70 @@ const updateReservation = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/reservations/:id/cancel
 // @access  Private
 const cancelReservation = asyncHandler(async (req, res, next) => {
-  const reservation = await Reservation.findById(req.params.id);
+  const { reason } = req.body;
+  
+  const reservation = await Reservation.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  });
 
   if (!reservation) {
-    return next(new AppError(`Rezervácia s ID ${req.params.id} nebola nájdená`, 404));
+    return next(new AppError('Reservation not found', 404));
   }
 
-  // Check authorization
-  if (req.user.role === 'customer' && reservation.customer.toString() !== req.user._id.toString()) {
-    return next(new AppError('Nemáte oprávnenie na zrušenie tejto rezervácie', 403));
+  // Check if reservation can be cancelled
+  if (reservation.status === 'completed' || reservation.status === 'cancelled') {
+    return next(new AppError('Cannot cancel completed or already cancelled reservation', 400));
   }
 
-  if (!reservation.canBeCancelled()) {
-    return next(new AppError('Rezervácia nemôže byť zrušená', 400));
-  }
-
-  // Update reservation status
   reservation.status = 'cancelled';
-  reservation.lastModifiedBy = req.user._id;
-  reservation.notes = req.body.reason || 'Zrušená uživateľom';
+  reservation.cancellation = {
+    date: new Date(),
+    reason: reason || 'Cancelled by admin',
+    cancelledBy: req.user._id
+  };
+
   await reservation.save();
-
-  // Update car status back to available
-  await Car.findByIdAndUpdate(reservation.car, { status: 'active' });
-
-  // If payment exists, process refund (demo mode)
-  if (reservation.payment) {
-    const payment = await Payment.findById(reservation.payment);
-    if (payment && payment.canBeRefunded()) {
-      // In demo mode, just mark as refunded
-      payment.status = 'refunded';
-      payment.refunds.push({
-        refundId: `demo-refund-${Date.now()}`,
-        amount: payment.amount,
-        reason: 'Rezervácia zrušená',
-        status: 'succeeded',
-        processedAt: new Date()
-      });
-      await payment.save();
-    }
-  }
 
   res.status(200).json({
     success: true,
+    message: 'Reservation cancelled successfully',
+    data: reservation
+  });
+});
+
+// @desc    Confirm reservation
+// @route   PUT /api/reservations/:id/confirm
+// @access  Private
+const confirmReservation = asyncHandler(async (req, res, next) => {
+  const { notes } = req.body;
+  
+  const reservation = await Reservation.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  });
+
+  if (!reservation) {
+    return next(new AppError('Reservation not found', 404));
+  }
+
+  // Check if reservation can be confirmed
+  if (reservation.status !== 'pending') {
+    return next(new AppError('Only pending reservations can be confirmed', 400));
+  }
+
+  reservation.status = 'confirmed';
+  reservation.confirmation = {
+    date: new Date(),
+    notes: notes || 'Confirmed by admin',
+    confirmedBy: req.user._id
+  };
+
+  await reservation.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Reservation confirmed successfully',
     data: reservation
   });
 });
@@ -1022,6 +1043,7 @@ module.exports = {
   createReservation,
   updateReservation,
   cancelReservation,
+  confirmReservation,
   checkInReservation,
   checkOutReservation,
   getReservationStats,
