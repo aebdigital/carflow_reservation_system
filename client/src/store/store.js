@@ -601,6 +601,27 @@ export const api = createApi({
       query: ({ id, preview = false }) => ({
         url: `contracts/${id}/pdf${preview ? '?preview=true' : ''}`,
         method: 'GET',
+        responseHandler: async (response) => {
+          // Handle PDF response
+          const blob = await response.blob();
+          
+          if (preview) {
+            // For preview, open in new tab
+            const url = window.URL.createObjectURL(blob);
+            window.open(url, '_blank');
+          } else {
+            // For download, trigger download
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `zmluva-${id}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          }
+          return { success: true };
+        },
       }),
     }),
     getContractStats: builder.query({

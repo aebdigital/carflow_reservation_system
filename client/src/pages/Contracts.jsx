@@ -419,14 +419,26 @@ function Contracts() {
 
   const handleDownloadPDF = async (contractId) => {
     try {
-      const response = await generateContractPDF({ id: contractId, preview: false }).unwrap()
-      // The PDF download will be handled by the browser
+      await generateContractPDF({ id: contractId, preview: false }).unwrap()
       setAlert({ type: 'success', message: 'PDF zmluvy sa sťahuje!' })
     } catch (error) {
       console.error('Error generating PDF:', error)
       setAlert({ 
         type: 'error', 
-        message: `Chyba pri generovaní PDF: ${error.data?.message || error.message}` 
+        message: `Chyba pri generovaní PDF: ${error.data?.message || error.message || 'Neočakávaná chyba'}` 
+      })
+    }
+  }
+
+  const handlePreviewPDF = async (contractId) => {
+    try {
+      await generateContractPDF({ id: contractId, preview: true }).unwrap()
+      setAlert({ type: 'success', message: 'PDF zmluvy sa otvára v novom okne!' })
+    } catch (error) {
+      console.error('Error previewing PDF:', error)
+      setAlert({ 
+        type: 'error', 
+        message: `Chyba pri náhľade PDF: ${error.data?.message || error.message || 'Neočakávaná chyba'}` 
       })
     }
   }
@@ -673,6 +685,15 @@ function Contracts() {
                       >
                         <DownloadIcon fontSize="small" />
                       </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Náhľad PDF">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handlePreviewPDF(contract._id)}
+                              color="info"
+                            >
+                              <PrintIcon fontSize="small" />
+                            </IconButton>
                           </Tooltip>
                           <Tooltip title="Slovenská zmluva o nájme">
                             <IconButton 
