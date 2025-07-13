@@ -174,7 +174,7 @@ class BySquareService {
       currencyCode: 'EUR',
       
       // Payment details for QR
-      bankAccount: 'SK1234567890123456789012', // Default account
+      bankAccount: 'SK6807200000000000000000', // Valid Slovak IBAN format
       variableSymbol: variableSymbol,
       constantSymbol: '0308', // Car rental services
       specificSymbol: '',
@@ -301,6 +301,22 @@ class BySquareService {
             UnitPriceTaxAmount: 0
           },
           
+          // Tax category summaries (required by API)
+          TaxCategorySummaries: {
+            TaxCategorySummary: {
+              ClassifiedTaxCategory: 0,
+              TaxExclusiveAmount: invoiceData.amount,
+              TaxInclusiveAmount: invoiceData.amount,
+              TaxAmount: 0,
+              AlreadyClaimedTaxExclusiveAmount: 0,
+              AlreadyClaimedTaxInclusiveAmount: 0,
+              AlreadyClaimedTaxAmount: 0,
+              DifferenceTaxExclusiveAmount: invoiceData.amount,
+              DifferenceTaxInclusiveAmount: invoiceData.amount,
+              DifferenceTaxAmount: 0
+            }
+          },
+          
           // Monetary totals
           MonetarySummary: {
             TaxExclusiveAmount: invoiceData.amount,
@@ -327,13 +343,13 @@ class BySquareService {
           Payments: {
             Payment: {
               PaymentOptions: 'paymentorder',
-              Amount: invoiceData.amount,
+              Amount: { $: { 'xsi:nil': 'true' } },
               CurrencyCode: invoiceData.currencyCode,
-              PaymentDueDate: invoiceData.paymentDueDate,
+              PaymentDueDate: { $: { 'xsi:nil': 'true' } },
               BankAccounts: {
                 BankAccount: {
                   IBAN: invoiceData.bankAccount,
-                  BIC: 'TATRSKBX' // Default BIC for Tatra banka
+                  BIC: 'TATRSKBX'
                 }
               },
               VariableSymbol: invoiceData.variableSymbol,
