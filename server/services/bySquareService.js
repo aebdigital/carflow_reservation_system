@@ -3,7 +3,7 @@ const xml2js = require('xml2js');
 
 class BySquareService {
   constructor() {
-    this.apiUrl = 'https://app.bysquare.com/api/uploadInvoiceQR_v2';
+    this.apiUrl = 'https://app.bysquare.com/api/generateStringCodes_v2';
     this.username = process.env.BYSQUARE_USERNAME || '';
     this.password = process.env.BYSQUARE_PASSWORD || '';
     this.serviceId = process.env.BYSQUARE_SERVICE_ID || '';
@@ -290,11 +290,14 @@ class BySquareService {
             Phone: invoiceData.customer.phone
           },
           
-          // Single invoice line for simplicity
+          // Number of invoice lines (as shown in API docs)
+          NumberOfInvoiceLines: { $: { 'xsi:nil': 'true' } },
+          
+          // Single invoice line for simplicity - match API docs exactly
           SingleInvoiceLine: {
             ItemName: invoiceData.items[0].itemName,
-            PeriodFromDate: invoiceData.items[0].periodFromDate,
-            PeriodToDate: invoiceData.items[0].periodToDate,
+            PeriodFromDate: { $: { 'xsi:nil': 'true' } },
+            PeriodToDate: { $: { 'xsi:nil': 'true' } },
             InvoicedQuantity: invoiceData.items[0].quantity,
             UnitPriceTaxExclusiveAmount: invoiceData.items[0].unitPrice,
             UnitPriceTaxInclusiveAmount: invoiceData.items[0].unitPrice,
@@ -304,7 +307,7 @@ class BySquareService {
           // Tax category summaries (required by API)
           TaxCategorySummaries: {
             TaxCategorySummary: {
-              ClassifiedTaxCategory: 0,
+              ClassifiedTaxCategory: 0.0,
               TaxExclusiveAmount: invoiceData.amount,
               TaxInclusiveAmount: invoiceData.amount,
               TaxAmount: 0,
@@ -387,6 +390,7 @@ class BySquareService {
     } else if (result.ErrorResponse) {
       throw new Error(`bySquare API Error ${result.ErrorResponse.ErrorCode}: ${result.ErrorResponse.Message}`);
     } else {
+      console.log('📋 [BYSQUARE] Unexpected response structure:', JSON.stringify(result, null, 2));
       throw new Error('Unexpected response format from bySquare API');
     }
   }
