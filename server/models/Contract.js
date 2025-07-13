@@ -369,7 +369,7 @@ contractSchema.statics.createFromReservation = async function(reservationId, ten
   console.log('🔖 [CONTRACT MODEL] Created by:', createdBy);
   
   const reservation = await Reservation.findById(reservationId)
-    .populate('customer', 'firstName lastName email phone address idNumber')
+    .populate('customer', 'firstName lastName email phone address idNumber licenseNumber licenseExpiry')
     .populate('car', 'brand model year registrationNumber vin category fuelType transmission color');
   
   if (!reservation) {
@@ -395,39 +395,54 @@ contractSchema.statics.createFromReservation = async function(reservationId, ten
   const days = Math.ceil((new Date(reservation.endDate) - new Date(reservation.startDate)) / (1000 * 60 * 60 * 24));
   console.log('🔖 [CONTRACT MODEL] Calculated days:', days);
   
-  const contractData = {
-    tenantId,
-    reservation: reservationId,
-    customer: {
-      firstName: reservation.customer.firstName || 'N/A',
-      lastName: reservation.customer.lastName || 'N/A',
-      phone: reservation.customer.phone || 'N/A',
-      email: reservation.customer.email || 'N/A',
-      address: reservation.customer.address || {
+  // Format customer address for Slovak format
+  const formatSlovakAddress = (address) => {
+    if (!address) {
+      return {
         street: '',
         city: '',
         state: '',
         zipCode: '',
         country: 'Slovensko'
-      },
-      idNumber: reservation.customer.idNumber || ''
+      };
+    }
+    
+    return {
+      street: address.street || '',
+      city: address.city || '',
+      state: address.state || '',
+      zipCode: address.zipCode || '',
+      country: address.country || 'Slovensko'
+    };
+  };
+  
+  const contractData = {
+    tenantId,
+    reservation: reservationId,
+    customer: {
+      firstName: reservation.customer.firstName || 'Neuvedené',
+      lastName: reservation.customer.lastName || 'Neuvedené',
+      phone: reservation.customer.phone || 'Neuvedené',
+      email: reservation.customer.email || 'neuvedene@email.sk',
+      address: formatSlovakAddress(reservation.customer.address),
+      idNumber: reservation.customer.idNumber || reservation.customer.licenseNumber || 'Neuvedené'
     },
     vehicle: {
-      brand: reservation.car.brand || 'N/A',
-      model: reservation.car.model || 'N/A',
+      brand: reservation.car.brand || 'Neuvedené',
+      model: reservation.car.model || 'Neuvedené',
       year: reservation.car.year || new Date().getFullYear(),
-      registrationNumber: reservation.car.registrationNumber || 'N/A',
-      vin: reservation.car.vin || 'N/A', // Handle missing VIN
+      registrationNumber: reservation.car.registrationNumber || 'Neuvedené',
+      vin: reservation.car.vin || 'Neuvedené',
       category: reservation.car.category || 'economy',
-      fuelType: reservation.car.fuelType || 'gasoline',
-      transmission: reservation.car.transmission || 'manual',
-      color: reservation.car.color || 'N/A'
+      fuelType: reservation.car.fuelType || 'benzín',
+      transmission: reservation.car.transmission || 'manuálna',
+      color: reservation.car.color || 'Neuvedená'
     },
     rental: {
       startDate: reservation.startDate,
       endDate: reservation.endDate,
-      pickupLocation: reservation.pickupLocation?.name || 'N/A',
-      returnLocation: reservation.dropoffLocation?.name || 'N/A',
+      pickupLocation: reservation.pickupLocation?.name || 'Neuvedené',
+      returnLocation: reservation.dropoffLocation?.name || 'Neuvedené',
       totalDays: days,
       dailyRate: reservation.pricing?.dailyRate || 0,
       totalAmount: reservation.pricing?.totalAmount || 0
@@ -437,6 +452,7 @@ contractSchema.statics.createFromReservation = async function(reservationId, ten
   };
   
   console.log('🔖 [CONTRACT MODEL] Contract data prepared:', JSON.stringify(contractData, null, 2));
+  console.log('🔖 [CONTRACT MODEL] ✅ Customer (zákazník) successfully mapped from reservation');
   
   return new this(contractData);
 };

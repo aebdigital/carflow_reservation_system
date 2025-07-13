@@ -73,24 +73,38 @@ class PDFService {
     const additionalServices = reservation.pricing?.fees?.reduce((sum, fee) => sum + fee.amount, 0) || 0;
     const totalPrice = reservation.pricing?.totalAmount || 0;
     
-    // Customer address formatting
-    const address = customer.address ? 
-      `${customer.address.street || ''}, ${customer.address.city || ''}, ${customer.address.zipCode || ''}, ${customer.address.country || 'Slovensko'}`.replace(/^,\s*|,\s*$/g, '').replace(/,\s*,/g, ',') : 
-      'Neuvedené';
+    // Customer address formatting for Slovak format
+    const formatAddress = (address) => {
+      if (!address) return 'Neuvedené';
+      
+      const parts = [
+        address.street,
+        address.city,
+        address.zipCode,
+        address.country || 'Slovensko'
+      ].filter(part => part && part.trim());
+      
+      return parts.length > 0 ? parts.join(', ') : 'Neuvedené';
+    };
+    
+    // Get ID number - try idNumber first, then licenseNumber as fallback
+    const getIdNumber = (customer) => {
+      return customer.idNumber || customer.licenseNumber || 'Neuvedené';
+    };
     
     return {
       // Customer information - Slovak field names
-      'meno_najomcu': `${customer.firstName} ${customer.lastName}`,
-      'adresa_najomcu': address,
-      'cislo_op': customer.licenseNumber || 'Neuvedené',
+      'meno_najomcu': `${customer.firstName || 'Neuvedené'} ${customer.lastName || 'Neuvedené'}`,
+      'adresa_najomcu': formatAddress(customer.address),
+      'cislo_op': getIdNumber(customer),
       'telefon': customer.phone || 'Neuvedené',
-      'email': customer.email || 'Neuvedené',
+      'email': customer.email || 'neuvedene@email.sk',
       
       // Vehicle information
-      'meno_vozidla': `${car.brand} ${car.model}`,
+      'meno_vozidla': `${car.brand || 'Neuvedené'} ${car.model || 'Neuvedené'}`,
       'ECV': car.registrationNumber || 'Neuvedené',
       'VIN': car.vin || 'Neuvedené',
-      'rok_vyroby': car.year?.toString() || 'Neuvedené',
+      'rok_vyroby': car.year?.toString() || new Date().getFullYear().toString(),
       'farba': car.color || 'Neuvedená',
       
       // Rental dates
