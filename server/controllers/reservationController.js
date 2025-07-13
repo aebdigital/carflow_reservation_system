@@ -372,6 +372,25 @@ const createReservation = asyncHandler(async (req, res, next) => {
     { path: 'appliedDiscountCodes.discountCode', select: 'code description discountType discountValue' }
   ]);
 
+  // 📧 Send admin notification email
+  try {
+    const { sendAdminNotificationEmail } = require('../utils/emailHelpers');
+    
+    console.log('📧 [EMAIL] Sending admin notification for new reservation...');
+    
+    // Send email notification to peter@aebdig.com
+    const emailResult = await sendAdminNotificationEmail(reservation, carDoc, customerDoc);
+    
+    if (emailResult.success) {
+      console.log('✅ [EMAIL] Admin notification sent successfully');
+    } else {
+      console.warn('⚠️ [EMAIL] Admin notification failed:', emailResult.error);
+    }
+  } catch (emailError) {
+    console.error('❌ [EMAIL] Error sending admin notification:', emailError.message);
+    // Don't fail the reservation if email fails
+  }
+
   res.status(201).json({
     success: true,
     data: reservation

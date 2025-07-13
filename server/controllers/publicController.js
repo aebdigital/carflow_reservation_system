@@ -866,6 +866,25 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       .populate('car', 'brand model year registrationNumber images')
       .populate('appliedDiscountCodes.discountCode', 'code description discountType discountValue');
 
+    // 📧 Send admin notification email
+    try {
+      const { sendAdminNotificationEmail } = require('../utils/emailHelpers');
+      
+      console.log('📧 [EMAIL] Sending admin notification for new public reservation...');
+      
+      // Send email notification to peter@aebdig.com
+      const emailResult = await sendAdminNotificationEmail(populatedReservation, car, customer);
+      
+      if (emailResult.success) {
+        console.log('✅ [EMAIL] Admin notification sent successfully');
+      } else {
+        console.warn('⚠️ [EMAIL] Admin notification failed:', emailResult.error);
+      }
+    } catch (emailError) {
+      console.error('❌ [EMAIL] Error sending admin notification:', emailError.message);
+      // Don't fail the reservation if email fails
+    }
+
     res.status(201).json({
       success: true,
       message: 'Reservation confirmed successfully! You will receive a confirmation email shortly.',

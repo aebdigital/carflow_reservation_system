@@ -151,6 +151,111 @@ class SMTP2GOService {
     return this.sendEmail(to, subject, html);
   }
 
+  // NEW: Admin notification email for new reservations
+  async sendAdminReservationNotification(to, reservationData) {
+    const subject = `🚗 Nová rezervácia #${reservationData.reservationNumber} - ${reservationData.carInfo}`;
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Nová rezervácia</title>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: Arial, sans-serif;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+            <h1 style="margin: 0; font-size: 28px; font-weight: bold;">🚗 Nová Rezervácia</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">#${reservationData.reservationNumber}</p>
+          </div>
+          
+          <!-- Content -->
+          <div style="padding: 30px;">
+            
+            <!-- Customer Info -->
+            <div style="margin-bottom: 25px;">
+              <h2 style="color: #1976d2; margin: 0 0 15px 0; font-size: 20px; border-bottom: 2px solid #e3f2fd; padding-bottom: 5px;">
+                👤 Informácie o zákazníkovi
+              </h2>
+              <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #1976d2;">
+                <p style="margin: 0 0 8px 0;"><strong>Meno:</strong> ${reservationData.customerName}</p>
+                <p style="margin: 0 0 8px 0;"><strong>Email:</strong> <a href="mailto:${reservationData.customerEmail}" style="color: #1976d2; text-decoration: none;">${reservationData.customerEmail}</a></p>
+                <p style="margin: 0 0 8px 0;"><strong>Telefón:</strong> <a href="tel:${reservationData.customerPhone}" style="color: #1976d2; text-decoration: none;">${reservationData.customerPhone}</a></p>
+                ${reservationData.customerLicense ? `<p style="margin: 0;"><strong>Vodičský preukaz:</strong> ${reservationData.customerLicense}</p>` : ''}
+              </div>
+            </div>
+            
+            <!-- Vehicle Info -->
+            <div style="margin-bottom: 25px;">
+              <h2 style="color: #1976d2; margin: 0 0 15px 0; font-size: 20px; border-bottom: 2px solid #e3f2fd; padding-bottom: 5px;">
+                🚙 Informácie o vozidle
+              </h2>
+              <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #4caf50;">
+                <p style="margin: 0 0 8px 0;"><strong>Vozidlo:</strong> ${reservationData.carInfo}</p>
+                <p style="margin: 0 0 8px 0;"><strong>EČV:</strong> ${reservationData.carRegistration || 'Neuvedené'}</p>
+                <p style="margin: 0;"><strong>Kategória:</strong> ${reservationData.carCategory || 'Štandard'}</p>
+              </div>
+            </div>
+            
+            <!-- Rental Details -->
+            <div style="margin-bottom: 25px;">
+              <h2 style="color: #1976d2; margin: 0 0 15px 0; font-size: 20px; border-bottom: 2px solid #e3f2fd; padding-bottom: 5px;">
+                📅 Detaily rezervácie
+              </h2>
+              <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #ff9800;">
+                <p style="margin: 0 0 8px 0;"><strong>Vyzdvihnutie:</strong> ${reservationData.startDate}</p>
+                <p style="margin: 0 0 8px 0;"><strong>Vrátenie:</strong> ${reservationData.endDate}</p>
+                <p style="margin: 0 0 8px 0;"><strong>Počet dní:</strong> ${reservationData.duration} ${reservationData.duration === 1 ? 'deň' : reservationData.duration < 5 ? 'dni' : 'dní'}</p>
+                <p style="margin: 0 0 8px 0;"><strong>Stav:</strong> <span style="background-color: ${reservationData.status === 'confirmed' ? '#4caf50' : reservationData.status === 'pending' ? '#ff9800' : '#9e9e9e'}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">${reservationData.statusText}</span></p>
+                ${reservationData.specialRequests ? `<p style="margin: 0;"><strong>Špeciálne požiadavky:</strong> ${reservationData.specialRequests}</p>` : ''}
+              </div>
+            </div>
+            
+            <!-- Pricing -->
+            <div style="margin-bottom: 25px;">
+              <h2 style="color: #1976d2; margin: 0 0 15px 0; font-size: 20px; border-bottom: 2px solid #e3f2fd; padding-bottom: 5px;">
+                💰 Cenové informácie
+              </h2>
+              <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #9c27b0;">
+                <p style="margin: 0 0 8px 0;"><strong>Denná sadzba:</strong> ${reservationData.dailyRate}€</p>
+                <p style="margin: 0 0 8px 0;"><strong>Základná cena:</strong> ${reservationData.subtotal}€</p>
+                ${reservationData.discount > 0 ? `<p style="margin: 0 0 8px 0; color: #4caf50;"><strong>Zľava:</strong> -${reservationData.discount}€</p>` : ''}
+                <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold; color: #1976d2;"><strong>Celková cena:</strong> ${reservationData.totalPrice}€</p>
+                ${reservationData.deposit > 0 ? `<p style="margin: 0; color: #ff9800;"><strong>Depozit:</strong> ${reservationData.deposit}€</p>` : ''}
+              </div>
+            </div>
+            
+            <!-- Actions -->
+            <div style="text-align: center; margin-top: 30px;">
+              <a href="https://admindemo.carflow.sk/reservations" style="display: inline-block; background-color: #1976d2; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-right: 10px;">
+                📋 Zobraziť v administrácii
+              </a>
+              <a href="mailto:${reservationData.customerEmail}" style="display: inline-block; background-color: #4caf50; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                ✉️ Kontaktovať zákazníka
+              </a>
+            </div>
+            
+          </div>
+          
+          <!-- Footer -->
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 0 0 10px 10px; text-align: center; border-top: 1px solid #e0e0e0;">
+            <p style="margin: 0; color: #666; font-size: 14px;">
+              CarFlow Admin Notification System<br>
+              <small>Rezervácia vytvorená: ${new Date().toLocaleString('sk-SK')}</small>
+            </p>
+          </div>
+          
+        </div>
+      </body>
+      </html>
+    `;
+    
+    return this.sendEmail(to, subject, html);
+  }
+
   // Test email service
   async testConnection() {
     if (!this.isConfigured) {
