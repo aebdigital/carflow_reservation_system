@@ -108,4 +108,107 @@ router.post('/test-qr', async (req, res) => {
   }
 });
 
+// Regenerate QR codes for existing reservation
+router.post('/regenerate-qr/:reservationId', async (req, res) => {
+  try {
+    const { reservationId } = req.params;
+    console.log('🔄 Regenerating QR codes for reservation:', reservationId);
+    
+    if (!bySquareService.isConfigured()) {
+      return res.status(400).json({
+        success: false,
+        error: 'bySquare service not configured.'
+      });
+    }
+    
+    // Import models
+    const Reservation = require('../models/Reservation');
+    
+    // Find the reservation with populated data
+    const reservation = await Reservation.findById(reservationId)
+      .populate('customer', 'firstName lastName email phone address')
+      .populate('car', 'brand model year pricing');
+    
+    if (!reservation) {
+      return res.status(404).json({
+        success: false,
+        error: 'Reservation not found'
+      });
+    }
+    
+    console.log('📋 Found reservation:', reservation.reservationNumber);
+    console.log('👤 Customer:', reservation.customer?.firstName, reservation.customer?.lastName);
+    console.log('🚗 Car:', reservation.car?.brand, reservation.car?.model);
+    
+    // Generate QR codes
+    const qrResult = await bySquareService.generateReservationQR(
+      reservation,
+      reservation.car,
+      reservation.customer
+    );
+    
+    if (qrResult.success && qrResult.qrCodes) {
+      // Calculate total amount including deposit
+      const rentalAmount = reservation.pricing?.totalAmount || 0;
+      const depositAmount = reservation.car.pricing?.deposit || 0;
+      const totalAmount = rentalAmount + depositAmount;
+      
+      // Generate variable symbol from reservation number and ID
+      const reservationDigits = reservation.reservationNumber ? 
+        reservation.reservationNumber.replace(/[^0-9]/g, '') : 
+        reservation._id.toString().slice(-8);
+      const variableSymbol = reservationDigits.slice(-10).padStart(10, '0');
+      
+      // Update reservation with QR codes
+      reservation.qrCodes = {
+        payBySquare: qrResult.qrCodes.payBySquare,
+        qrPlatbaCz: qrResult.qrCodes.qrPlatbaCz,
+        invoiceBySquare: qrResult.qrCodes.invoiceBySquare,
+        generatedAt: new Date(),
+        lastUpdated: new Date(),
+        isActive: true,
+        bankAccount: 'SK1234567890123456789012',
+        variableSymbol: variableSymbol,
+        constantSymbol: '0308',
+        specificSymbol: '',
+        amount: totalAmount,
+        beneficiaryName: 'CarFlow Rental',
+        paymentNote: `Car rental + deposit: ${reservation.car.brand} ${reservation.car.model}`
+      };
+      
+      await reservation.save();
+      
+      console.log('✅ QR codes regenerated and saved successfully');
+      
+      res.json({
+        success: true,
+        message: 'QR codes regenerated successfully!',
+        data: {
+          reservationId: reservation._id,
+          reservationNumber: reservation.reservationNumber,
+          totalAmount: totalAmount,
+          variableSymbol: variableSymbol,
+          hasPayBySquare: !!qrResult.qrCodes.payBySquare,
+          hasQrPlatbaCz: !!qrResult.qrCodes.qrPlatbaCz
+        }
+      });
+    } else {
+      console.error('❌ Failed to generate QR codes:', qrResult.error);
+      res.status(400).json({
+        success: false,
+        error: qrResult.error,
+        message: 'Failed to regenerate QR codes'
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ QR regeneration failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: 'QR regeneration failed'
+    });
+  }
+});
+
 module.exports = router; 
