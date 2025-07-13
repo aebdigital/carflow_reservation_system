@@ -224,9 +224,9 @@ class BySquareService {
     const builder = new xml2js.Builder({
       rootName: 'BySquareXmlDocuments',
       xmldec: { version: '1.0', encoding: 'UTF-8' },
-      xmlns: {
-        'xsd': 'http://www.w3.org/2001/XMLSchema',
-        'xsi': 'http://www.w3.org/2001/XMLSchema-instance'
+      renderOpts: {
+        pretty: false,
+        indent: ''
       }
     });
 
@@ -290,48 +290,55 @@ class BySquareService {
             Phone: invoiceData.customer.phone
           },
           
-          // Payment means (bank account for QR)
-          PaymentMeans: {
-            PaymentMeansCode: '31', // Bank transfer
-            PayeeFinancialAccount: {
-              ID: invoiceData.bankAccount,
-              Name: invoiceData.beneficiaryName,
-              VariableSymbol: invoiceData.variableSymbol,
-              ConstantSymbol: invoiceData.constantSymbol,
-              SpecificSymbol: invoiceData.specificSymbol
-            }
+          // Single invoice line for simplicity
+          SingleInvoiceLine: {
+            ItemName: invoiceData.items[0].itemName,
+            PeriodFromDate: invoiceData.items[0].periodFromDate,
+            PeriodToDate: invoiceData.items[0].periodToDate,
+            InvoicedQuantity: invoiceData.items[0].quantity,
+            UnitPriceTaxExclusiveAmount: invoiceData.items[0].unitPrice,
+            UnitPriceTaxInclusiveAmount: invoiceData.items[0].unitPrice,
+            UnitPriceTaxAmount: 0
           },
           
           // Monetary totals
-          LegalMonetaryTotal: {
+          MonetarySummary: {
             TaxExclusiveAmount: invoiceData.amount,
             TaxInclusiveAmount: invoiceData.amount,
+            TaxAmount: 0,
+            AlreadyClaimedTaxExclusiveAmount: 0,
+            AlreadyClaimedTaxInclusiveAmount: 0,
+            AlreadyClaimedTaxAmount: 0,
+            DifferenceTaxExclusiveAmount: invoiceData.amount,
+            DifferenceTaxInclusiveAmount: invoiceData.amount,
+            DifferenceTaxAmount: 0,
+            PayableRoundingAmount: 0,
+            PaidDepositsAmount: 0,
             PayableAmount: invoiceData.amount
-          },
-          
-          // Payment note
-          PaymentNote: invoiceData.paymentNote
+          }
         },
         
-        // Payment details for QR generation
+        // Payment details for QR generation - Fixed structure according to API docs
         Pay: {
           $: {
             'xsi:type': 'Pay',
             'xmlns': 'http://www.bysquare.com/bysquare'
           },
-          PaymentOptions: {
-            PaymentOption: {
-              BankAccounts: {
-                BankAccount: invoiceData.bankAccount
-              },
+          Payments: {
+            Payment: {
+              PaymentOptions: 'paymentorder',
               Amount: invoiceData.amount,
               CurrencyCode: invoiceData.currencyCode,
               PaymentDueDate: invoiceData.paymentDueDate,
+              BankAccounts: {
+                BankAccount: {
+                  IBAN: invoiceData.bankAccount,
+                  BIC: 'TATRSKBX' // Default BIC for Tatra banka
+                }
+              },
               VariableSymbol: invoiceData.variableSymbol,
               ConstantSymbol: invoiceData.constantSymbol,
-              SpecificSymbol: invoiceData.specificSymbol,
-              BeneficiaryName: invoiceData.beneficiaryName,
-              PaymentNote: invoiceData.paymentNote
+              SpecificSymbol: invoiceData.specificSymbol
             }
           }
         }
