@@ -20,12 +20,35 @@ class BySquareService {
   async generateReservationQR(reservation, car, customer) {
     try {
       console.log('🔄 [BYSQUARE] Generating QR code for reservation:', reservation._id);
+      console.log('📋 [BYSQUARE] Input data:', {
+        reservation: {
+          id: reservation._id,
+          number: reservation.reservationNumber,
+          pricing: reservation.pricing,
+          startDate: reservation.startDate,
+          endDate: reservation.endDate
+        },
+        car: {
+          brand: car.brand,
+          model: car.model,
+          year: car.year,
+          deposit: car.pricing?.deposit
+        },
+        customer: {
+          name: `${customer.firstName} ${customer.lastName}`,
+          email: customer.email,
+          phone: customer.phone
+        }
+      });
 
       // Prepare invoice data in bySquare format
       const invoiceData = this.prepareInvoiceData(reservation, car, customer);
+      console.log('📋 [BYSQUARE] Prepared invoice data:', JSON.stringify(invoiceData, null, 2));
       
       // Convert to XML
       const xmlData = this.buildXMLRequest(invoiceData);
+      console.log('📤 [BYSQUARE] Generated XML request:');
+      console.log(xmlData);
       
       console.log('📤 [BYSQUARE] Sending request to bySquare API...');
       
@@ -39,11 +62,14 @@ class BySquareService {
       });
 
       console.log('📥 [BYSQUARE] Received response from bySquare API');
+      console.log('📥 [BYSQUARE] Response status:', response.status);
+      console.log('📥 [BYSQUARE] Response data:', response.data);
       
       // Parse XML response
       const result = await this.parseResponse(response.data);
       
       console.log('✅ [BYSQUARE] QR codes generated successfully');
+      console.log('✅ [BYSQUARE] Parsed result:', result);
       
       return {
         success: true,
@@ -59,7 +85,23 @@ class BySquareService {
       console.error('❌ [BYSQUARE] Error generating QR code:', error.message);
       
       if (error.response) {
-        console.error('📋 [BYSQUARE] API Response:', error.response.data);
+        console.error('📋 [BYSQUARE] Error response status:', error.response.status);
+        console.error('📋 [BYSQUARE] Error response headers:', error.response.headers);
+        console.error('📋 [BYSQUARE] Error response data:', error.response.data);
+        
+        // Try to parse error response if it's XML
+        if (error.response.data && typeof error.response.data === 'string') {
+          try {
+            const xml2js = require('xml2js');
+            const parser = new xml2js.Parser({ explicitArray: false });
+            const parsedError = await parser.parseStringPromise(error.response.data);
+            console.error('📋 [BYSQUARE] Parsed error response:', JSON.stringify(parsedError, null, 2));
+          } catch (parseError) {
+            console.error('📋 [BYSQUARE] Could not parse error response as XML:', parseError.message);
+          }
+        }
+      } else if (error.request) {
+        console.error('📋 [BYSQUARE] No response received:', error.request);
       }
       
       return {
