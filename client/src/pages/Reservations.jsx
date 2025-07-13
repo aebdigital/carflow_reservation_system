@@ -45,6 +45,7 @@ import {
   Description as ContractIcon,
   Assignment as SlovakAgreementIcon,
   CheckCircleOutline as ConfirmIcon,
+  QrCode as QrCodeIcon,
 } from '@mui/icons-material'
 import {
   useGetReservationsQuery,
@@ -61,6 +62,7 @@ import {
 } from '../store/store'
 import { useNavigate } from 'react-router-dom'
 import { t } from '../utils/translations'
+import QRCodeDisplay from '../components/QRCodeDisplay'
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -85,6 +87,8 @@ function Reservations() {
   const [openDialog, setOpenDialog] = useState(false)
   const [selectedReservation, setSelectedReservation] = useState(null)
   const [dialogMode, setDialogMode] = useState('create') // 'create', 'edit', 'view'
+  const [qrDialogOpen, setQrDialogOpen] = useState(false)
+  const [selectedReservationForQR, setSelectedReservationForQR] = useState(null)
 
   // Initial form state
   const initialFormState = {
@@ -407,6 +411,17 @@ function Reservations() {
     }
   }
 
+  // Handle QR code display
+  const handleShowQRCode = (reservation) => {
+    setSelectedReservationForQR(reservation)
+    setQrDialogOpen(true)
+  }
+
+  const handleCloseQRDialog = () => {
+    setQrDialogOpen(false)
+    setSelectedReservationForQR(null)
+  }
+
   return (
     <Box>
       <Box sx={{ 
@@ -645,6 +660,15 @@ function Reservations() {
                               <DownloadIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          <Tooltip title="Generovanie QR kódu">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleShowQRCode(reservation)}
+                              color="info"
+                            >
+                              <QrCodeIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -797,6 +821,15 @@ function Reservations() {
                               <DownloadIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          <Tooltip title="Generovanie QR kódu">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleShowQRCode(reservation)}
+                              color="info"
+                            >
+                              <QrCodeIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -940,6 +973,15 @@ function Reservations() {
                               <CancelIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          <Tooltip title="Generovanie QR kódu">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleShowQRCode(reservation)}
+                              color="info"
+                            >
+                              <QrCodeIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -1055,6 +1097,15 @@ function Reservations() {
                               color="secondary"
                             >
                               <DownloadIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Generovanie QR kódu">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleShowQRCode(reservation)}
+                              color="info"
+                            >
+                              <QrCodeIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         </Box>
@@ -2009,6 +2060,13 @@ function Reservations() {
           )}
         </DialogActions>
       </Dialog>
+
+      {/* QR Code Dialog */}
+      <QRCodeDisplay
+        reservationId={selectedReservationForQR?._id}
+        open={qrDialogOpen}
+        onClose={handleCloseQRDialog}
+      />
     </Box>
   )
 }

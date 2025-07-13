@@ -40,7 +40,8 @@ import {
   Visibility as VisibilityIcon,
   Refresh as RefreshIcon,
   AttachMoney as MoneyIcon,
-  Description as InvoiceIcon
+  Description as InvoiceIcon,
+  QrCode as QrCodeIcon,
 } from '@mui/icons-material'
 import {
   useGetPaymentsQuery,
@@ -51,6 +52,7 @@ import {
 } from '../store/store'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { t } from '../utils/translations'
+import QRCodeDisplay from '../components/QRCodeDisplay'
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -77,6 +79,8 @@ function Payments() {
   const [selectedPayment, setSelectedPayment] = useState(null)
   const [selectedReservation, setSelectedReservation] = useState(null)
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+  const [qrDialogOpen, setQrDialogOpen] = useState(false)
+  const [selectedReservationForQR, setSelectedReservationForQR] = useState(null)
 
   // Form state for creating invoices/payments
   const [formData, setFormData] = useState({
@@ -332,6 +336,19 @@ function Payments() {
     )
     
     return unpaidReservations
+  }
+
+  // Handle QR code display
+  const handleShowQRCode = (payment) => {
+    setSelectedPayment(payment)
+    setSelectedReservationForQR(payment.reservation)
+    setQrDialogOpen(true)
+  }
+
+  const handleCloseQRDialog = () => {
+    setQrDialogOpen(false)
+    setSelectedReservationForQR(null)
+    setSelectedPayment(null)
   }
 
   return (
@@ -607,6 +624,31 @@ function Payments() {
                                 </IconButton>
                               </Tooltip>
                             )}
+                            {payment.status === 'succeeded' && payment.stripePaymentIntentId && (
+                              <Tooltip title={t('displayQR')}>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => {
+                                    setSelectedPayment(payment);
+                                    setSelectedReservationForQR(payment.reservation);
+                                    setQrDialogOpen(true);
+                                  }}
+                                >
+                                  <QrCodeIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                            {payment.reservation && (
+                              <Tooltip title="Zobraziť QR kódy">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleShowQRCode(payment)}
+                                  color="info"
+                                >
+                                  <QrCodeIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
                           </Box>
                         </TableCell>
                       </TableRow>
@@ -671,6 +713,17 @@ function Payments() {
                                     </IconButton>
                                   </Tooltip>
                                 </>
+                              )}
+                              {payment.reservation && (
+                                <Tooltip title="Zobraziť QR kódy">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleShowQRCode(payment)}
+                                    color="info"
+                                  >
+                                    <QrCodeIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
                               )}
                             </Box>
                           </TableCell>
@@ -957,20 +1010,20 @@ function Payments() {
         </>
       )}
 
+      {/* QR Code Dialog */}
+      <QRCodeDisplay
+        reservationId={selectedReservationForQR?._id}
+        open={qrDialogOpen}
+        onClose={handleCloseQRDialog}
+      />
+
       {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={6000}
+        autoHideDuration={4000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
-      >
-        <Alert 
-          onClose={() => setSnackbar({ ...snackbar, open: false })} 
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+        message={snackbar.message}
+      />
     </Box>
   )
 }

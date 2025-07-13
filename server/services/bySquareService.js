@@ -78,7 +78,18 @@ class BySquareService {
     const issueDate = new Date(reservation.createdAt || Date.now());
     const dueDate = new Date(reservation.startDate);
     
-    return {
+    // Calculate total amount including deposit
+    const rentalAmount = reservation.pricing?.totalAmount || 0;
+    const depositAmount = car.pricing?.deposit || 0;
+    const totalAmount = rentalAmount + depositAmount;
+    
+    // Generate variable symbol from reservation number and ID
+    const reservationDigits = reservation.reservationNumber ? 
+      reservation.reservationNumber.replace(/[^0-9]/g, '') : 
+      reservation._id.toString().slice(-8);
+    const variableSymbol = reservationDigits.slice(-10).padStart(10, '0');
+    
+    let result = {
       invoiceId: invoiceNumber,
       issueDate: issueDate.toISOString(),
       taxPointDate: issueDate.toISOString(),
@@ -116,29 +127,52 @@ class BySquareService {
         } : {}
       },
       
-      // Financial details
-      amount: reservation.pricing?.totalAmount || 0,
+      // Financial details - NOW INCLUDES DEPOSIT
+      amount: totalAmount,
       currencyCode: 'EUR',
       
       // Payment details for QR
       bankAccount: 'SK1234567890123456789012', // Default account
-      variableSymbol: invoiceNumber.replace(/[^0-9]/g, '').slice(-10) || '1234567890',
+      variableSymbol: variableSymbol,
       constantSymbol: '0308', // Car rental services
       specificSymbol: '',
       beneficiaryName: 'CarFlow Rental',
-      paymentNote: `Car rental: ${car.brand} ${car.model} (${reservation.startDate.toISOString().split('T')[0]} - ${reservation.endDate.toISOString().split('T')[0]})`,
+      paymentNote: `Car rental + deposit: ${car.brand} ${car.model} (${reservation.startDate.toISOString().split('T')[0]} - ${reservation.endDate.toISOString().split('T')[0]})`,
       
       // Invoice items
-      items: [{
-        itemName: `Car Rental - ${car.brand} ${car.model} ${car.year}`,
-        periodFromDate: reservation.startDate.toISOString(),
-        periodToDate: reservation.endDate.toISOString(),
-        quantity: reservation.pricing?.totalDays || 1,
-        unitPrice: reservation.pricing?.dailyRate || 50,
-        lineTotal: reservation.pricing?.totalAmount || 0,
-        taxRate: 0 // No VAT as per previous requirement
-      }]
+      items: [
+        {
+          itemName: `Car Rental - ${car.brand} ${car.model} ${car.year}`,
+          periodFromDate: reservation.startDate.toISOString(),
+          periodToDate: reservation.endDate.toISOString(),
+          quantity: reservation.pricing?.totalDays || 1,
+          unitPrice: reservation.pricing?.dailyRate || 50,
+          lineTotal: rentalAmount,
+          taxRate: 0 // No VAT as per previous requirement
+        }
+      ]
     };
+    
+    // Add deposit as separate item if exists
+    if (depositAmount > 0) {
+      result = {
+        ...result,
+        items: [
+          ...result.items,
+          {
+            itemName: `Security Deposit - ${car.brand} ${car.model}`,
+            periodFromDate: reservation.startDate.toISOString(),
+            periodToDate: reservation.endDate.toISOString(),
+            quantity: 1,
+            unitPrice: depositAmount,
+            lineTotal: depositAmount,
+            taxRate: 0
+          }
+        ]
+      };
+    }
+    
+    return result;
   }
 
   /**

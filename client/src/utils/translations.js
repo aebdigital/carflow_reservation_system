@@ -287,6 +287,8 @@ const translations = {
     paid: 'Zaplatené',
     unpaid: 'Nezaplatené',
     refunded: 'Vrátené',
+    displayQR: 'Zobraziť QR kódy',
+    generateQRCode: 'Generovať QR kód',
     
     // Payment Status
     processing: 'Spracováva sa',

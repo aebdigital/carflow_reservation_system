@@ -288,6 +288,17 @@ const createReservation = asyncHandler(async (req, res, next) => {
       const qrResult = await bySquareService.generateReservationQR(reservation, carDoc, customerDoc);
       
       if (qrResult.success && qrResult.qrCodes) {
+        // Calculate total amount including deposit
+        const rentalAmount = pricing.totalAmount;
+        const depositAmount = carDoc.pricing?.deposit || 0;
+        const totalAmount = rentalAmount + depositAmount;
+        
+        // Generate variable symbol from reservation number and ID
+        const reservationDigits = reservation.reservationNumber ? 
+          reservation.reservationNumber.replace(/[^0-9]/g, '') : 
+          reservation._id.toString().slice(-8);
+        const variableSymbol = reservationDigits.slice(-10).padStart(10, '0');
+        
         // Update reservation with QR codes
         reservation.qrCodes = {
           payBySquare: qrResult.qrCodes.payBySquare,
@@ -296,8 +307,13 @@ const createReservation = asyncHandler(async (req, res, next) => {
           generatedAt: new Date(),
           lastUpdated: new Date(),
           isActive: true,
-          amount: pricing.totalAmount,
-          paymentNote: `Car rental: ${carDoc.brand} ${carDoc.model} (${start.toISOString().split('T')[0]} - ${end.toISOString().split('T')[0]})`
+          bankAccount: 'SK1234567890123456789012',
+          variableSymbol: variableSymbol,
+          constantSymbol: '0308',
+          specificSymbol: '',
+          amount: totalAmount,
+          beneficiaryName: 'CarFlow Rental',
+          paymentNote: `Car rental + deposit: ${carDoc.brand} ${carDoc.model} (${start.toISOString().split('T')[0]} - ${end.toISOString().split('T')[0]})`
         };
         
         await reservation.save();
