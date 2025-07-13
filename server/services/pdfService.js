@@ -187,27 +187,26 @@ class PDFService {
     
     const formData = this.prepareFormData(reservation, car, customer);
     
-    // Define text positions (converted from top-left to bottom-left origin)
-    // Original coordinates were: max X = 600, max Y = 700, origin = top-left
-    // PDF coordinates: origin = bottom-left, so Y = 700 - original_Y
+    // Define text positions (using original coordinates directly)
+    // Original coordinates were provided with top-left origin, using them as-is
     const textPositions = {
-      'meno_najomcu': { x: 322, y: 632 },           // 700 - 68 = 632
-      'adresa_najomcu': { x: 329, y: 604 },         // 700 - 96 = 604
-      'cislo_op': { x: 338, y: 582 },               // 700 - 118 = 582
-      'telefon': { x: 332, y: 559 },                // 700 - 141 = 559
-      'email': { x: 334, y: 539 },                  // 700 - 161 = 539
-      'meno_vozidla': { x: 34, y: 478 },            // 700 - 222 = 478
-      'ECV': { x: 185, y: 476 },                    // 700 - 224 = 476
-      'VIN': { x: 294, y: 477 },                    // 700 - 223 = 477
-      'rok_vyroby': { x: 468, y: 476 },             // 700 - 224 = 476
-      'farba': { x: 516, y: 476 },                  // 700 - 224 = 476
-      'zaciatok_najmu': { x: 361, y: 439 },         // 700 - 261 = 439
-      'koniec_najmu': { x: 470, y: 439 },           // 700 - 261 = 439
-      'denna_sadzba': { x: 223, y: 400 },           // 700 - 300 = 400
-      'pocet_dni': { x: 359, y: 400 },              // 700 - 300 = 400
-      'cena_bez_depozitu': { x: 468, y: 400 },      // 700 - 300 = 400
-      'sluzby_priplatky': { x: 465, y: 381 },       // 700 - 319 = 381
-      'spolu_cena': { x: 466, y: 357 }              // 700 - 343 = 357
+      'meno_najomcu': { x: 322, y: 68 },            // Original: 322, 68
+      'adresa_najomcu': { x: 329, y: 96 },          // Original: 329, 96
+      'cislo_op': { x: 338, y: 118 },               // Original: 338, 118
+      'telefon': { x: 332, y: 141 },                // Original: 332, 141
+      'email': { x: 334, y: 161 },                  // Original: 334, 161
+      'meno_vozidla': { x: 34, y: 222 },            // Original: 34, 222
+      'ECV': { x: 185, y: 224 },                    // Original: 185, 224
+      'VIN': { x: 294, y: 223 },                    // Original: 294, 223
+      'rok_vyroby': { x: 468, y: 224 },             // Original: 468, 224
+      'farba': { x: 516, y: 224 },                  // Original: 516, 224
+      'zaciatok_najmu': { x: 361, y: 261 },         // Original: 361, 261
+      'koniec_najmu': { x: 470, y: 261 },           // Original: 470, 261
+      'denna_sadzba': { x: 223, y: 300 },           // Original: 223, 300
+      'pocet_dni': { x: 359, y: 300 },              // Original: 359, 300
+      'cena_bez_depozitu': { x: 468, y: 300 },      // Original: 468, 300
+      'sluzby_priplatky': { x: 465, y: 319 },       // Original: 465, 319
+      'spolu_cena': { x: 466, y: 343 }              // Original: 466, 343
     };
     
     // Add text to PDF
