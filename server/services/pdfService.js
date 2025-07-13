@@ -187,21 +187,27 @@ class PDFService {
     
     const formData = this.prepareFormData(reservation, car, customer);
     
-    // Define text positions (you may need to adjust these based on your PDF layout)
+    // Define text positions (converted from top-left to bottom-left origin)
+    // Original coordinates were: max X = 600, max Y = 700, origin = top-left
+    // PDF coordinates: origin = bottom-left, so Y = 700 - original_Y
     const textPositions = {
-      'meno_najomcu': { x: 150, y: 750 },
-      'adresa_najomcu': { x: 150, y: 720 },
-      'telefon': { x: 150, y: 690 },
-      'email': { x: 150, y: 660 },
-      'meno_vozidla': { x: 150, y: 600 },
-      'ECV': { x: 150, y: 570 },
-      'rok_vyroby': { x: 150, y: 540 },
-      'farba': { x: 150, y: 510 },
-      'zaciatok_najmu': { x: 150, y: 450 },
-      'koniec_najmu': { x: 350, y: 450 },
-      'denna_sadzba': { x: 150, y: 420 },
-      'pocet_dni': { x: 350, y: 420 },
-      'spolu_cena': { x: 150, y: 350 }
+      'meno_najomcu': { x: 322, y: 632 },           // 700 - 68 = 632
+      'adresa_najomcu': { x: 329, y: 604 },         // 700 - 96 = 604
+      'cislo_op': { x: 338, y: 582 },               // 700 - 118 = 582
+      'telefon': { x: 332, y: 559 },                // 700 - 141 = 559
+      'email': { x: 334, y: 539 },                  // 700 - 161 = 539
+      'meno_vozidla': { x: 34, y: 478 },            // 700 - 222 = 478
+      'ECV': { x: 185, y: 476 },                    // 700 - 224 = 476
+      'VIN': { x: 294, y: 477 },                    // 700 - 223 = 477
+      'rok_vyroby': { x: 468, y: 476 },             // 700 - 224 = 476
+      'farba': { x: 516, y: 476 },                  // 700 - 224 = 476
+      'zaciatok_najmu': { x: 361, y: 439 },         // 700 - 261 = 439
+      'koniec_najmu': { x: 470, y: 439 },           // 700 - 261 = 439
+      'denna_sadzba': { x: 223, y: 400 },           // 700 - 300 = 400
+      'pocet_dni': { x: 359, y: 400 },              // 700 - 300 = 400
+      'cena_bez_depozitu': { x: 468, y: 400 },      // 700 - 300 = 400
+      'sluzby_priplatky': { x: 465, y: 381 },       // 700 - 319 = 381
+      'spolu_cena': { x: 466, y: 357 }              // 700 - 343 = 357
     };
     
     // Add text to PDF
@@ -214,6 +220,7 @@ class PDFService {
           font: font,
           color: rgb(0, 0, 0)
         });
+        console.log(`✅ [PDF] Added text overlay '${key}' at (${position.x}, ${position.y}): ${formData[key]}`);
       }
     }
     
