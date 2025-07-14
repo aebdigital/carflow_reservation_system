@@ -20,7 +20,7 @@ const sendContactEmail = asyncHandler(async (req, res, next) => {
 
   try {
     // Determine recipient based on type or use default
-    const recipientEmail = process.env.CONTACT_EMAIL || 'info@carflow.sk';
+    const recipientEmail = process.env.CONTACT_EMAIL || 'peter@aebdig.com';
     
     const formData = {
       name,
@@ -59,13 +59,16 @@ const sendContactEmail = asyncHandler(async (req, res, next) => {
       success: true,
       message: 'Email sent successfully',
       data: {
-        messageId: result.messageId
+        messageId: result.messageId,
+        recipientEmail: recipientEmail
       }
     });
 
   } catch (error) {
     console.error('Email sending error:', error);
-    return next(new AppError('Failed to send email. Please try again later.', 500));
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
+    return next(new AppError(`Failed to send email: ${error.message}`, 500));
   }
 });
 
