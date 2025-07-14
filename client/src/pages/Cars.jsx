@@ -250,6 +250,16 @@ function Cars() {
     files.forEach((file, index) => {
       console.log(`🖼️ [IMAGE CHANGE] Processing file ${index + 1}: ${file.name}`);
       
+      // Add detailed file diagnostics
+      console.log(`🖼️ [IMAGE CHANGE] File diagnostics for ${file.name}:`, {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: new Date(file.lastModified).toISOString(),
+        lastModifiedDate: file.lastModifiedDate ? file.lastModifiedDate.toISOString() : 'N/A',
+        webkitRelativePath: file.webkitRelativePath || 'N/A'
+      });
+      
       const reader = new FileReader();
       
       reader.onload = (e) => {
@@ -263,11 +273,47 @@ function Cars() {
       
       reader.onerror = (error) => {
         console.error(`🖼️ [IMAGE CHANGE] ❌ Error reading file ${file.name}:`, error);
+        
+        // Check for specific error types
+        if (reader.error) {
+          console.error(`🖼️ [IMAGE CHANGE] FileReader error details:`, {
+            name: reader.error.name,
+            message: reader.error.message,
+            code: reader.error.code,
+            readyState: reader.readyState
+          });
+          
+          // Handle specific error types
+          if (reader.error.name === 'NotReadableError') {
+            console.warn(`🖼️ [IMAGE CHANGE] ⚠️ File permission/access issue detected for ${file.name}`);
+            console.warn(`🖼️ [IMAGE CHANGE] This may be due to:`);
+            console.warn(`🖼️ [IMAGE CHANGE] - File is locked by another application`);
+            console.warn(`🖼️ [IMAGE CHANGE] - Insufficient file permissions`);
+            console.warn(`🖼️ [IMAGE CHANGE] - File is corrupted or incomplete`);
+            console.warn(`🖼️ [IMAGE CHANGE] - Browser security restrictions`);
+          }
+        }
+        
         // Try backup approach
+        console.log(`🖼️ [IMAGE CHANGE] 🔄 Trying backup approach with URL.createObjectURL for ${file.name}`);
         try {
           const objectUrl = URL.createObjectURL(file);
           console.log(`🖼️ [IMAGE CHANGE] ✅ Backup preview created for ${file.name}`);
-          setImagePreviewUrls(prev => [...prev, objectUrl]);
+          
+          // Test if the blob URL is accessible
+          const testImage = new Image();
+          testImage.onload = () => {
+            console.log(`🖼️ [IMAGE CHANGE] ✅ Blob URL is accessible and valid for ${file.name}`);
+            setImagePreviewUrls(prev => [...prev, objectUrl]);
+          };
+          testImage.onerror = (imgError) => {
+            console.error(`🖼️ [IMAGE CHANGE] ❌ Blob URL test failed for ${file.name}:`, imgError);
+            console.error(`🖼️ [IMAGE CHANGE] Blob URL might be corrupted or inaccessible`);
+            // Still add it to the preview URLs, let the user decide
+            setImagePreviewUrls(prev => [...prev, objectUrl]);
+          };
+          testImage.src = objectUrl;
+          
         } catch (backupError) {
           console.error(`🖼️ [IMAGE CHANGE] ❌ Backup failed for ${file.name}:`, backupError);
         }
