@@ -272,6 +272,17 @@ function Cars() {
         return;
       }
       
+      // Basic corruption check - try to create object URL
+      try {
+        const testUrl = URL.createObjectURL(file);
+        URL.revokeObjectURL(testUrl); // Clean up immediately
+        console.log(`🖼️ [IMAGE CHANGE] File ${file.name} passed basic corruption check`);
+      } catch (corruptionError) {
+        console.error(`🖼️ [IMAGE CHANGE] File corruption detected for ${file.name}:`, corruptionError);
+        invalidFiles.push({ file, reason: 'File appears to be corrupted' });
+        return;
+      }
+      
       console.log(`🖼️ [IMAGE CHANGE] File ${file.name} passed validation`);
       validFiles.push(file);
     });
@@ -282,6 +293,8 @@ function Cars() {
     if (invalidFiles.length > 0) {
       console.warn('🖼️ [IMAGE CHANGE] Some files were invalid:', invalidFiles);
       // You could show an alert or notification here
+      const invalidFileNames = invalidFiles.map(f => `${f.file.name} (${f.reason})`).join('\n');
+      alert(`Niektoré súbory nebolo možné spracovať:\n\n${invalidFileNames}\n\nSpracované budú iba platné súbory.`);
     }
     
     if (validFiles.length === 0) {
@@ -316,10 +329,22 @@ function Cars() {
           console.error(`🖼️ [IMAGE CHANGE] FileReader error details:`, {
             error: error,
             readyState: reader.readyState,
-            result: reader.result
+            result: reader.result,
+            errorType: error.type,
+            errorTarget: error.target,
+            errorCurrentTarget: error.currentTarget
           });
-          // Resolve with a placeholder instead of rejecting to prevent Promise.all failure
-          resolve(null);
+          
+          // Try backup approach using URL.createObjectURL
+          console.log(`🖼️ [IMAGE CHANGE] 🔄 Trying backup approach with URL.createObjectURL for ${file.name}`);
+          try {
+            const objectUrl = URL.createObjectURL(file);
+            console.log(`🖼️ [IMAGE CHANGE] ✅ Backup preview created for ${file.name} using object URL`);
+            resolve(objectUrl);
+          } catch (backupError) {
+            console.error(`🖼️ [IMAGE CHANGE] ❌ Backup approach also failed for ${file.name}:`, backupError);
+            resolve(null);
+          }
         };
         
         reader.onabort = () => {
@@ -366,6 +391,8 @@ function Cars() {
           });
         } else {
           console.error('🖼️ [IMAGE CHANGE] ❌ No valid previews could be created');
+          // Notify user about preview creation failure
+          alert('Nepodarilo sa vytvoriť náhľady obrázkov. Skúste použiť iné súbory alebo skontrolujte, či nie sú poškodené.');
         }
       })
       .catch(error => {
@@ -377,6 +404,14 @@ function Cars() {
 
   const removeImage = (index) => {
     console.log('🗑️ [REMOVE IMAGE] Removing image at index:', index);
+    
+    // Cleanup object URL if it exists to prevent memory leaks
+    const urlToCleanup = imagePreviewUrls[index];
+    if (urlToCleanup && urlToCleanup.startsWith('blob:')) {
+      console.log('🗑️ [REMOVE IMAGE] Cleaning up object URL:', urlToCleanup);
+      URL.revokeObjectURL(urlToCleanup);
+    }
+    
     setSelectedImages(prev => {
       const updated = prev.filter((_, i) => i !== index);
       console.log('🗑️ [REMOVE IMAGE] Updated selected images:', updated.length);
@@ -705,6 +740,14 @@ function Cars() {
     console.log('🚗 [DIALOG CLOSE] Closing dialog and resetting all state');
     console.log('🚗 [DIALOG CLOSE] Current selected images:', selectedImages.length);
     console.log('🚗 [DIALOG CLOSE] Current preview URLs:', imagePreviewUrls.length);
+    
+    // Cleanup any object URLs to prevent memory leaks
+    imagePreviewUrls.forEach((url, index) => {
+      if (url && url.startsWith('blob:')) {
+        console.log(`🚗 [DIALOG CLOSE] Cleaning up object URL ${index + 1}:`, url);
+        URL.revokeObjectURL(url);
+      }
+    });
     
     setOpenDialog(false)
     setSelectedCar(null)
