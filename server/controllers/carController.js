@@ -107,6 +107,7 @@ const getCar = asyncHandler(async (req, res, next) => {
 // @access  Private/Admin
 const createCar = asyncHandler(async (req, res, next) => {
   try {
+    console.log('🚗 [CAR CREATE] ======= ENHANCED DEBUGGING =======');
     console.log('🚗 [CAR CREATE] Starting car creation process...');
     console.log('🚗 [CAR CREATE] Request method:', req.method);
     console.log('🚗 [CAR CREATE] Content-Type:', req.headers['content-type']);
@@ -114,6 +115,38 @@ const createCar = asyncHandler(async (req, res, next) => {
     console.log('🚗 [CAR CREATE] Tenant ID:', req.user?.tenantId);
     console.log('🚗 [CAR CREATE] Files received:', req.files?.length || 0);
     console.log('🚗 [CAR CREATE] Body keys:', Object.keys(req.body || {}));
+    
+    // Enhanced file debugging
+    if (req.files && req.files.length > 0) {
+      console.log('🚗 [CAR CREATE] Files details:');
+      req.files.forEach((file, index) => {
+        console.log(`🚗 [CAR CREATE] File ${index + 1}:`, {
+          fieldname: file.fieldname,
+          originalname: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size
+        });
+      });
+    } else {
+      console.log('🚗 [CAR CREATE] ❌ No files received!');
+    }
+    
+    // Enhanced body debugging
+    console.log('🚗 [CAR CREATE] Body size:', Object.keys(req.body || {}).length);
+    if (req.body) {
+      // Look for any image-related fields
+      const imageFields = Object.keys(req.body).filter(key => key.includes('image') || key.includes('file'));
+      console.log('🚗 [CAR CREATE] Image-related fields:', imageFields);
+      
+      // Check if any fields contain file data
+      Object.entries(req.body).forEach(([key, value]) => {
+        if (typeof value === 'object' && value !== null) {
+          console.log(`🚗 [CAR CREATE] Object field ${key}:`, typeof value, Array.isArray(value) ? `Array[${value.length}]` : 'Object');
+        }
+      });
+    }
+    
+    console.log('🚗 [CAR CREATE] =======================================');
   
   // Parse FormData if it contains nested objects
   if (req.body && typeof req.body === 'object') {
@@ -1873,6 +1906,49 @@ const getCarStatus = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Test file upload endpoint for debugging
+// @route   POST /api/cars/test-upload
+// @access  Private/Admin
+const testFileUpload = asyncHandler(async (req, res, next) => {
+  console.log('🧪 [TEST UPLOAD] ======= DEBUGGING FILE UPLOAD =======');
+  console.log('🧪 [TEST UPLOAD] Content-Type:', req.headers['content-type']);
+  console.log('🧪 [TEST UPLOAD] Files received:', req.files?.length || 0);
+  console.log('🧪 [TEST UPLOAD] Body keys:', Object.keys(req.body || {}));
+  
+  if (req.files && req.files.length > 0) {
+    console.log('🧪 [TEST UPLOAD] File details:');
+    req.files.forEach((file, index) => {
+      console.log(`🧪 [TEST UPLOAD] File ${index + 1}:`, {
+        fieldname: file.fieldname,
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size
+      });
+    });
+  } else {
+    console.log('🧪 [TEST UPLOAD] ❌ No files received!');
+  }
+  
+  if (req.body) {
+    console.log('🧪 [TEST UPLOAD] Body content sample:', Object.keys(req.body).slice(0, 10));
+  }
+  
+  res.status(200).json({
+    success: true,
+    message: 'Test upload endpoint reached',
+    data: {
+      filesReceived: req.files?.length || 0,
+      bodyFields: Object.keys(req.body || {}).length,
+      files: req.files?.map(f => ({
+        fieldname: f.fieldname,
+        originalname: f.originalname,
+        size: f.size,
+        mimetype: f.mimetype
+      })) || []
+    }
+  });
+});
+
 module.exports = {
   getCars,
   getCar,
@@ -1886,5 +1962,6 @@ module.exports = {
   getCarStats,
   setPrimaryImage,
   getCarCalendar,
-  getCarStatus
+  getCarStatus,
+  testFileUpload
 }; 

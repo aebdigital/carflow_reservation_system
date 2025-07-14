@@ -372,22 +372,30 @@ const createReservation = asyncHandler(async (req, res, next) => {
     { path: 'appliedDiscountCodes.discountCode', select: 'code description discountType discountValue' }
   ]);
 
-  // 📧 Send admin notification email
+  // 📧 Send admin notification email when new reservation is created
   try {
     const { sendAdminNotificationEmail } = require('../utils/emailHelpers');
     
-    console.log('📧 [EMAIL] Sending admin notification for new reservation...');
+    console.log('📧 [EMAIL] Sending admin notification for new admin reservation...');
+    console.log('📧 [EMAIL] Environment:', process.env.NODE_ENV || 'development');
+    console.log('📧 [EMAIL] Email provider:', process.env.EMAIL_PROVIDER || 'nodemailer');
+    console.log('📧 [EMAIL] SMTP2GO configured:', process.env.SMTP2GO_API_KEY ? 'YES' : 'NO');
     
     // Send email notification to peter@aebdig.com
     const emailResult = await sendAdminNotificationEmail(reservation, carDoc, customerDoc);
     
     if (emailResult.success) {
-      console.log('✅ [EMAIL] Admin notification sent successfully');
+      console.log('✅ [EMAIL] Admin notification sent successfully for new reservation');
+      console.log('📧 [EMAIL] Message ID:', emailResult.messageId);
+      if (emailResult.previewUrl) {
+        console.log('🔗 [EMAIL] Preview URL (test account):', emailResult.previewUrl);
+      }
     } else {
       console.warn('⚠️ [EMAIL] Admin notification failed:', emailResult.error);
     }
   } catch (emailError) {
     console.error('❌ [EMAIL] Error sending admin notification:', emailError.message);
+    console.error('❌ [EMAIL] Stack:', emailError.stack);
     // Don't fail the reservation if email fails
   }
 
@@ -532,6 +540,12 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
   };
 
   await reservation.save();
+
+  // Populate reservation with car and customer data for response
+  await reservation.populate([
+    { path: 'customer', select: 'firstName lastName email phone licenseNumber' },
+    { path: 'car', select: 'brand model year registrationNumber images dailyRate pricing' }
+  ]);
 
   res.status(200).json({
     success: true,

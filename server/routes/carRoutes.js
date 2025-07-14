@@ -11,7 +11,8 @@ const {
   getCarsByLocation,
   getCarStats,
   setPrimaryImage,
-  getCarStatus
+  getCarStatus,
+  testFileUpload
 } = require('../controllers/carController');
 
 const { protect, requireAdmin, requireStaff, addTenantFilter, restrictRivalDomain } = require('../middleware/authMiddleware');
@@ -26,7 +27,6 @@ router.use(addTenantFilter);
 
 // Public/General routes
 router.get('/stats', requireStaff, getCarStats);
-router.get('/location/:locationName', getCarsByLocation);
 
 // CRUD routes
 router.route('/')
@@ -39,12 +39,16 @@ router.route('/:id')
   .delete(requireAdmin, deleteCar);
 
 // Special routes
+router.get('/location/:locationName', getCarsByLocation);
 router.get('/:id/availability', getCarAvailability);
 router.get('/:id/status', requireStaff, getCarStatus);
 
 // Image management routes
 router.post('/:id/images', requireStaff, uploadMultipleCarImages, handleMulterError, uploadCarImages);
-router.delete('/:id/images/:imageIndex', requireStaff, deleteCarImage);
-router.put('/:id/images/:imageIndex/primary', requireStaff, setPrimaryImage);
+router.delete('/:id/images/:imageId', requireStaff, deleteCarImage);
+router.put('/:id/images/:imageId/primary', requireStaff, setPrimaryImage);
+
+// Test endpoint for debugging uploads
+router.post('/test-upload', requireAdmin, uploadMultipleCarImages, handleMulterError, testFileUpload);
 
 module.exports = router; 

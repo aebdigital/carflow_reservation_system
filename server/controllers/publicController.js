@@ -871,17 +871,25 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       const { sendAdminNotificationEmail } = require('../utils/emailHelpers');
       
       console.log('📧 [EMAIL] Sending admin notification for new public reservation...');
+      console.log('📧 [EMAIL] Environment:', process.env.NODE_ENV || 'development');
+      console.log('📧 [EMAIL] Email provider:', process.env.EMAIL_PROVIDER || 'nodemailer');
+      console.log('📧 [EMAIL] SMTP2GO configured:', process.env.SMTP2GO_API_KEY ? 'YES' : 'NO');
       
       // Send email notification to peter@aebdig.com
       const emailResult = await sendAdminNotificationEmail(populatedReservation, car, customer);
       
       if (emailResult.success) {
-        console.log('✅ [EMAIL] Admin notification sent successfully');
+        console.log('✅ [EMAIL] Admin notification sent successfully for new public reservation');
+        console.log('📧 [EMAIL] Message ID:', emailResult.messageId);
+        if (emailResult.previewUrl) {
+          console.log('🔗 [EMAIL] Preview URL (test account):', emailResult.previewUrl);
+        }
       } else {
         console.warn('⚠️ [EMAIL] Admin notification failed:', emailResult.error);
       }
     } catch (emailError) {
       console.error('❌ [EMAIL] Error sending admin notification:', emailError.message);
+      console.error('❌ [EMAIL] Stack:', emailError.stack);
       // Don't fail the reservation if email fails
     }
 
@@ -1222,6 +1230,33 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     const populatedReservation = await Reservation.findById(savedReservation._id)
       .populate('customer', 'firstName lastName email phone')
       .populate('car', 'brand model year registrationNumber dailyRate images');
+
+    // 📧 Send admin notification email
+    try {
+      const { sendAdminNotificationEmail } = require('../utils/emailHelpers');
+      
+      console.log('📧 [EMAIL] Sending admin notification for new general public reservation...');
+      console.log('📧 [EMAIL] Environment:', process.env.NODE_ENV || 'development');
+      console.log('📧 [EMAIL] Email provider:', process.env.EMAIL_PROVIDER || 'nodemailer');
+      console.log('📧 [EMAIL] SMTP2GO configured:', process.env.SMTP2GO_API_KEY ? 'YES' : 'NO');
+      
+      // Send email notification to peter@aebdig.com
+      const emailResult = await sendAdminNotificationEmail(populatedReservation, car, customer);
+      
+      if (emailResult.success) {
+        console.log('✅ [EMAIL] Admin notification sent successfully for new general public reservation');
+        console.log('📧 [EMAIL] Message ID:', emailResult.messageId);
+        if (emailResult.previewUrl) {
+          console.log('🔗 [EMAIL] Preview URL (test account):', emailResult.previewUrl);
+        }
+      } else {
+        console.warn('⚠️ [EMAIL] Admin notification failed:', emailResult.error);
+      }
+    } catch (emailError) {
+      console.error('❌ [EMAIL] Error sending admin notification:', emailError.message);
+      console.error('❌ [EMAIL] Stack:', emailError.stack);
+      // Don't fail the reservation if email fails
+    }
 
     res.status(201).json({
       success: true,
