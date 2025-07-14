@@ -72,9 +72,13 @@ const EnhancedCarForm = ({
   const [damageModalOpen, setDamageModalOpen] = useState(false);
   const [selectedDamage, setSelectedDamage] = useState(null);
   const [damageModalMode, setDamageModalMode] = useState('add');
+  const [editingEquipmentIndex, setEditingEquipmentIndex] = useState(null);
+  const [equipmentIconFile, setEquipmentIconFile] = useState(null);
+  const [equipmentIconPreview, setEquipmentIconPreview] = useState(null);
 
   // Add ref for file input
   const fileInputRef = useRef(null);
+  const equipmentIconInputRef = useRef(null);
 
   // Enhanced options with new categories
   const categoryOptions = [
@@ -204,6 +208,102 @@ const EnhancedCarForm = ({
       onImageRemove(index);
     }
   }, [onImageRemove]);
+
+  // Equipment management handlers
+  const handleEditEquipment = useCallback((equipment, index) => {
+    setEditingEquipmentIndex(index);
+    handleChange('customEquipmentName', equipment.name);
+    
+    // If it's a file-based icon, we can't edit it directly
+    // If it's emoji or text, put it in the icon field
+    if (equipment.icon && !equipment.icon.startsWith('data:') && !equipment.icon.startsWith('http')) {
+      handleChange('customEquipmentIcon', equipment.icon);
+    } else {
+      handleChange('customEquipmentIcon', '');
+      setEquipmentIconFile(null);
+      setEquipmentIconPreview(equipment.icon || null);
+    }
+  }, [handleChange]);
+
+  const handleEquipmentIconChange = useCallback((event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.includes('svg') && !file.type.includes('png')) {
+        alert('Iba SVG a PNG súbory sú podporované');
+        return;
+      }
+      
+      // Check file size (max 1MB)
+      if (file.size > 1024 * 1024) {
+        alert('Súbor je príliš veľký. Maximálna veľkosť je 1MB');
+        return;
+      }
+
+      setEquipmentIconFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setEquipmentIconPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  }, []);
+
+  const handleAddOrUpdateEquipment = useCallback(() => {
+    const name = formData.customEquipmentName?.trim();
+    
+    if (!name) {
+      alert('Názov výbavy je povinný');
+      return;
+    }
+
+    const icon = equipmentIconFile ? equipmentIconPreview : (formData.customEquipmentIcon?.trim() || '🔧');
+    
+    const equipmentItem = {
+      name: name,
+      icon: icon,
+      category: 'custom',
+      iconType: equipmentIconFile ? 'file' : 'emoji'
+    };
+
+    const currentEquipment = formData.equipment || [];
+    
+    if (editingEquipmentIndex !== null) {
+      // Update existing equipment
+      const newEquipment = [...currentEquipment];
+      newEquipment[editingEquipmentIndex] = equipmentItem;
+      handleChange('equipment', newEquipment);
+      setEditingEquipmentIndex(null);
+    } else {
+      // Add new equipment
+      handleChange('equipment', [...currentEquipment, equipmentItem]);
+    }
+    
+    // Reset form
+    handleChange('customEquipmentName', '');
+    handleChange('customEquipmentIcon', '');
+    setEquipmentIconFile(null);
+    setEquipmentIconPreview(null);
+    
+    // Reset file input
+    if (equipmentIconInputRef.current) {
+      equipmentIconInputRef.current.value = '';
+    }
+  }, [formData.customEquipmentName, formData.customEquipmentIcon, equipmentIconFile, equipmentIconPreview, formData.equipment, editingEquipmentIndex, handleChange]);
+
+  const handleCancelEquipmentEdit = useCallback(() => {
+    setEditingEquipmentIndex(null);
+    handleChange('customEquipmentName', '');
+    handleChange('customEquipmentIcon', '');
+    setEquipmentIconFile(null);
+    setEquipmentIconPreview(null);
+    
+    if (equipmentIconInputRef.current) {
+      equipmentIconInputRef.current.value = '';
+    }
+  }, [handleChange]);
 
   // Damage management handlers
   const handleAddDamage = () => {
@@ -1346,8 +1446,35 @@ const EnhancedCarForm = ({
                         key={index}
                         label={
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            {item.icon && <span>{item.icon}</span>}
+                            {item.iconType === 'file' ? (
+                              <img 
+                                src={item.icon} 
+                                alt="" 
+                                style={{ width: 16, height: 16, objectFit: 'contain' }}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'inline';
+                                }}
+                              />
+                            ) : (
+                              <span>{item.icon}</span>
+                            )}
+                            <span style={{ display: 'none' }}>🔧</span>
                             <span>{item.name}</span>
+                            {item.category === 'custom' && dialogMode !== 'view' && (
+                              <EditIcon 
+                                sx={{ 
+                                  fontSize: 14, 
+                                  ml: 0.5, 
+                                  cursor: 'pointer',
+                                  '&:hover': { color: 'primary.main' }
+                                }} 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditEquipment(item, index);
+                                }}
+                              />
+                            )}
                           </Box>
                         }
                         onDelete={dialogMode !== 'view' ? () => {
@@ -1357,6 +1484,15 @@ const EnhancedCarForm = ({
                         deleteIcon={<DeleteIcon />}
                         color="primary"
                         variant="outlined"
+                        sx={{
+                          cursor: item.category === 'custom' && dialogMode !== 'view' ? 'pointer' : 'default',
+                          '&:hover': item.category === 'custom' && dialogMode !== 'view' ? {
+                            backgroundColor: 'primary.50'
+                          } : {}
+                        }}
+                        onClick={item.category === 'custom' && dialogMode !== 'view' ? () => {
+                          handleEditEquipment(item, index);
+                        } : undefined}
                       />
                     ))}
                   </Box>
@@ -1367,9 +1503,9 @@ const EnhancedCarForm = ({
               {dialogMode !== 'view' && (
                 <Box sx={{ mb: 3, p: 2, border: '1px dashed', borderColor: 'grey.300', borderRadius: 1 }}>
                   <Typography variant="subtitle2" gutterBottom>
-                    Pridať vlastnú výbavu
+                    {editingEquipmentIndex !== null ? 'Upraviť výbavu' : 'Pridať vlastnú výbavu'}
                   </Typography>
-                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'end' }}>
+                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'end', mb: 2 }}>
                     <TextField
                       label="Názov výbavy"
                       variant="outlined"
@@ -1380,42 +1516,73 @@ const EnhancedCarForm = ({
                       sx={{ flexGrow: 1 }}
                     />
                     <TextField
-                      label="Emoji ikona"
+                      label="Emoji ikona (voliteľné)"
                       variant="outlined"
                       size="small"
                       value={formData.customEquipmentIcon || ''}
                       onChange={(e) => handleChange('customEquipmentIcon', e.target.value)}
                       placeholder="🔧"
                       inputProps={{ maxLength: 2 }}
-                      sx={{ width: 80 }}
+                      sx={{ width: 120 }}
                     />
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<CameraIcon />}
+                      onClick={() => equipmentIconInputRef.current?.click()}
+                    >
+                      SVG/PNG
+                    </Button>
                     <Button
                       variant="contained"
                       size="small"
-                      startIcon={<AddIcon />}
-                      onClick={() => {
-                        const name = formData.customEquipmentName?.trim();
-                        const icon = formData.customEquipmentIcon?.trim() || '🔧';
-                        
-                        if (name) {
-                          const newEquipment = [
-                            ...(formData.equipment || []),
-                            {
-                              name: name,
-                              icon: icon,
-                              category: 'custom'
-                            }
-                          ];
-                          handleChange('equipment', newEquipment);
-                          handleChange('customEquipmentName', '');
-                          handleChange('customEquipmentIcon', '');
-                        }
-                      }}
+                      startIcon={editingEquipmentIndex !== null ? <EditIcon /> : <AddIcon />}
+                      onClick={handleAddOrUpdateEquipment}
                       disabled={!formData.customEquipmentName?.trim()}
                     >
-                      Pridať
+                      {editingEquipmentIndex !== null ? 'Uložiť úpravu' : 'Pridať'}
                     </Button>
+                    {editingEquipmentIndex !== null && (
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={handleCancelEquipmentEdit}
+                      >
+                        Zrušiť
+                      </Button>
+                    )}
                   </Box>
+                  
+                  {/* Icon preview */}
+                  {(equipmentIconPreview || formData.customEquipmentIcon) && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Náhľad ikony:
+                      </Typography>
+                      {equipmentIconPreview && equipmentIconPreview.startsWith('data:') ? (
+                        <img 
+                          src={equipmentIconPreview} 
+                          alt="Icon preview" 
+                          style={{ width: 20, height: 20, objectFit: 'contain' }}
+                        />
+                      ) : (
+                        <span>{formData.customEquipmentIcon || '🔧'}</span>
+                      )}
+                    </Box>
+                  )}
+                  
+                  {/* Hidden file input */}
+                  <input
+                    ref={equipmentIconInputRef}
+                    type="file"
+                    hidden
+                    accept=".svg,.png,image/svg+xml,image/png"
+                    onChange={handleEquipmentIconChange}
+                  />
+                  
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Podporované formáty ikon: SVG, PNG (max 1MB) alebo emoji
+                  </Typography>
                 </Box>
               )}
               
