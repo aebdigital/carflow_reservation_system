@@ -231,173 +231,51 @@ function Cars() {
     console.log('🖼️ [IMAGE CHANGE] Function called');
     const files = Array.from(event.target.files || []);
     console.log('🖼️ [IMAGE CHANGE] Files selected:', files.length);
-    console.log('🖼️ [IMAGE CHANGE] File details:', files.map(f => ({ 
-      name: f.name, 
-      size: f.size, 
-      type: f.type,
-      lastModified: f.lastModified
-    })));
     
     if (files.length === 0) {
       console.log('🖼️ [IMAGE CHANGE] No files selected, returning');
       return;
     }
     
-    // Validate files before processing
-    const validFiles = [];
-    const invalidFiles = [];
-    
-    files.forEach((file, index) => {
-      console.log(`🖼️ [IMAGE CHANGE] Validating file ${index + 1}: ${file.name}`);
-      
-      // Check file type
-      if (!file.type.startsWith('image/')) {
-        console.error(`🖼️ [IMAGE CHANGE] Invalid file type for ${file.name}: ${file.type}`);
-        invalidFiles.push({ file, reason: 'Invalid file type' });
-        return;
-      }
-      
-      // Check file size (max 10MB)
-      const maxSize = 10 * 1024 * 1024; // 10MB
-      if (file.size > maxSize) {
-        console.error(`🖼️ [IMAGE CHANGE] File too large for ${file.name}: ${file.size} bytes`);
-        invalidFiles.push({ file, reason: 'File too large (max 10MB)' });
-        return;
-      }
-      
-      // Check if file is actually readable
-      if (file.size === 0) {
-        console.error(`🖼️ [IMAGE CHANGE] Empty file: ${file.name}`);
-        invalidFiles.push({ file, reason: 'Empty file' });
-        return;
-      }
-      
-      // Basic corruption check - try to create object URL
-      try {
-        const testUrl = URL.createObjectURL(file);
-        URL.revokeObjectURL(testUrl); // Clean up immediately
-        console.log(`🖼️ [IMAGE CHANGE] File ${file.name} passed basic corruption check`);
-      } catch (corruptionError) {
-        console.error(`🖼️ [IMAGE CHANGE] File corruption detected for ${file.name}:`, corruptionError);
-        invalidFiles.push({ file, reason: 'File appears to be corrupted' });
-        return;
-      }
-      
-      console.log(`🖼️ [IMAGE CHANGE] File ${file.name} passed validation`);
-      validFiles.push(file);
-    });
-    
-    console.log('🖼️ [IMAGE CHANGE] Valid files:', validFiles.length);
-    console.log('🖼️ [IMAGE CHANGE] Invalid files:', invalidFiles.length);
-    
-    if (invalidFiles.length > 0) {
-      console.warn('🖼️ [IMAGE CHANGE] Some files were invalid:', invalidFiles);
-      // You could show an alert or notification here
-      const invalidFileNames = invalidFiles.map(f => `${f.file.name} (${f.reason})`).join('\n');
-      alert(`Niektoré súbory nebolo možné spracovať:\n\n${invalidFileNames}\n\nSpracované budú iba platné súbory.`);
-    }
-    
-    if (validFiles.length === 0) {
-      console.log('🖼️ [IMAGE CHANGE] No valid files to process');
-      return;
-    }
-    
     // Add to selected images immediately
     setSelectedImages(prev => {
       console.log('🖼️ [IMAGE CHANGE] Previous selected images:', prev.length);
-      const newSelection = [...prev, ...validFiles];
+      const newSelection = [...prev, ...files];
       console.log('🖼️ [IMAGE CHANGE] New selected images total:', newSelection.length);
       return newSelection;
     });
     
-    // Create preview URLs with enhanced error handling
+    // Create preview URLs using simple forEach approach
     console.log('🖼️ [IMAGE CHANGE] Starting preview creation...');
-    const newPreviewPromises = validFiles.map((file, index) => {
-      return new Promise((resolve, reject) => {
-        console.log(`🖼️ [IMAGE CHANGE] Creating FileReader for file ${index + 1}: ${file.name}`);
-        
-        const reader = new FileReader();
-        
-        reader.onload = (e) => {
-          console.log(`🖼️ [IMAGE CHANGE] ✅ Preview created for file ${index + 1}: ${file.name}`);
-          console.log(`🖼️ [IMAGE CHANGE] Preview data length: ${e.target.result.length} characters`);
-          resolve(e.target.result);
-        };
-        
-        reader.onerror = (error) => {
-          console.error(`🖼️ [IMAGE CHANGE] ❌ Error reading file ${index + 1} (${file.name}):`, error);
-          console.error(`🖼️ [IMAGE CHANGE] FileReader error details:`, {
-            error: error,
-            readyState: reader.readyState,
-            result: reader.result,
-            errorType: error.type,
-            errorTarget: error.target,
-            errorCurrentTarget: error.currentTarget
-          });
-          
-          // Try backup approach using URL.createObjectURL
-          console.log(`🖼️ [IMAGE CHANGE] 🔄 Trying backup approach with URL.createObjectURL for ${file.name}`);
-          try {
-            const objectUrl = URL.createObjectURL(file);
-            console.log(`🖼️ [IMAGE CHANGE] ✅ Backup preview created for ${file.name} using object URL`);
-            resolve(objectUrl);
-          } catch (backupError) {
-            console.error(`🖼️ [IMAGE CHANGE] ❌ Backup approach also failed for ${file.name}:`, backupError);
-            resolve(null);
-          }
-        };
-        
-        reader.onabort = () => {
-          console.warn(`🖼️ [IMAGE CHANGE] ⚠️ File reading aborted for ${file.name}`);
-          resolve(null);
-        };
-        
-        reader.onloadstart = () => {
-          console.log(`🖼️ [IMAGE CHANGE] 📖 Started reading file: ${file.name}`);
-        };
-        
-        reader.onprogress = (e) => {
-          if (e.lengthComputable) {
-            const percentComplete = (e.loaded / e.total) * 100;
-            console.log(`🖼️ [IMAGE CHANGE] 📊 Reading progress for ${file.name}: ${percentComplete.toFixed(1)}%`);
-          }
-        };
-        
+    files.forEach((file, index) => {
+      console.log(`🖼️ [IMAGE CHANGE] Processing file ${index + 1}: ${file.name}`);
+      
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        console.log(`🖼️ [IMAGE CHANGE] ✅ Preview created for file: ${file.name}`);
+        setImagePreviewUrls(prev => {
+          const updatedPreviews = [...prev, e.target.result];
+          console.log('🖼️ [IMAGE CHANGE] Updated preview URLs total:', updatedPreviews.length);
+          return updatedPreviews;
+        });
+      };
+      
+      reader.onerror = (error) => {
+        console.error(`🖼️ [IMAGE CHANGE] ❌ Error reading file ${file.name}:`, error);
+        // Try backup approach
         try {
-          console.log(`🖼️ [IMAGE CHANGE] 🚀 Starting to read file: ${file.name} (${file.size} bytes)`);
-          reader.readAsDataURL(file);
-        } catch (error) {
-          console.error(`🖼️ [IMAGE CHANGE] ❌ Failed to start reading file ${file.name}:`, error);
-          resolve(null);
+          const objectUrl = URL.createObjectURL(file);
+          console.log(`🖼️ [IMAGE CHANGE] ✅ Backup preview created for ${file.name}`);
+          setImagePreviewUrls(prev => [...prev, objectUrl]);
+        } catch (backupError) {
+          console.error(`🖼️ [IMAGE CHANGE] ❌ Backup failed for ${file.name}:`, backupError);
         }
-      });
+      };
+      
+      console.log(`🖼️ [IMAGE CHANGE] 🚀 Starting to read file: ${file.name}`);
+      reader.readAsDataURL(file);
     });
-    
-    // Wait for all previews to be created before updating state
-    Promise.all(newPreviewPromises)
-      .then(newPreviews => {
-        // Filter out null values (failed reads)
-        const validPreviews = newPreviews.filter(preview => preview !== null);
-        console.log('🖼️ [IMAGE CHANGE] ✅ All previews processing complete');
-        console.log('🖼️ [IMAGE CHANGE] Valid previews created:', validPreviews.length);
-        console.log('🖼️ [IMAGE CHANGE] Failed previews:', newPreviews.length - validPreviews.length);
-        
-        if (validPreviews.length > 0) {
-          setImagePreviewUrls(prev => {
-            console.log('🖼️ [IMAGE CHANGE] Previous preview URLs:', prev.length);
-            const updatedPreviews = [...prev, ...validPreviews];
-            console.log('🖼️ [IMAGE CHANGE] Updated preview URLs total:', updatedPreviews.length);
-            return updatedPreviews;
-          });
-        } else {
-          console.error('🖼️ [IMAGE CHANGE] ❌ No valid previews could be created');
-          // Notify user about preview creation failure
-          alert('Nepodarilo sa vytvoriť náhľady obrázkov. Skúste použiť iné súbory alebo skontrolujte, či nie sú poškodené.');
-        }
-      })
-      .catch(error => {
-        console.error('🖼️ [IMAGE CHANGE] ❌ Error in preview creation promise chain:', error);
-      });
     
     console.log('🖼️ [IMAGE CHANGE] Function completed');
   }
