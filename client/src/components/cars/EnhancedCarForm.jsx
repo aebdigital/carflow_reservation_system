@@ -833,10 +833,20 @@ const EnhancedCarForm = ({
                   console.log('🖼️ [FORM] Upload button clicked');
                   console.log('🖼️ [FORM] Event target:', e.target);
                   console.log('🖼️ [FORM] File input ref:', fileInputRef.current);
+                  // Prevent default to avoid double-triggering
+                  e.preventDefault();
+                  e.stopPropagation();
+                  
                   // Manually trigger file input if needed
                   if (fileInputRef.current) {
                     console.log('🖼️ [FORM] Manually triggering file input click');
-                    fileInputRef.current.click();
+                    try {
+                      fileInputRef.current.click();
+                    } catch (error) {
+                      console.error('🖼️ [FORM] Error triggering file input:', error);
+                    }
+                  } else {
+                    console.error('🖼️ [FORM] File input ref not available');
                   }
                 }}
               >
@@ -849,9 +859,12 @@ const EnhancedCarForm = ({
                   accept="image/*"
                   onChange={memoizedImageChangeHandler}
                   onClick={(e) => {
-                    console.log('🖼️ [FORM] File input clicked');
+                    console.log('🖼️ [FORM] File input clicked directly');
+                    console.log('🖼️ [FORM] Input element:', e.target);
                     e.stopPropagation();
                   }}
+                  onFocus={() => console.log('🖼️ [FORM] File input focused')}
+                  onBlur={() => console.log('🖼️ [FORM] File input blurred')}
                 />
               </Button>
               <Typography variant="body2" color="text.secondary" align="center">

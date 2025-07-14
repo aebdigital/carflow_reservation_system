@@ -231,51 +231,145 @@ function Cars() {
     console.log('🖼️ [IMAGE CHANGE] Function called');
     const files = Array.from(event.target.files || []);
     console.log('🖼️ [IMAGE CHANGE] Files selected:', files.length);
-    console.log('🖼️ [IMAGE CHANGE] File details:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
+    console.log('🖼️ [IMAGE CHANGE] File details:', files.map(f => ({ 
+      name: f.name, 
+      size: f.size, 
+      type: f.type,
+      lastModified: f.lastModified
+    })));
     
     if (files.length === 0) {
       console.log('🖼️ [IMAGE CHANGE] No files selected, returning');
       return;
     }
     
+    // Validate files before processing
+    const validFiles = [];
+    const invalidFiles = [];
+    
+    files.forEach((file, index) => {
+      console.log(`🖼️ [IMAGE CHANGE] Validating file ${index + 1}: ${file.name}`);
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        console.error(`🖼️ [IMAGE CHANGE] Invalid file type for ${file.name}: ${file.type}`);
+        invalidFiles.push({ file, reason: 'Invalid file type' });
+        return;
+      }
+      
+      // Check file size (max 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        console.error(`🖼️ [IMAGE CHANGE] File too large for ${file.name}: ${file.size} bytes`);
+        invalidFiles.push({ file, reason: 'File too large (max 10MB)' });
+        return;
+      }
+      
+      // Check if file is actually readable
+      if (file.size === 0) {
+        console.error(`🖼️ [IMAGE CHANGE] Empty file: ${file.name}`);
+        invalidFiles.push({ file, reason: 'Empty file' });
+        return;
+      }
+      
+      console.log(`🖼️ [IMAGE CHANGE] File ${file.name} passed validation`);
+      validFiles.push(file);
+    });
+    
+    console.log('🖼️ [IMAGE CHANGE] Valid files:', validFiles.length);
+    console.log('🖼️ [IMAGE CHANGE] Invalid files:', invalidFiles.length);
+    
+    if (invalidFiles.length > 0) {
+      console.warn('🖼️ [IMAGE CHANGE] Some files were invalid:', invalidFiles);
+      // You could show an alert or notification here
+    }
+    
+    if (validFiles.length === 0) {
+      console.log('🖼️ [IMAGE CHANGE] No valid files to process');
+      return;
+    }
+    
     // Add to selected images immediately
     setSelectedImages(prev => {
       console.log('🖼️ [IMAGE CHANGE] Previous selected images:', prev.length);
-      const newSelection = [...prev, ...files];
+      const newSelection = [...prev, ...validFiles];
       console.log('🖼️ [IMAGE CHANGE] New selected images total:', newSelection.length);
       return newSelection;
     });
     
-    // Create preview URLs with proper async handling
+    // Create preview URLs with enhanced error handling
     console.log('🖼️ [IMAGE CHANGE] Starting preview creation...');
-    const newPreviewPromises = files.map((file, index) => {
+    const newPreviewPromises = validFiles.map((file, index) => {
       return new Promise((resolve, reject) => {
+        console.log(`🖼️ [IMAGE CHANGE] Creating FileReader for file ${index + 1}: ${file.name}`);
+        
         const reader = new FileReader();
+        
         reader.onload = (e) => {
-          console.log(`🖼️ [IMAGE CHANGE] Preview created for file ${index + 1}: ${file.name}`);
+          console.log(`🖼️ [IMAGE CHANGE] ✅ Preview created for file ${index + 1}: ${file.name}`);
+          console.log(`🖼️ [IMAGE CHANGE] Preview data length: ${e.target.result.length} characters`);
           resolve(e.target.result);
         };
+        
         reader.onerror = (error) => {
-          console.error(`🖼️ [IMAGE CHANGE] Error reading file ${index + 1}:`, error);
-          reject(error);
+          console.error(`🖼️ [IMAGE CHANGE] ❌ Error reading file ${index + 1} (${file.name}):`, error);
+          console.error(`🖼️ [IMAGE CHANGE] FileReader error details:`, {
+            error: error,
+            readyState: reader.readyState,
+            result: reader.result
+          });
+          // Resolve with a placeholder instead of rejecting to prevent Promise.all failure
+          resolve(null);
         };
-        reader.readAsDataURL(file);
+        
+        reader.onabort = () => {
+          console.warn(`🖼️ [IMAGE CHANGE] ⚠️ File reading aborted for ${file.name}`);
+          resolve(null);
+        };
+        
+        reader.onloadstart = () => {
+          console.log(`🖼️ [IMAGE CHANGE] 📖 Started reading file: ${file.name}`);
+        };
+        
+        reader.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            console.log(`🖼️ [IMAGE CHANGE] 📊 Reading progress for ${file.name}: ${percentComplete.toFixed(1)}%`);
+          }
+        };
+        
+        try {
+          console.log(`🖼️ [IMAGE CHANGE] 🚀 Starting to read file: ${file.name} (${file.size} bytes)`);
+          reader.readAsDataURL(file);
+        } catch (error) {
+          console.error(`🖼️ [IMAGE CHANGE] ❌ Failed to start reading file ${file.name}:`, error);
+          resolve(null);
+        }
       });
     });
     
     // Wait for all previews to be created before updating state
     Promise.all(newPreviewPromises)
       .then(newPreviews => {
-        console.log('🖼️ [IMAGE CHANGE] All previews created:', newPreviews.length);
-        setImagePreviewUrls(prev => {
-          console.log('🖼️ [IMAGE CHANGE] Previous preview URLs:', prev.length);
-          const updatedPreviews = [...prev, ...newPreviews];
-          console.log('🖼️ [IMAGE CHANGE] Updated preview URLs total:', updatedPreviews.length);
-          return updatedPreviews;
-        });
+        // Filter out null values (failed reads)
+        const validPreviews = newPreviews.filter(preview => preview !== null);
+        console.log('🖼️ [IMAGE CHANGE] ✅ All previews processing complete');
+        console.log('🖼️ [IMAGE CHANGE] Valid previews created:', validPreviews.length);
+        console.log('🖼️ [IMAGE CHANGE] Failed previews:', newPreviews.length - validPreviews.length);
+        
+        if (validPreviews.length > 0) {
+          setImagePreviewUrls(prev => {
+            console.log('🖼️ [IMAGE CHANGE] Previous preview URLs:', prev.length);
+            const updatedPreviews = [...prev, ...validPreviews];
+            console.log('🖼️ [IMAGE CHANGE] Updated preview URLs total:', updatedPreviews.length);
+            return updatedPreviews;
+          });
+        } else {
+          console.error('🖼️ [IMAGE CHANGE] ❌ No valid previews could be created');
+        }
       })
       .catch(error => {
-        console.error('🖼️ [IMAGE CHANGE] Error creating previews:', error);
+        console.error('🖼️ [IMAGE CHANGE] ❌ Error in preview creation promise chain:', error);
       });
     
     console.log('🖼️ [IMAGE CHANGE] Function completed');
