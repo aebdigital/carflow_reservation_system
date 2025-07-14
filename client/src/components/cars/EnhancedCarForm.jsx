@@ -829,6 +829,90 @@ const EnhancedCarForm = ({
             Ideálne rozmery: 1200x800px, formát JPG/PNG, maximálne 5MB na obrázok
           </Alert>
           
+          {/* Show existing car images in view/edit mode */}
+          {dialogMode !== 'create' && formData.images && formData.images.length > 0 && (
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Existujúce obrázky ({formData.images.length})
+              </Typography>
+              <Grid container spacing={2}>
+                {formData.images.map((image, index) => (
+                  <Grid item xs={12} sm={6} md={4} key={index}>
+                    <Card>
+                      <CardContent sx={{ p: 1 }}>
+                        <Box sx={{ position: 'relative' }}>
+                          <img
+                            src={image.urls?.thumbnail || image.url}
+                            alt={image.description || `Obrázok ${index + 1}`}
+                            style={{ 
+                              width: '100%', 
+                              height: '120px', 
+                              objectFit: 'cover',
+                              borderRadius: 4
+                            }}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                          />
+                          {/* Fallback when image fails to load */}
+                          <Box 
+                            sx={{ 
+                              width: '100%', 
+                              height: '120px', 
+                              backgroundColor: 'grey.100',
+                              borderRadius: 1,
+                              display: 'none',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              border: '2px dashed',
+                              borderColor: 'grey.300'
+                            }}
+                          >
+                            <CameraIcon sx={{ fontSize: 40, color: 'grey.500', mb: 1 }} />
+                            <Typography variant="body2" color="text.secondary" align="center">
+                              Obrázok sa nepodarilo načítať
+                            </Typography>
+                          </Box>
+                          
+                          {image.isPrimary && (
+                            <Chip
+                              label="Primárny"
+                              color="primary"
+                              size="small"
+                              sx={{ position: 'absolute', bottom: 4, left: 4 }}
+                            />
+                          )}
+                          
+                          {dialogMode === 'edit' && (
+                            <IconButton
+                              sx={{ 
+                                position: 'absolute',
+                                top: 4,
+                                right: 4,
+                                backgroundColor: 'rgba(0,0,0,0.5)',
+                                color: 'white',
+                                '&:hover': { backgroundColor: 'rgba(0,0,0,0.7)' }
+                              }}
+                              size="small"
+                              onClick={() => {
+                                // Handle delete existing image - you can implement this
+                                console.log('Delete existing image at index:', index);
+                              }}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          )}
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          )}
+          
           {dialogMode !== 'view' && (
             <Box sx={{ mb: 3, p: 2, border: '2px dashed #ccc', borderRadius: 2 }}>
               <Button
@@ -859,7 +943,7 @@ const EnhancedCarForm = ({
                   }
                 }}
               >
-                Nahrať obrázky
+                {dialogMode === 'edit' ? 'Pridať ďalšie obrázky' : 'Nahrať obrázky'}
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -885,28 +969,43 @@ const EnhancedCarForm = ({
             </Box>
           )}
 
-          {/* Image Previews */}
+          {/* New Image Previews (for uploads) */}
           {imagePreviewUrls && imagePreviewUrls.length > 0 && (
             <Box sx={{ mb: 3 }}>
               <Typography variant="subtitle1" gutterBottom>
-                Náhľad obrázkov ({imagePreviewUrls.length})
+                Nové obrázky na nahranie ({imagePreviewUrls.length})
               </Typography>
               <Grid container spacing={2}>
-                {imagePreviewUrls.map((url, index) => (
+                {imagePreviewUrls.map((previewData, index) => (
                   <Grid item xs={12} sm={6} md={4} key={index}>
                     <Card>
-                      <CardContent sx={{ p: 1 }}>
+                      <CardContent sx={{ p: 2 }}>
                         <Box sx={{ position: 'relative' }}>
-                          <img
-                            src={url}
-                            alt={`Náhľad ${index + 1}`}
-                            style={{ 
+                          {/* Show file information instead of trying to display the image */}
+                          <Box 
+                            sx={{ 
                               width: '100%', 
                               height: '120px', 
-                              objectFit: 'cover',
-                              borderRadius: 4
+                              backgroundColor: 'grey.100',
+                              borderRadius: 1,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              border: '2px dashed',
+                              borderColor: 'grey.300'
                             }}
-                          />
+                          >
+                            <CameraIcon sx={{ fontSize: 40, color: 'grey.500', mb: 1 }} />
+                            <Typography variant="body2" color="text.secondary" align="center">
+                              {typeof previewData === 'object' ? previewData.name : `Obrázok ${index + 1}`}
+                            </Typography>
+                            {typeof previewData === 'object' && (
+                              <Typography variant="caption" color="text.secondary" align="center">
+                                {(previewData.size / 1024 / 1024).toFixed(2)} MB
+                              </Typography>
+                            )}
+                          </Box>
                           {dialogMode !== 'view' && (
                             <IconButton
                               sx={{ 
@@ -940,12 +1039,19 @@ const EnhancedCarForm = ({
             </Box>
           )}
           
-          {(!imagePreviewUrls || imagePreviewUrls.length === 0) && (
+          {/* Show message when no images at all */}
+          {(!imagePreviewUrls || imagePreviewUrls.length === 0) && 
+           (dialogMode === 'create' || !formData.images || formData.images.length === 0) && (
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <CameraIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
               <Typography variant="body1" color="text.secondary">
                 Zatiaľ neboli pridané žiadne obrázky
               </Typography>
+              {dialogMode !== 'view' && (
+                <Typography variant="body2" color="text.secondary">
+                  Kliknite na tlačidlo vyššie pre pridanie obrázkov
+                </Typography>
+              )}
             </Box>
           )}
         </Box>

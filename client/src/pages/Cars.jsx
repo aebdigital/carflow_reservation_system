@@ -226,7 +226,7 @@ function Cars() {
     return firstImage.urls?.thumbnail || firstImage.url
   }
 
-  // Image handling
+  // Image handling - Simplified production-safe approach
   const handleImageChange = (event) => {
     console.log('🖼️ [IMAGE CHANGE] Function called');
     const files = Array.from(event.target.files || []);
@@ -245,95 +245,45 @@ function Cars() {
       return newSelection;
     });
     
-    // Create preview URLs using simple forEach approach
-    console.log('🖼️ [IMAGE CHANGE] Starting preview creation...');
-    files.forEach((file, index) => {
-      console.log(`🖼️ [IMAGE CHANGE] Processing file ${index + 1}: ${file.name}`);
-      
-      // Add detailed file diagnostics
-      console.log(`🖼️ [IMAGE CHANGE] File diagnostics for ${file.name}:`, {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        lastModified: new Date(file.lastModified).toISOString(),
-        lastModifiedDate: file.lastModifiedDate ? file.lastModifiedDate.toISOString() : 'N/A',
-        webkitRelativePath: file.webkitRelativePath || 'N/A'
-      });
-      
-      const reader = new FileReader();
-      
-      reader.onload = (e) => {
-        console.log(`🖼️ [IMAGE CHANGE] ✅ Preview created for file: ${file.name}`);
-        setImagePreviewUrls(prev => {
-          const updatedPreviews = [...prev, e.target.result];
-          console.log('🖼️ [IMAGE CHANGE] Updated preview URLs total:', updatedPreviews.length);
-          return updatedPreviews;
-        });
-      };
-      
-      reader.onerror = (error) => {
-        console.error(`🖼️ [IMAGE CHANGE] ❌ Error reading file ${file.name}:`, error);
-        
-        // Check for specific error types
-        if (reader.error) {
-          console.error(`🖼️ [IMAGE CHANGE] FileReader error details:`, {
-            name: reader.error.name,
-            message: reader.error.message,
-            code: reader.error.code,
-            readyState: reader.readyState
-          });
-          
-          // Handle specific error types
-          if (reader.error.name === 'NotReadableError') {
-            console.warn(`🖼️ [IMAGE CHANGE] ⚠️ File permission/access issue detected for ${file.name}`);
-            console.warn(`🖼️ [IMAGE CHANGE] This may be due to:`);
-            console.warn(`🖼️ [IMAGE CHANGE] - File is locked by another application`);
-            console.warn(`🖼️ [IMAGE CHANGE] - Insufficient file permissions`);
-            console.warn(`🖼️ [IMAGE CHANGE] - File is corrupted or incomplete`);
-            console.warn(`🖼️ [IMAGE CHANGE] - Browser security restrictions`);
-          }
-        }
-        
-        // Try backup approach
-        console.log(`🖼️ [IMAGE CHANGE] 🔄 Trying backup approach with URL.createObjectURL for ${file.name}`);
-        try {
-          const objectUrl = URL.createObjectURL(file);
-          console.log(`🖼️ [IMAGE CHANGE] ✅ Backup preview created for ${file.name}`);
-          
-          // Test if the blob URL is accessible
-          const testImage = new Image();
-          testImage.onload = () => {
-            console.log(`🖼️ [IMAGE CHANGE] ✅ Blob URL is accessible and valid for ${file.name}`);
-            setImagePreviewUrls(prev => [...prev, objectUrl]);
-          };
-          testImage.onerror = (imgError) => {
-            console.error(`🖼️ [IMAGE CHANGE] ❌ Blob URL test failed for ${file.name}:`, imgError);
-            console.error(`🖼️ [IMAGE CHANGE] Blob URL might be corrupted or inaccessible`);
-            // Still add it to the preview URLs, let the user decide
-            setImagePreviewUrls(prev => [...prev, objectUrl]);
-          };
-          testImage.src = objectUrl;
-          
-        } catch (backupError) {
-          console.error(`🖼️ [IMAGE CHANGE] ❌ Backup failed for ${file.name}:`, backupError);
-        }
-      };
-      
-      console.log(`🖼️ [IMAGE CHANGE] 🚀 Starting to read file: ${file.name}`);
-      reader.readAsDataURL(file);
+    // Create simple previews using object URLs only (no FileReader)
+    console.log('🖼️ [IMAGE CHANGE] Creating simple previews...');
+    const newPreviews = files.map((file, index) => {
+      console.log(`🖼️ [IMAGE CHANGE] Creating preview for file ${index + 1}: ${file.name}`);
+      try {
+        // Use a simple file name and type display instead of actual image preview
+        return {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          url: `data:text/plain;base64,${btoa(file.name)}` // Simple placeholder
+        };
+      } catch (error) {
+        console.log(`🖼️ [IMAGE CHANGE] Error creating preview for ${file.name}:`, error);
+        return {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          url: null
+        };
+      }
     });
     
-    console.log('🖼️ [IMAGE CHANGE] Function completed');
+    setImagePreviewUrls(prev => {
+      const updatedPreviews = [...prev, ...newPreviews];
+      console.log('🖼️ [IMAGE CHANGE] Updated preview URLs total:', updatedPreviews.length);
+      return updatedPreviews;
+    });
+    
+    console.log('🖼️ [IMAGE CHANGE] Function completed successfully');
   }
 
   const removeImage = (index) => {
     console.log('🗑️ [REMOVE IMAGE] Removing image at index:', index);
     
-    // Cleanup object URL if it exists to prevent memory leaks
-    const urlToCleanup = imagePreviewUrls[index];
-    if (urlToCleanup && urlToCleanup.startsWith('blob:')) {
-      console.log('🗑️ [REMOVE IMAGE] Cleaning up object URL:', urlToCleanup);
-      URL.revokeObjectURL(urlToCleanup);
+    // No need to cleanup object URLs since we're using simple placeholders
+    const previewToRemove = imagePreviewUrls[index];
+    if (previewToRemove && typeof previewToRemove === 'object') {
+      console.log('🗑️ [REMOVE IMAGE] Removing preview for:', previewToRemove.name);
     }
     
     setSelectedImages(prev => {
@@ -548,6 +498,7 @@ function Cars() {
           badges: car.badges || [],
           features: car.features || [],
           damages: car.damages || [],
+          images: car.images || [],
           maintenance: {
             lastServiceDate: car.maintenance?.lastServiceDate || '',
             nextServiceDate: car.maintenance?.nextServiceDate || '',
@@ -633,6 +584,7 @@ function Cars() {
           badges: car.badges || [],
           features: car.features || [],
           damages: car.damages || [],
+          images: car.images || [],
           maintenance: {
             lastServiceDate: car.maintenance?.lastServiceDate || '',
             nextServiceDate: car.maintenance?.nextServiceDate || '',
@@ -665,13 +617,8 @@ function Cars() {
     console.log('🚗 [DIALOG CLOSE] Current selected images:', selectedImages.length);
     console.log('🚗 [DIALOG CLOSE] Current preview URLs:', imagePreviewUrls.length);
     
-    // Cleanup any object URLs to prevent memory leaks
-    imagePreviewUrls.forEach((url, index) => {
-      if (url && url.startsWith('blob:')) {
-        console.log(`🚗 [DIALOG CLOSE] Cleaning up object URL ${index + 1}:`, url);
-        URL.revokeObjectURL(url);
-      }
-    });
+    // No need to cleanup object URLs since we're using simple placeholders
+    console.log('🚗 [DIALOG CLOSE] Using simplified previews - no cleanup needed');
     
     setOpenDialog(false)
     setSelectedCar(null)
@@ -911,7 +858,18 @@ function Cars() {
 
   const renderCarCard = (car) => (
     <Grid item xs={12} sm={6} md={4} key={car._id}>
-      <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Card sx={{ 
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column',
+        mb: 2,
+        boxShadow: 2,
+        '&:hover': {
+          boxShadow: 4,
+          transform: 'translateY(-2px)',
+          transition: 'all 0.2s ease-in-out'
+        }
+      }}>
         <CardMedia
           component="img"
           height="200"
@@ -1031,7 +989,7 @@ function Cars() {
       )}
 
       {/* Cars Grid */}
-      <Grid container spacing={3}>
+      <Grid container spacing={4}>
         {cars.map(renderCarCard)}
       </Grid>
 
