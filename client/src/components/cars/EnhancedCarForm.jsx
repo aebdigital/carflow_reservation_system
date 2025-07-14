@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import {
   Box,
   Grid,
@@ -55,12 +55,16 @@ const EnhancedCarForm = ({
   selectedImages = [],
   imagePreviewUrls = []
 }) => {
-  console.log('🚗 [FORM] EnhancedCarForm rendered');
-  console.log('🚗 [FORM] dialogMode:', dialogMode);
-  console.log('🚗 [FORM] selectedImages prop:', selectedImages.length);
-  console.log('🚗 [FORM] imagePreviewUrls prop:', imagePreviewUrls.length);
-  console.log('🚗 [FORM] onImageChange function:', typeof onImageChange);
-  console.log('🚗 [FORM] onImageRemove function:', typeof onImageRemove);
+  // Reduce logging frequency to prevent performance issues
+  const renderCount = useRef(0);
+  renderCount.current += 1;
+  
+  if (renderCount.current % 10 === 1) { // Log only every 10th render
+    console.log('🚗 [FORM] EnhancedCarForm rendered', renderCount.current);
+    console.log('🚗 [FORM] dialogMode:', dialogMode);
+    console.log('🚗 [FORM] selectedImages prop:', selectedImages.length);
+    console.log('🚗 [FORM] imagePreviewUrls prop:', imagePreviewUrls.length);
+  }
 
   const [tabValue, setTabValue] = useState(0);
   const [equipmentDialogOpen, setEquipmentDialogOpen] = useState(false);
@@ -128,7 +132,7 @@ const EnhancedCarForm = ({
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
     }
-  }, [setFormData]);
+  }, []); // Remove setFormData dependency - use functional updates instead
 
   // Handle deeply nested changes - memoized to prevent re-renders
   const handleNestedChange = useCallback((path, value) => {
@@ -147,7 +151,7 @@ const EnhancedCarForm = ({
       current[keys[keys.length - 1]] = value;
       return updated;
     });
-  }, [setFormData]);
+  }, []); // Remove setFormData dependency
 
   // Tab panel component - memoized to prevent re-renders
   const TabPanel = useCallback(({ children, value, index, ...other }) => (
@@ -214,42 +218,47 @@ const EnhancedCarForm = ({
     setDamageModalOpen(true);
   };
 
-  const handleDeleteDamage = (index) => {
-    const updatedDamages = [...(formData.damages || [])];
-    updatedDamages.splice(index, 1);
-    setFormData(prev => ({ ...prev, damages: updatedDamages }));
-  };
+  const handleDeleteDamage = useCallback((index) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      damages: (prev.damages || []).filter((_, i) => i !== index)
+    }));
+  }, []); // Remove setFormData dependency
 
-  const handleDamageSubmit = (damageData) => {
-    const currentDamages = formData.damages || [];
-    
-    if (damageModalMode === 'add') {
-      // Add new damage
-      const newDamage = {
-        ...damageData,
-        reportedDate: new Date().toISOString(),
-        // reportedBy will be set by the backend
-      };
-      setFormData(prev => ({ 
-        ...prev, 
-        damages: [...currentDamages, newDamage] 
-      }));
-    } else if (damageModalMode === 'edit' && selectedDamage) {
-      // Update existing damage
-      const updatedDamages = [...currentDamages];
-      updatedDamages[selectedDamage.index] = {
-        ...updatedDamages[selectedDamage.index],
-        ...damageData
-      };
-      setFormData(prev => ({ 
-        ...prev, 
-        damages: updatedDamages 
-      }));
-    }
+  const handleDamageSubmit = useCallback((damageData) => {
+    setFormData(prev => {
+      const currentDamages = prev.damages || [];
+      
+      if (damageModalMode === 'add') {
+        // Add new damage
+        const newDamage = {
+          ...damageData,
+          reportedDate: new Date().toISOString(),
+          // reportedBy will be set by the backend
+        };
+        return { 
+          ...prev, 
+          damages: [...currentDamages, newDamage] 
+        };
+      } else if (damageModalMode === 'edit' && selectedDamage) {
+        // Update existing damage
+        const updatedDamages = [...currentDamages];
+        updatedDamages[selectedDamage.index] = {
+          ...updatedDamages[selectedDamage.index],
+          ...damageData
+        };
+        return { 
+          ...prev, 
+          damages: updatedDamages 
+        };
+      }
+      
+      return prev;
+    });
     
     setDamageModalOpen(false);
     setSelectedDamage(null);
-  };
+  }, [damageModalMode, selectedDamage]); // Keep only necessary dependencies
 
   const getSeverityColor = (severity) => {
     switch (severity) {
@@ -1396,4 +1405,4 @@ const EnhancedCarForm = ({
   );
 };
 
-export default EnhancedCarForm; 
+export default memo(EnhancedCarForm); 
