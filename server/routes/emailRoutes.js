@@ -8,6 +8,34 @@ const {
 
 const router = express.Router();
 
+// Public configuration check endpoint (no auth required)
+router.get('/config-check', (req, res) => {
+  try {
+    const smtp2goService = require('../services/smtp2goService');
+    const emailService = require('../services/emailService');
+    
+    res.json({
+      success: true,
+      configuration: {
+        smtp2go_api_key: process.env.SMTP2GO_API_KEY ? '✅ Set' : '❌ Missing',
+        smtp2go_base_url: process.env.SMTP2GO_BASE_URL || 'https://api.smtp2go.com/v3',
+        email_from: process.env.EMAIL_FROM || 'Not set',
+        contact_email: process.env.CONTACT_EMAIL || 'Not set',
+        email_provider: process.env.EMAIL_PROVIDER || 'Not set',
+        smtp2go_configured: smtp2goService.isConfigured,
+        email_service_configured: emailService.isConfigured,
+        node_env: process.env.NODE_ENV || 'development'
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      configuration: 'Failed to check configuration'
+    });
+  }
+});
+
 // Public routes
 router.post('/', sendContactEmail); // POST /api/send-email
 router.post('/contact', sendContactEmail); // Alternative endpoint
