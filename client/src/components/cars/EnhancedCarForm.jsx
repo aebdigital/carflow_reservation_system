@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Grid,
@@ -68,6 +68,9 @@ const EnhancedCarForm = ({
   const [damageModalOpen, setDamageModalOpen] = useState(false);
   const [selectedDamage, setSelectedDamage] = useState(null);
   const [damageModalMode, setDamageModalMode] = useState('add');
+
+  // Add ref for file input
+  const fileInputRef = useRef(null);
 
   // Enhanced options with new categories
   const categoryOptions = [
@@ -146,11 +149,6 @@ const EnhancedCarForm = ({
     });
   }, [setFormData]);
 
-  // Handle tab changes - memoized to prevent re-renders
-  const handleTabChange = useCallback((e, newValue) => {
-    setTabValue(newValue);
-  }, []);
-
   // Tab panel component - memoized to prevent re-renders
   const TabPanel = useCallback(({ children, value, index, ...other }) => (
     <div
@@ -163,6 +161,45 @@ const EnhancedCarForm = ({
       {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
     </div>
   ), []);
+
+  // Memoize the tab change handler
+  const memoizedHandleTabChange = useCallback((e, newValue) => {
+    console.log('🚗 [FORM] Tab changed to:', newValue);
+    setTabValue(newValue);
+  }, []);
+
+  // Memoize the image change wrapper
+  const memoizedImageChangeHandler = useCallback((e) => {
+    console.log('🖼️ [FORM] Memoized image change handler called');
+    console.log('🖼️ [FORM] Input onChange triggered');
+    console.log('🖼️ [FORM] Event:', e);
+    console.log('🖼️ [FORM] Event target:', e.target);
+    console.log('🖼️ [FORM] Files from event:', e.target.files?.length || 0);
+    console.log('🖼️ [FORM] Files array:', Array.from(e.target.files || []));
+    
+    if (e.target.files && e.target.files.length > 0) {
+      console.log('🖼️ [FORM] Files detected, calling onImageChange');
+      if (onImageChange) {
+        console.log('🖼️ [FORM] Calling onImageChange function');
+        onImageChange(e);
+      } else {
+        console.error('🖼️ [FORM] onImageChange function not provided!');
+      }
+    } else {
+      console.log('🖼️ [FORM] No files selected or files is empty');
+    }
+    
+    // Reset input value to allow selecting same files again
+    e.target.value = '';
+  }, [onImageChange]);
+
+  // Memoize the image remove wrapper  
+  const memoizedImageRemoveHandler = useCallback((index) => {
+    console.log('🖼️ [FORM] Memoized image remove handler called for index:', index);
+    if (onImageRemove) {
+      onImageRemove(index);
+    }
+  }, [onImageRemove]);
 
   // Damage management handlers
   const handleAddDamage = () => {
@@ -236,7 +273,7 @@ const EnhancedCarForm = ({
     <Box sx={{ width: '100%' }}>
       <Tabs 
         value={tabValue} 
-        onChange={handleTabChange}
+        onChange={memoizedHandleTabChange}
         variant="scrollable"
         scrollButtons="auto"
         sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
@@ -792,23 +829,28 @@ const EnhancedCarForm = ({
                 fullWidth
                 sx={{ mb: 2, py: 2 }}
                 color="primary"
-                onClick={() => console.log('🖼️ [FORM] Upload button clicked')}
+                onClick={(e) => {
+                  console.log('🖼️ [FORM] Upload button clicked');
+                  console.log('🖼️ [FORM] Event target:', e.target);
+                  console.log('🖼️ [FORM] File input ref:', fileInputRef.current);
+                  // Manually trigger file input if needed
+                  if (fileInputRef.current) {
+                    console.log('🖼️ [FORM] Manually triggering file input click');
+                    fileInputRef.current.click();
+                  }
+                }}
               >
                 Nahrať obrázky
                 <input
+                  ref={fileInputRef}
                   type="file"
                   hidden
                   multiple
                   accept="image/*"
-                  onChange={(e) => {
-                    console.log('🖼️ [FORM] Input onChange triggered');
-                    console.log('🖼️ [FORM] Files from event:', e.target.files?.length || 0);
-                    if (onImageChange) {
-                      console.log('🖼️ [FORM] Calling onImageChange function');
-                      onImageChange(e);
-                    } else {
-                      console.error('🖼️ [FORM] onImageChange function not provided!');
-                    }
+                  onChange={memoizedImageChangeHandler}
+                  onClick={(e) => {
+                    console.log('🖼️ [FORM] File input clicked');
+                    e.stopPropagation();
                   }}
                 />
               </Button>
@@ -854,7 +896,7 @@ const EnhancedCarForm = ({
                                 '&:hover': { backgroundColor: 'rgba(0,0,0,0.7)' }
                               }}
                               size="small"
-                              onClick={() => onImageRemove(index)}
+                              onClick={() => memoizedImageRemoveHandler(index)}
                             >
                               <DeleteIcon />
                             </IconButton>
