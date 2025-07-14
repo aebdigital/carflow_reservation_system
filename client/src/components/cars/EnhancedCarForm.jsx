@@ -55,6 +55,13 @@ const EnhancedCarForm = ({
   selectedImages = [],
   imagePreviewUrls = []
 }) => {
+  console.log('🚗 [FORM] EnhancedCarForm rendered');
+  console.log('🚗 [FORM] dialogMode:', dialogMode);
+  console.log('🚗 [FORM] selectedImages prop:', selectedImages.length);
+  console.log('🚗 [FORM] imagePreviewUrls prop:', imagePreviewUrls.length);
+  console.log('🚗 [FORM] onImageChange function:', typeof onImageChange);
+  console.log('🚗 [FORM] onImageRemove function:', typeof onImageRemove);
+
   const [tabValue, setTabValue] = useState(0);
   const [equipmentDialogOpen, setEquipmentDialogOpen] = useState(false);
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
@@ -785,6 +792,7 @@ const EnhancedCarForm = ({
                 fullWidth
                 sx={{ mb: 2, py: 2 }}
                 color="primary"
+                onClick={() => console.log('🖼️ [FORM] Upload button clicked')}
               >
                 Nahrať obrázky
                 <input
@@ -792,7 +800,16 @@ const EnhancedCarForm = ({
                   hidden
                   multiple
                   accept="image/*"
-                  onChange={onImageChange}
+                  onChange={(e) => {
+                    console.log('🖼️ [FORM] Input onChange triggered');
+                    console.log('🖼️ [FORM] Files from event:', e.target.files?.length || 0);
+                    if (onImageChange) {
+                      console.log('🖼️ [FORM] Calling onImageChange function');
+                      onImageChange(e);
+                    } else {
+                      console.error('🖼️ [FORM] onImageChange function not provided!');
+                    }
+                  }}
                 />
               </Button>
               <Typography variant="body2" color="text.secondary" align="center">

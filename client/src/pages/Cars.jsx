@@ -228,22 +228,71 @@ function Cars() {
 
   // Image handling
   const handleImageChange = (event) => {
-    const files = Array.from(event.target.files || [])
-    setSelectedImages(prev => [...prev, ...files])
+    console.log('🖼️ [IMAGE CHANGE] Function called');
+    const files = Array.from(event.target.files || []);
+    console.log('🖼️ [IMAGE CHANGE] Files selected:', files.length);
+    console.log('🖼️ [IMAGE CHANGE] File details:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
     
-    // Create preview URLs
-    files.forEach(file => {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setImagePreviewUrls(prev => [...prev, e.target.result])
-      }
-      reader.readAsDataURL(file)
-    })
+    if (files.length === 0) {
+      console.log('🖼️ [IMAGE CHANGE] No files selected, returning');
+      return;
+    }
+    
+    // Add to selected images immediately
+    setSelectedImages(prev => {
+      console.log('🖼️ [IMAGE CHANGE] Previous selected images:', prev.length);
+      const newSelection = [...prev, ...files];
+      console.log('🖼️ [IMAGE CHANGE] New selected images total:', newSelection.length);
+      return newSelection;
+    });
+    
+    // Create preview URLs with proper async handling
+    console.log('🖼️ [IMAGE CHANGE] Starting preview creation...');
+    const newPreviewPromises = files.map((file, index) => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          console.log(`🖼️ [IMAGE CHANGE] Preview created for file ${index + 1}: ${file.name}`);
+          resolve(e.target.result);
+        };
+        reader.onerror = (error) => {
+          console.error(`🖼️ [IMAGE CHANGE] Error reading file ${index + 1}:`, error);
+          reject(error);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+    
+    // Wait for all previews to be created before updating state
+    Promise.all(newPreviewPromises)
+      .then(newPreviews => {
+        console.log('🖼️ [IMAGE CHANGE] All previews created:', newPreviews.length);
+        setImagePreviewUrls(prev => {
+          console.log('🖼️ [IMAGE CHANGE] Previous preview URLs:', prev.length);
+          const updatedPreviews = [...prev, ...newPreviews];
+          console.log('🖼️ [IMAGE CHANGE] Updated preview URLs total:', updatedPreviews.length);
+          return updatedPreviews;
+        });
+      })
+      .catch(error => {
+        console.error('🖼️ [IMAGE CHANGE] Error creating previews:', error);
+      });
+    
+    console.log('🖼️ [IMAGE CHANGE] Function completed');
   }
 
   const removeImage = (index) => {
-    setSelectedImages(prev => prev.filter((_, i) => i !== index))
-    setImagePreviewUrls(prev => prev.filter((_, i) => i !== index))
+    console.log('🗑️ [REMOVE IMAGE] Removing image at index:', index);
+    setSelectedImages(prev => {
+      const updated = prev.filter((_, i) => i !== index);
+      console.log('🗑️ [REMOVE IMAGE] Updated selected images:', updated.length);
+      return updated;
+    });
+    setImagePreviewUrls(prev => {
+      const updated = prev.filter((_, i) => i !== index);
+      console.log('🗑️ [REMOVE IMAGE] Updated preview URLs:', updated.length);
+      return updated;
+    });
   }
 
   // Handle deleting existing car images
@@ -364,14 +413,22 @@ function Cars() {
   // Dialog handlers
   const handleOpenDialog = (mode, car = null) => {
     try {
+      console.log(`🚗 [DIALOG] Opening dialog in ${mode} mode`);
+      console.log('🚗 [DIALOG] Car data:', car ? car._id : 'none');
+      
       setDialogMode(mode)
       setSelectedCar(car)
       
       if (mode === 'create') {
+        console.log('🚗 [DIALOG] CREATE mode - resetting all state');
         setFormData(initialFormState)
         setSelectedImages([])
         setImagePreviewUrls([])
+        console.log('🚗 [DIALOG] CREATE mode - state reset complete');
+        console.log('🚗 [DIALOG] CREATE mode - selected images:', []);
+        console.log('🚗 [DIALOG] CREATE mode - preview URLs:', []);
       } else if (mode === 'edit' && car) {
+        console.log('🚗 [DIALOG] EDIT mode - populating form data');
         setFormData({
           brand: car.brand || '',
           model: car.model || '',
@@ -451,9 +508,12 @@ function Cars() {
             coverageAmount: car.insurance?.coverageAmount || 0
           }
         })
+        // Reset image state for edit mode (user will add new images separately)
         setSelectedImages([])
         setImagePreviewUrls([])
+        console.log('🚗 [DIALOG] EDIT mode - form populated, images reset');
       } else if (mode === 'view' && car) {
+        console.log('🚗 [DIALOG] VIEW mode - populating read-only form data');
         setFormData({
           brand: car.brand || '',
           model: car.model || '',
@@ -533,23 +593,35 @@ function Cars() {
             coverageAmount: car.insurance?.coverageAmount || 0
           }
         })
+        // Reset image state for view mode too
+        setSelectedImages([])
+        setImagePreviewUrls([])
+        console.log('🚗 [DIALOG] VIEW mode - form populated, images reset');
       }
       
       setOpenDialog(true)
       setFormErrors({})
-      console.log(`🚗 Car dialog opened in ${mode} mode.`)
+      console.log(`🚗 [DIALOG] Dialog opened successfully in ${mode} mode`);
     } catch (error) {
-      console.error('Error opening dialog:', error)
+      console.error('🚗 [DIALOG] Error opening dialog:', error)
     }
   }
 
   const handleCloseDialog = () => {
+    console.log('🚗 [DIALOG CLOSE] Closing dialog and resetting all state');
+    console.log('🚗 [DIALOG CLOSE] Current selected images:', selectedImages.length);
+    console.log('🚗 [DIALOG CLOSE] Current preview URLs:', imagePreviewUrls.length);
+    
     setOpenDialog(false)
     setSelectedCar(null)
     setFormData(initialFormState)
     setSelectedImages([])
     setImagePreviewUrls([])
     setFormErrors({})
+    
+    console.log('🚗 [DIALOG CLOSE] State reset complete');
+    console.log('🚗 [DIALOG CLOSE] Selected images after reset:', []);
+    console.log('🚗 [DIALOG CLOSE] Preview URLs after reset:', []);
   }
 
   const handleSubmit = async () => {
