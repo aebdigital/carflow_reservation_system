@@ -1331,12 +1331,100 @@ const EnhancedCarForm = ({
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom>Výbava vozidla</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Označte dostupnú výbavu pre toto vozidlo
+                Označte dostupnú výbavu pre toto vozidlo alebo pridajte vlastnú
               </Typography>
               
+              {/* Show selected equipment as chips */}
+              {formData.equipment && formData.equipment.length > 0 && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Vybraná výbava ({formData.equipment.length})
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                    {formData.equipment.map((item, index) => (
+                      <Chip
+                        key={index}
+                        label={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            {item.icon && <span>{item.icon}</span>}
+                            <span>{item.name}</span>
+                          </Box>
+                        }
+                        onDelete={dialogMode !== 'view' ? () => {
+                          const newEquipment = formData.equipment.filter((_, i) => i !== index);
+                          handleChange('equipment', newEquipment);
+                        } : undefined}
+                        deleteIcon={<DeleteIcon />}
+                        color="primary"
+                        variant="outlined"
+                      />
+                    ))}
+                  </Box>
+                </Box>
+              )}
+
+              {/* Add custom equipment */}
+              {dialogMode !== 'view' && (
+                <Box sx={{ mb: 3, p: 2, border: '1px dashed', borderColor: 'grey.300', borderRadius: 1 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Pridať vlastnú výbavu
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'end' }}>
+                    <TextField
+                      label="Názov výbavy"
+                      variant="outlined"
+                      size="small"
+                      value={formData.customEquipmentName || ''}
+                      onChange={(e) => handleChange('customEquipmentName', e.target.value)}
+                      placeholder="napr. Detské sedačky"
+                      sx={{ flexGrow: 1 }}
+                    />
+                    <TextField
+                      label="Emoji ikona"
+                      variant="outlined"
+                      size="small"
+                      value={formData.customEquipmentIcon || ''}
+                      onChange={(e) => handleChange('customEquipmentIcon', e.target.value)}
+                      placeholder="🔧"
+                      inputProps={{ maxLength: 2 }}
+                      sx={{ width: 80 }}
+                    />
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={<AddIcon />}
+                      onClick={() => {
+                        const name = formData.customEquipmentName?.trim();
+                        const icon = formData.customEquipmentIcon?.trim() || '🔧';
+                        
+                        if (name) {
+                          const newEquipment = [
+                            ...(formData.equipment || []),
+                            {
+                              name: name,
+                              icon: icon,
+                              category: 'custom'
+                            }
+                          ];
+                          handleChange('equipment', newEquipment);
+                          handleChange('customEquipmentName', '');
+                          handleChange('customEquipmentIcon', '');
+                        }
+                      }}
+                      disabled={!formData.customEquipmentName?.trim()}
+                    >
+                      Pridať
+                    </Button>
+                  </Box>
+                </Box>
+              )}
+              
+              {/* Predefined equipment checkboxes */}
               <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Štandardná výbava
+                </Typography>
                 <Grid container spacing={1}>
-                  {/* Standard equipment checkboxes */}
                   {[
                     { key: 'airConditioning', label: 'Klimatizácia', icon: '❄️' },
                     { key: 'gps', label: 'GPS navigácia', icon: '🗺️' },
@@ -1348,6 +1436,12 @@ const EnhancedCarForm = ({
                     { key: 'cruiseControl', label: 'Tempomat', icon: '🎯' },
                     { key: 'usbPorts', label: 'USB porty', icon: '🔌' },
                     { key: 'wifi', label: 'WiFi hotspot', icon: '📶' },
+                    { key: 'parkingSensors', label: 'Parkovacie senzory', icon: '📡' },
+                    { key: 'keylessEntry', label: 'Bezklúčový vstup', icon: '🔑' },
+                    { key: 'electronicWindows', label: 'Elektrické okná', icon: '🪟' },
+                    { key: 'radioCD', label: 'Rádio/CD prehrávač', icon: '📻' },
+                    { key: 'airBags', label: 'Airbags', icon: '💺' },
+                    { key: 'abs', label: 'ABS brzdový systém', icon: '🛡️' },
                   ].map(equipment => (
                     <Grid item xs={12} sm={6} md={4} key={equipment.key}>
                       <FormControlLabel

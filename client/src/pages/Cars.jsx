@@ -862,7 +862,7 @@ function Cars() {
         height: '100%', 
         display: 'flex', 
         flexDirection: 'column',
-        mb: 4,
+        mb: 3,
         boxShadow: 2,
         '&:hover': {
           boxShadow: 4,
@@ -989,7 +989,7 @@ function Cars() {
       )}
 
       {/* Cars Grid */}
-      <Grid container spacing={6}>
+      <Grid container spacing={4}>
         {cars.map(renderCarCard)}
       </Grid>
 
