@@ -37,18 +37,15 @@ router.get('/config-check', (req, res) => {
 });
 
 // Public routes
-router.post('/', sendContactEmail); // POST /api/send-email
-router.post('/contact', sendContactEmail); // Alternative endpoint
+router.post('/', sendContactEmail);
 
-// Protected routes
+// Protected routes (apply middleware from here)
 router.use(protect);
 router.post('/reservation', sendReservationEmail);
-
-// Admin only routes
 router.get('/test', requireAdmin, testEmailService);
 
 // New test endpoint for SMTP2GO verification
-router.get('/test-smtp2go', protect, requireAdmin, async (req, res) => {
+router.get('/test-smtp2go', requireAdmin, async (req, res) => {
   try {
     const emailService = require('../services/emailService');
     
