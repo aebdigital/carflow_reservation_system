@@ -42,12 +42,13 @@ class SMTP2GOService {
     // Clean and sanitize content to avoid JSON issues
     const cleanText = text || this.stripHtml(html);
     const cleanHtml = this.sanitizeHtmlForJson(html);
+    const cleanSubject = this.sanitizeSubject(subject);
 
     const emailData = {
       api_key: this.apiKey,
       to: cleanedToEmails,
       sender: cleanedFromEmail,
-      subject: subject.trim(),
+      subject: cleanSubject,
       html_body: cleanHtml,
       text_body: cleanText
     };
@@ -59,11 +60,33 @@ class SMTP2GOService {
       text_body: '[TEXT_CONTENT_LENGTH:' + cleanText.length + ']'
     }, null, 2));
 
+    console.log('🔍 [SMTP2GO DEBUG] Subject details:', {
+      original: subject,
+      cleaned: cleanSubject,
+      length: cleanSubject.length,
+      hasEmoji: /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(cleanSubject)
+    });
+
     // Validate JSON before sending
     try {
-      JSON.stringify(emailData);
+      const testJson = JSON.stringify(emailData);
+      console.log('🔍 [SMTP2GO] JSON validation passed, payload size:', testJson.length, 'bytes');
+      
+      // Check for potentially problematic content
+      if (cleanSubject.length > 200) {
+        console.warn('⚠️ [SMTP2GO] Subject line might be too long:', cleanSubject.length, 'characters');
+      }
+      if (cleanHtml.length > 100000) {
+        console.warn('⚠️ [SMTP2GO] HTML body might be too large:', cleanHtml.length, 'characters');
+      }
+      
     } catch (jsonError) {
       console.error('❌ [SMTP2GO] Invalid JSON data:', jsonError);
+      console.error('❌ [SMTP2GO] Problematic data:', {
+        subject: cleanSubject,
+        htmlLength: cleanHtml.length,
+        textLength: cleanText.length
+      });
       throw new Error(`Invalid email data for JSON: ${jsonError.message}`);
     }
 
@@ -137,11 +160,24 @@ class SMTP2GOService {
   sanitizeHtmlForJson(html) {
     if (!html) return '';
     
-    // Clean up the HTML content - only normalize line endings
-    // Don't manually escape quotes since JSON.stringify() handles that
+    // Clean up the HTML content and ensure proper encoding
     return html
       .replace(/\r\n/g, '\n')  // Normalize line endings
       .replace(/\r/g, '\n')    // Convert remaining \r to \n
+      .replace(/\u2028/g, '\n') // Replace line separator
+      .replace(/\u2029/g, '\n') // Replace paragraph separator
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+      .trim();
+  }
+
+  // Helper method to sanitize subject line
+  sanitizeSubject(subject) {
+    if (!subject) return '';
+    
+    // Clean subject but preserve emojis and Slovak characters
+    return subject
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+      .replace(/\s+/g, ' ') // Normalize whitespace
       .trim();
   }
 
