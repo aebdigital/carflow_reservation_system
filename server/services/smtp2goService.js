@@ -44,20 +44,21 @@ class SMTP2GOService {
     const cleanHtml = this.sanitizeHtmlForJson(html);
     const cleanSubject = this.sanitizeSubject(subject);
 
+    // Use the correct SMTP2GO API structure based on official documentation
     const emailData = {
       api_key: this.apiKey,
-      to: cleanedToEmails,
       sender: cleanedFromEmail,
+      recipients: cleanedToEmails,  // Changed from 'to' to 'recipients'
       subject: cleanSubject,
-      html_body: cleanHtml,
-      text_body: cleanText
+      html: cleanHtml,              // Changed from 'html_body' to 'html'
+      text: cleanText               // Changed from 'text_body' to 'text'
     };
 
     console.log('🔍 [SMTP2GO DEBUG] Email payload:', JSON.stringify({
       ...emailData,
       api_key: '[HIDDEN]',
-      html_body: '[HTML_CONTENT_LENGTH:' + cleanHtml.length + ']',
-      text_body: '[TEXT_CONTENT_LENGTH:' + cleanText.length + ']'
+      html: '[HTML_CONTENT_LENGTH:' + cleanHtml.length + ']',
+      text: '[TEXT_CONTENT_LENGTH:' + cleanText.length + ']'
     }, null, 2));
 
     console.log('🔍 [SMTP2GO DEBUG] Subject details:', {
