@@ -36,9 +36,109 @@ class SMTP2GOService {
     const cleanedToEmails = toEmails.map(email => typeof email === 'string' ? email.trim() : email);
     
     // Clean sender email - remove display name format, just use email
-    // Use verified email temporarily to test SMTP2GO
-    const fromEmail = 'peter@aebdig.com'; // process.env.EMAIL_FROM || 'noreply@carflow.sk';
+    const fromEmail = process.env.EMAIL_FROM || 'noreply@carflow.sk';
     const cleanedFromEmail = fromEmail.replace(/.*<(.+)>.*/, '$1').trim();
+
+    console.log('🔍 [SMTP2GO DEBUG] Sender email details:', {
+      original: fromEmail,
+      cleaned: cleanedFromEmail,
+      EMAIL_FROM: process.env.EMAIL_FROM
+    });
+
+    // Clean and sanitize content to avoid JSON issues
+    const cleanText = text || this.stripHtml(html);
+    const cleanHtml = this.sanitizeHtmlForJson(html);
+    const cleanSubject = this.sanitizeSubject(subject);
+
+    // Try sending API key in header instead of body (alternative method)
+    const emailDataWithoutKey = {
+      sender: cleanedFromEmail,
+      recipients: cleanedToEmails,
+      subject: cleanSubject,
+      html: cleanHtml,
+      text: cleanText
+    };
+
+    console.log('🔍 [SMTP2GO DEBUG] Testing with API key in header instead of body...');
+
+    return new Promise((resolve, reject) => {
+      const postDataAlt = JSON.stringify(emailDataWithoutKey);
+      
+      const optionsAlt = {
+        hostname: 'api.smtp2go.com',
+        port: 443,
+        path: '/v3/email/send',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': postDataAlt.length,
+          'X-Smtp2go-Api-Key': this.apiKey
+        }
+      };
+
+      console.log('🔍 [SMTP2GO DEBUG] Alternative request (API key in header):', JSON.stringify(optionsAlt, null, 2));
+
+      const req = https.request(optionsAlt, (res) => {
+        let data = '';
+        
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        
+        res.on('end', () => {
+          try {
+            const response = JSON.parse(data);
+            console.log('🔍 [SMTP2GO DEBUG] Alternative method response:', JSON.stringify(response, null, 2));
+            
+            if (response.data && response.data.succeeded && response.data.succeeded > 0) {
+              console.log('✅ Email sent successfully via SMTP2GO (API key in header)');
+              resolve({
+                success: true,
+                messageId: response.data.email_id,
+                response: response
+              });
+            } else {
+              console.log('⚠️ Alternative method also failed, proceeding with original method...');
+              // Fall back to original method
+              this.sendEmailOriginal(to, subject, html, text).then(resolve).catch(reject);
+            }
+          } catch (error) {
+            console.error('❌ Error parsing alternative response:', error);
+            // Fall back to original method
+            this.sendEmailOriginal(to, subject, html, text).then(resolve).catch(reject);
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        console.error('❌ Alternative request error:', error);
+        // Fall back to original method
+        this.sendEmailOriginal(to, subject, html, text).then(resolve).catch(reject);
+      });
+
+      req.write(postDataAlt);
+      req.end();
+    });
+  }
+
+  async sendEmailOriginal(to, subject, html, text = null) {
+    if (!this.isConfigured) {
+      throw new Error('SMTP2GO service not properly configured. Please set SMTP2GO_API_KEY.');
+    }
+
+    // Clean and validate email addresses
+    const toEmails = Array.isArray(to) ? to : [to];
+    const cleanedToEmails = toEmails.map(email => typeof email === 'string' ? email.trim() : email);
+    
+    // Clean sender email - remove display name format, just use email
+    const fromEmail = process.env.EMAIL_FROM || 'noreply@carflow.sk';
+    const cleanedFromEmail = fromEmail.replace(/.*<(.+)>.*/, '$1').trim();
+
+    console.log('🔍 [SMTP2GO DEBUG] Sender email details:', {
+      original: fromEmail,
+      cleaned: cleanedFromEmail,
+      EMAIL_FROM: process.env.EMAIL_FROM
+    });
 
     // Clean and sanitize content to avoid JSON issues
     const cleanText = text || this.stripHtml(html);
@@ -74,6 +174,7 @@ class SMTP2GOService {
     try {
       const testJson = JSON.stringify(emailData);
       console.log('🔍 [SMTP2GO] JSON validation passed, payload size:', testJson.length, 'bytes');
+      console.log('🔍 [SMTP2GO] Raw JSON being sent:', testJson.substring(0, 500) + '...');
       
       // Check for potentially problematic content
       if (cleanSubject.length > 200) {
@@ -106,6 +207,9 @@ class SMTP2GOService {
           'Content-Length': postData.length
         }
       };
+
+      console.log('🔍 [SMTP2GO DEBUG] Request options:', JSON.stringify(options, null, 2));
+      console.log('🔍 [SMTP2GO DEBUG] Request payload length:', postData.length);
 
       console.log(`📧 Sending email via SMTP2GO to: ${cleanedToEmails.join(', ')}`);
       console.log(`📋 Subject: ${subject}`);
