@@ -45,7 +45,7 @@ class SMTP2GOService {
     });
 
     // Clean and sanitize content to avoid JSON issues
-    const cleanText = text || this.stripHtml(html);
+    const cleanText = text ? this.sanitizeTextForJson(text) : this.sanitizeTextForJson(this.stripHtml(html));
     const cleanHtml = this.sanitizeHtmlForJson(html);
     const cleanSubject = this.sanitizeSubject(subject);
 
@@ -57,15 +57,32 @@ class SMTP2GOService {
     console.log('   Clean text length:', cleanText.length);
     console.log('   Raw subject:', subject);
     console.log('   Clean subject:', cleanSubject);
+    console.log('   Euro symbols removed:', (html && html.includes('€')) || (text && text.includes('€')) || subject.includes('€'));
+
+    // TRY SENDER FORMAT WITH DISPLAY NAME (like user's working example)
+    // Extract email from sender if it has display name format already
+    let cleanSender = senderEmail;
+    if (senderEmail.includes('<') && senderEmail.includes('>')) {
+      // Already has display name format: "Name <email@domain.com>"
+      cleanSender = senderEmail;
+    } else {
+      // Just email address, add display name format: "Rival Auto <email@domain.com>"
+      cleanSender = `Rival Auto <${senderEmail}>`;
+    }
+
+    console.log('🔍 [SMTP2GO DEBUG] Sender format test:', {
+      original: senderEmail,
+      withDisplayName: cleanSender
+    });
 
     // CRITICAL FIX: Use actual content, not placeholders
     const emailData = {
       api_key: this.apiKey,
-      sender: senderEmail,
+      sender: cleanSender,               // TRY WITH DISPLAY NAME FORMAT
       to: cleanedToEmails,
       subject: cleanSubject,
-      html_body: cleanHtml,    // ACTUAL HTML content, not placeholder
-      text_body: cleanText     // ACTUAL text content, not placeholder
+      html_body: cleanHtml,              // ACTUAL HTML content, not placeholder
+      text_body: cleanText               // ACTUAL text content, not placeholder (enhanced sanitization)
     };
 
     // Log the payload structure (for debugging only - NOT what gets sent)
@@ -190,6 +207,7 @@ class SMTP2GOService {
       .replace(/\u2029/g, '\n') // Replace paragraph separator
       .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
       .replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '') // Remove emojis from HTML too
+      .replace(/€/g, 'EUR')     // Replace € symbol with EUR to avoid encoding issues
       .replace(/\s+/g, ' ') // Normalize multiple spaces
       .trim();
   }
@@ -202,7 +220,25 @@ class SMTP2GOService {
     return subject
       .replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '') // Remove emojis
       .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters (fixed syntax)
+      .replace(/€/g, 'EUR')     // Replace € symbol with EUR to avoid encoding issues
       .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+  }
+
+  // Helper method to sanitize text content 
+  sanitizeTextForJson(text) {
+    if (!text) return '';
+    
+    // Clean text content similar to HTML but for plain text
+    return text
+      .replace(/\r\n/g, '\n')  // Normalize line endings
+      .replace(/\r/g, '\n')    // Convert remaining \r to \n
+      .replace(/\u2028/g, '\n') // Replace line separator
+      .replace(/\u2029/g, '\n') // Replace paragraph separator
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+      .replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '') // Remove emojis
+      .replace(/€/g, 'EUR')     // Replace € symbol with EUR to avoid encoding issues
+      .replace(/\s+/g, ' ') // Normalize multiple spaces
       .trim();
   }
 
