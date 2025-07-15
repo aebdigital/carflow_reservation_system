@@ -36,7 +36,8 @@ class SMTP2GOService {
     const cleanedToEmails = toEmails.map(email => typeof email === 'string' ? email.trim() : email);
     
     // Clean sender email - remove display name format, just use email
-    const fromEmail = process.env.EMAIL_FROM || 'noreply@carflow.sk';
+    // Use verified email temporarily to test SMTP2GO
+    const fromEmail = 'peter@aebdig.com'; // process.env.EMAIL_FROM || 'noreply@carflow.sk';
     const cleanedFromEmail = fromEmail.replace(/.*<(.+)>.*/, '$1').trim();
 
     // Clean and sanitize content to avoid JSON issues
