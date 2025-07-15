@@ -50,117 +50,22 @@ class SMTP2GOService {
     const cleanHtml = this.sanitizeHtmlForJson(html);
     const cleanSubject = this.sanitizeSubject(subject);
 
-    // Try sending API key in header instead of body (alternative method)
-    const emailDataWithoutKey = {
-      sender: cleanedFromEmail,
-      recipients: cleanedToEmails,
-      subject: cleanSubject,
-      html: cleanHtml,
-      text: cleanText
-    };
-
-    console.log('🔍 [SMTP2GO DEBUG] Testing with API key in header instead of body...');
-
-    return new Promise((resolve, reject) => {
-      const postDataAlt = JSON.stringify(emailDataWithoutKey);
-      
-      const optionsAlt = {
-        hostname: 'api.smtp2go.com',
-        port: 443,
-        path: '/v3/email/send',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': postDataAlt.length,
-          'X-Smtp2go-Api-Key': this.apiKey
-        }
-      };
-
-      console.log('🔍 [SMTP2GO DEBUG] Alternative request (API key in header):', JSON.stringify(optionsAlt, null, 2));
-
-      const req = https.request(optionsAlt, (res) => {
-        let data = '';
-        
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        
-        res.on('end', () => {
-          try {
-            const response = JSON.parse(data);
-            console.log('🔍 [SMTP2GO DEBUG] Alternative method response:', JSON.stringify(response, null, 2));
-            
-            if (response.data && response.data.succeeded && response.data.succeeded > 0) {
-              console.log('✅ Email sent successfully via SMTP2GO (API key in header)');
-              resolve({
-                success: true,
-                messageId: response.data.email_id,
-                response: response
-              });
-            } else {
-              console.log('⚠️ Alternative method also failed, proceeding with original method...');
-              // Fall back to original method
-              this.sendEmailOriginal(to, subject, html, text).then(resolve).catch(reject);
-            }
-          } catch (error) {
-            console.error('❌ Error parsing alternative response:', error);
-            // Fall back to original method
-            this.sendEmailOriginal(to, subject, html, text).then(resolve).catch(reject);
-          }
-        });
-      });
-
-      req.on('error', (error) => {
-        console.error('❌ Alternative request error:', error);
-        // Fall back to original method
-        this.sendEmailOriginal(to, subject, html, text).then(resolve).catch(reject);
-      });
-
-      req.write(postDataAlt);
-      req.end();
-    });
-  }
-
-  async sendEmailOriginal(to, subject, html, text = null) {
-    if (!this.isConfigured) {
-      throw new Error('SMTP2GO service not properly configured. Please set SMTP2GO_API_KEY.');
-    }
-
-    // Clean and validate email addresses
-    const toEmails = Array.isArray(to) ? to : [to];
-    const cleanedToEmails = toEmails.map(email => typeof email === 'string' ? email.trim() : email);
-    
-    // Clean sender email - remove display name format, just use email
-    const fromEmail = process.env.EMAIL_FROM || 'noreply@carflow.sk';
-    const cleanedFromEmail = fromEmail.replace(/.*<(.+)>.*/, '$1').trim();
-
-    console.log('🔍 [SMTP2GO DEBUG] Sender email details:', {
-      original: fromEmail,
-      cleaned: cleanedFromEmail,
-      EMAIL_FROM: process.env.EMAIL_FROM
-    });
-
-    // Clean and sanitize content to avoid JSON issues
-    const cleanText = text || this.stripHtml(html);
-    const cleanHtml = this.sanitizeHtmlForJson(html);
-    const cleanSubject = this.sanitizeSubject(subject);
-
-    // Use the correct SMTP2GO API structure based on official documentation
-    // Force redeploy - using correct field names: recipients, html, text
+    // Use the CORRECT SMTP2GO API structure based on official documentation
+    // Fixed field names: 'to', 'html_body', 'text_body'
     const emailData = {
       api_key: this.apiKey,
       sender: cleanedFromEmail,
-      recipients: cleanedToEmails,  // Changed from 'to' to 'recipients'
+      to: cleanedToEmails,           // Changed from 'recipients' to 'to'
       subject: cleanSubject,
-      html: cleanHtml,              // Changed from 'html_body' to 'html'
-      text: cleanText               // Changed from 'text_body' to 'text'
+      html_body: cleanHtml,          // Changed from 'html' to 'html_body'
+      text_body: cleanText           // Changed from 'text' to 'text_body'
     };
 
-    console.log('🔍 [SMTP2GO DEBUG] Email payload:', JSON.stringify({
+    console.log('🔍 [SMTP2GO DEBUG] Email payload with CORRECT field names:', JSON.stringify({
       ...emailData,
       api_key: '[HIDDEN]',
-      html: '[HTML_CONTENT_LENGTH:' + cleanHtml.length + ']',
-      text: '[TEXT_CONTENT_LENGTH:' + cleanText.length + ']'
+      html_body: '[HTML_CONTENT_LENGTH:' + cleanHtml.length + ']',
+      text_body: '[TEXT_CONTENT_LENGTH:' + cleanText.length + ']'
     }, null, 2));
 
     console.log('🔍 [SMTP2GO DEBUG] Subject details:', {
@@ -339,7 +244,7 @@ class SMTP2GOService {
     return this.sendEmail(to, subject, html);
   }
 
-  // NEW: Admin notification email for new reservations
+  // UPDATED: Admin notification email for new reservations with correct field names
   async sendAdminReservationNotification(to, reservationData) {
     const subject = `Nova rezervacia #${reservationData.reservationNumber} - ${reservationData.carInfo}`;
     
@@ -366,17 +271,17 @@ class SMTP2GOService {
       throw new Error('SMTP2GO service not configured');
     }
 
-    // Use the structure from SMTP2GO examples
+    // Use the CORRECT structure from SMTP2GO documentation
     const simpleEmailData = {
       api_key: this.apiKey,
       sender: process.env.EMAIL_FROM || 'noreply@carflow.sk',
-      recipients: ['peter@aebdig.com'],
-      subject: 'Test Email - Simple Structure',
-      text: 'This is a simple test email to verify SMTP2GO integration.',
-      html: '<html><body><h1>Test Email</h1><p>This is a simple test email to verify SMTP2GO integration.</p></body></html>'
+      to: ['peter@aebdig.com'],                    // Changed from 'recipients' to 'to'
+      subject: 'Test Email - Correct Field Names',
+      text_body: 'This is a simple test email to verify SMTP2GO integration with correct field names.',  // Changed from 'text' to 'text_body'
+      html_body: '<html><body><h1>Test Email</h1><p>This is a simple test email to verify SMTP2GO integration with correct field names.</p></body></html>'  // Changed from 'html' to 'html_body'
     };
 
-    console.log('🔍 [SMTP2GO TEST] Simple email data:', JSON.stringify(simpleEmailData, null, 2));
+    console.log('🔍 [SMTP2GO TEST] Simple email data with CORRECT field names:', JSON.stringify(simpleEmailData, null, 2));
 
     return new Promise((resolve, reject) => {
       const postData = JSON.stringify(simpleEmailData);
@@ -392,7 +297,7 @@ class SMTP2GOService {
         }
       };
 
-      console.log('📧 [SMTP2GO TEST] Sending simple test email...');
+      console.log('📧 [SMTP2GO TEST] Sending simple test email with correct field names...');
 
       const req = https.request(options, (res) => {
         let data = '';
