@@ -49,24 +49,33 @@ class SMTP2GOService {
     const cleanHtml = this.sanitizeHtmlForJson(html);
     const cleanSubject = this.sanitizeSubject(subject);
 
-    // Use the EXACT SMTP2GO API structure as provided by user
+    // CRITICAL FIX: Use actual content, not placeholders
     const emailData = {
-      api_key: this.apiKey,                    // Use environment variable SMTP2GO_API_KEY
-      sender: senderEmail,                     // Keep full format with display name
-      to: cleanedToEmails,                     // Correct field name
+      api_key: this.apiKey,
+      sender: senderEmail,
+      to: cleanedToEmails,
       subject: cleanSubject,
-      html_body: cleanHtml,                    // Correct field name
-      text_body: cleanText                     // Correct field name
+      html_body: cleanHtml,    // ACTUAL HTML content, not placeholder
+      text_body: cleanText     // ACTUAL text content, not placeholder
     };
 
-    console.log('🔍 [SMTP2GO DEBUG] Email payload (exact structure):', JSON.stringify({
-      api_key: this.apiKey ? '[SET_FROM_ENV]' : '[MISSING]',
+    // Log the payload structure (for debugging only - NOT what gets sent)
+    console.log('🔍 [SMTP2GO DEBUG] Payload structure (logging only):', JSON.stringify({
+      api_key: this.apiKey ? '[SET_FROM_SMTP2GO_API_KEY]' : '[MISSING]',
       sender: emailData.sender,
       to: emailData.to,
       subject: emailData.subject,
-      html_body: '[HTML_CONTENT_LENGTH:' + cleanHtml.length + ']',
-      text_body: '[TEXT_CONTENT_LENGTH:' + cleanText.length + ']'
+      html_body: '[ACTUAL_HTML_CONTENT]',
+      text_body: '[ACTUAL_TEXT_CONTENT]'
     }, null, 2));
+
+    // Log actual content being sent
+    console.log('🔍 [SMTP2GO DEBUG] Actual content being sent:');
+    console.log('   Subject:', cleanSubject);
+    console.log('   HTML length:', cleanHtml.length, 'characters');
+    console.log('   Text length:', cleanText.length, 'characters');
+    console.log('   HTML preview:', cleanHtml.substring(0, 100) + '...');
+    console.log('   Text preview:', cleanText.substring(0, 100) + '...');
 
     // Validate JSON before sending
     try {
@@ -87,6 +96,7 @@ class SMTP2GOService {
     }
 
     return new Promise((resolve, reject) => {
+      // CRITICAL: Send the actual emailData with real content
       const postData = JSON.stringify(emailData);
       
       const options = {
@@ -144,6 +154,7 @@ class SMTP2GOService {
         reject(error);
       });
 
+      // SEND THE ACTUAL DATA WITH REAL CONTENT
       req.write(postData);
       req.end();
     });
