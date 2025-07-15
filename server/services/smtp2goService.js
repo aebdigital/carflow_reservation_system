@@ -45,6 +45,7 @@ class SMTP2GOService {
     const cleanSubject = this.sanitizeSubject(subject);
 
     // Use the correct SMTP2GO API structure based on official documentation
+    // Force redeploy - using correct field names: recipients, html, text
     const emailData = {
       api_key: this.apiKey,
       sender: cleanedFromEmail,
