@@ -3,7 +3,7 @@ services:
     name: carflow-reservation-system
     env: node
     plan: free
-    buildCommand: cd server && npm install
+    buildCommand: node verify-json.js && npm cache clean --force && cd server && npm install --no-cache
     startCommand: cd server && npm start
     envVars:
       - key: NODE_ENV
