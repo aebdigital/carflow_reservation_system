@@ -49,6 +49,15 @@ class SMTP2GOService {
     const cleanHtml = this.sanitizeHtmlForJson(html);
     const cleanSubject = this.sanitizeSubject(subject);
 
+    // Log raw vs cleaned content for debugging
+    console.log('🔍 [SMTP2GO DEBUG] Content cleaning:');
+    console.log('   Raw HTML length:', html ? html.length : 0);
+    console.log('   Clean HTML length:', cleanHtml.length);
+    console.log('   Raw text length:', text ? text.length : 0);
+    console.log('   Clean text length:', cleanText.length);
+    console.log('   Raw subject:', subject);
+    console.log('   Clean subject:', cleanSubject);
+
     // CRITICAL FIX: Use actual content, not placeholders
     const emailData = {
       api_key: this.apiKey,
@@ -81,6 +90,10 @@ class SMTP2GOService {
     try {
       const testJson = JSON.stringify(emailData);
       console.log('🔍 [SMTP2GO] JSON validation passed, payload size:', testJson.length, 'bytes');
+      
+      // LOG THE EXACT JSON BEING SENT FOR DEBUGGING
+      console.log('🔍 [SMTP2GO] EXACT JSON PAYLOAD BEING SENT:');
+      console.log(testJson);
       
       // Check for potentially problematic content
       if (cleanSubject.length > 200) {
