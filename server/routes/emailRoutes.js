@@ -93,4 +93,27 @@ router.get('/test-smtp2go', requireAdmin, async (req, res) => {
   }
 });
 
+// Test endpoint for simplified SMTP2GO structure
+router.get('/test-simple-smtp2go', async (req, res) => {
+  try {
+    console.log('📧 [EMAIL] Testing simple SMTP2GO structure...');
+    
+    const smtp2goService = require('../services/smtp2goService');
+    const result = await smtp2goService.testSimpleEmail();
+    
+    res.json({
+      success: true,
+      message: 'Simple SMTP2GO test sent successfully',
+      data: result
+    });
+  } catch (error) {
+    console.error('❌ [EMAIL] Simple SMTP2GO test failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Simple SMTP2GO test failed',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router; 

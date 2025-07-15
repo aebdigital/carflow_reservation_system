@@ -334,6 +334,70 @@ class SMTP2GOService {
     return this.sendEmail(to, subject, html);
   }
 
+  // Test with simple structure to isolate the issue
+  async testSimpleEmail() {
+    if (!this.isConfigured) {
+      throw new Error('SMTP2GO service not configured');
+    }
+
+    // Use the structure from SMTP2GO examples
+    const simpleEmailData = {
+      api_key: this.apiKey,
+      sender: process.env.EMAIL_FROM || 'noreply@carflow.sk',
+      recipients: ['peter@aebdig.com'],
+      subject: 'Test Email - Simple Structure',
+      text: 'This is a simple test email to verify SMTP2GO integration.',
+      html: '<html><body><h1>Test Email</h1><p>This is a simple test email to verify SMTP2GO integration.</p></body></html>'
+    };
+
+    console.log('🔍 [SMTP2GO TEST] Simple email data:', JSON.stringify(simpleEmailData, null, 2));
+
+    return new Promise((resolve, reject) => {
+      const postData = JSON.stringify(simpleEmailData);
+      
+      const options = {
+        hostname: 'api.smtp2go.com',
+        port: 443,
+        path: '/v3/email/send',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': postData.length
+        }
+      };
+
+      console.log('📧 [SMTP2GO TEST] Sending simple test email...');
+
+      const req = https.request(options, (res) => {
+        let data = '';
+        
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        
+        res.on('end', () => {
+          try {
+            const response = JSON.parse(data);
+            console.log('🔍 [SMTP2GO TEST] Response:', JSON.stringify(response, null, 2));
+            resolve(response);
+          } catch (error) {
+            console.error('❌ [SMTP2GO TEST] Error parsing response:', error);
+            console.error('❌ [SMTP2GO TEST] Raw response:', data);
+            reject(error);
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        console.error('❌ [SMTP2GO TEST] Request error:', error);
+        reject(error);
+      });
+
+      req.write(postData);
+      req.end();
+    });
+  }
+
   // Test email service
   async testConnection() {
     if (!this.isConfigured) {
