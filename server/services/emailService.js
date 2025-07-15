@@ -59,39 +59,8 @@ class EmailService {
 
   // Admin reservation notification
   async sendAdminReservationNotification(adminEmail, reservationData) {
-    const { reservation, car, customer } = reservationData;
-    
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #1976d2;">New Reservation - ${reservation.reservationNumber}</h2>
-        
-        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3>Customer Details</h3>
-          <p><strong>Name:</strong> ${customer.firstName} ${customer.lastName}</p>
-          <p><strong>Email:</strong> ${customer.email}</p>
-          <p><strong>Phone:</strong> ${customer.phone}</p>
-        </div>
-        
-        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3>Car Details</h3>
-          <p><strong>Car:</strong> ${car.brand} ${car.model} (${car.year})</p>
-          <p><strong>Registration:</strong> ${car.registrationNumber}</p>
-        </div>
-        
-        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3>Reservation Details</h3>
-          <p><strong>Pickup Date:</strong> ${new Date(reservation.pickupDate).toLocaleDateString()}</p>
-          <p><strong>Return Date:</strong> ${new Date(reservation.returnDate).toLocaleDateString()}</p>
-          <p><strong>Duration:</strong> ${reservation.duration} days</p>
-          <p><strong>Total Price:</strong> €${reservation.totalPrice}</p>
-          <p><strong>Status:</strong> ${reservation.status}</p>
-        </div>
-        
-        <p>Please review and confirm this reservation in the admin panel.</p>
-      </div>
-    `;
-
-    return await this.sendEmail(adminEmail, `New Reservation: ${reservation.reservationNumber}`, html);
+    // Use SMTP2GO service which has the correct implementation
+    return await smtp2goService.sendAdminReservationNotification(adminEmail, reservationData);
   }
 }
 
