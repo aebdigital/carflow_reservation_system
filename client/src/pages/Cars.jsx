@@ -366,38 +366,17 @@ function Cars() {
   const validateForm = () => {
     const errors = {}
 
-    if (!formData.brand.trim()) {
-      errors.brand = t('required')
-    }
-    if (!formData.model.trim()) {
-      errors.model = t('required')
-    }
-    if (!formData.year || formData.year < 1990 || formData.year > new Date().getFullYear() + 1) {
+    // Remove all required field validations - make all fields optional
+    // Only keep basic format validations for fields that are provided
+    
+    if (formData.year && (formData.year < 1990 || formData.year > new Date().getFullYear() + 1)) {
       errors.year = 'Rok musí byť medzi 1990 a ' + (new Date().getFullYear() + 1)
-    }
-    if (!formData.registrationNumber.trim()) {
-      errors.registrationNumber = t('required')
-    }
-    if (!formData.vin.trim()) {
-      errors.vin = t('required')
-    }
-    if (!formData.color.trim()) {
-      errors.color = t('required')
-    }
-    if (!formData.category) {
-      errors.category = t('required')
-    }
-    if (!formData.fuelType) {
-      errors.fuelType = t('required')
-    }
-    if (!formData.transmission) {
-      errors.transmission = t('required')
     }
     
     // Only require daily rate if it's provided, but it must be positive if provided
     if (formData.pricing?.dailyRate !== undefined && formData.pricing.dailyRate !== '' && formData.pricing.dailyRate !== null) {
       if (formData.pricing.dailyRate <= 0) {
-      errors.dailyRate = 'Denná sadzba musí byť väčšia ako 0'
+        errors.dailyRate = 'Denná sadzba musí byť väčšia ako 0'
       }
     }
 
@@ -1019,6 +998,7 @@ function Cars() {
             onImageRemove={removeImage}
             selectedImages={selectedImages}
             imagePreviewUrls={imagePreviewUrls}
+            onDeleteExistingImage={handleDeleteExistingImage}
           />
         </DialogContent>
         

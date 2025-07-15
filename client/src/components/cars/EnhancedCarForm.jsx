@@ -53,7 +53,8 @@ const EnhancedCarForm = ({
   onImageChange,
   onImageRemove,
   selectedImages = [],
-  imagePreviewUrls = []
+  imagePreviewUrls = [],
+  onDeleteExistingImage
 }) => {
   // Reduce logging frequency to prevent performance issues
   const renderCount = useRef(0);
@@ -408,7 +409,7 @@ const EnhancedCarForm = ({
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
-              label="Značka *"
+              label="Značka"
               value={formData.brand || ''}
               onChange={(e) => handleChange('brand', e.target.value)}
               disabled={dialogMode === 'view'}
@@ -420,7 +421,7 @@ const EnhancedCarForm = ({
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
-              label="Model *"
+              label="Model"
               value={formData.model || ''}
               onChange={(e) => handleChange('model', e.target.value)}
               disabled={dialogMode === 'view'}
@@ -432,7 +433,7 @@ const EnhancedCarForm = ({
           <Grid item xs={12} md={4}>
             <TextField
               fullWidth
-              label="Rok výroby *"
+              label="Rok výroby"
               type="number"
               value={formData.year || new Date().getFullYear()}
               onChange={(e) => handleChange('year', parseInt(e.target.value))}
@@ -446,7 +447,7 @@ const EnhancedCarForm = ({
           <Grid item xs={12} md={4}>
             <TextField
               fullWidth
-              label="EČV / ŠPZ *"
+              label="EČV / ŠPZ"
               value={formData.registrationNumber || ''}
               onChange={(e) => handleChange('registrationNumber', e.target.value.toUpperCase())}
               disabled={dialogMode === 'view'}
@@ -458,7 +459,7 @@ const EnhancedCarForm = ({
           <Grid item xs={12} md={4}>
             <TextField
               fullWidth
-              label="Farba *"
+              label="Farba"
               value={formData.color || ''}
               onChange={(e) => handleChange('color', e.target.value)}
               disabled={dialogMode === 'view'}
@@ -470,7 +471,7 @@ const EnhancedCarForm = ({
           <Grid item xs={12}>
             <TextField
               fullWidth
-              label="VIN číslo *"
+              label="VIN číslo"
               value={formData.vin || ''}
               onChange={(e) => handleChange('vin', e.target.value.toUpperCase())}
               disabled={dialogMode === 'view'}
@@ -482,12 +483,12 @@ const EnhancedCarForm = ({
 
           <Grid item xs={12}>
             <FormControl fullWidth error={!!formErrors.category}>
-              <InputLabel>Zaradenie vozidla *</InputLabel>
+              <InputLabel>Zaradenie vozidla</InputLabel>
               <Select
                 value={formData.category || ''}
                 onChange={(e) => handleChange('category', e.target.value)}
                 disabled={dialogMode === 'view'}
-                label="Zaradenie vozidla *"
+                label="Zaradenie vozidla"
               >
                 {categoryOptions.map(option => (
                   <MenuItem key={option.value} value={option.value}>
@@ -510,12 +511,12 @@ const EnhancedCarForm = ({
 
           <Grid item xs={12} md={6}>
             <FormControl fullWidth error={!!formErrors.fuelType}>
-              <InputLabel>Palivo *</InputLabel>
+              <InputLabel>Palivo</InputLabel>
               <Select
                 value={formData.fuelType || ''}
                 onChange={(e) => handleChange('fuelType', e.target.value)}
                 disabled={dialogMode === 'view'}
-                label="Palivo *"
+                label="Palivo"
               >
                 {fuelTypeOptions.map(option => (
                   <MenuItem key={option.value} value={option.value}>
@@ -602,12 +603,12 @@ const EnhancedCarForm = ({
 
           <Grid item xs={12} md={4}>
             <FormControl fullWidth error={!!formErrors.transmission}>
-              <InputLabel>Prevodovka *</InputLabel>
+              <InputLabel>Prevodovka</InputLabel>
               <Select
                 value={formData.transmission || ''}
                 onChange={(e) => handleChange('transmission', e.target.value)}
                 disabled={dialogMode === 'view'}
-                label="Prevodovka *"
+                label="Prevodovka"
               >
                 {transmissionOptions.map(option => (
                   <MenuItem key={option.value} value={option.value}>
@@ -996,10 +997,7 @@ const EnhancedCarForm = ({
                                 '&:hover': { backgroundColor: 'rgba(0,0,0,0.7)' }
                               }}
                               size="small"
-                              onClick={() => {
-                                // Handle delete existing image - you can implement this
-                                console.log('Delete existing image at index:', index);
-                              }}
+                              onClick={() => onDeleteExistingImage(index)}
                             >
                               <DeleteIcon />
                             </IconButton>
@@ -1273,7 +1271,7 @@ const EnhancedCarForm = ({
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Denná sadzba *"
+                label="Denná sadzba"
                 type="number"
                 value={formData.pricing?.dailyRate || ''}
                 onChange={(e) => handleNestedChange('pricing.dailyRate', parseFloat(e.target.value))}
@@ -1287,7 +1285,7 @@ const EnhancedCarForm = ({
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Depozit *"
+                label="Depozit"
                 type="number"
                 value={formData.pricing?.deposit || ''}
                 onChange={(e) => handleNestedChange('pricing.deposit', parseFloat(e.target.value))}
