@@ -64,20 +64,11 @@ const DamageModal = ({ open, onClose, onSubmit, damage = null, mode = 'add' }) =
   const validateForm = () => {
     const newErrors = {};
     
-    if (!formData.description.trim()) {
-      newErrors.description = 'Popis poškodenia je povinný';
-    }
-    
-    if (!formData.severity) {
-      newErrors.severity = 'Závažnosť je povinná';
-    }
+    // Remove all required field validations - make all fields optional
+    // Only keep basic format validations for fields that are provided
     
     if (formData.cost && isNaN(parseFloat(formData.cost))) {
       newErrors.cost = 'Neplatná suma';
-    }
-
-    if (formData.repaired && !formData.repairedDate) {
-      newErrors.repairedDate = 'Dátum opravy je povinný pre opravené poškodenia';
     }
 
     setErrors(newErrors);
@@ -117,7 +108,7 @@ const DamageModal = ({ open, onClose, onSubmit, damage = null, mode = 'add' }) =
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Popis poškodenia *"
+                label="Popis poškodenia"
                 multiline
                 rows={3}
                 value={formData.description}
@@ -130,11 +121,11 @@ const DamageModal = ({ open, onClose, onSubmit, damage = null, mode = 'add' }) =
 
             <Grid item xs={12} md={6}>
               <FormControl fullWidth error={!!errors.severity}>
-                <InputLabel>Závažnosť *</InputLabel>
+                <InputLabel>Závažnosť</InputLabel>
                 <Select
                   value={formData.severity}
                   onChange={(e) => handleChange('severity', e.target.value)}
-                  label="Závažnosť *"
+                  label="Závažnosť"
                 >
                   {severityOptions.map(option => (
                     <MenuItem key={option.value} value={option.value}>
@@ -201,7 +192,7 @@ const DamageModal = ({ open, onClose, onSubmit, damage = null, mode = 'add' }) =
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Dátum opravy *"
+                  label="Dátum opravy"
                   type="date"
                   value={formData.repairedDate}
                   onChange={(e) => handleChange('repairedDate', e.target.value)}
