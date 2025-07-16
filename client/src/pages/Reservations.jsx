@@ -53,6 +53,7 @@ import {
   useCreateReservationMutation,
   useUpdateReservationMutation,
   useCancelReservationMutation,
+  useDeleteReservationMutation,
   useConfirmReservationMutation,
   useCheckInReservationMutation,
   useCheckOutReservationMutation,
@@ -152,6 +153,7 @@ function Reservations() {
   const [createReservation, { isLoading: creating }] = useCreateReservationMutation()
   const [updateReservation, { isLoading: updating }] = useUpdateReservationMutation()
   const [cancelReservation] = useCancelReservationMutation()
+  const [deleteReservation] = useDeleteReservationMutation()
   const [confirmReservation] = useConfirmReservationMutation()
   const [checkInReservation] = useCheckInReservationMutation()
   const [checkOutReservation] = useCheckOutReservationMutation()
@@ -319,10 +321,7 @@ function Reservations() {
     if (!reservationToDelete) return
     
     try {
-      await cancelReservation({ 
-        id: reservationToDelete._id, 
-        reason: 'Deleted by admin' 
-      }).unwrap()
+      await deleteReservation(reservationToDelete._id).unwrap()
       setDeleteConfirmOpen(false)
       setReservationToDelete(null)
     } catch (error) {
@@ -2164,8 +2163,11 @@ function Reservations() {
               Zákazník: {reservationToDelete.customer.firstName} {reservationToDelete.customer.lastName}
             </Typography>
           )}
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            Táto akcia označí rezerváciu ako vymazanú správcom. Rezervácia bude označená ako zrušená.
+          <Typography variant="body2" color="error" sx={{ mt: 2, fontWeight: 'bold' }}>
+            ⚠️ POZOR: Táto akcia úplne odstráni rezerváciu z databázy. Táto akcia je NEVRATNÁ!
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Rezervácia sa úplne vymaže zo systému a už nebude viditeľná v zoznamoch.
           </Typography>
         </DialogContent>
         <DialogActions>

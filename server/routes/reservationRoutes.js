@@ -8,6 +8,7 @@ const {
   confirmReservation,
   checkInReservation,
   checkOutReservation,
+  deleteReservation,
   getReservationStats,
   generateReservationContract,
   generateSlovakAgreement,
@@ -36,7 +37,8 @@ router.route('/')
 
 router.route('/:id')
   .get(getReservation)
-  .put(updateReservation);
+  .put(updateReservation)
+  .delete(requireStaff, deleteReservation);
 
 // Special actions
 router.put('/:id/cancel', cancelReservation);

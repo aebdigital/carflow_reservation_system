@@ -788,6 +788,90 @@ const checkOutReservation = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Delete reservation permanently (Admin only)
+// @route   DELETE /api/reservations/:id
+// @access  Private/Admin
+const deleteReservation = asyncHandler(async (req, res, next) => {
+  const reservation = await Reservation.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  }).populate([
+    { path: 'customer', select: 'firstName lastName email phone' },
+    { path: 'car', select: 'brand model year registrationNumber' },
+    { path: 'payment' }
+  ]);
+
+  if (!reservation) {
+    return next(new AppError('Reservation not found', 404));
+  }
+
+  // Only allow admin/staff to delete reservations
+  if (req.user.role !== 'admin' && req.user.role !== 'staff') {
+    return next(new AppError('Only admin and staff can delete reservations permanently', 403));
+  }
+
+  // Store reservation info for logging
+  const reservationInfo = {
+    id: reservation._id,
+    number: reservation.reservationNumber,
+    customer: reservation.customer ? `${reservation.customer.firstName} ${reservation.customer.lastName}` : 'Unknown',
+    car: reservation.car ? `${reservation.car.brand} ${reservation.car.model}` : 'Unknown',
+    status: reservation.status,
+    deletedBy: req.user._id,
+    deletedAt: new Date()
+  };
+
+  // If there's a payment associated, we might want to handle it
+  if (reservation.payment) {
+    console.log(`⚠️ [DELETE] Deleting reservation with associated payment ID: ${reservation.payment._id}`);
+    // Note: Payment records are usually kept for audit purposes
+    // You might want to mark them as "reservation_deleted" instead of deleting
+    await Payment.findByIdAndUpdate(reservation.payment._id, {
+      status: 'reservation_deleted',
+      notes: `Reservation ${reservation.reservationNumber} was deleted by admin`
+    });
+  }
+
+  // Update car stats if needed (decrease booking count if appropriate)
+  if (reservation.car && reservation.status === 'completed') {
+    await Car.findByIdAndUpdate(reservation.car._id, {
+      $inc: { 
+        totalBookings: -1,
+        totalRevenue: -(reservation.pricing?.totalAmount || 0)
+      }
+    });
+  }
+
+  // Update customer stats if needed
+  if (reservation.customer && reservation.status === 'completed') {
+    await User.findByIdAndUpdate(reservation.customer._id, {
+      $inc: { 
+        totalBookings: -1, 
+        totalSpent: -(reservation.pricing?.totalAmount || 0) 
+      }
+    });
+  }
+
+  // Actually delete the reservation from database
+  await Reservation.findByIdAndDelete(req.params.id);
+
+  console.log('🗑️ [DELETE] Reservation permanently deleted:', reservationInfo);
+
+  res.status(200).json({
+    success: true,
+    message: 'Reservation deleted permanently',
+    data: {
+      deletedReservation: {
+        id: reservationInfo.id,
+        number: reservationInfo.number,
+        customer: reservationInfo.customer,
+        car: reservationInfo.car,
+        deletedAt: reservationInfo.deletedAt
+      }
+    }
+  });
+});
+
 // @desc    Get reservation statistics
 // @route   GET /api/reservations/stats
 // @access  Private/Staff
@@ -1236,6 +1320,7 @@ module.exports = {
   confirmReservation,
   checkInReservation,
   checkOutReservation,
+  deleteReservation,
   getReservationStats,
   generateReservationContract,
   generateSlovakAgreement,
