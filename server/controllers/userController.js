@@ -6,14 +6,24 @@ const { asyncHandler, AppError } = require('../middleware/errorHandler');
 // @route   GET /api/users
 // @access  Private/Staff
 const getUsers = asyncHandler(async (req, res, next) => {
-  // Start with tenant filter
-  const baseQuery = { tenantId: req.user.tenantId };
+  // Start with tenant filter and exclude deleted users by default
+  const baseQuery = { 
+    tenantId: req.user.tenantId,
+    isActive: { $ne: false },  // Exclude inactive users
+    status: { $ne: 'deleted' } // Exclude deleted users
+  };
 
   // Copy req.query and merge with tenant filter
   const reqQuery = { ...req.query };
 
+  // Allow explicitly requesting inactive users with includeInactive=true
+  if (reqQuery.includeInactive === 'true') {
+    delete baseQuery.isActive;
+    delete baseQuery.status;
+  }
+
   // Fields to exclude from filtering
-  const removeFields = ['select', 'sort', 'page', 'limit'];
+  const removeFields = ['select', 'sort', 'page', 'limit', 'includeInactive'];
   removeFields.forEach(param => delete reqQuery[param]);
 
   // Create query string
@@ -214,7 +224,10 @@ const updateUser = asyncHandler(async (req, res, next) => {
 // @route   DELETE /api/users/:id
 // @access  Private/Admin
 const deleteUser = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.params.id);
+  const user = await User.findOne({ 
+    _id: req.params.id,
+    tenantId: req.user.tenantId  // Ensure tenant scoping
+  });
 
   if (!user) {
     return next(new AppError(`User not found with id of ${req.params.id}`, 404));
@@ -223,6 +236,7 @@ const deleteUser = asyncHandler(async (req, res, next) => {
   // Check if user has active reservations
   const activeReservations = await Reservation.find({
     customer: req.params.id,
+    tenantId: req.user.tenantId,  // Include tenant scoping
     status: { $in: ['pending', 'confirmed', 'ongoing'] }
   });
 
@@ -231,14 +245,19 @@ const deleteUser = asyncHandler(async (req, res, next) => {
   }
 
   // Instead of deleting, deactivate the user to preserve data integrity
-  await User.findByIdAndUpdate(req.params.id, { 
-    isActive: false,
-    email: `deleted_${Date.now()}_${user.email}` // Prevent email conflicts
-  });
+  await User.findOneAndUpdate(
+    { _id: req.params.id, tenantId: req.user.tenantId },
+    { 
+      isActive: false,
+      email: `deleted_${Date.now()}_${user.email}`, // Prevent email conflicts
+      status: 'deleted'  // Add status field for easier filtering
+    }
+  );
 
   res.status(200).json({
     success: true,
-    data: {}
+    data: {},
+    message: 'User successfully deactivated'
   });
 });
 
