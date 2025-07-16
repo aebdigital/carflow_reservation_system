@@ -467,7 +467,7 @@ const getAvailableFeaturesByUser = asyncHandler(async (req, res, next) => {
 // @route   POST /api/public/users/:email/reservations
 // @access  Public
 const createReservationByUser = asyncHandler(async (req, res, next) => {
-  const { email } = req.params;
+  const { email } = req.params; // This is now ignored - kept for API compatibility
   const {
     // Customer details
     firstName,
@@ -502,18 +502,14 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     return next(new AppError('customerEmail (or email) is required in request body', 400));
   }
 
-  // Get tenant ID from user email
-  const tenantId = await getTenantByUserEmail(email);
-
-  // Validate required fields
-  if (!firstName || !lastName || !finalCustomerEmail || !phone || !licenseNumber || !carId || !startDate || !endDate) {
-    return next(new AppError('Missing required fields: firstName, lastName, email, phone, licenseNumber, carId, startDate, endDate', 400));
+  // 🔧 MAJOR FIX: Get tenant ID from the car being booked, not from email parameter
+  if (!carId) {
+    return next(new AppError('carId is required to determine the car rental company', 400));
   }
 
-  // Check if car exists and is available for this tenant
+  // Check if car exists and get tenant ID from it
   const car = await Car.findOne({ 
-    _id: carId, 
-    tenantId,
+    _id: carId,
     isActive: true 
   });
   
@@ -523,6 +519,21 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
 
   if (car.status !== 'active') {
     return next(new AppError('Car is not available for booking', 400));
+  }
+
+  // 🔧 FIX: Use car's tenant ID instead of trying to resolve from customer email
+  const tenantId = car.tenantId;
+  if (!tenantId) {
+    return next(new AppError('Car has no associated tenant/car rental company', 400));
+  }
+
+  console.log('🔧 [TENANT FIX] Using tenant ID from car:', tenantId);
+  console.log('🔧 [TENANT FIX] Car:', `${car.brand} ${car.model} (${car._id})`);
+  console.log('🔧 [TENANT FIX] Customer email:', finalCustomerEmail);
+
+  // Validate required fields
+  if (!firstName || !lastName || !finalCustomerEmail || !phone || !licenseNumber || !carId || !startDate || !endDate) {
+    return next(new AppError('Missing required fields: firstName, lastName, email, phone, licenseNumber, carId, startDate, endDate', 400));
   }
 
   // Validate dates
@@ -1046,8 +1057,13 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     return next(new AppError('Missing required fields: firstName, lastName, email, phone, licenseNumber, carId, startDate, endDate', 400));
   }
 
+  // 🔧 FIX: Get tenant ID from the car being booked
   // Check if car exists and is available
-  const car = await Car.findById(carId);
+  const car = await Car.findOne({
+    _id: carId,
+    isActive: true
+  });
+  
   if (!car) {
     return next(new AppError('Car not found', 404));
   }
@@ -1059,8 +1075,12 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
   // 🔧 FIX: Get tenantId from the car to ensure proper assignment
   const tenantId = car.tenantId;
   if (!tenantId) {
-    return next(new AppError('Car has no associated tenant', 400));
+    return next(new AppError('Car has no associated tenant/car rental company', 400));
   }
+
+  console.log('🔧 [TENANT FIX] Public reservation - using tenant ID from car:', tenantId);
+  console.log('🔧 [TENANT FIX] Car:', `${car.brand} ${car.model} (${car._id})`);
+  console.log('🔧 [TENANT FIX] Customer email:', email);
 
   // Validate dates
   const start = new Date(startDate);
