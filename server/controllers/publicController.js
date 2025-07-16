@@ -495,10 +495,11 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
   } = req.body;
 
   // 🔧 FIX: Don't fallback to admin email - require customer email in request body
-  const finalCustomerEmail = customerEmail;
+  // Accept both 'customerEmail' and 'email' for backwards compatibility
+  const finalCustomerEmail = customerEmail || email;
   
   if (!finalCustomerEmail) {
-    return next(new AppError('customerEmail is required in request body', 400));
+    return next(new AppError('customerEmail (or email) is required in request body', 400));
   }
 
   // Get tenant ID from user email
@@ -1099,37 +1100,66 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    // Check if user already exists for this tenant
+    // Check if user already exists for this tenant specifically
     let customer = await User.findOne({ 
       email: email.toLowerCase(),
       tenantId 
     });
 
     if (!customer) {
-      // Create new customer with tenantId
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash('customer123', salt); // Default password
-
-      customer = await User.create({
-        firstName,
-        lastName,
-        email: email.toLowerCase(),
-        password: hashedPassword,
-        phone,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-        address: {
-          street: address?.street || '',
-          city: address?.city || '',
-          state: address?.state || '',
-          zipCode: address?.zipCode || '',
-          country: address?.country || ''
-        },
-        licenseNumber,
-        licenseExpiry: licenseExpiry ? new Date(licenseExpiry) : undefined,
-        role: 'customer',
-        isActive: true,
-        tenantId // 🔧 FIX: Assign tenantId to customer
+      // Check if user exists in ANY tenant (global check)
+      const existingGlobalCustomer = await User.findOne({ 
+        email: email.toLowerCase()
       });
+
+      if (existingGlobalCustomer) {
+        // Customer exists in different tenant, create a new one for this tenant
+        // Use a unique license number to avoid conflicts
+        const uniqueLicenseNumber = `${licenseNumber}-${tenantId.toString().slice(-4)}`;
+        
+        customer = await User.create({
+          firstName,
+          lastName,
+          email: email.toLowerCase(),
+          password: await bcrypt.hash('customer123', await bcrypt.genSalt(10)),
+          phone,
+          dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+          address: {
+            street: address?.street || '',
+            city: address?.city || '',
+            state: address?.state || '',
+            zipCode: address?.zipCode || '',
+            country: address?.country || ''
+          },
+          licenseNumber: uniqueLicenseNumber,
+          licenseExpiry: licenseExpiry ? new Date(licenseExpiry) : undefined,
+          role: 'customer',
+          isActive: true,
+          tenantId
+        });
+      } else {
+        // Create completely new customer
+        customer = await User.create({
+          firstName,
+          lastName,
+          email: email.toLowerCase(),
+          password: await bcrypt.hash('customer123', await bcrypt.genSalt(10)),
+          phone,
+          dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+          address: {
+            street: address?.street || '',
+            city: address?.city || '',
+            state: address?.state || '',
+            zipCode: address?.zipCode || '',
+            country: address?.country || ''
+          },
+          licenseNumber,
+          licenseExpiry: licenseExpiry ? new Date(licenseExpiry) : undefined,
+          role: 'customer',
+          isActive: true,
+          tenantId
+        });
+      }
     } else {
       // Update existing customer with new information if provided
       if (firstName) customer.firstName = firstName;
@@ -1228,11 +1258,15 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
 
     const defaultDropoff = dropoffLocation || defaultPickup;
 
+    // Generate unique reservation number
+    const reservationNumber = `RES-${tenantId.toString().slice(-4).toUpperCase()}-${Date.now()}`;
+
     // Create reservation
     const reservation = await Reservation.create({
+      tenantId, // 🔧 FIX: Assign tenantId to reservation
+      reservationNumber, // 🔧 FIX: Add missing reservationNumber
       customer: customer._id,
       car: carId,
-      tenantId, // 🔧 FIX: Assign tenantId to reservation
       startDate: start,
       endDate: end,
       pickupLocation: defaultPickup,
@@ -1455,6 +1489,22 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     });
 
   } catch (error) {
+    // Handle specific MongoDB duplicate key errors
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyValue)[0];
+      const value = error.keyValue[field];
+      
+      // More helpful error message for duplicates
+      if (field === 'email') {
+        return next(new AppError(`An account with email '${value}' already exists. If this is your email, the system will use your existing account.`, 400));
+      } else if (field === 'licenseNumber') {
+        return next(new AppError(`A customer with license number '${value}' already exists. Please verify your license number.`, 400));
+      } else {
+        return next(new AppError(`Duplicate field value: ${field} = '${value}'. Please use another value.`, 400));
+      }
+    }
+    
+    console.error('Error creating customer for public reservation:', error);
     throw error;
   }
 });
