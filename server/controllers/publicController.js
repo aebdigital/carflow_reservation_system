@@ -893,6 +893,87 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       // Don't fail the reservation if email fails
     }
 
+    // 📧 Send customer confirmation email
+    try {
+      const emailService = require('../services/emailService');
+      
+      if (emailService.isConfigured && customer && customer.email) {
+        console.log('📧 [EMAIL] Sending customer confirmation for new public reservation...');
+        
+        const customerName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Vážený zákazník';
+        const carInfo = `${car.brand || ''} ${car.model || ''} ${car.year || ''}`.trim();
+        const startDate = new Date(populatedReservation.startDate).toLocaleDateString('sk-SK', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        const endDate = new Date(populatedReservation.endDate).toLocaleDateString('sk-SK', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        const confirmationSubject = `Potvrdenie rezervácie #${populatedReservation.reservationNumber} - CarFlow`;
+        const confirmationHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #2e7d32;">Rezervácia úspešne vytvorená!</h2>
+            <p>${customerName},</p>
+            <p>Ďakujeme za vašu rezerváciu! Vaša rezervácia bola úspešne vytvorená a bude čoskoro spracovaná našim tímom.</p>
+            
+            <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2e7d32;">
+              <h3 style="margin-top: 0; color: #2e7d32;">Detaily vašej rezervácie</h3>
+              <p><strong>Číslo rezervácie:</strong> ${populatedReservation.reservationNumber}</p>
+              <p><strong>Vozidlo:</strong> ${carInfo}</p>
+              <p><strong>Dátum a čas vyzdvihnutia:</strong> ${startDate}</p>
+              <p><strong>Dátum a čas vrátenia:</strong> ${endDate}</p>
+              <p><strong>Celková cena:</strong> ${(populatedReservation.pricing?.totalAmount || 0).toFixed(2)}€</p>
+              <p><strong>Status:</strong> <span style="color: #ff9800; font-weight: bold;">POTVRDENÉ</span></p>
+            </div>
+            
+            <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+              <h3 style="margin-top: 0;">Ďalšie kroky</h3>
+              <p>• Vaša rezervácia bola automaticky potvrdená</p>
+              <p>• Budete kontaktovaný pred vyzdvihnutím vozidla s pokynmi</p>
+              <p>• Pripravte si vodičský preukaz a platné doklady totožnosti</p>
+              <p>• V prípade otázok nás kontaktujte na tel.: +421 xxx xxx xxx</p>
+            </div>
+            
+            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0;">Prihlásenie do účtu</h3>
+              <p><strong>Email:</strong> ${customer.email}</p>
+              ${customer.createdAt && new Date() - customer.createdAt < 1000 ? 
+                '<p><strong>Heslo:</strong> customer123 (dočasné heslo - zmeňte si ho po prihlásení)</p>' : 
+                '<p><strong>Heslo:</strong> Použite vaše existujúce heslo</p>'
+              }
+              <p>Môžete sa prihlásiť na našej stránke a sledovať status vašej rezervácie.</p>
+            </div>
+            
+            <p>Tešíme sa na vás a prajeme príjemnú jazdu!</p>
+            
+            <p>S pozdravom,<br>CarFlow Team</p>
+            
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+            <p style="font-size: 12px; color: #666;">
+              Tento email ste dostali, pretože ste vytvorili rezerváciu na našej stránke. Uchovajte si tento email pre svoje záznamy.
+            </p>
+          </div>
+        `;
+
+        await emailService.sendEmail(customer.email, confirmationSubject, confirmationHtml);
+        console.log('✅ [EMAIL] Customer confirmation sent successfully to:', customer.email);
+      }
+    } catch (emailError) {
+      console.error('❌ [EMAIL] Error sending customer confirmation:', emailError.message);
+      console.error('❌ [EMAIL] Stack:', emailError.stack);
+      // Don't fail the reservation if email fails
+    }
+
     res.status(201).json({
       success: true,
       message: 'Reservation confirmed successfully! You will receive a confirmation email shortly.',
@@ -1254,6 +1335,87 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       }
     } catch (emailError) {
       console.error('❌ [EMAIL] Error sending admin notification:', emailError.message);
+      console.error('❌ [EMAIL] Stack:', emailError.stack);
+      // Don't fail the reservation if email fails
+    }
+
+    // 📧 Send customer confirmation email
+    try {
+      const emailService = require('../services/emailService');
+      
+      if (emailService.isConfigured && customer && customer.email) {
+        console.log('📧 [EMAIL] Sending customer confirmation for new public reservation...');
+        
+        const customerName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Vážený zákazník';
+        const carInfo = `${car.brand || ''} ${car.model || ''} ${car.year || ''}`.trim();
+        const startDate = new Date(populatedReservation.startDate).toLocaleDateString('sk-SK', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        const endDate = new Date(populatedReservation.endDate).toLocaleDateString('sk-SK', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        const confirmationSubject = `Potvrdenie rezervácie #${populatedReservation.reservationNumber} - CarFlow`;
+        const confirmationHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #2e7d32;">Rezervácia úspešne vytvorená!</h2>
+            <p>${customerName},</p>
+            <p>Ďakujeme za vašu rezerváciu! Vaša rezervácia bola úspešne vytvorená a bude čoskoro spracovaná našim tímom.</p>
+            
+            <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2e7d32;">
+              <h3 style="margin-top: 0; color: #2e7d32;">Detaily vašej rezervácie</h3>
+              <p><strong>Číslo rezervácie:</strong> ${populatedReservation.reservationNumber}</p>
+              <p><strong>Vozidlo:</strong> ${carInfo}</p>
+              <p><strong>Dátum a čas vyzdvihnutia:</strong> ${startDate}</p>
+              <p><strong>Dátum a čas vrátenia:</strong> ${endDate}</p>
+              <p><strong>Celková cena:</strong> ${(populatedReservation.pricing?.totalAmount || 0).toFixed(2)}€</p>
+              <p><strong>Status:</strong> <span style="color: #ff9800; font-weight: bold;">POTVRDENÉ</span></p>
+            </div>
+            
+            <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+              <h3 style="margin-top: 0;">Ďalšie kroky</h3>
+              <p>• Vaša rezervácia bola automaticky potvrdená</p>
+              <p>• Budete kontaktovaný pred vyzdvihnutím vozidla s pokynmi</p>
+              <p>• Pripravte si vodičský preukaz a platné doklady totožnosti</p>
+              <p>• V prípade otázok nás kontaktujte na tel.: +421 xxx xxx xxx</p>
+            </div>
+            
+            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0;">Prihlásenie do účtu</h3>
+              <p><strong>Email:</strong> ${customer.email}</p>
+              ${customer.createdAt && new Date() - customer.createdAt < 1000 ? 
+                '<p><strong>Heslo:</strong> customer123 (dočasné heslo - zmeňte si ho po prihlásení)</p>' : 
+                '<p><strong>Heslo:</strong> Použite vaše existujúce heslo</p>'
+              }
+              <p>Môžete sa prihlásiť na našej stránke a sledovať status vašej rezervácie.</p>
+            </div>
+            
+            <p>Tešíme sa na vás a prajeme príjemnú jazdu!</p>
+            
+            <p>S pozdravom,<br>CarFlow Team</p>
+            
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+            <p style="font-size: 12px; color: #666;">
+              Tento email ste dostali, pretože ste vytvorili rezerváciu na našej stránke. Uchovajte si tento email pre svoje záznamy.
+            </p>
+          </div>
+        `;
+
+        await emailService.sendEmail(customer.email, confirmationSubject, confirmationHtml);
+        console.log('✅ [EMAIL] Customer confirmation sent successfully to:', customer.email);
+      }
+    } catch (emailError) {
+      console.error('❌ [EMAIL] Error sending customer confirmation:', emailError.message);
       console.error('❌ [EMAIL] Stack:', emailError.stack);
       // Don't fail the reservation if email fails
     }

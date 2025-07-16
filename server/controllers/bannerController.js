@@ -168,7 +168,7 @@ const createBanner = asyncHandler(async (req, res, next) => {
     const banner = await Banner.create(bannerData);
     
     const populatedBanner = await Banner.findById(banner._id).populate('createdBy', 'firstName lastName email');
-
+    
     console.log('🖼️ [BANNER CREATE] Banner created successfully with', bannerData.images.length, 'images');
 
     res.status(201).json({
@@ -220,23 +220,23 @@ const updateBanner = asyncHandler(async (req, res, next) => {
       const newImagePromises = req.files.map(async (file, index) => {
         try {
           console.log(`🖼️ [BANNER UPDATE] Uploading new image ${index + 1}/${req.files.length}...`);
-          
-          const result = await cloudStorage.uploadBannerImage(
+        
+        const result = await cloudStorage.uploadBannerImage(
             file.buffer,
             file.originalname,
-            req.user,
+          req.user,
             `Banner ${updateData.position} - Image ${currentImageCount + index + 1}`
-          );
+        );
 
           return {
             url: result.urls.large, // Changed from medium to large for better quality
-            filename: result.filename,
+          filename: result.filename,
             alt: `Banner image ${currentImageCount + index + 1} for ${updateData.position}`,
             title: '',
             description: '',
             sortOrder: currentImageCount + index,
-            uploadDate: result.uploadDate
-          };
+          uploadDate: result.uploadDate
+        };
         } catch (error) {
           console.error(`🖼️ [BANNER UPDATE] Failed to upload new image ${index + 1}:`, error);
           throw error;
@@ -681,7 +681,7 @@ const debugBanners = asyncHandler(async (req, res, next) => {
       firstImageUrl: banner.images && banner.images.length > 0 && banner.images[0] ? banner.images[0].url : null
     });
   });
-  
+
   res.status(200).json({
     success: true,
     message: 'Debug information for all banners',

@@ -371,7 +371,50 @@ exports.publicUnsubscribe = async (req, res) => {
       return res.status(404).json({ error: 'Invalid unsubscribe token' });
     }
 
+    // Store email before unsubscribing for confirmation email
+    const userEmail = subscription.email;
+    const userName = `${subscription.firstName || ''} ${subscription.lastName || ''}`.trim() || 'Vážený zákazník';
+
     await subscription.unsubscribe();
+
+    // 📧 Send unsubscribe confirmation email
+    try {
+      const emailService = require('../services/emailService');
+      
+      if (emailService.isConfigured) {
+        const confirmationSubject = 'Potvrdenie odhlásenia z newsletteru - CarFlow';
+        const confirmationHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #1976d2;">Potvrdenie odhlásenia</h2>
+            <p>${userName},</p>
+            <p>Potvrdujeme, že ste sa úspešne odhlásili z nášho newsletteru.</p>
+            
+            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0;">Detaily odhlásenia</h3>
+              <p><strong>Email:</strong> ${userEmail}</p>
+              <p><strong>Dátum odhlásenia:</strong> ${new Date().toLocaleDateString('sk-SK')}</p>
+              <p><strong>Čas:</strong> ${new Date().toLocaleTimeString('sk-SK')}</p>
+            </div>
+            
+            <p>Ak sa chcete znovu prihlásiť na odber našich noviniek, navštívte našu webovú stránku.</p>
+            <p>Ďakujeme za váš predošlý záujem o naše služby.</p>
+            
+            <p>S pozdravom,<br>CarFlow Team</p>
+            
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+            <p style="font-size: 12px; color: #666;">
+              Tento email ste dostali, pretože ste sa odhlásili z nášho newsletteru.
+            </p>
+          </div>
+        `;
+
+        await emailService.sendEmail(userEmail, confirmationSubject, confirmationHtml);
+        console.log('✅ [EMAIL] Unsubscribe confirmation email sent to:', userEmail);
+      }
+    } catch (emailError) {
+      console.error('❌ [EMAIL] Failed to send unsubscribe confirmation:', emailError.message);
+      // Don't fail the unsubscribe if email fails
+    }
 
     res.json({ message: 'Successfully unsubscribed from newsletter' });
   } catch (error) {
