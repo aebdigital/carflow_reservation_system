@@ -242,22 +242,25 @@ const deleteUser = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get user's reservations
+// @desc    Get user reservations (tenant-scoped)
 // @route   GET /api/users/:id/reservations
-// @access  Private
+// @access  Private/Staff
 const getUserReservations = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.params.id);
+  // Ensure user belongs to the same tenant
+  const user = await User.findOne({ 
+    _id: req.params.id, 
+    tenantId: req.user.tenantId 
+  });
 
   if (!user) {
     return next(new AppError(`User not found with id of ${req.params.id}`, 404));
   }
 
-  // Check authorization
-  if (req.user.role === 'customer' && req.user._id.toString() !== req.params.id) {
-    return next(new AppError('Not authorized to view this user\'s reservations', 403));
-  }
-
-  const reservations = await Reservation.find({ customer: req.params.id })
+  // Get reservations for this user within the same tenant
+  const reservations = await Reservation.find({ 
+    customer: req.params.id,
+    tenantId: req.user.tenantId
+  })
     .populate('car', 'brand model year registrationNumber images')
     .populate('payment', 'status amount paymentMethod')
     .sort('-createdAt');
@@ -269,11 +272,14 @@ const getUserReservations = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Blacklist user
+// @desc    Blacklist user (tenant-scoped)
 // @route   PUT /api/users/:id/blacklist
 // @access  Private/Admin
 const blacklistUser = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.params.id);
+  const user = await User.findOne({ 
+    _id: req.params.id, 
+    tenantId: req.user.tenantId 
+  });
 
   if (!user) {
     return next(new AppError(`User not found with id of ${req.params.id}`, 404));
@@ -287,10 +293,11 @@ const blacklistUser = asyncHandler(async (req, res, next) => {
 
   await user.save();
 
-  // Cancel all pending/confirmed reservations
+  // Cancel all pending/confirmed reservations for this user within the same tenant
   await Reservation.updateMany(
     {
       customer: req.params.id,
+      tenantId: req.user.tenantId,
       status: { $in: ['pending', 'confirmed'] }
     },
     {
@@ -305,11 +312,14 @@ const blacklistUser = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Remove user from blacklist
+// @desc    Remove user from blacklist (tenant-scoped)
 // @route   PUT /api/users/:id/unblacklist
 // @access  Private/Admin
 const unblacklistUser = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.params.id);
+  const user = await User.findOne({ 
+    _id: req.params.id, 
+    tenantId: req.user.tenantId 
+  });
 
   if (!user) {
     return next(new AppError(`User not found with id of ${req.params.id}`, 404));
@@ -327,11 +337,16 @@ const unblacklistUser = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get user statistics
+// @desc    Get user statistics (tenant-scoped)
 // @route   GET /api/users/stats
 // @access  Private/Staff
 const getUserStats = asyncHandler(async (req, res, next) => {
+  const tenantId = req.user.tenantId;
+
   const stats = await User.aggregate([
+    {
+      $match: { tenantId: tenantId }
+    },
     {
       $group: {
         _id: null,
@@ -357,17 +372,23 @@ const getUserStats = asyncHandler(async (req, res, next) => {
     }
   ]);
 
-  const topCustomers = await User.find({ role: 'customer' })
+  const topCustomers = await User.find({ 
+    role: 'customer',
+    tenantId: tenantId
+  })
     .sort('-totalSpent')
     .limit(10)
     .select('firstName lastName email totalBookings totalSpent');
 
-  const recentUsers = await User.find()
+  const recentUsers = await User.find({ tenantId: tenantId })
     .sort('-createdAt')
     .limit(10)
     .select('firstName lastName email role createdAt');
 
   const monthlyRegistrations = await User.aggregate([
+    {
+      $match: { tenantId: tenantId }
+    },
     {
       $group: {
         _id: {
@@ -401,7 +422,7 @@ const getUserStats = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Search users
+// @desc    Search users (tenant-scoped)
 // @route   GET /api/users/search
 // @access  Private/Staff
 const searchUsers = asyncHandler(async (req, res, next) => {
@@ -412,6 +433,7 @@ const searchUsers = asyncHandler(async (req, res, next) => {
   }
 
   let searchQuery = {
+    tenantId: req.user.tenantId, // 🔧 ADDED: Tenant scoping
     $or: [
       { firstName: { $regex: q, $options: 'i' } },
       { lastName: { $regex: q, $options: 'i' } },
