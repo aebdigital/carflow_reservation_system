@@ -581,12 +581,28 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       tenantId 
     });
 
+    console.log('🔍 [CUSTOMER DEBUG] Checking for existing customer...');
+    console.log('📧 [CUSTOMER DEBUG] Email search:', finalCustomerEmail.toLowerCase());
+    console.log('🏢 [CUSTOMER DEBUG] Tenant ID:', tenantId);
+    console.log('👤 [CUSTOMER DEBUG] Existing customer found:', customer ? 'YES' : 'NO');
+    
+    if (customer) {
+      console.log('✅ [CUSTOMER DEBUG] Using existing customer:', {
+        id: customer._id,
+        name: `${customer.firstName} ${customer.lastName}`,
+        email: customer.email,
+        createdAt: customer.createdAt
+      });
+    }
+
     if (!customer) {
+      console.log('🔄 [CUSTOMER DEBUG] No existing customer found - creating new one...');
+      
       // Create new customer for this tenant
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash('customer123', salt);
 
-      customer = await User.create({
+      const newCustomerData = {
         firstName,
         lastName,
         email: finalCustomerEmail.toLowerCase(),
@@ -605,15 +621,56 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
         role: 'customer',
         isActive: true,
         tenantId
+      };
+
+      console.log('📝 [CUSTOMER DEBUG] Creating customer with data:', {
+        firstName: newCustomerData.firstName,
+        lastName: newCustomerData.lastName,
+        email: newCustomerData.email,
+        phone: newCustomerData.phone,
+        licenseNumber: newCustomerData.licenseNumber,
+        tenantId: newCustomerData.tenantId,
+        role: newCustomerData.role
+      });
+
+      customer = await User.create(newCustomerData);
+      
+      console.log('✅ [CUSTOMER DEBUG] New customer created successfully:', {
+        id: customer._id,
+        name: `${customer.firstName} ${customer.lastName}`,
+        email: customer.email,
+        tenantId: customer.tenantId,
+        createdAt: customer.createdAt
       });
     } else {
       // Update existing customer with new information if provided
-      if (firstName) customer.firstName = firstName;
-      if (lastName) customer.lastName = lastName;
-      if (phone) customer.phone = phone;
-      if (dateOfBirth) customer.dateOfBirth = new Date(dateOfBirth);
-      if (licenseNumber) customer.licenseNumber = licenseNumber;
-      if (licenseExpiry) customer.licenseExpiry = new Date(licenseExpiry);
+      console.log('🔄 [CUSTOMER DEBUG] Updating existing customer with new information...');
+      
+      let updated = false;
+      if (firstName && firstName !== customer.firstName) {
+        customer.firstName = firstName;
+        updated = true;
+      }
+      if (lastName && lastName !== customer.lastName) {
+        customer.lastName = lastName;
+        updated = true;
+      }
+      if (phone && phone !== customer.phone) {
+        customer.phone = phone;
+        updated = true;
+      }
+      if (dateOfBirth && dateOfBirth !== customer.dateOfBirth) {
+        customer.dateOfBirth = new Date(dateOfBirth);
+        updated = true;
+      }
+      if (licenseNumber && licenseNumber !== customer.licenseNumber) {
+        customer.licenseNumber = licenseNumber;
+        updated = true;
+      }
+      if (licenseExpiry && licenseExpiry !== customer.licenseExpiry) {
+        customer.licenseExpiry = new Date(licenseExpiry);
+        updated = true;
+      }
       if (address) {
         customer.address = {
           street: address.street || customer.address?.street || '',
@@ -622,8 +679,15 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
           zipCode: address.zipCode || customer.address?.zipCode || '',
           country: address.country || customer.address?.country || ''
         };
+        updated = true;
       }
-      await customer.save();
+      
+      if (updated) {
+        await customer.save();
+        console.log('✅ [CUSTOMER DEBUG] Customer updated successfully');
+      } else {
+        console.log('ℹ️ [CUSTOMER DEBUG] No updates needed for existing customer');
+      }
     }
 
     // Calculate rental duration
@@ -1019,6 +1083,18 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     });
 
   } catch (error) {
+    console.error('❌ [CUSTOMER DEBUG] Error in customer creation/update process:', error);
+    console.error('❌ [CUSTOMER DEBUG] Error details:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      name: error.name
+    });
+    
+    if (error.code === 11000) {
+      console.error('❌ [CUSTOMER DEBUG] Duplicate key error detected:', error.keyValue);
+    }
+    
     throw error;
   }
 });
@@ -1126,16 +1202,42 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       tenantId 
     });
 
+    console.log('🔍 [PUBLIC CUSTOMER DEBUG] Checking for existing customer...');
+    console.log('📧 [PUBLIC CUSTOMER DEBUG] Email search:', email.toLowerCase());
+    console.log('🏢 [PUBLIC CUSTOMER DEBUG] Tenant ID:', tenantId);
+    console.log('👤 [PUBLIC CUSTOMER DEBUG] Existing customer found:', customer ? 'YES' : 'NO');
+    
+    if (customer) {
+      console.log('✅ [PUBLIC CUSTOMER DEBUG] Using existing customer:', {
+        id: customer._id,
+        name: `${customer.firstName} ${customer.lastName}`,
+        email: customer.email,
+        createdAt: customer.createdAt
+      });
+    }
+
     if (!customer) {
+      console.log('🔄 [PUBLIC CUSTOMER DEBUG] No existing customer found - checking globally...');
+      
       // Check if user exists in ANY tenant (global check)
       const existingGlobalCustomer = await User.findOne({ 
         email: email.toLowerCase()
       });
 
+      console.log('🌍 [PUBLIC CUSTOMER DEBUG] Global customer check:', existingGlobalCustomer ? 'FOUND' : 'NOT FOUND');
+      
       if (existingGlobalCustomer) {
+        console.log('🌍 [PUBLIC CUSTOMER DEBUG] Found customer in different tenant:', {
+          currentTenant: existingGlobalCustomer.tenantId,
+          targetTenant: tenantId,
+          name: `${existingGlobalCustomer.firstName} ${existingGlobalCustomer.lastName}`
+        });
+        
         // Customer exists in different tenant, create a new one for this tenant
         // Use a unique license number to avoid conflicts
         const uniqueLicenseNumber = `${licenseNumber}-${tenantId.toString().slice(-4)}`;
+        
+        console.log('🔄 [PUBLIC CUSTOMER DEBUG] Creating cross-tenant customer with unique license:', uniqueLicenseNumber);
         
         customer = await User.create({
           firstName,
@@ -1157,7 +1259,16 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
           isActive: true,
           tenantId
         });
+        
+        console.log('✅ [PUBLIC CUSTOMER DEBUG] Cross-tenant customer created:', {
+          id: customer._id,
+          email: customer.email,
+          licenseNumber: customer.licenseNumber,
+          tenantId: customer.tenantId
+        });
       } else {
+        console.log('🔄 [PUBLIC CUSTOMER DEBUG] Creating completely new customer...');
+        
         // Create completely new customer
         customer = await User.create({
           firstName,
@@ -1179,15 +1290,44 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
           isActive: true,
           tenantId
         });
+        
+        console.log('✅ [PUBLIC CUSTOMER DEBUG] New customer created successfully:', {
+          id: customer._id,
+          name: `${customer.firstName} ${customer.lastName}`,
+          email: customer.email,
+          tenantId: customer.tenantId,
+          createdAt: customer.createdAt
+        });
       }
     } else {
       // Update existing customer with new information if provided
-      if (firstName) customer.firstName = firstName;
-      if (lastName) customer.lastName = lastName;
-      if (phone) customer.phone = phone;
-      if (dateOfBirth) customer.dateOfBirth = new Date(dateOfBirth);
-      if (licenseNumber) customer.licenseNumber = licenseNumber;
-      if (licenseExpiry) customer.licenseExpiry = new Date(licenseExpiry);
+      console.log('🔄 [PUBLIC CUSTOMER DEBUG] Updating existing customer...');
+      
+      let updated = false;
+      if (firstName && firstName !== customer.firstName) {
+        customer.firstName = firstName;
+        updated = true;
+      }
+      if (lastName && lastName !== customer.lastName) {
+        customer.lastName = lastName;
+        updated = true;
+      }
+      if (phone && phone !== customer.phone) {
+        customer.phone = phone;
+        updated = true;
+      }
+      if (dateOfBirth && dateOfBirth !== customer.dateOfBirth) {
+        customer.dateOfBirth = new Date(dateOfBirth);
+        updated = true;
+      }
+      if (licenseNumber && licenseNumber !== customer.licenseNumber) {
+        customer.licenseNumber = licenseNumber;
+        updated = true;
+      }
+      if (licenseExpiry && licenseExpiry !== customer.licenseExpiry) {
+        customer.licenseExpiry = new Date(licenseExpiry);
+        updated = true;
+      }
       if (address) {
         customer.address = {
           street: address.street || customer.address?.street || '',
@@ -1196,8 +1336,15 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
           zipCode: address.zipCode || customer.address?.zipCode || '',
           country: address.country || customer.address?.country || ''
         };
+        updated = true;
       }
-      await customer.save();
+      
+      if (updated) {
+        await customer.save();
+        console.log('✅ [PUBLIC CUSTOMER DEBUG] Customer updated successfully');
+      } else {
+        console.log('ℹ️ [PUBLIC CUSTOMER DEBUG] No updates needed for existing customer');
+      }
     }
 
     // Calculate rental duration
@@ -1509,8 +1656,18 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     });
 
   } catch (error) {
+    console.error('❌ [PUBLIC CUSTOMER DEBUG] Error in customer creation/update process:', error);
+    console.error('❌ [PUBLIC CUSTOMER DEBUG] Error details:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      name: error.name
+    });
+    
     // Handle specific MongoDB duplicate key errors
     if (error.code === 11000) {
+      console.error('❌ [PUBLIC CUSTOMER DEBUG] Duplicate key error detected:', error.keyValue);
+      
       const field = Object.keys(error.keyValue)[0];
       const value = error.keyValue[field];
       
