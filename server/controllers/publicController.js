@@ -592,6 +592,8 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       });
     } else {
       // Update existing customer with new information if provided
+      if (firstName) customer.firstName = firstName;
+      if (lastName) customer.lastName = lastName;
       if (phone) customer.phone = phone;
       if (dateOfBirth) customer.dateOfBirth = new Date(dateOfBirth);
       if (licenseNumber) customer.licenseNumber = licenseNumber;
@@ -1126,6 +1128,8 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       });
     } else {
       // Update existing customer with new information if provided
+      if (firstName) customer.firstName = firstName;
+      if (lastName) customer.lastName = lastName;
       if (phone) customer.phone = phone;
       if (dateOfBirth) customer.dateOfBirth = new Date(dateOfBirth);
       if (licenseNumber) customer.licenseNumber = licenseNumber;
