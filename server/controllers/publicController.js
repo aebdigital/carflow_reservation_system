@@ -494,8 +494,12 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     pricing: frontendPricing
   } = req.body;
 
-  // Use provided customerEmail or fallback to the email in the URL
-  const finalCustomerEmail = customerEmail || email;
+  // 🔧 FIX: Don't fallback to admin email - require customer email in request body
+  const finalCustomerEmail = customerEmail;
+  
+  if (!finalCustomerEmail) {
+    return next(new AppError('customerEmail is required in request body', 400));
+  }
 
   // Get tenant ID from user email
   const tenantId = await getTenantByUserEmail(email);

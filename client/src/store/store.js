@@ -265,6 +265,13 @@ export const api = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [{ type: 'User', id }, 'User'],
     }),
+    deleteUser: builder.mutation({
+      query: (id) => ({
+        url: `users/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['User'],
+    }),
     getUserStats: builder.query({
       query: () => 'users/stats',
     }),
@@ -783,6 +790,7 @@ export const {
   useCreateUserMutation,
   useUpdateUserMutation,
   useBlacklistUserMutation,
+  useDeleteUserMutation,
   useGetUserStatsQuery,
   useSearchUsersQuery,
   

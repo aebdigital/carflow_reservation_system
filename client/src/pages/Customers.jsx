@@ -36,6 +36,7 @@ import {
 import {
   Add as AddIcon,
   Edit as EditIcon,
+  Delete as DeleteIcon,
   Block as BlockIcon,
   Visibility as ViewIcon,
   Person as PersonIcon,
@@ -50,6 +51,7 @@ import {
   useCreateUserMutation,
   useUpdateUserMutation,
   useBlacklistUserMutation,
+  useDeleteUserMutation,
   useGetReservationsQuery
 } from '../store/store'
 import { t } from '../utils/translations'
@@ -78,6 +80,8 @@ function Customers() {
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [dialogMode, setDialogMode] = useState('create') // 'create', 'edit', 'view'
   const [searchQuery, setSearchQuery] = useState('')
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [customerToDelete, setCustomerToDelete] = useState(null)
 
   // Initial form state
   const initialFormState = {
@@ -131,6 +135,7 @@ function Customers() {
   const [createUser, { isLoading: creating }] = useCreateUserMutation()
   const [updateUser, { isLoading: updating }] = useUpdateUserMutation()
   const [blacklistUser] = useBlacklistUserMutation()
+  const [deleteUser] = useDeleteUserMutation()
 
   const users = usersData?.data || []
   const reservations = reservationsData?.data || []
@@ -345,6 +350,30 @@ function Customers() {
     }
   }
 
+  const handleDeleteClick = (customer) => {
+    setCustomerToDelete(customer)
+    setDeleteConfirmOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!customerToDelete) return
+    
+    try {
+      await deleteUser(customerToDelete._id).unwrap()
+      setDeleteConfirmOpen(false)
+      setCustomerToDelete(null)
+    } catch (error) {
+      console.error('Error deleting customer:', error)
+      const errorMessage = error?.data?.message || error?.message || 'Nepodarilo sa vymazať zákazníka'
+      alert(`Chyba pri mazaní zákazníka: ${errorMessage}`)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmOpen(false)
+    setCustomerToDelete(null)
+  }
+
   const renderCustomerTable = (customers) => (
     <TableContainer sx={{ 
       overflowX: 'auto',
@@ -468,6 +497,17 @@ function Customers() {
                         color="error"
                       >
                         <BlockIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  {getCustomerReservationCount(customer._id) === 0 && (
+                    <Tooltip title="Vymazať zákazníka">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDeleteClick(customer)}
+                        color="error"
+                      >
+                        <DeleteIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                   )}
@@ -893,6 +933,39 @@ function Customers() {
                dialogMode === 'create' ? 'Pridať zákazníka' : 'Aktualizovať zákazníka'}
             </Button>
           )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={handleDeleteCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Potvrdiť vymazanie zákazníka</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Ste si istí, že chcete vymazať zákazníka{' '}
+            <strong>
+              {customerToDelete?.firstName} {customerToDelete?.lastName}
+            </strong>?
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            Táto akcia je nevratná. Zákazník bude deaktivovaný a jeho email adresa bude označená ako vymazaná.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel}>
+            Zrušiť
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            variant="contained"
+          >
+            Vymazať zákazníka
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -36,6 +36,7 @@ import {
 import {
   Add as AddIcon,
   Edit as EditIcon,
+  Delete as DeleteIcon,
   Cancel as CancelIcon,
   CheckCircle as CheckInIcon,
   ExitToApp as CheckOutIcon,
@@ -89,6 +90,8 @@ function Reservations() {
   const [dialogMode, setDialogMode] = useState('create') // 'create', 'edit', 'view'
   const [qrDialogOpen, setQrDialogOpen] = useState(false)
   const [selectedReservationForQR, setSelectedReservationForQR] = useState(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [reservationToDelete, setReservationToDelete] = useState(null)
 
   // Initial form state
   const initialFormState = {
@@ -305,6 +308,33 @@ function Reservations() {
     } catch (error) {
       console.error('Error cancelling reservation:', error)
     }
+  }
+
+  const handleDeleteClick = (reservation) => {
+    setReservationToDelete(reservation)
+    setDeleteConfirmOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!reservationToDelete) return
+    
+    try {
+      await cancelReservation({ 
+        id: reservationToDelete._id, 
+        reason: 'Deleted by admin' 
+      }).unwrap()
+      setDeleteConfirmOpen(false)
+      setReservationToDelete(null)
+    } catch (error) {
+      console.error('Error deleting reservation:', error)
+      const errorMessage = error?.data?.message || error?.message || 'Nepodarilo sa vymazať rezerváciu'
+      alert(`Chyba pri mazaní rezervácie: ${errorMessage}`)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmOpen(false)
+    setReservationToDelete(null)
   }
 
   const handleConfirm = async (reservation) => {
@@ -596,14 +626,23 @@ function Reservations() {
                               </IconButton>
                             </Tooltip>
                           )}
-                          {['pending', 'confirmed'].includes(reservation.status) && (
-                            <Tooltip title="Cancel">
+                          <Tooltip title="Cancel">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleCancel(reservation)}
+                              color="error"
+                            >
+                              <CancelIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          {reservation.status === 'cancelled' && (
+                            <Tooltip title="Vymazať rezerváciu">
                               <IconButton
                                 size="small"
-                                onClick={() => handleCancel(reservation)}
+                                onClick={() => handleDeleteClick(reservation)}
                                 color="error"
                               >
-                                <CancelIcon fontSize="small" />
+                                <DeleteIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
                           )}
@@ -669,6 +708,17 @@ function Reservations() {
                               <QrCodeIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          {reservation.status === 'cancelled' && (
+                            <Tooltip title="Vymazať rezerváciu">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDeleteClick(reservation)}
+                                color="error"
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -830,6 +880,17 @@ function Reservations() {
                               <QrCodeIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          {reservation.status === 'cancelled' && (
+                            <Tooltip title="Vymazať rezerváciu">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDeleteClick(reservation)}
+                                color="error"
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -982,6 +1043,17 @@ function Reservations() {
                               <QrCodeIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          {reservation.status === 'cancelled' && (
+                            <Tooltip title="Vymazať rezerváciu">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDeleteClick(reservation)}
+                                color="error"
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -1108,6 +1180,17 @@ function Reservations() {
                               <QrCodeIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          {reservation.status === 'cancelled' && (
+                            <Tooltip title="Vymazať rezerváciu">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDeleteClick(reservation)}
+                                color="error"
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -2058,6 +2141,44 @@ function Reservations() {
                dialogMode === 'create' ? 'Vytvoriť rezerváciu' : 'Aktualizovať rezerváciu'}
             </Button>
           )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={handleDeleteCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Potvrdiť vymazanie rezervácie</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Ste si istí, že chcete vymazať rezerváciu{' '}
+            <strong>
+              #{reservationToDelete?.reservationNumber}
+            </strong>?
+          </Typography>
+          {reservationToDelete?.customer && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Zákazník: {reservationToDelete.customer.firstName} {reservationToDelete.customer.lastName}
+            </Typography>
+          )}
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            Táto akcia označí rezerváciu ako vymazanú správcom. Rezervácia bude označená ako zrušená.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel}>
+            Zrušiť
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            variant="contained"
+          >
+            Vymazať rezerváciu
+          </Button>
         </DialogActions>
       </Dialog>
 
