@@ -65,6 +65,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { t } from '../utils/translations'
 import QRCodeDisplay from '../components/QRCodeDisplay'
+import { useSelector } from 'react-redux'
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -85,6 +86,16 @@ function TabPanel({ children, value, index, ...other }) {
 }
 
 function Reservations() {
+  // Debug: Check authentication state
+  const auth = useSelector((state) => state.auth)
+  console.log('🔐 [AUTH DEBUG] Current auth state:', {
+    isAuthenticated: !!auth.token,
+    user: auth.user,
+    tokenExists: !!auth.token,
+    tokenLength: auth.token ? auth.token.length : 0,
+    userRole: auth.user?.role
+  })
+
   const [tabValue, setTabValue] = useState(0)
   const [openDialog, setOpenDialog] = useState(false)
   const [selectedReservation, setSelectedReservation] = useState(null)
@@ -320,14 +331,46 @@ function Reservations() {
   const handleDeleteConfirm = async () => {
     if (!reservationToDelete) return
     
+    console.log('🗑️ [DELETE] Starting deletion process for reservation:', reservationToDelete._id)
+    console.log('🗑️ [DELETE] Auth token exists:', !!auth.token)
+    console.log('🗑️ [DELETE] User role:', auth.user?.role)
+    
     try {
-      await deleteReservation(reservationToDelete._id).unwrap()
+      console.log('🗑️ [DELETE] Calling deleteReservation mutation...')
+      const result = await deleteReservation(reservationToDelete._id).unwrap()
+      console.log('✅ [DELETE] Reservation deleted successfully:', result)
       setDeleteConfirmOpen(false)
       setReservationToDelete(null)
+      console.log('✅ Reservation deleted successfully')
     } catch (error) {
-      console.error('Error deleting reservation:', error)
-      const errorMessage = error?.data?.message || error?.message || 'Nepodarilo sa vymazať rezerváciu'
+      console.error('❌ Error deleting reservation:', error)
+      console.log('❌ [DELETE] Full error object:', JSON.stringify(error, null, 2))
+      
+      let errorMessage = 'Nepodarilo sa vymazať rezerváciu'
+      
+      // Handle specific error cases
+      if (error?.status === 401) {
+        errorMessage = 'Nemáte oprávnenie na vymazanie rezervácie. Skúste sa prihlásiť znovu.'
+        console.log('❌ [DELETE] Authentication error - user needs to login again')
+      } else if (error?.status === 403) {
+        errorMessage = 'Nemáte dostatočné oprávnenia na vymazanie rezervácií.'
+        console.log('❌ [DELETE] Authorization error - insufficient permissions')
+      } else if (error?.status === 404) {
+        errorMessage = 'Rezervácia už bola vymazaná alebo neexistuje.'
+        console.log('❌ [DELETE] Not found error - reservation may already be deleted')
+      } else if (error?.data?.message) {
+        errorMessage = error.data.message
+      } else if (error?.message) {
+        errorMessage = error.message
+      }
+      
       alert(`Chyba pri mazaní rezervácie: ${errorMessage}`)
+      
+      // If it's an auth error, don't close the dialog so user can try again
+      if (error?.status !== 401 && error?.status !== 403) {
+        setDeleteConfirmOpen(false)
+        setReservationToDelete(null)
+      }
     }
   }
 
