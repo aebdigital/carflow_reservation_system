@@ -50,10 +50,12 @@ import {
   useGetUsersQuery,
   useCreateUserMutation,
   useUpdateUserMutation,
-  useBlacklistUserMutation,
   useDeleteUserMutation,
+  useBlacklistUserMutation,
+  useUnblacklistUserMutation,
   useGetReservationsQuery
 } from '../store/store'
+import { useSelector } from 'react-redux'
 import { t } from '../utils/translations'
 
 function TabPanel({ children, value, index, ...other }) {
@@ -75,6 +77,16 @@ function TabPanel({ children, value, index, ...other }) {
 }
 
 function Customers() {
+  // Debug: Check authentication state
+  const auth = useSelector((state) => state.auth)
+  console.log('🔐 [AUTH DEBUG] Current auth state:', {
+    isAuthenticated: !!auth.token,
+    user: auth.user,
+    tokenExists: !!auth.token,
+    tokenLength: auth.token ? auth.token.length : 0,
+    userRole: auth.user?.role
+  })
+
   const [tabValue, setTabValue] = useState(0)
   const [openDialog, setOpenDialog] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState(null)
@@ -358,14 +370,49 @@ function Customers() {
   const handleDeleteConfirm = async () => {
     if (!customerToDelete) return
     
+    console.log('🗑️ [DELETE] Starting deletion process for customer:', customerToDelete._id)
+    console.log('🗑️ [DELETE] Auth token exists:', !!auth.token)
+    console.log('🗑️ [DELETE] User role:', auth.user?.role)
+    
     try {
-      await deleteUser(customerToDelete._id).unwrap()
+      console.log('🗑️ [DELETE] Calling deleteUser mutation...')
+      const result = await deleteUser(customerToDelete._id).unwrap()
+      console.log('✅ [DELETE] Customer deleted successfully:', result)
       setDeleteConfirmOpen(false)
       setCustomerToDelete(null)
+      console.log('✅ Customer deleted successfully')
     } catch (error) {
-      console.error('Error deleting customer:', error)
-      const errorMessage = error?.data?.message || error?.message || 'Nepodarilo sa vymazať zákazníka'
+      console.error('❌ Error deleting customer:', error)
+      console.log('❌ [DELETE] Full error object:', JSON.stringify(error, null, 2))
+      
+      let errorMessage = 'Nepodarilo sa vymazať zákazníka'
+      
+      // Handle specific error cases
+      if (error?.status === 401) {
+        errorMessage = 'Nemáte oprávnenie na vymazanie zákazníka. Skúste sa prihlásiť znovu.'
+        console.log('❌ [DELETE] Authentication error - user needs to login again')
+      } else if (error?.status === 403) {
+        errorMessage = 'Nemáte dostatočné oprávnenia na vymazanie zákazníkov.'
+        console.log('❌ [DELETE] Authorization error - insufficient permissions')
+      } else if (error?.status === 404) {
+        errorMessage = 'Zákazník už bol vymazaný alebo neexistuje.'
+        console.log('❌ [DELETE] Not found error - customer may already be deleted')
+      } else if (error?.status === 400 && error?.data?.message?.includes('active reservations')) {
+        errorMessage = 'Nemôžete vymazať zákazníka s aktívnymi rezerváciami. Najprv dokončite alebo zrušte všetky rezervácie.'
+        console.log('❌ [DELETE] Business logic error - customer has active reservations')
+      } else if (error?.data?.message) {
+        errorMessage = error.data.message
+      } else if (error?.message) {
+        errorMessage = error.message
+      }
+      
       alert(`Chyba pri mazaní zákazníka: ${errorMessage}`)
+      
+      // If it's an auth error, don't close the dialog so user can try again
+      if (error?.status !== 401 && error?.status !== 403) {
+        setDeleteConfirmOpen(false)
+        setCustomerToDelete(null)
+      }
     }
   }
 
@@ -951,8 +998,25 @@ function Customers() {
               {customerToDelete?.firstName} {customerToDelete?.lastName}
             </strong>?
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            Táto akcia je nevratná. Zákazník bude deaktivovaný a jeho email adresa bude označená ako vymazaná.
+          {customerToDelete?.email && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Email: {customerToDelete.email}
+            </Typography>
+          )}
+          <Typography variant="body2" color="error" sx={{ mt: 2, fontWeight: 'bold' }}>
+            ⚠️ POZOR: Zákazník bude deaktivovaný a označený ako vymazaný!
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            • Zákazník sa nebude môcť prihlásiť do systému
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            • Email adresa bude označená ako vymazaná
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            • História rezervácií zostane zachovaná pre účtovné účely
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            • Zákazník s aktívnymi rezerváciami nemôže byť vymazaný
           </Typography>
         </DialogContent>
         <DialogActions>
