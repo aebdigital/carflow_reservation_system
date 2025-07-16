@@ -838,10 +838,9 @@ function Cars() {
   const renderCarCard = (car) => (
     <Grid item xs={12} sm={6} md={4} key={car._id}>
       <Card sx={{ 
-        height: '100%', 
+        height: 420, // Fixed height for consistent sizing
         display: 'flex', 
         flexDirection: 'column',
-        mb: 4,
         boxShadow: 2,
         '&:hover': {
           boxShadow: 4,
@@ -851,52 +850,104 @@ function Cars() {
       }}>
         <CardMedia
           component="img"
-          height="200"
+          height="180" // Consistent image height
           image={getCarImage(car) || '/api/placeholder/400/200'}
           alt={`${car.brand} ${car.model}`}
           sx={{ objectFit: 'cover' }}
         />
-        <CardContent sx={{ flexGrow: 1 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
-            <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-              {car.brand} {car.model}
+        <CardContent sx={{ 
+          flexGrow: 1, 
+          display: 'flex', 
+          flexDirection: 'column',
+          p: 2,
+          '&:last-child': { pb: 2 } // Consistent padding
+        }}>
+          {/* Header section - Fixed height */}
+          <Box sx={{ height: 60, mb: 1 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
+              <Typography 
+                variant="h6" 
+                component="div" 
+                sx={{ 
+                  fontWeight: 600,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  maxWidth: '70%'
+                }}
+              >
+                {car.brand} {car.model}
+              </Typography>
+              <Chip
+                label={getStatusText(car.status)}
+                size="small"
+                color={getStatusColor(car.status)}
+              />
+            </Box>
+            
+            <Typography 
+              variant="body2" 
+              color="text.secondary" 
+              sx={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {car.year || 'N/A'} • {categoryOptions.find(c => c.value === car.category)?.label || car.category || 'N/A'}
             </Typography>
-            <Chip
-              label={getStatusText(car.status)}
-              size="small"
-              color={getStatusColor(car.status)}
-            />
           </Box>
           
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            {car.year} • {categoryOptions.find(c => c.value === car.category)?.label || car.category}
-          </Typography>
-          
-          <Box sx={{ display: 'flex', gap: 2, my: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <FuelIcon fontSize="small" color="action" />
-              <Typography variant="caption">
-                {fuelTypeOptions.find(f => f.value === car.fuelType)?.label || car.fuelType}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <TransmissionIcon fontSize="small" color="action" />
-              <Typography variant="caption">
-                {transmissionOptions.find(t => t.value === car.transmission)?.label || car.transmission}
-              </Typography>
+          {/* Features section - Fixed height */}
+          <Box sx={{ height: 40, mb: 1 }}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
+                <FuelIcon fontSize="small" color="action" />
+                <Typography 
+                  variant="caption"
+                  sx={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {fuelTypeOptions.find(f => f.value === car.fuelType)?.label || car.fuelType || 'N/A'}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
+                <TransmissionIcon fontSize="small" color="action" />
+                <Typography 
+                  variant="caption"
+                  sx={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {transmissionOptions.find(t => t.value === car.transmission)?.label || car.transmission || 'N/A'}
+                </Typography>
+              </Box>
             </Box>
           </Box>
           
-          <Typography variant="h6" color="primary" sx={{ fontWeight: 600, mt: 1 }}>
-            {car.pricing?.dailyRate || car.dailyRate || 0}€/{t('den')}
-          </Typography>
+          {/* Price section - Fixed height */}
+          <Box sx={{ height: 35, mb: 2 }}>
+            <Typography variant="h6" color="primary" sx={{ fontWeight: 600 }}>
+              {car.pricing?.dailyRate || car.dailyRate || 0}€/{t('den')}
+            </Typography>
+          </Box>
           
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+          {/* Spacer to push buttons to bottom */}
+          <Box sx={{ flexGrow: 1 }} />
+          
+          {/* Action buttons - Fixed at bottom */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: 40 }}>
             <Box>
               <IconButton 
                 size="small" 
                 onClick={() => handleOpenDialog('view', car)}
                 color="primary"
+                sx={{ mr: 0.5 }}
               >
                 <ViewIcon />
               </IconButton>
@@ -904,6 +955,7 @@ function Cars() {
                 size="small" 
                 onClick={() => handleOpenDialog('edit', car)}
                 color="primary"
+                sx={{ mr: 0.5 }}
               >
                 <EditIcon />
               </IconButton>
@@ -968,7 +1020,7 @@ function Cars() {
       )}
 
       {/* Cars Grid */}
-      <Grid container spacing={6}>
+      <Grid container spacing={3}>
         {cars.map(renderCarCard)}
       </Grid>
 
