@@ -34,37 +34,31 @@ const carSchema = new mongoose.Schema({
   },
   year: {
     type: Number,
-    required: [true, 'Year is required'],
     min: [1990, 'Year must be 1990 or later'],
     max: [new Date().getFullYear() + 1, 'Year cannot be in the future']
   },
   registrationNumber: {
     type: String,
-    required: [true, 'Registration number is required'],
     trim: true,
     uppercase: true
   },
   vin: {
     type: String,
-    required: [true, 'VIN is required'],
     trim: true,
     uppercase: true
   },
   color: {
     type: String,
-    required: [true, 'Color is required'],
     trim: true
   },
   category: {
     type: String,
-    required: [true, 'Category is required'],
     enum: ['economy', 'compact', 'midsize', 'fullsize', 'luxury', 'suv', 'minivan', 'convertible', 'sports', 'utility', 'caravan', 'motorcycle', 'electric']
   },
   
   // 2. TECHNICKÉ ÚDAJE
   fuelType: {
     type: String,
-    required: [true, 'Fuel type is required'],
     enum: ['gasoline', 'diesel', 'hybrid', 'electric', 'lpg']
   },
   engine: {
@@ -81,12 +75,10 @@ const carSchema = new mongoose.Schema({
   },
   transmission: {
     type: String,
-    required: [true, 'Transmission is required'],
     enum: ['manual', 'automatic', 'cvt']
   },
   seats: {
     type: Number,
-    required: [true, 'Number of seats is required'],
     min: [1, 'Must have at least 1 seat'],
     max: [9, 'Cannot have more than 9 seats']
   },
@@ -116,7 +108,6 @@ const carSchema = new mongoose.Schema({
   mileage: {
     current: {
       type: Number,
-      required: [true, 'Current mileage is required'],
       min: [0, 'Mileage cannot be negative'],
       default: 0
     },
@@ -153,13 +144,11 @@ const carSchema = new mongoose.Schema({
   damages: [{
     description: {
       type: String,
-      required: true,
       maxLength: [500, 'Damage description cannot exceed 500 characters']
     },
     severity: {
       type: String,
-      enum: ['minor', 'moderate', 'major'],
-      required: true
+      enum: ['minor', 'moderate', 'major']
     },
     location: String, // Front bumper, rear door, etc.
     images: [String], // URLs to damage photos
@@ -229,8 +218,7 @@ const carSchema = new mongoose.Schema({
       default: () => new mongoose.Types.ObjectId()
     },
     name: {
-      type: String,
-      required: true
+      type: String
     },
     icon: String, // Icon name or URL
     description: String,
@@ -264,7 +252,6 @@ const carSchema = new mongoose.Schema({
   badges: [{
     text: {
       type: String,
-      required: true,
       maxLength: [20, 'Badge text cannot exceed 20 characters']
     },
     type: {
@@ -342,8 +329,7 @@ const carSchema = new mongoose.Schema({
   documents: [{
     type: {
       type: String,
-      enum: ['registration', 'insurance', 'inspection', 'other'],
-      required: true
+      enum: ['registration', 'insurance', 'inspection', 'other']
     },
     url: String,
     expiryDate: Date,
