@@ -222,15 +222,9 @@ const EnhancedCarForm = ({
     setEditingEquipmentIndex(index);
     handleChange('customEquipmentName', equipment.name);
     
-    // If it's a file-based icon, we can't edit it directly
-    // If it's emoji or text, put it in the icon field
-    if (equipment.icon && !equipment.icon.startsWith('data:') && !equipment.icon.startsWith('http')) {
-      handleChange('customEquipmentIcon', equipment.icon);
-    } else {
-      handleChange('customEquipmentIcon', '');
-      setEquipmentIconFile(null);
-      setEquipmentIconPreview(equipment.icon || null);
-    }
+    // Set the current icon as preview for editing
+    setEquipmentIconFile(null);
+    setEquipmentIconPreview(equipment.icon || null);
   }, [handleChange]);
 
   const handleEquipmentIconChange = useCallback((event) => {
@@ -273,13 +267,18 @@ const EnhancedCarForm = ({
       return;
     }
 
-    const icon = equipmentIconFile ? equipmentIconPreview : (formData.customEquipmentIcon?.trim() || '🔧');
+    if (!equipmentIconPreview) {
+      if (onShowNotification) {
+        onShowNotification('Ikona je povinná. Nahrajte SVG alebo PNG súbor.', 'error');
+      }
+      return;
+    }
     
     const equipmentItem = {
       name: name,
-      icon: icon,
+      icon: equipmentIconPreview,
       category: 'custom',
-      iconType: equipmentIconFile ? 'file' : 'emoji'
+      iconType: 'file'
     };
 
     const currentEquipment = formData.equipment || [];
@@ -297,7 +296,6 @@ const EnhancedCarForm = ({
     
     // Reset form
     handleChange('customEquipmentName', '');
-    handleChange('customEquipmentIcon', '');
     setEquipmentIconFile(null);
     setEquipmentIconPreview(null);
     
@@ -305,12 +303,11 @@ const EnhancedCarForm = ({
     if (equipmentIconInputRef.current) {
       equipmentIconInputRef.current.value = '';
     }
-  }, [formData.customEquipmentName, formData.customEquipmentIcon, equipmentIconFile, equipmentIconPreview, formData.equipment, editingEquipmentIndex, handleChange]);
+  }, [formData.customEquipmentName, equipmentIconPreview, formData.equipment, editingEquipmentIndex, handleChange, onShowNotification]);
 
   const handleCancelEquipmentEdit = useCallback(() => {
     setEditingEquipmentIndex(null);
     handleChange('customEquipmentName', '');
-    handleChange('customEquipmentIcon', '');
     setEquipmentIconFile(null);
     setEquipmentIconPreview(null);
     
@@ -1488,19 +1485,15 @@ const EnhancedCarForm = ({
                         key={index}
                         label={
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            {item.iconType === 'file' ? (
-                              <img 
-                                src={item.icon} 
-                                alt="" 
-                                style={{ width: 16, height: 16, objectFit: 'contain' }}
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  e.target.nextSibling.style.display = 'inline';
-                                }}
-                              />
-                            ) : (
-                              <span>{item.icon}</span>
-                            )}
+                            <img 
+                              src={item.icon} 
+                              alt="" 
+                              style={{ width: 16, height: 16, objectFit: 'contain' }}
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'inline';
+                              }}
+                            />
                             <span style={{ display: 'none' }}>🔧</span>
                             <span>{item.name}</span>
                             {item.category === 'custom' && dialogMode !== 'view' && (
@@ -1557,30 +1550,20 @@ const EnhancedCarForm = ({
                       placeholder="napr. Detské sedačky"
                       sx={{ flexGrow: 1 }}
                     />
-                    <TextField
-                      label="Emoji ikona (voliteľné)"
-                      variant="outlined"
-                      size="small"
-                      value={formData.customEquipmentIcon || ''}
-                      onChange={(e) => handleChange('customEquipmentIcon', e.target.value)}
-                      placeholder="🔧"
-                      inputProps={{ maxLength: 2 }}
-                      sx={{ width: 120 }}
-                    />
                     <Button
                       variant="outlined"
                       size="small"
                       startIcon={<CameraIcon />}
                       onClick={() => equipmentIconInputRef.current?.click()}
                     >
-                      SVG/PNG
+                      Nahrať ikonu
                     </Button>
                     <Button
                       variant="contained"
                       size="small"
                       startIcon={editingEquipmentIndex !== null ? <EditIcon /> : <AddIcon />}
                       onClick={handleAddOrUpdateEquipment}
-                      disabled={!formData.customEquipmentName?.trim()}
+                      disabled={!formData.customEquipmentName?.trim() || !equipmentIconPreview}
                     >
                       {editingEquipmentIndex !== null ? 'Uložiť úpravu' : 'Pridať'}
                     </Button>
@@ -1596,20 +1579,16 @@ const EnhancedCarForm = ({
                   </Box>
                   
                   {/* Icon preview */}
-                  {(equipmentIconPreview || formData.customEquipmentIcon) && (
+                  {equipmentIconPreview && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                       <Typography variant="body2" color="text.secondary">
                         Náhľad ikony:
                       </Typography>
-                      {equipmentIconPreview && equipmentIconPreview.startsWith('data:') ? (
-                        <img 
-                          src={equipmentIconPreview} 
-                          alt="Icon preview" 
-                          style={{ width: 20, height: 20, objectFit: 'contain' }}
-                        />
-                      ) : (
-                        <span>{formData.customEquipmentIcon || '🔧'}</span>
-                      )}
+                      <img 
+                        src={equipmentIconPreview} 
+                        alt="Icon preview" 
+                        style={{ width: 24, height: 24, objectFit: 'contain' }}
+                      />
                     </Box>
                   )}
                   
@@ -1623,73 +1602,10 @@ const EnhancedCarForm = ({
                   />
                   
                   <Typography variant="caption" color="text.secondary" display="block">
-                    Podporované formáty ikon: SVG, PNG (max 1MB) alebo emoji
+                    Podporované formáty ikon: SVG, PNG (max 1MB). Ikona je povinná.
                   </Typography>
                 </Box>
               )}
-              
-              {/* Predefined equipment checkboxes */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle2" gutterBottom>
-                  Štandardná výbava
-                </Typography>
-                <Grid container spacing={1}>
-                  {[
-                    { key: 'airConditioning', label: 'Klimatizácia', icon: '❄️' },
-                    { key: 'gps', label: 'GPS navigácia', icon: '🗺️' },
-                    { key: 'bluetooth', label: 'Bluetooth', icon: '📱' },
-                    { key: 'heatedSeats', label: 'Vyhrievané sedadlá', icon: '🔥' },
-                    { key: 'sunroof', label: 'Strešné okno', icon: '☀️' },
-                    { key: 'leatherSeats', label: 'Kožené sedadlá', icon: '🪑' },
-                    { key: 'backupCamera', label: 'Cúvacia kamera', icon: '📹' },
-                    { key: 'cruiseControl', label: 'Tempomat', icon: '🎯' },
-                    { key: 'usbPorts', label: 'USB porty', icon: '🔌' },
-                    { key: 'wifi', label: 'WiFi hotspot', icon: '📶' },
-                    { key: 'parkingSensors', label: 'Parkovacie senzory', icon: '📡' },
-                    { key: 'keylessEntry', label: 'Bezklúčový vstup', icon: '🔑' },
-                    { key: 'electronicWindows', label: 'Elektrické okná', icon: '🪟' },
-                    { key: 'radioCD', label: 'Rádio/CD prehrávač', icon: '📻' },
-                    { key: 'airBags', label: 'Airbags', icon: '💺' },
-                    { key: 'abs', label: 'ABS brzdový systém', icon: '🛡️' },
-                  ].map(equipment => (
-                    <Grid item xs={12} sm={6} md={4} key={equipment.key}>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={formData.equipment?.some(eq => eq.name === equipment.label) || false}
-                            onChange={(e) => {
-                              const isChecked = e.target.checked;
-                              const newEquipment = formData.equipment || [];
-                              
-                              if (isChecked) {
-                                handleChange('equipment', [
-                                  ...newEquipment,
-                                  {
-                                    name: equipment.label,
-                                    icon: equipment.icon,
-                                    category: 'standard'
-                                  }
-                                ]);
-                              } else {
-                                handleChange('equipment', 
-                                  newEquipment.filter(eq => eq.name !== equipment.label)
-                                );
-                              }
-                            }}
-                            disabled={dialogMode === 'view'}
-                          />
-                        }
-                        label={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <span>{equipment.icon}</span>
-                            <span>{equipment.label}</span>
-                          </Box>
-                        }
-                      />
-                    </Grid>
-                  ))}
-                </Grid>
-              </Box>
             </Grid>
 
             <Grid item xs={12}>
