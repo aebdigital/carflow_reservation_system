@@ -836,9 +836,9 @@ function Cars() {
   }
 
   const renderCarCard = (car) => (
-    <Grid item xs={12} sm={4} md={3} lg={2} xl={2} key={car._id}>
+    <Grid item xs={12} sm={6} md={4} lg={4} xl={4} key={car._id}>
       <Card sx={{ 
-        height: 280, // Further reduced height for much smaller cards
+        height: 320, // Increased height for better proportions with 3 cards per row
         display: 'flex', 
         flexDirection: 'column',
         boxShadow: 2,
@@ -850,7 +850,7 @@ function Cars() {
       }}>
         <CardMedia
           component="img"
-          height="110" // Much smaller image height
+          height="140" // Increased image height for better proportions
           image={getCarImage(car) || '/api/placeholder/400/200'}
           alt={`${car.brand} ${car.model}`}
           sx={{ objectFit: 'cover' }}
@@ -859,12 +859,12 @@ function Cars() {
           flexGrow: 1, 
           display: 'flex', 
           flexDirection: 'column',
-          p: 1, // Further reduced padding
-          '&:last-child': { pb: 1 } // Consistent padding
+          p: 1.5, // Increased padding for better spacing
+          '&:last-child': { pb: 1.5 } // Consistent padding
         }}>
           {/* Header section - Fixed height */}
-          <Box sx={{ height: 40, mb: 0.5 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 0.3 }}>
+          <Box sx={{ height: 45, mb: 0.8 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 0.5 }}>
               <Typography 
                 variant="body2" 
                 component="div" 
@@ -874,7 +874,7 @@ function Cars() {
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                   maxWidth: '65%',
-                  fontSize: '0.85rem'
+                  fontSize: '0.95rem'
                 }}
               >
                 {car.brand} {car.model}
@@ -883,7 +883,7 @@ function Cars() {
                 label={getStatusText(car.status)}
                 size="small"
                 color={getStatusColor(car.status)}
-                sx={{ fontSize: '0.65rem', height: '18px', px: 0.5 }}
+                sx={{ fontSize: '0.7rem', height: '20px', px: 0.8 }}
               />
             </Box>
             
@@ -894,7 +894,7 @@ function Cars() {
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-                fontSize: '0.7rem'
+                fontSize: '0.75rem'
               }}
             >
               {car.year || 'N/A'} • {categoryOptions.find(c => c.value === car.category)?.label || car.category || 'N/A'}
@@ -902,31 +902,31 @@ function Cars() {
           </Box>
           
           {/* Features section - Fixed height */}
-          <Box sx={{ height: 28, mb: 0.5 }}>
-            <Box sx={{ display: 'flex', gap: 0.8, flexWrap: 'wrap' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.2, minWidth: 0 }}>
-                <FuelIcon fontSize="small" color="action" sx={{ fontSize: '12px' }} />
+          <Box sx={{ height: 32, mb: 0.8 }}>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, minWidth: 0 }}>
+                <FuelIcon fontSize="small" color="action" sx={{ fontSize: '14px' }} />
                 <Typography 
                   variant="caption"
                   sx={{
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                    fontSize: '0.65rem'
+                    fontSize: '0.7rem'
                   }}
                 >
                   {fuelTypeOptions.find(f => f.value === car.fuelType)?.label || car.fuelType || 'N/A'}
                 </Typography>
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.2, minWidth: 0 }}>
-                <TransmissionIcon fontSize="small" color="action" sx={{ fontSize: '12px' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, minWidth: 0 }}>
+                <TransmissionIcon fontSize="small" color="action" sx={{ fontSize: '14px' }} />
                 <Typography 
                   variant="caption"
                   sx={{
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                    fontSize: '0.65rem'
+                    fontSize: '0.7rem'
                   }}
                 >
                   {transmissionOptions.find(t => t.value === car.transmission)?.label || car.transmission || 'N/A'}
@@ -936,8 +936,8 @@ function Cars() {
           </Box>
           
           {/* Price section - Fixed height */}
-          <Box sx={{ height: 25, mb: 1 }}>
-            <Typography variant="h6" color="primary" sx={{ fontWeight: 600, fontSize: '1rem' }}>
+          <Box sx={{ height: 30, mb: 1 }}>
+            <Typography variant="h6" color="primary" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
               {car.pricing?.dailyRate || car.dailyRate || 0}€/{t('den')}
             </Typography>
           </Box>
@@ -946,31 +946,31 @@ function Cars() {
           <Box sx={{ flexGrow: 1 }} />
           
           {/* Action buttons - Fixed at bottom */}
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 30 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 36 }}>
             <Box>
               <IconButton 
                 size="small" 
                 onClick={() => handleOpenDialog('view', car)}
                 color="primary"
-                sx={{ mr: 0.2, p: 0.3 }}
+                sx={{ mr: 0.5, p: 0.4 }}
               >
-                <ViewIcon sx={{ fontSize: '16px' }} />
+                <ViewIcon sx={{ fontSize: '18px' }} />
               </IconButton>
               <IconButton 
                 size="small" 
                 onClick={() => handleOpenDialog('edit', car)}
                 color="primary"
-                sx={{ mr: 0.2, p: 0.3 }}
+                sx={{ mr: 0.5, p: 0.4 }}
               >
-                <EditIcon sx={{ fontSize: '16px' }} />
+                <EditIcon sx={{ fontSize: '18px' }} />
               </IconButton>
               <IconButton 
                 size="small" 
                 onClick={() => handleDelete(car._id)}
                 color="error"
-                sx={{ p: 0.3 }}
+                sx={{ p: 0.4 }}
               >
-                <DeleteIcon sx={{ fontSize: '16px' }} />
+                <DeleteIcon sx={{ fontSize: '18px' }} />
               </IconButton>
             </Box>
           </Box>
@@ -1026,7 +1026,7 @@ function Cars() {
       )}
 
       {/* Cars Grid */}
-      <Grid container spacing={6}>
+      <Grid container spacing={3}>
         {cars.map(renderCarCard)}
       </Grid>
 
