@@ -54,7 +54,8 @@ const EnhancedCarForm = ({
   onImageRemove,
   selectedImages = [],
   imagePreviewUrls = [],
-  onDeleteExistingImage
+  onDeleteExistingImage,
+  onShowNotification
 }) => {
   // Reduce logging frequency to prevent performance issues
   const renderCount = useRef(0);
@@ -65,6 +66,7 @@ const EnhancedCarForm = ({
     console.log('🚗 [FORM] dialogMode:', dialogMode);
     console.log('🚗 [FORM] selectedImages prop:', selectedImages.length);
     console.log('🚗 [FORM] imagePreviewUrls prop:', imagePreviewUrls.length);
+    console.log('🚗 [FORM] imagePreviewUrls data:', imagePreviewUrls);
   }
 
   const [tabValue, setTabValue] = useState(0);
@@ -191,6 +193,11 @@ const EnhancedCarForm = ({
       if (onImageChange) {
         console.log('🖼️ [FORM] Calling onImageChange function');
         onImageChange(e);
+        // Auto-switch to photo tab when images are uploaded
+        console.log('🖼️ [FORM] Auto-switching to photo tab');
+        setTimeout(() => {
+          setTabValue(3); // Index 3 is "Fotodokumentácia"
+        }, 100); // Small delay to ensure state is updated
       } else {
         console.error('🖼️ [FORM] onImageChange function not provided!');
       }
@@ -231,13 +238,17 @@ const EnhancedCarForm = ({
     if (file) {
       // Validate file type
       if (!file.type.includes('svg') && !file.type.includes('png')) {
-        alert('Iba SVG a PNG súbory sú podporované');
+        if (onShowNotification) {
+          onShowNotification('Iba SVG a PNG súbory sú podporované', 'error');
+        }
         return;
       }
       
       // Check file size (max 1MB)
       if (file.size > 1024 * 1024) {
-        alert('Súbor je príliš veľký. Maximálna veľkosť je 1MB');
+        if (onShowNotification) {
+          onShowNotification('Súbor je príliš veľký. Maximálna veľkosť je 1MB', 'error');
+        }
         return;
       }
 
@@ -256,7 +267,9 @@ const EnhancedCarForm = ({
     const name = formData.customEquipmentName?.trim();
     
     if (!name) {
-      alert('Názov výbavy je povinný');
+      if (onShowNotification) {
+        onShowNotification('Názov výbavy je povinný', 'error');
+      }
       return;
     }
 
@@ -391,7 +404,16 @@ const EnhancedCarForm = ({
         <Tab label="Identifikácia" />
         <Tab label="Technické údaje" />
         <Tab label="Stav vozidla" />
-        <Tab label="Fotodokumentácia" />
+        <Tab 
+          label={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <span>Fotodokumentácia</span>
+              {imagePreviewUrls && imagePreviewUrls.length > 0 && (
+                <Badge badgeContent={imagePreviewUrls.length} color="primary" sx={{ ml: 1 }} />
+              )}
+            </Box>
+          }
+        />
         <Tab label="Štatistiky" />
         <Tab label="Cenník a služby" />
         <Tab label="Výbava a značky" />
@@ -1074,19 +1096,40 @@ const EnhancedCarForm = ({
                 Nové obrázky na nahranie ({imagePreviewUrls.length})
               </Typography>
               <Grid container spacing={2}>
-                {imagePreviewUrls.map((previewData, index) => (
+                {imagePreviewUrls.map((previewData, index) => {
+                  console.log(`🖼️ [FORM] Rendering preview ${index + 1}:`, previewData);
+                  return (
                   <Grid item xs={12} sm={6} md={4} key={index}>
                     <Card>
                       <CardContent sx={{ p: 2 }}>
                         <Box sx={{ position: 'relative' }}>
-                          {/* Show file information instead of trying to display the image */}
+                          {/* Show actual image preview */}
+                          {previewData && previewData.url ? (
+                            <img
+                              src={previewData.url}
+                              alt={previewData.name || `Obrázok ${index + 1}`}
+                              style={{
+                                width: '100%',
+                                height: '120px',
+                                objectFit: 'cover',
+                                borderRadius: 4
+                              }}
+                              onError={(e) => {
+                                console.log('Image preview failed to load:', previewData.name);
+                                // Fallback to placeholder if image fails
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          {/* Fallback placeholder */}
                           <Box 
                             sx={{ 
                               width: '100%', 
                               height: '120px', 
                               backgroundColor: 'grey.100',
                               borderRadius: 1,
-                              display: 'flex',
+                              display: previewData && previewData.url ? 'none' : 'flex',
                               flexDirection: 'column',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -1132,7 +1175,8 @@ const EnhancedCarForm = ({
                       </CardContent>
                     </Card>
                   </Grid>
-                ))}
+                  );
+                })}
               </Grid>
             </Box>
           )}

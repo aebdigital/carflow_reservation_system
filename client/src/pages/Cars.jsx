@@ -15,7 +15,8 @@ import {
   DialogActions,
   CircularProgress,
   Alert,
-  Tooltip
+  Tooltip,
+  Snackbar
 } from '@mui/material'
 import {
   Add as AddIcon,
@@ -129,6 +130,11 @@ function Cars() {
 
   const [formData, setFormData] = useState(initialFormState)
   const [formErrors, setFormErrors] = useState({})
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' // 'success', 'error', 'warning', 'info'
+  })
 
   // API hooks
   const { 
@@ -144,6 +150,23 @@ function Cars() {
   const [setPrimaryCarImage] = useSetPrimaryCarImageMutation()
 
   const cars = carsData?.data || []
+
+  // Helper function to show notifications
+  const showNotification = (message, severity = 'success') => {
+    setSnackbar({
+      open: true,
+      message,
+      severity
+    })
+  }
+
+  // Helper function to close notifications
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === 'clickaway') {
+      return
+    }
+    setSnackbar(prev => ({ ...prev, open: false }))
+  }
 
   // Category options
   const categoryOptions = [
@@ -226,7 +249,7 @@ function Cars() {
     return firstImage.urls?.thumbnail || firstImage.url
   }
 
-  // Image handling - Simplified production-safe approach
+  // Image handling - Fixed to create proper image previews
   const handleImageChange = (event) => {
     console.log('🖼️ [IMAGE CHANGE] Function called');
     const files = Array.from(event.target.files || []);
@@ -245,17 +268,18 @@ function Cars() {
       return newSelection;
     });
     
-    // Create simple previews using object URLs only (no FileReader)
-    console.log('🖼️ [IMAGE CHANGE] Creating simple previews...');
+    // Create proper image previews using URL.createObjectURL
+    console.log('🖼️ [IMAGE CHANGE] Creating image previews...');
     const newPreviews = files.map((file, index) => {
       console.log(`🖼️ [IMAGE CHANGE] Creating preview for file ${index + 1}: ${file.name}`);
       try {
-        // Use a simple file name and type display instead of actual image preview
+        // Create object URL for image preview
+        const objectUrl = URL.createObjectURL(file);
         return {
           name: file.name,
           size: file.size,
           type: file.type,
-          url: `data:text/plain;base64,${btoa(file.name)}` // Simple placeholder
+          url: objectUrl
         };
       } catch (error) {
         console.log(`🖼️ [IMAGE CHANGE] Error creating preview for ${file.name}:`, error);
@@ -280,10 +304,16 @@ function Cars() {
   const removeImage = (index) => {
     console.log('🗑️ [REMOVE IMAGE] Removing image at index:', index);
     
-    // No need to cleanup object URLs since we're using simple placeholders
+    // Clean up object URL to prevent memory leaks
     const previewToRemove = imagePreviewUrls[index];
-    if (previewToRemove && typeof previewToRemove === 'object') {
+    if (previewToRemove && typeof previewToRemove === 'object' && previewToRemove.url) {
       console.log('🗑️ [REMOVE IMAGE] Removing preview for:', previewToRemove.name);
+      try {
+        URL.revokeObjectURL(previewToRemove.url);
+        console.log('🗑️ [REMOVE IMAGE] Object URL revoked successfully');
+      } catch (error) {
+        console.log('🗑️ [REMOVE IMAGE] Error revoking object URL:', error);
+      }
     }
     
     setSelectedImages(prev => {
@@ -323,7 +353,7 @@ function Cars() {
       }
     } catch (error) {
       console.error('Error deleting image:', error)
-      alert('Chyba pri mazaní obrázka. Skúste to znova.')
+      showNotification('Chyba pri mazaní obrázka. Skúste to znova.', 'error')
     }
   }
 
@@ -358,7 +388,7 @@ function Cars() {
       }
     } catch (error) {
       console.error('Error setting primary image:', error)
-      alert('Chyba pri nastavovaní primárneho obrázka. Skúste to znova.')
+      showNotification('Chyba pri nastavovaní primárneho obrázka. Skúste to znova.', 'error')
     }
   }
 
@@ -596,8 +626,17 @@ function Cars() {
     console.log('🚗 [DIALOG CLOSE] Current selected images:', selectedImages.length);
     console.log('🚗 [DIALOG CLOSE] Current preview URLs:', imagePreviewUrls.length);
     
-    // No need to cleanup object URLs since we're using simple placeholders
-    console.log('🚗 [DIALOG CLOSE] Using simplified previews - no cleanup needed');
+    // Clean up object URLs to prevent memory leaks
+    imagePreviewUrls.forEach((preview, index) => {
+      if (preview && typeof preview === 'object' && preview.url) {
+        try {
+          URL.revokeObjectURL(preview.url);
+          console.log(`🚗 [DIALOG CLOSE] Revoked object URL for preview ${index + 1}`);
+        } catch (error) {
+          console.log(`🚗 [DIALOG CLOSE] Error revoking object URL for preview ${index + 1}:`, error);
+        }
+      }
+    });
     
     setOpenDialog(false)
     setSelectedCar(null)
@@ -607,8 +646,6 @@ function Cars() {
     setFormErrors({})
     
     console.log('🚗 [DIALOG CLOSE] State reset complete');
-    console.log('🚗 [DIALOG CLOSE] Selected images after reset:', []);
-    console.log('🚗 [DIALOG CLOSE] Preview URLs after reset:', []);
   }
 
   const handleSubmit = async () => {
@@ -693,7 +730,7 @@ function Cars() {
         
         const result = await createCar(formDataToSend).unwrap();
         console.log('✅ Car created successfully:', result);
-        alert('Auto bolo úspešne vytvorené!');
+        showNotification('Auto bolo úspešne vytvorené!', 'success');
         
       } else {
         console.log('✏️ Updating existing car...');
@@ -751,7 +788,7 @@ function Cars() {
           
           const result = await updateCar(formDataToSend).unwrap();
           console.log('✅ Car updated successfully:', result);
-          alert('Auto bolo úspešne aktualizované!');
+          showNotification('Auto bolo úspešne aktualizované!', 'success');
           
         } else {
           // Regular update without images - use FormData for consistency
@@ -802,7 +839,7 @@ function Cars() {
           
           const result = await updateCar(formDataToSend).unwrap();
           console.log('✅ Car updated successfully:', result);
-          alert('Auto bolo úspešne aktualizované!');
+          showNotification('Auto bolo úspešne aktualizované!', 'success');
         }
       }
       
@@ -820,7 +857,7 @@ function Cars() {
       
       // User-friendly error message
       const errorMessage = error.data?.message || error.message || 'Neznáma chyba pri ukladaní auta';
-      alert(`Chyba pri ukladaní auta: ${errorMessage}`);
+      showNotification(`Chyba pri ukladaní auta: ${errorMessage}`, 'error');
     }
   };
 
@@ -1057,6 +1094,7 @@ function Cars() {
             selectedImages={selectedImages}
             imagePreviewUrls={imagePreviewUrls}
             onDeleteExistingImage={handleDeleteExistingImage}
+            onShowNotification={showNotification}
           />
         </DialogContent>
         
@@ -1079,6 +1117,22 @@ function Cars() {
           )}
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity} 
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }
