@@ -298,6 +298,89 @@ class SMTP2GOService {
     return this.sendEmail(to, subject, html, text);
   }
 
+  // Customer confirmation email for new reservation
+  async sendCustomerReservationConfirmation(to, reservationData) {
+    const subject = `Potvrdenie rezervacie #${reservationData.reservationNumber}`;
+    
+    const html = `
+      <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #1976d2; border-bottom: 2px solid #1976d2; padding-bottom: 10px;">
+              Potvrdenie rezervacie
+            </h2>
+            
+            <p>Vazeny/a <strong>${reservationData.customerName}</strong>,</p>
+            <p>dakujeme za vasu rezervaciu. Tiesime sa na vasu navstevu!</p>
+            
+            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #1976d2;">Detaily rezervacie</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Cislo rezervacie:</strong></td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #ddd;">${reservationData.reservationNumber}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Vozidlo:</strong></td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #ddd;">${reservationData.carInfo}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Datum vyzdvihnutia:</strong></td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #ddd;">${reservationData.startDate}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Datum vratenia:</strong></td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #ddd;">${reservationData.endDate}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Celkova cena:</strong></td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>${reservationData.totalPrice}€</strong></td>
+                </tr>
+              </table>
+            </div>
+            
+            <div style="background-color: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <h4 style="margin-top: 0; color: #1976d2;">Dolezite informacie:</h4>
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Vozidlo si prosim vyzdvihnite presne v dohodnutom case</li>
+                <li>Nezabudnite si priniest vodicsky preukaz a platobnu kartu</li>
+                <li>Pri akychkolvek otazkach nas kontaktujte</li>
+              </ul>
+            </div>
+            
+            <p style="margin-top: 30px;">
+              Dakujeme za vasu rezervaciu!<br>
+              <strong>Vas CarFlow Team</strong>
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+    
+    const text = `Potvrdenie rezervacie
+
+Vazeny/a ${reservationData.customerName},
+
+dakujeme za vasu rezervaciu. Tiesime sa na vasu navstevu!
+
+Detaily rezervacie:
+Cislo rezervacie: ${reservationData.reservationNumber}
+Vozidlo: ${reservationData.carInfo}
+Datum vyzdvihnutia: ${reservationData.startDate}
+Datum vratenia: ${reservationData.endDate}
+Celkova cena: ${reservationData.totalPrice}€
+
+Dolezite informacie:
+- Vozidlo si prosim vyzdvihnite presne v dohodnutom case
+- Nezabudnite si priniest vodicsky preukaz a platobnu kartu
+- Pri akychkolvek otazkach nas kontaktujte
+
+Dakujeme za vasu rezervaciu!
+Vas CarFlow Team`;
+    
+    return this.sendEmail(to, subject, html, text);
+  }
+
   // Test with the exact structure provided by user
   async testSimpleEmail() {
     if (!this.isConfigured) {

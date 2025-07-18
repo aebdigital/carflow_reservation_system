@@ -62,6 +62,12 @@ class EmailService {
     // Use SMTP2GO service which has the correct implementation
     return await smtp2goService.sendAdminReservationNotification(adminEmail, reservationData);
   }
+
+  // Customer reservation confirmation
+  async sendCustomerReservationConfirmation(customerEmail, reservationData) {
+    // Use SMTP2GO service which has the correct implementation
+    return await smtp2goService.sendCustomerReservationConfirmation(customerEmail, reservationData);
+  }
 }
 
 module.exports = new EmailService();

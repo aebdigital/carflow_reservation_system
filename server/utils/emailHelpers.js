@@ -98,7 +98,63 @@ async function sendAdminNotificationEmail(reservation, car, customer) {
   }
 }
 
+/**
+ * Send both admin notification and customer confirmation emails for new reservation
+ */
+async function sendReservationEmails(reservation, car, customer) {
+  try {
+    console.log('📧 [EMAIL] Sending reservation emails for reservation:', reservation._id);
+    
+    // Import email service
+    const emailService = require('../services/emailService');
+    
+    // Check if email service is configured
+    if (!emailService.isConfigured) {
+      console.warn('⚠️ [EMAIL] Email service not configured, skipping reservation emails');
+      return { success: false, error: 'Email service not configured' };
+    }
+
+    // Prepare email data
+    const emailData = prepareReservationEmailData(reservation, car, customer);
+    
+    const results = [];
+    
+    // Send email to admin
+    try {
+      const adminEmail = 'peter@aebdig.com';
+      const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData);
+      results.push({ type: 'admin', success: true, result: adminResult });
+      console.log('✅ [EMAIL] Admin notification sent successfully');
+    } catch (adminError) {
+      console.error('❌ [EMAIL] Failed to send admin notification:', adminError.message);
+      results.push({ type: 'admin', success: false, error: adminError.message });
+    }
+    
+    // Send confirmation email to customer
+    try {
+      const customerResult = await emailService.sendCustomerReservationConfirmation(customer.email, emailData);
+      results.push({ type: 'customer', success: true, result: customerResult });
+      console.log('✅ [EMAIL] Customer confirmation sent successfully to:', customer.email);
+    } catch (customerError) {
+      console.error('❌ [EMAIL] Failed to send customer confirmation:', customerError.message);
+      results.push({ type: 'customer', success: false, error: customerError.message });
+    }
+    
+    // Check if at least one email was sent successfully
+    const successCount = results.filter(r => r.success).length;
+    const success = successCount > 0;
+    
+    console.log(`📧 [EMAIL] Reservation emails completed: ${successCount}/${results.length} successful`);
+    return { success, results };
+    
+  } catch (error) {
+    console.error('❌ [EMAIL] Failed to send reservation emails:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
 module.exports = {
   prepareReservationEmailData,
-  sendAdminNotificationEmail
+  sendAdminNotificationEmail,
+  sendReservationEmails
 }; 

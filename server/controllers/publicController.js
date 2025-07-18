@@ -972,29 +972,26 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       .populate('car', 'brand model year registrationNumber images')
       .populate('appliedDiscountCodes.discountCode', 'code description discountType discountValue');
 
-    // 📧 Send admin notification email
+    // 📧 Send admin notification and customer confirmation emails
     try {
-      const { sendAdminNotificationEmail } = require('../utils/emailHelpers');
+      const { sendReservationEmails } = require('../utils/emailHelpers');
       
-      console.log('📧 [EMAIL] Sending admin notification for new public reservation...');
+      console.log('📧 [EMAIL] Sending reservation emails for new public reservation...');
       console.log('📧 [EMAIL] Environment:', process.env.NODE_ENV || 'development');
       console.log('📧 [EMAIL] Email provider:', process.env.EMAIL_PROVIDER || 'nodemailer');
       console.log('📧 [EMAIL] SMTP2GO configured:', process.env.SMTP2GO_API_KEY ? 'YES' : 'NO');
       
-      // Send email notification to peter@aebdig.com
-      const emailResult = await sendAdminNotificationEmail(populatedReservation, car, customer);
+      // Send email notifications to both admin and customer
+      const emailResult = await sendReservationEmails(populatedReservation, car, customer);
       
       if (emailResult.success) {
-        console.log('✅ [EMAIL] Admin notification sent successfully for new public reservation');
-        console.log('📧 [EMAIL] Message ID:', emailResult.messageId);
-        if (emailResult.previewUrl) {
-          console.log('🔗 [EMAIL] Preview URL (test account):', emailResult.previewUrl);
-        }
+        console.log('✅ [EMAIL] Reservation emails sent successfully for new public reservation');
+        console.log('📧 [EMAIL] Results:', emailResult.results);
       } else {
-        console.warn('⚠️ [EMAIL] Admin notification failed:', emailResult.error);
+        console.warn('⚠️ [EMAIL] Reservation emails failed:', emailResult.error);
       }
     } catch (emailError) {
-      console.error('❌ [EMAIL] Error sending admin notification:', emailError.message);
+      console.error('❌ [EMAIL] Error sending reservation emails:', emailError.message);
       console.error('❌ [EMAIL] Stack:', emailError.stack);
       // Don't fail the reservation if email fails
     }
@@ -1573,29 +1570,26 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       .populate('customer', 'firstName lastName email phone')
       .populate('car', 'brand model year registrationNumber dailyRate images');
 
-    // 📧 Send admin notification email
+    // 📧 Send admin notification and customer confirmation emails
     try {
-      const { sendAdminNotificationEmail } = require('../utils/emailHelpers');
+      const { sendReservationEmails } = require('../utils/emailHelpers');
       
-      console.log('📧 [EMAIL] Sending admin notification for new general public reservation...');
+      console.log('📧 [EMAIL] Sending reservation emails for new general public reservation...');
       console.log('📧 [EMAIL] Environment:', process.env.NODE_ENV || 'development');
       console.log('📧 [EMAIL] Email provider:', process.env.EMAIL_PROVIDER || 'nodemailer');
       console.log('📧 [EMAIL] SMTP2GO configured:', process.env.SMTP2GO_API_KEY ? 'YES' : 'NO');
       
-      // Send email notification to peter@aebdig.com
-      const emailResult = await sendAdminNotificationEmail(populatedReservation, car, customer);
+      // Send email notifications to both admin and customer
+      const emailResult = await sendReservationEmails(populatedReservation, car, customer);
       
       if (emailResult.success) {
-        console.log('✅ [EMAIL] Admin notification sent successfully for new general public reservation');
-        console.log('📧 [EMAIL] Message ID:', emailResult.messageId);
-        if (emailResult.previewUrl) {
-          console.log('🔗 [EMAIL] Preview URL (test account):', emailResult.previewUrl);
-        }
+        console.log('✅ [EMAIL] Reservation emails sent successfully for new general public reservation');
+        console.log('📧 [EMAIL] Results:', emailResult.results);
       } else {
-        console.warn('⚠️ [EMAIL] Admin notification failed:', emailResult.error);
+        console.warn('⚠️ [EMAIL] Reservation emails failed:', emailResult.error);
       }
     } catch (emailError) {
-      console.error('❌ [EMAIL] Error sending admin notification:', emailError.message);
+      console.error('❌ [EMAIL] Error sending reservation emails:', emailError.message);
       console.error('❌ [EMAIL] Stack:', emailError.stack);
       // Don't fail the reservation if email fails
     }

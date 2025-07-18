@@ -455,29 +455,26 @@ const createReservation = asyncHandler(async (req, res, next) => {
     { path: 'appliedDiscountCodes.discountCode', select: 'code description discountType discountValue' }
   ]);
 
-  // 📧 Send admin notification email when new reservation is created
+  // 📧 Send admin notification and customer confirmation emails
   try {
-    const { sendAdminNotificationEmail } = require('../utils/emailHelpers');
+    const { sendReservationEmails } = require('../utils/emailHelpers');
     
-    console.log('📧 [EMAIL] Sending admin notification for new admin reservation...');
+    console.log('📧 [EMAIL] Sending reservation emails for new admin reservation...');
     console.log('📧 [EMAIL] Environment:', process.env.NODE_ENV || 'development');
     console.log('📧 [EMAIL] Email provider:', process.env.EMAIL_PROVIDER || 'nodemailer');
     console.log('📧 [EMAIL] SMTP2GO configured:', process.env.SMTP2GO_API_KEY ? 'YES' : 'NO');
     
-    // Send email notification to peter@aebdig.com
-    const emailResult = await sendAdminNotificationEmail(reservation, carDoc, customerDoc);
+    // Send email notifications to both admin and customer
+    const emailResult = await sendReservationEmails(reservation, carDoc, customerDoc);
     
     if (emailResult.success) {
-      console.log('✅ [EMAIL] Admin notification sent successfully for new reservation');
-      console.log('📧 [EMAIL] Message ID:', emailResult.messageId);
-      if (emailResult.previewUrl) {
-        console.log('🔗 [EMAIL] Preview URL (test account):', emailResult.previewUrl);
-      }
+      console.log('✅ [EMAIL] Reservation emails sent successfully');
+      console.log('📧 [EMAIL] Results:', emailResult.results);
     } else {
-      console.warn('⚠️ [EMAIL] Admin notification failed:', emailResult.error);
+      console.warn('⚠️ [EMAIL] Reservation emails failed:', emailResult.error);
     }
   } catch (emailError) {
-    console.error('❌ [EMAIL] Error sending admin notification:', emailError.message);
+    console.error('❌ [EMAIL] Error sending reservation emails:', emailError.message);
     console.error('❌ [EMAIL] Stack:', emailError.stack);
     // Don't fail the reservation if email fails
   }
