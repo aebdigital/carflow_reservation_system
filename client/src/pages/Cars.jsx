@@ -16,7 +16,13 @@ import {
   CircularProgress,
   Alert,
   Tooltip,
-  Snackbar
+  Snackbar,
+  TextField,
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material'
 import {
   Add as AddIcon,
@@ -28,6 +34,8 @@ import {
   Settings as TransmissionIcon,
   Star as StarIcon,
   Close as CloseIcon,
+  Search as SearchIcon,
+  Clear as ClearIcon
 } from '@mui/icons-material'
 import {
   useGetCarsQuery,
@@ -135,6 +143,11 @@ function Cars() {
     message: '',
     severity: 'success' // 'success', 'error', 'warning', 'info'
   })
+  
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [categoryFilter, setCategoryFilter] = useState('all')
 
   // API hooks
   const { 
@@ -150,6 +163,24 @@ function Cars() {
   const [setPrimaryCarImage] = useSetPrimaryCarImageMutation()
 
   const cars = carsData?.data || []
+
+  // Filter cars based on search query and filters
+  const filteredCars = cars.filter(car => {
+    // Search query filter
+    const matchesSearch = !searchQuery || 
+      car.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      car.model?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      car.registrationNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      car.category?.toLowerCase().includes(searchQuery.toLowerCase())
+
+    // Status filter
+    const matchesStatus = statusFilter === 'all' || car.status === statusFilter
+
+    // Category filter
+    const matchesCategory = categoryFilter === 'all' || car.category === categoryFilter
+
+    return matchesSearch && matchesStatus && matchesCategory
+  })
 
   // Helper function to show notifications
   const showNotification = (message, severity = 'success') => {
@@ -875,7 +906,7 @@ function Cars() {
   const renderCarCard = (car) => (
     <Grid item xs={12} sm={6} md={4} lg={4} xl={4} key={car._id}>
       <Card sx={{ 
-        height: 320, // Increased height for better proportions with 3 cards per row
+        height: 400, // Increased height for better photo display
         display: 'flex', 
         flexDirection: 'column',
         boxShadow: 2,
@@ -887,7 +918,7 @@ function Cars() {
       }}>
         <CardMedia
           component="img"
-          height="140" // Increased image height for better proportions
+          height="200" // Increased image height for much better photo display
           image={getCarImage(car) || '/api/placeholder/400/200'}
           alt={`${car.brand} ${car.model}`}
           sx={{ objectFit: 'cover' }}
@@ -1049,6 +1080,100 @@ function Cars() {
         </Button>
       </Box>
 
+      {/* Search and Filter Bar */}
+      <Box sx={{ mb: 3 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="Hľadať autá... (značka, model, EČV, kategória)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+                endAdornment: searchQuery && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => setSearchQuery('')}
+                      edge="end"
+                    >
+                      <ClearIcon />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                }
+              }}
+            />
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth>
+              <InputLabel>Stav</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Stav"
+                onChange={(e) => setStatusFilter(e.target.value)}
+                sx={{ borderRadius: 2 }}
+              >
+                <MenuItem value="all">Všetky stavy</MenuItem>
+                <MenuItem value="active">Aktívne</MenuItem>
+                <MenuItem value="unavailable">Nedostupné</MenuItem>
+                <MenuItem value="archived">Archivované</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth>
+              <InputLabel>Kategória</InputLabel>
+              <Select
+                value={categoryFilter}
+                label="Kategória"
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                sx={{ borderRadius: 2 }}
+              >
+                <MenuItem value="all">Všetky kategórie</MenuItem>
+                {categoryOptions.map(option => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+        
+        {/* Search Results Info */}
+        {searchQuery || statusFilter !== 'all' || categoryFilter !== 'all' ? (
+          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              Zobrazené {filteredCars.length} z {cars.length} áut
+            </Typography>
+            <Button
+              size="small"
+              onClick={() => {
+                setSearchQuery('')
+                setStatusFilter('all')
+                setCategoryFilter('all')
+              }}
+              sx={{ textTransform: 'none' }}
+            >
+              Vymazať filtre
+            </Button>
+          </Box>
+        ) : null}
+      </Box>
+
       {/* Loading and Error States */}
       {carsLoading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -1064,7 +1189,7 @@ function Cars() {
 
       {/* Cars Grid */}
       <Grid container spacing={3}>
-        {cars.map(renderCarCard)}
+        {filteredCars.map(renderCarCard)}
       </Grid>
 
       {/* Car Dialog */}
