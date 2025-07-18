@@ -596,16 +596,40 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     }
 
     if (!customer) {
-      console.log('🔄 [CUSTOMER DEBUG] No existing customer found - creating new one...');
+      console.log('🔄 [CUSTOMER DEBUG] No existing customer found - checking for global duplicates...');
+      
+      // Check if customer exists globally (in any tenant)
+      const globalCustomer = await User.findOne({ 
+        email: finalCustomerEmail.toLowerCase()
+      });
+      
+      if (globalCustomer) {
+        console.log('🔍 [CUSTOMER DEBUG] Found global customer in different tenant - creating tenant-specific customer...');
+        
+        // Create a tenant-specific customer with unique email to avoid conflicts
+        // This allows the same person to book with different rental companies
+        const tenantSuffix = tenantId.toString().slice(-4);
+        const uniqueEmail = `${finalCustomerEmail.replace('@', `+${tenantSuffix}@`)}`;
+        
+        console.log('🔧 [CUSTOMER DEBUG] Will create tenant-specific customer with unique identifiers.');
+      }
       
       // Create new customer for this tenant
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash('customer123', salt);
 
+      // Use unique identifiers if global customer exists
+      const uniqueEmail = globalCustomer ? 
+        `${finalCustomerEmail.replace('@', `+${tenantId.toString().slice(-4)}@`)}` : 
+        finalCustomerEmail;
+      
+      const uniqueLicenseNumber = globalCustomer && licenseNumber ? 
+        `${licenseNumber}-${tenantId.toString().slice(-4)}` : licenseNumber;
+
       const newCustomerData = {
         firstName,
         lastName,
-        email: finalCustomerEmail.toLowerCase(),
+        email: uniqueEmail.toLowerCase(),
         password: hashedPassword,
         phone,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
@@ -616,7 +640,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
           zipCode: address?.zipCode || '',
           country: address?.country || ''
         },
-        licenseNumber,
+        licenseNumber: uniqueLicenseNumber,
         licenseExpiry: licenseExpiry ? new Date(licenseExpiry) : undefined,
         role: 'customer',
         isActive: true,
@@ -1091,8 +1115,30 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       name: error.name
     });
     
+    // Handle duplicate key errors more gracefully
     if (error.code === 11000) {
       console.error('❌ [CUSTOMER DEBUG] Duplicate key error detected:', error.keyValue);
+      
+      const field = Object.keys(error.keyValue)[0];
+      const value = error.keyValue[field];
+      
+      if (field === 'email') {
+        // Return success message for email duplicates - just use existing customer
+        return res.status(400).json({
+          success: false,
+          message: `An account with email '${value}' already exists. If this is your email, the system will use your existing account.`
+        });
+      } else if (field === 'licenseNumber') {
+        return res.status(400).json({
+          success: false,
+          message: `A customer with license number '${value}' already exists. Please verify your license number or contact support.`
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: `Duplicate field value: ${field} = '${value}'. Please use another value.`
+        });
+      }
     }
     
     throw error;
