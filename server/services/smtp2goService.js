@@ -59,35 +59,31 @@ class SMTP2GOService {
     console.log('   Clean subject:', cleanSubject);
     console.log('   Euro symbols removed:', (html && html.includes('€')) || (text && text.includes('€')) || subject.includes('€'));
 
-    // TRY SENDER FORMAT WITH DISPLAY NAME (like user's working example)
-    // Extract email from sender if it has display name format already
+    // SMTP2GO requires plain email address format for sender field
+    // Extract email from sender if it has display name format
     let cleanSender = senderEmail;
     if (senderEmail.includes('<') && senderEmail.includes('>')) {
-      // Already has display name format: "Name <email@domain.com>"
-      cleanSender = senderEmail;
-    } else {
-      // Just email address, add display name format: "Rival Auto <email@domain.com>"
-      cleanSender = `Rival Auto <${senderEmail}>`;
+      // Extract email from display name format: "Name <email@domain.com>" -> "email@domain.com"
+      const match = senderEmail.match(/<([^>]+)>/);
+      cleanSender = match ? match[1] : senderEmail;
     }
 
-    console.log('🔍 [SMTP2GO DEBUG] Sender format test:', {
+    console.log('🔍 [SMTP2GO DEBUG] Sender format (plain email required):', {
       original: senderEmail,
-      withDisplayName: cleanSender
+      cleanEmail: cleanSender
     });
 
-    // CRITICAL FIX: Use actual content, not placeholders
+    // SMTP2GO API format - no api_key in body, use header instead
     const emailData = {
-      api_key: this.apiKey,
-      sender: cleanSender,               // TRY WITH DISPLAY NAME FORMAT
+      sender: cleanSender,               // Plain email address only
       to: cleanedToEmails,
       subject: cleanSubject,
-      html_body: cleanHtml,              // ACTUAL HTML content, not placeholder
-      text_body: cleanText               // ACTUAL text content, not placeholder (enhanced sanitization)
+      html_body: cleanHtml,              // ACTUAL HTML content
+      text_body: cleanText               // ACTUAL text content
     };
 
-    // Log the payload structure (for debugging only - NOT what gets sent)
-    console.log('🔍 [SMTP2GO DEBUG] Payload structure (logging only):', JSON.stringify({
-      api_key: this.apiKey ? '[SET_FROM_SMTP2GO_API_KEY]' : '[MISSING]',
+    // Log the payload structure (for debugging only)
+    console.log('🔍 [SMTP2GO DEBUG] Payload structure:', JSON.stringify({
       sender: emailData.sender,
       to: emailData.to,
       subject: emailData.subject,
@@ -136,7 +132,8 @@ class SMTP2GOService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Content-Length': postData.length
+          'Content-Length': postData.length,
+          'X-Smtp2go-Api-Key': this.apiKey
         }
       };
 
@@ -307,20 +304,16 @@ class SMTP2GOService {
       throw new Error('SMTP2GO service not configured');
     }
 
-    // Use the EXACT structure from user example
+    // Use the correct SMTP2GO API format
     const testEmailData = {
-      api_key: this.apiKey,
       sender: process.env.EMAIL_FROM || 'noreply@carflow.sk',
       to: ['peter@aebdig.com'],
-      subject: 'SMTP2GO Test - Exact User Structure',
-      html_body: '<html><body><h2>Test Email</h2><p>This email uses the exact structure provided by the user.</p><p>API Key: Configured from SMTP2GO_API_KEY environment variable</p></body></html>',
-      text_body: 'Test Email - This email uses the exact structure provided by the user. API Key: Configured from SMTP2GO_API_KEY environment variable'
+      subject: 'SMTP2GO Test - Corrected Format',
+      html_body: '<html><body><h2>Test Email</h2><p>This email uses the correct SMTP2GO API format.</p><p>API Key: Sent via X-Smtp2go-Api-Key header</p></body></html>',
+      text_body: 'Test Email - This email uses the correct SMTP2GO API format. API Key: Sent via X-Smtp2go-Api-Key header'
     };
 
-    console.log('🔍 [SMTP2GO TEST] Email data (exact user structure):', JSON.stringify({
-      ...testEmailData,
-      api_key: testEmailData.api_key ? '[SET_FROM_SMTP2GO_API_KEY]' : '[MISSING]'
-    }, null, 2));
+    console.log('🔍 [SMTP2GO TEST] Email data (corrected format):', JSON.stringify(testEmailData, null, 2));
 
     return new Promise((resolve, reject) => {
       const postData = JSON.stringify(testEmailData);
@@ -332,7 +325,8 @@ class SMTP2GOService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Content-Length': postData.length
+          'Content-Length': postData.length,
+          'X-Smtp2go-Api-Key': this.apiKey
         }
       };
 
