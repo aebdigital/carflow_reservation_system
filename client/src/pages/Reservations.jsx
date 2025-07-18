@@ -61,6 +61,7 @@ import {
   useGetUsersQuery,
   useGetPaymentsQuery,
   useGenerateReservationSlovakAgreementMutation,
+  useCreateUserMutation,
 } from '../store/store'
 import { useNavigate } from 'react-router-dom'
 import { t } from '../utils/translations'
@@ -104,6 +105,26 @@ function Reservations() {
   const [selectedReservationForQR, setSelectedReservationForQR] = useState(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [reservationToDelete, setReservationToDelete] = useState(null)
+  
+  // Customer creation state
+  const [customerDialogOpen, setCustomerDialogOpen] = useState(false)
+  const [customerFormData, setCustomerFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    dateOfBirth: null,
+    licenseNumber: '',
+    licenseExpiry: null,
+    address: {
+      street: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      country: ''
+    }
+  })
+  const [customerFormErrors, setCustomerFormErrors] = useState({})
 
   // Initial form state
   const initialFormState = {
@@ -169,6 +190,7 @@ function Reservations() {
   const [checkInReservation] = useCheckInReservationMutation()
   const [checkOutReservation] = useCheckOutReservationMutation()
   const [generateSlovakAgreement] = useGenerateReservationSlovakAgreementMutation()
+  const [createUser, { isLoading: creatingUser }] = useCreateUserMutation()
 
   const reservations = reservationsData?.data || []
   const cars = carsData?.data || []
@@ -309,6 +331,86 @@ function Reservations() {
     setSelectedReservation(null)
     setFormData(initialFormState)
     setFormErrors({})
+  }
+
+  // Customer creation handlers
+  const handleOpenCustomerDialog = () => {
+    setCustomerDialogOpen(true)
+    setCustomerFormData({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      dateOfBirth: null,
+      licenseNumber: '',
+      licenseExpiry: null,
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: ''
+      }
+    })
+    setCustomerFormErrors({})
+  }
+
+  const handleCloseCustomerDialog = () => {
+    setCustomerDialogOpen(false)
+    setCustomerFormData({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      dateOfBirth: null,
+      licenseNumber: '',
+      licenseExpiry: null,
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: ''
+      }
+    })
+    setCustomerFormErrors({})
+  }
+
+  const validateCustomerForm = () => {
+    const errors = {}
+    
+    if (!customerFormData.firstName) errors.firstName = 'First name is required'
+    if (!customerFormData.lastName) errors.lastName = 'Last name is required'
+    if (!customerFormData.email) errors.email = 'Email is required'
+    if (!customerFormData.phone) errors.phone = 'Phone is required'
+    if (!customerFormData.licenseNumber) errors.licenseNumber = 'License number is required'
+    
+    setCustomerFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const handleCreateCustomer = async () => {
+    if (!validateCustomerForm()) return
+
+    try {
+      const customerData = {
+        ...customerFormData,
+        role: 'customer',
+        password: 'customer123' // Default password
+      }
+
+      const newCustomer = await createUser(customerData).unwrap()
+      
+      // Add the new customer to the form data
+      setFormData({ ...formData, customer: newCustomer.data })
+      
+      // Close the customer dialog
+      handleCloseCustomerDialog()
+      
+    } catch (error) {
+      console.error('Error creating customer:', error)
+      alert('Error creating customer: ' + (error.data?.message || error.message))
+    }
   }
 
   // Action handlers
@@ -1834,6 +1936,19 @@ function Reservations() {
                   )}
                   noOptionsText={usersLoading ? "Načítavajú sa zákazníci..." : "Žiadni zákazníci neboli nájdení"}
                 />
+                {dialogMode !== 'view' && (
+                  <Box sx={{ mt: 1 }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<AddIcon />}
+                      onClick={handleOpenCustomerDialog}
+                      sx={{ textTransform: 'none' }}
+                    >
+                      Vytvoriť nového zákazníka
+                    </Button>
+                  </Box>
+                )}
               </Grid>
 
               {/* Car Selection */}
@@ -2183,6 +2298,154 @@ function Reservations() {
                dialogMode === 'create' ? 'Vytvoriť rezerváciu' : 'Aktualizovať rezerváciu'}
             </Button>
           )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Customer Creation Dialog */}
+      <Dialog
+        open={customerDialogOpen}
+        onClose={handleCloseCustomerDialog}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Vytvoriť nového zákazníka</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Grid container spacing={3}>
+              {/* Personal Information */}
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Meno"
+                  value={customerFormData.firstName}
+                  onChange={(e) => setCustomerFormData({ ...customerFormData, firstName: e.target.value })}
+                  error={!!customerFormErrors.firstName}
+                  helperText={customerFormErrors.firstName}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Priezvisko"
+                  value={customerFormData.lastName}
+                  onChange={(e) => setCustomerFormData({ ...customerFormData, lastName: e.target.value })}
+                  error={!!customerFormErrors.lastName}
+                  helperText={customerFormErrors.lastName}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Email"
+                  type="email"
+                  value={customerFormData.email}
+                  onChange={(e) => setCustomerFormData({ ...customerFormData, email: e.target.value })}
+                  error={!!customerFormErrors.email}
+                  helperText={customerFormErrors.email}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Telefón"
+                  value={customerFormData.phone}
+                  onChange={(e) => setCustomerFormData({ ...customerFormData, phone: e.target.value })}
+                  error={!!customerFormErrors.phone}
+                  helperText={customerFormErrors.phone}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Číslo vodičského preukazu"
+                  value={customerFormData.licenseNumber}
+                  onChange={(e) => setCustomerFormData({ ...customerFormData, licenseNumber: e.target.value })}
+                  error={!!customerFormErrors.licenseNumber}
+                  helperText={customerFormErrors.licenseNumber}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Platnosť vodičského preukazu"
+                  type="date"
+                  value={customerFormData.licenseExpiry ? customerFormData.licenseExpiry.toISOString().split('T')[0] : ''}
+                  onChange={(e) => setCustomerFormData({ ...customerFormData, licenseExpiry: e.target.value ? new Date(e.target.value) : null })}
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                />
+              </Grid>
+              
+              {/* Address */}
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Adresa
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Ulica"
+                  value={customerFormData.address.street}
+                  onChange={(e) => setCustomerFormData({ 
+                    ...customerFormData, 
+                    address: { ...customerFormData.address, street: e.target.value }
+                  })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Mesto"
+                  value={customerFormData.address.city}
+                  onChange={(e) => setCustomerFormData({ 
+                    ...customerFormData, 
+                    address: { ...customerFormData.address, city: e.target.value }
+                  })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="PSČ"
+                  value={customerFormData.address.zipCode}
+                  onChange={(e) => setCustomerFormData({ 
+                    ...customerFormData, 
+                    address: { ...customerFormData.address, zipCode: e.target.value }
+                  })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Krajina"
+                  value={customerFormData.address.country}
+                  onChange={(e) => setCustomerFormData({ 
+                    ...customerFormData, 
+                    address: { ...customerFormData.address, country: e.target.value }
+                  })}
+                />
+              </Grid>
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseCustomerDialog}>
+            Zrušiť
+          </Button>
+          <Button
+            onClick={handleCreateCustomer}
+            variant="contained"
+            disabled={creatingUser}
+          >
+            {creatingUser ? <CircularProgress size={20} /> : 'Vytvoriť zákazníka'}
+          </Button>
         </DialogActions>
       </Dialog>
 

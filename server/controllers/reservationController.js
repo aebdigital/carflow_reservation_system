@@ -139,6 +139,8 @@ const getReservation = asyncHandler(async (req, res, next) => {
 const createReservation = asyncHandler(async (req, res, next) => {
   const {
     customer,
+    // Customer auto-creation fields
+    customerDetails,
     car,
     startDate,
     endDate,
@@ -162,13 +164,85 @@ const createReservation = asyncHandler(async (req, res, next) => {
     return next(new AppError('Vozidlo nie je dostupné na rezerváciu', 400));
   }
 
-  // Validate customer exists (tenant-scoped)
-  const customerDoc = await User.findOne({ 
-    _id: customer, 
-    tenantId: req.user.tenantId 
-  });
-  if (!customerDoc) {
-    return next(new AppError('Zákazník nebol nájdený', 404));
+  let customerDoc;
+
+  // Handle customer creation or validation
+  if (customerDetails) {
+    // Auto-create customer if details provided
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      dateOfBirth,
+      address,
+      licenseNumber,
+      licenseExpiry
+    } = customerDetails;
+
+    // Validate required customer fields
+    if (!firstName || !lastName || !email || !phone || !licenseNumber) {
+      return next(new AppError('Chýbajú povinné polia zákazníka: firstName, lastName, email, phone, licenseNumber', 400));
+    }
+
+    // Check if customer already exists for this tenant
+    const existingCustomer = await User.findOne({ 
+      email: email.toLowerCase(),
+      tenantId: req.user.tenantId 
+    });
+
+    if (existingCustomer) {
+      // Use existing customer
+      customerDoc = existingCustomer;
+    } else {
+      // Check if customer exists in a different tenant
+      const existingGlobalCustomer = await User.findOne({ 
+        email: email.toLowerCase()
+      });
+
+      let uniqueLicenseNumber = licenseNumber;
+      
+      if (existingGlobalCustomer) {
+        // Create unique license number for cross-tenant customer
+        uniqueLicenseNumber = `${licenseNumber}-${req.user.tenantId.toString().slice(-4)}`;
+      }
+
+      // Create new customer
+      const bcrypt = require('bcryptjs');
+      const salt = await bcrypt.genSalt(10);
+      
+      customerDoc = await User.create({
+        firstName,
+        lastName,
+        email: email.toLowerCase(),
+        password: await bcrypt.hash('customer123', salt),
+        phone,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+        address: {
+          street: address?.street || '',
+          city: address?.city || '',
+          state: address?.state || '',
+          zipCode: address?.zipCode || '',
+          country: address?.country || ''
+        },
+        licenseNumber: uniqueLicenseNumber,
+        licenseExpiry: licenseExpiry ? new Date(licenseExpiry) : undefined,
+        role: 'customer',
+        isActive: true,
+        tenantId: req.user.tenantId
+      });
+    }
+  } else if (customer) {
+    // Validate existing customer by ID (tenant-scoped)
+    customerDoc = await User.findOne({ 
+      _id: customer, 
+      tenantId: req.user.tenantId 
+    });
+    if (!customerDoc) {
+      return next(new AppError('Zákazník nebol nájdený', 404));
+    }
+  } else {
+    return next(new AppError('Musíte zadať buď ID zákazníka alebo údaje zákazníka', 400));
   }
 
   // Check for overlapping reservations (tenant-scoped)
@@ -262,7 +336,7 @@ const createReservation = asyncHandler(async (req, res, next) => {
   }
 
   const reservationData = {
-    customer,
+    customer: customerDoc._id,
     car,
     startDate: start,
     endDate: end,

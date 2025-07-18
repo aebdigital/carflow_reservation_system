@@ -1014,31 +1014,31 @@ function Cars() {
           <Box sx={{ flexGrow: 1 }} />
           
           {/* Action buttons - Fixed at bottom */}
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 36 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', height: 36 }}>
             <Box>
               <IconButton 
-                size="small" 
+                size="medium" 
                 onClick={() => handleOpenDialog('view', car)}
                 color="primary"
-                sx={{ mr: 0.5, p: 0.4 }}
+                sx={{ mr: 0.5, p: 0.6 }}
               >
-                <ViewIcon sx={{ fontSize: '18px' }} />
+                <ViewIcon sx={{ fontSize: '22px' }} />
               </IconButton>
               <IconButton 
-                size="small" 
+                size="medium" 
                 onClick={() => handleOpenDialog('edit', car)}
                 color="primary"
-                sx={{ mr: 0.5, p: 0.4 }}
+                sx={{ mr: 0.5, p: 0.6 }}
               >
-                <EditIcon sx={{ fontSize: '18px' }} />
+                <EditIcon sx={{ fontSize: '22px' }} />
               </IconButton>
               <IconButton 
-                size="small" 
+                size="medium" 
                 onClick={() => handleDelete(car._id)}
                 color="error"
-                sx={{ p: 0.4 }}
+                sx={{ p: 0.6 }}
               >
-                <DeleteIcon sx={{ fontSize: '18px' }} />
+                <DeleteIcon sx={{ fontSize: '22px' }} />
               </IconButton>
             </Box>
           </Box>
