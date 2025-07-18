@@ -116,13 +116,16 @@ userSchema.index({ tenantId: 1, isActive: 1 });
 userSchema.pre('save', async function(next) {
   // Generate tenantId and storageFolder for new users
   if (this.isNew) {
-    // For admin users, they become their own tenant
-    if (this.role === 'admin') {
-      this.tenantId = this._id;
-    } else {
-      // For other users, assign them to an existing tenant or create new one
-      // For now, each user gets their own tenant for complete separation
-      this.tenantId = this._id;
+    // Only set tenantId if it's not already provided
+    if (!this.tenantId) {
+      // For admin users, they become their own tenant
+      if (this.role === 'admin') {
+        this.tenantId = this._id;
+      } else {
+        // For other users, assign them to an existing tenant or create new one
+        // For now, each user gets their own tenant for complete separation
+        this.tenantId = this._id;
+      }
     }
     
     // Generate unique storage folder path
