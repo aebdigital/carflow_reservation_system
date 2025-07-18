@@ -38,6 +38,11 @@ const userSchema = new mongoose.Schema({
     enum: ['customer', 'admin', 'staff'],
     default: 'customer'
   },
+  status: {
+    type: String,
+    enum: ['active', 'inactive', 'deleted'],
+    default: 'active'
+  },
   // Tenant separation - each user belongs to a tenant organization
   tenantId: {
     type: mongoose.Schema.Types.ObjectId,

@@ -10,7 +10,10 @@ const getUsers = asyncHandler(async (req, res, next) => {
   const baseQuery = { 
     tenantId: req.user.tenantId,
     isActive: { $ne: false },  // Exclude inactive users
-    status: { $ne: 'deleted' } // Exclude deleted users
+    $or: [
+      { status: { $ne: 'deleted' } }, // Exclude deleted users
+      { status: { $exists: false } }  // Include users without status field (legacy users)
+    ]
   };
 
   // Copy req.query and merge with tenant filter
@@ -19,7 +22,7 @@ const getUsers = asyncHandler(async (req, res, next) => {
   // Allow explicitly requesting inactive users with includeInactive=true
   if (reqQuery.includeInactive === 'true') {
     delete baseQuery.isActive;
-    delete baseQuery.status;
+    delete baseQuery.$or;
   }
 
   // Fields to exclude from filtering
@@ -60,6 +63,12 @@ const getUsers = asyncHandler(async (req, res, next) => {
 
   // Execute query
   const users = await query;
+  
+  // Debug logging
+  console.log('🔍 [USER QUERY DEBUG] Query filters:', JSON.stringify(JSON.parse(queryStr), null, 2));
+  console.log('🔍 [USER QUERY DEBUG] Found users:', users.length);
+  console.log('🔍 [USER QUERY DEBUG] User tenant ID:', req.user.tenantId);
+  console.log('🔍 [USER QUERY DEBUG] Total users in DB:', await User.countDocuments({ role: 'customer' }));
 
   // Pagination result
   const pagination = {};
