@@ -18,7 +18,7 @@ const getUsers = asyncHandler(async (req, res, next) => {
   // Start with tenant filter and exclude deleted users by default
   const baseQuery = { 
     tenantId: req.user.tenantId,
-    isActive: { $ne: false },  // Exclude inactive users
+    // Only exclude users with deleted status
     $or: [
       { status: { $ne: 'deleted' } }, // Exclude deleted users
       { status: { $exists: false } }  // Include users without status field (legacy users)
@@ -32,7 +32,7 @@ const getUsers = asyncHandler(async (req, res, next) => {
 
   // Allow explicitly requesting inactive users with includeInactive=true
   if (reqQuery.includeInactive === 'true') {
-    delete baseQuery.isActive;
+    // Remove status filtering when including inactive users
     delete baseQuery.$or;
   }
 
