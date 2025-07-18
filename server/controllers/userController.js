@@ -6,6 +6,15 @@ const { asyncHandler, AppError } = require('../middleware/errorHandler');
 // @route   GET /api/users
 // @access  Private/Staff
 const getUsers = asyncHandler(async (req, res, next) => {
+  console.log('🔍 [USER CONTROLLER] Starting getUsers request');
+  console.log('🔍 [USER CONTROLLER] Request query:', req.query);
+  console.log('🔍 [USER CONTROLLER] Request user:', {
+    id: req.user._id,
+    email: req.user.email,
+    tenantId: req.user.tenantId,
+    role: req.user.role
+  });
+
   // Start with tenant filter and exclude deleted users by default
   const baseQuery = { 
     tenantId: req.user.tenantId,
@@ -15,6 +24,8 @@ const getUsers = asyncHandler(async (req, res, next) => {
       { status: { $exists: false } }  // Include users without status field (legacy users)
     ]
   };
+
+  console.log('🔍 [USER CONTROLLER] Base query:', JSON.stringify(baseQuery, null, 2));
 
   // Copy req.query and merge with tenant filter
   const reqQuery = { ...req.query };
@@ -65,10 +76,43 @@ const getUsers = asyncHandler(async (req, res, next) => {
   const users = await query;
   
   // Debug logging
-  console.log('🔍 [USER QUERY DEBUG] Query filters:', JSON.stringify(JSON.parse(queryStr), null, 2));
+  console.log('🔍 [USER QUERY DEBUG] Final query filters:', JSON.stringify(JSON.parse(queryStr), null, 2));
   console.log('🔍 [USER QUERY DEBUG] Found users:', users.length);
   console.log('🔍 [USER QUERY DEBUG] User tenant ID:', req.user.tenantId);
-  console.log('🔍 [USER QUERY DEBUG] Total users in DB:', await User.countDocuments({ role: 'customer' }));
+  
+  // Check total users in different scenarios
+  const totalUsers = await User.countDocuments({ role: 'customer' });
+  const totalUsersWithTenant = await User.countDocuments({ role: 'customer', tenantId: req.user.tenantId });
+  const totalUsersWithoutStatus = await User.countDocuments({ role: 'customer', status: { $exists: false } });
+  const totalUsersWithStatus = await User.countDocuments({ role: 'customer', status: { $exists: true } });
+  
+  console.log('🔍 [USER QUERY DEBUG] Total customers in DB:', totalUsers);
+  console.log('🔍 [USER QUERY DEBUG] Total customers with current tenant:', totalUsersWithTenant);
+  console.log('🔍 [USER QUERY DEBUG] Total customers without status field:', totalUsersWithoutStatus);
+  console.log('🔍 [USER QUERY DEBUG] Total customers with status field:', totalUsersWithStatus);
+  
+  // Log the first few users to see their structure
+  const sampleUsers = await User.find({ role: 'customer' }).limit(3);
+  console.log('🔍 [USER QUERY DEBUG] Sample users:', sampleUsers.map(u => ({
+    id: u._id,
+    email: u.email,
+    tenantId: u.tenantId,
+    status: u.status,
+    isActive: u.isActive,
+    role: u.role
+  })));
+  
+  // Log found users details
+  if (users.length > 0) {
+    console.log('🔍 [USER QUERY DEBUG] Found users details:', users.map(u => ({
+      id: u._id,
+      email: u.email,
+      tenantId: u.tenantId,
+      status: u.status,
+      isActive: u.isActive,
+      role: u.role
+    })));
+  }
 
   // Pagination result
   const pagination = {};

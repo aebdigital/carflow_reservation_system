@@ -231,6 +231,15 @@ const createReservation = asyncHandler(async (req, res, next) => {
         isActive: true,
         tenantId: req.user.tenantId
       });
+
+      console.log('🔍 [RESERVATION CONTROLLER] Created new customer:', {
+        id: customerDoc._id,
+        email: customerDoc.email,
+        tenantId: customerDoc.tenantId,
+        status: customerDoc.status,
+        isActive: customerDoc.isActive,
+        role: customerDoc.role
+      });
     }
   } else if (customer) {
     // Validate existing customer by ID (tenant-scoped)

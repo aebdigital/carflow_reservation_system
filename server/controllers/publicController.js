@@ -1264,7 +1264,10 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
           id: customer._id,
           email: customer.email,
           licenseNumber: customer.licenseNumber,
-          tenantId: customer.tenantId
+          tenantId: customer.tenantId,
+          status: customer.status,
+          isActive: customer.isActive,
+          role: customer.role
         });
       } else {
         console.log('🔄 [PUBLIC CUSTOMER DEBUG] Creating completely new customer...');
@@ -1296,6 +1299,9 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
           name: `${customer.firstName} ${customer.lastName}`,
           email: customer.email,
           tenantId: customer.tenantId,
+          status: customer.status,
+          isActive: customer.isActive,
+          role: customer.role,
           createdAt: customer.createdAt
         });
       }

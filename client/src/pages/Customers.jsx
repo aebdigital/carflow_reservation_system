@@ -140,6 +140,9 @@ function Customers() {
     error: usersError 
   } = useGetUsersQuery({ role: 'customer' })
 
+  // Log the API call details
+  console.log('🔍 [CUSTOMERS API] useGetUsersQuery called with:', { role: 'customer' })
+
   const { 
     data: reservationsData 
   } = useGetReservationsQuery({})
@@ -151,6 +154,13 @@ function Customers() {
 
   const users = usersData?.data || []
   const reservations = reservationsData?.data || []
+
+  // Debug logging for customer data
+  console.log('🔍 [CUSTOMERS DEBUG] Raw usersData:', usersData)
+  console.log('🔍 [CUSTOMERS DEBUG] Users array:', users)
+  console.log('🔍 [CUSTOMERS DEBUG] Users loading:', usersLoading)
+  console.log('🔍 [CUSTOMERS DEBUG] Users error:', usersError)
+  console.log('🔍 [CUSTOMERS DEBUG] Users count:', users.length)
 
   // Phone number formatter - removes all non-digit characters except + at the start
   const formatPhoneNumber = (value) => {
