@@ -205,6 +205,23 @@ class SMTP2GOService {
       .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
       .replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '') // Remove emojis from HTML too
       .replace(/€/g, 'EUR')     // Replace € symbol with EUR to avoid encoding issues
+      // Replace Slovak special characters that might cause JSON issues
+      .replace(/á/g, 'a').replace(/Á/g, 'A')
+      .replace(/č/g, 'c').replace(/Č/g, 'C')
+      .replace(/ď/g, 'd').replace(/Ď/g, 'D')
+      .replace(/é/g, 'e').replace(/É/g, 'E')
+      .replace(/í/g, 'i').replace(/Í/g, 'I')
+      .replace(/ľ/g, 'l').replace(/Ľ/g, 'L')
+      .replace(/ĺ/g, 'l').replace(/Ĺ/g, 'L')
+      .replace(/ň/g, 'n').replace(/Ň/g, 'N')
+      .replace(/ó/g, 'o').replace(/Ó/g, 'O')
+      .replace(/ô/g, 'o').replace(/Ô/g, 'O')
+      .replace(/ŕ/g, 'r').replace(/Ŕ/g, 'R')
+      .replace(/š/g, 's').replace(/Š/g, 'S')
+      .replace(/ť/g, 't').replace(/Ť/g, 'T')
+      .replace(/ú/g, 'u').replace(/Ú/g, 'U')
+      .replace(/ý/g, 'y').replace(/Ý/g, 'Y')
+      .replace(/ž/g, 'z').replace(/Ž/g, 'Z')
       .replace(/\s+/g, ' ') // Normalize multiple spaces
       .trim();
   }
@@ -218,6 +235,23 @@ class SMTP2GOService {
       .replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '') // Remove emojis
       .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters (fixed syntax)
       .replace(/€/g, 'EUR')     // Replace € symbol with EUR to avoid encoding issues
+      // Replace Slovak special characters that might cause JSON issues
+      .replace(/á/g, 'a').replace(/Á/g, 'A')
+      .replace(/č/g, 'c').replace(/Č/g, 'C')
+      .replace(/ď/g, 'd').replace(/Ď/g, 'D')
+      .replace(/é/g, 'e').replace(/É/g, 'E')
+      .replace(/í/g, 'i').replace(/Í/g, 'I')
+      .replace(/ľ/g, 'l').replace(/Ľ/g, 'L')
+      .replace(/ĺ/g, 'l').replace(/Ĺ/g, 'L')
+      .replace(/ň/g, 'n').replace(/Ň/g, 'N')
+      .replace(/ó/g, 'o').replace(/Ó/g, 'O')
+      .replace(/ô/g, 'o').replace(/Ô/g, 'O')
+      .replace(/ŕ/g, 'r').replace(/Ŕ/g, 'R')
+      .replace(/š/g, 's').replace(/Š/g, 'S')
+      .replace(/ť/g, 't').replace(/Ť/g, 'T')
+      .replace(/ú/g, 'u').replace(/Ú/g, 'U')
+      .replace(/ý/g, 'y').replace(/Ý/g, 'Y')
+      .replace(/ž/g, 'z').replace(/Ž/g, 'Z')
       .replace(/\s+/g, ' ') // Normalize whitespace
       .trim();
   }
@@ -235,6 +269,23 @@ class SMTP2GOService {
       .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
       .replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '') // Remove emojis
       .replace(/€/g, 'EUR')     // Replace € symbol with EUR to avoid encoding issues
+      // Replace Slovak special characters that might cause JSON issues
+      .replace(/á/g, 'a').replace(/Á/g, 'A')
+      .replace(/č/g, 'c').replace(/Č/g, 'C')
+      .replace(/ď/g, 'd').replace(/Ď/g, 'D')
+      .replace(/é/g, 'e').replace(/É/g, 'E')
+      .replace(/í/g, 'i').replace(/Í/g, 'I')
+      .replace(/ľ/g, 'l').replace(/Ľ/g, 'L')
+      .replace(/ĺ/g, 'l').replace(/Ĺ/g, 'L')
+      .replace(/ň/g, 'n').replace(/Ň/g, 'N')
+      .replace(/ó/g, 'o').replace(/Ó/g, 'O')
+      .replace(/ô/g, 'o').replace(/Ô/g, 'O')
+      .replace(/ŕ/g, 'r').replace(/Ŕ/g, 'R')
+      .replace(/š/g, 's').replace(/Š/g, 'S')
+      .replace(/ť/g, 't').replace(/Ť/g, 'T')
+      .replace(/ú/g, 'u').replace(/Ú/g, 'U')
+      .replace(/ý/g, 'y').replace(/Ý/g, 'Y')
+      .replace(/ž/g, 'z').replace(/Ž/g, 'Z')
       .replace(/\s+/g, ' ') // Normalize multiple spaces
       .trim();
   }
