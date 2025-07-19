@@ -312,6 +312,14 @@ export const api = createApi({
       }),
       invalidatesTags: ['Payment', 'Reservation'],
     }),
+    updatePaymentStatus: builder.mutation({
+      query: ({ id, status }) => ({
+        url: `payments/${id}/status`,
+        method: 'PUT',
+        body: { status },
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Payment', id }, 'Payment', 'Reservation'],
+    }),
     processRefund: builder.mutation({
       query: ({ id, ...refundData }) => ({
         url: `payments/${id}/refund`,
@@ -806,6 +814,7 @@ export const {
   useGetPaymentsQuery,
   useCreatePaymentIntentMutation,
   useConfirmPaymentMutation,
+  useUpdatePaymentStatusMutation,
   useProcessRefundMutation,
   useGetPaymentStatsQuery,
 

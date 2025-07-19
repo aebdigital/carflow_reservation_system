@@ -52,8 +52,11 @@ const processDemoPayment = async (paymentIntentId, paymentMethodType = 'card') =
 const createPaymentIntent = asyncHandler(async (req, res, next) => {
   const { reservationId, amount, currency = 'USD', description, paymentMethod = 'card', dueDate } = req.body;
 
-  // Validate reservation
-  const reservation = await Reservation.findById(reservationId).populate('customer').populate('car');
+  // Validate reservation (tenant-scoped)
+  const reservation = await Reservation.findOne({
+    _id: reservationId,
+    tenantId: req.user.tenantId
+  }).populate('customer').populate('car');
   if (!reservation) {
     return next(new AppError('Reservation not found', 404));
   }
@@ -98,7 +101,8 @@ const createPaymentIntent = asyncHandler(async (req, res, next) => {
       dueAt: dueDate ? new Date(dueDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
     },
     description: description || `Payment for reservation ${reservation.reservationNumber}`,
-    createdBy: req.user._id
+    createdBy: req.user._id,
+    tenantId: req.user.tenantId // Add tenant separation
   });
 
   // Update reservation with payment reference
@@ -208,13 +212,14 @@ const confirmPayment = asyncHandler(async (req, res, next) => {
   }
 });
 
-// @desc    Get all payments
+// @desc    Get all payments (tenant-scoped)
 // @route   GET /api/payments
 // @access  Private/Staff
 const getPayments = asyncHandler(async (req, res, next) => {
-  let query = Payment.find();
+  // Start with tenant filter
+  const baseQuery = { tenantId: req.user.tenantId };
 
-  // Copy req.query
+  // Copy req.query and merge with tenant filter
   const reqQuery = { ...req.query };
 
   // Fields to exclude from filtering
@@ -222,13 +227,13 @@ const getPayments = asyncHandler(async (req, res, next) => {
   removeFields.forEach(param => delete reqQuery[param]);
 
   // Create query string
-  let queryStr = JSON.stringify(reqQuery);
+  let queryStr = JSON.stringify({ ...baseQuery, ...reqQuery });
 
   // Create operators ($gt, $gte, etc)
   queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
 
-  // Finding resource
-  query = Payment.find(JSON.parse(queryStr));
+  // Finding resource with tenant filter
+  let query = Payment.find(JSON.parse(queryStr));
 
   // Enhanced population based on query parameter or default comprehensive population
   if (req.query.populate) {
@@ -310,11 +315,14 @@ const getPayments = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get single payment
+// @desc    Get single payment (tenant-scoped)
 // @route   GET /api/payments/:id
 // @access  Private
 const getPayment = asyncHandler(async (req, res, next) => {
-  const payment = await Payment.findById(req.params.id)
+  const payment = await Payment.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  })
     .populate('reservation')
     .populate('customer')
     .populate('createdBy', 'firstName lastName email');
@@ -334,11 +342,72 @@ const getPayment = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Update payment status (Zaplatene/Nezaplatene)
+// @route   PUT /api/payments/:id/status
+// @access  Private/Staff
+const updatePaymentStatus = asyncHandler(async (req, res, next) => {
+  const { status } = req.body;
+  
+  // Validate status
+  const validStatuses = ['pending', 'succeeded', 'failed', 'cancelled'];
+  if (!validStatuses.includes(status)) {
+    return next(new AppError('Invalid payment status', 400));
+  }
+
+  const payment = await Payment.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  }).populate('reservation').populate('customer');
+
+  if (!payment) {
+    return next(new AppError(`Payment not found with id of ${req.params.id}`, 404));
+  }
+
+  // Update payment status
+  payment.status = status;
+  
+  // If marking as succeeded (Zaplatene), update payment timestamps
+  if (status === 'succeeded') {
+    payment.processedAt = new Date();
+    if (payment.invoice) {
+      payment.invoice.paidAt = new Date();
+    }
+  } else if (status === 'pending') {
+    // If reverting to pending (Nezaplatene), clear payment timestamps
+    payment.processedAt = null;
+    if (payment.invoice) {
+      payment.invoice.paidAt = null;
+    }
+  }
+
+  await payment.save();
+
+  // Update reservation status if needed
+  if (payment.reservation) {
+    const reservation = await Reservation.findById(payment.reservation._id);
+    if (reservation) {
+      if (status === 'succeeded' && reservation.status === 'pending') {
+        reservation.status = 'confirmed';
+        await reservation.save();
+      }
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    data: payment,
+    message: `Payment status updated to ${status === 'succeeded' ? 'Zaplatené' : status === 'pending' ? 'Nezaplatené' : status}`
+  });
+});
+
 // @desc    Process refund
 // @route   POST /api/payments/:id/refund
 // @access  Private/Staff
 const processRefund = asyncHandler(async (req, res, next) => {
-  const payment = await Payment.findById(req.params.id);
+  const payment = await Payment.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  });
 
   if (!payment) {
     return next(new AppError(`Payment not found with id of ${req.params.id}`, 404));
@@ -385,12 +454,15 @@ const processRefund = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Generate invoice PDF
+// @desc    Generate invoice PDF (tenant-scoped)
 // @route   GET /api/payments/:id/invoice
 // @access  Private
 const generateInvoice = asyncHandler(async (req, res, next) => {
   try {
-    const payment = await Payment.findById(req.params.id)
+    const payment = await Payment.findOne({
+      _id: req.params.id,
+      tenantId: req.user.tenantId
+    })
       .populate({
         path: 'reservation',
         populate: {
@@ -583,24 +655,19 @@ const generateInvoice = asyncHandler(async (req, res, next) => {
   }
 });
 
-// @desc    Get payment statistics
+// @desc    Get payment statistics (tenant-scoped)
 // @route   GET /api/payments/stats
 // @access  Private/Staff
 const getPaymentStats = asyncHandler(async (req, res, next) => {
   const { startDate, endDate } = req.query;
   
-  const dateFilter = {};
+  const dateFilter = { tenantId: req.user.tenantId };
   if (startDate && endDate) {
     dateFilter.createdAt = {
       $gte: new Date(startDate),
       $lte: new Date(endDate)
     };
   }
-
-  const stats = await Payment.getStatistics(
-    dateFilter.createdAt?.$gte || new Date('2020-01-01'),
-    dateFilter.createdAt?.$lte || new Date()
-  );
 
   const statusStats = await Payment.aggregate([
     { $match: dateFilter },
@@ -624,10 +691,21 @@ const getPaymentStats = asyncHandler(async (req, res, next) => {
     }
   ]);
 
+  // Calculate overall stats from aggregated data
+  const totalRevenue = statusStats
+    .filter(stat => stat._id === 'succeeded')
+    .reduce((sum, stat) => sum + stat.totalAmount, 0);
+  const totalTransactions = statusStats.reduce((sum, stat) => sum + stat.count, 0);
+  const averageAmount = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
+
   res.status(200).json({
     success: true,
     data: {
-      overview: stats,
+      overview: {
+        totalAmount: totalRevenue,
+        totalTransactions,
+        averageAmount
+      },
       byStatus: statusStats,
       byMethod: methodStats
     }
@@ -639,6 +717,7 @@ module.exports = {
   confirmPayment,
   getPayments,
   getPayment,
+  updatePaymentStatus,
   processRefund,
   generateInvoice,
   getPaymentStats

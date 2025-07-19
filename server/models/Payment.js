@@ -120,6 +120,11 @@ const paymentSchema = new mongoose.Schema({
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  },
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'Tenant ID is required for multi-tenant separation']
   }
 }, {
   timestamps: true
@@ -132,6 +137,7 @@ paymentSchema.index({ customer: 1 });
 paymentSchema.index({ status: 1 });
 paymentSchema.index({ 'invoice.invoiceNumber': 1 });
 paymentSchema.index({ stripePaymentIntentId: 1 });
+paymentSchema.index({ tenantId: 1 }); // Multi-tenant index
 
 // Pre-save middleware to generate payment ID and invoice number
 paymentSchema.pre('save', async function(next) {

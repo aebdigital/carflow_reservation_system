@@ -48,6 +48,7 @@ import {
   useGetReservationsQuery,
   useCreatePaymentIntentMutation,
   useConfirmPaymentMutation,
+  useUpdatePaymentStatusMutation,
   useProcessRefundMutation
 } from '../store/store'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -111,6 +112,7 @@ function Payments() {
 
   const [createPaymentIntent, { isLoading: creating }] = useCreatePaymentIntentMutation()
   const [confirmPayment, { isLoading: confirming }] = useConfirmPaymentMutation()
+  const [updatePaymentStatus, { isLoading: updatingStatus }] = useUpdatePaymentStatusMutation()
   const [processRefund, { isLoading: refunding }] = useProcessRefundMutation()
 
   const payments = paymentsData?.data || []
@@ -153,9 +155,9 @@ function Payments() {
   // Status text mapping to Slovak
   const getStatusText = (status) => {
     const statusTexts = {
-      pending: 'Čakajúce',
+      pending: 'Nezaplatené',
       processing: 'Spracováva sa',
-      succeeded: 'Úspešné',
+      succeeded: 'Zaplatené',
       failed: 'Neúspešné',
       cancelled: 'Zrušené',
       refunded: 'Vrátené',
@@ -238,6 +240,31 @@ function Payments() {
     } catch (error) {
       console.error('Error confirming payment:', error)
       alert('Error confirming payment. Please try again.')
+    }
+  }
+
+  // Handle payment status toggle
+  const handleTogglePaymentStatus = async (payment) => {
+    try {
+      const newStatus = payment.status === 'succeeded' ? 'pending' : 'succeeded'
+      const result = await updatePaymentStatus({
+        id: payment._id,
+        status: newStatus
+      }).unwrap()
+      
+      setSnackbar({ 
+        open: true, 
+        message: result.message || `Stav platby bol zmenený na ${newStatus === 'succeeded' ? 'Zaplatené' : 'Nezaplatené'}`, 
+        severity: 'success' 
+      })
+      refetchPayments()
+    } catch (error) {
+      console.error('Error updating payment status:', error)
+      setSnackbar({ 
+        open: true, 
+        message: 'Chyba pri zmene stavu platby', 
+        severity: 'error' 
+      })
     }
   }
 
@@ -454,7 +481,7 @@ function Payments() {
                         {getFilteredPayments('succeeded').length}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Úspešné platby
+                        Zaplatené platby
                       </Typography>
                     </Box>
                   </Box>
@@ -471,7 +498,7 @@ function Payments() {
                         {getFilteredPayments('pending').length}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Čakajúce platby
+                        Nezaplatené platby
                       </Typography>
                     </Box>
                   </Box>
@@ -501,8 +528,8 @@ function Payments() {
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
                 <Tab label={`Všetky platby (${payments.length})`} />
-                <Tab label={`Úspešné (${getFilteredPayments('succeeded').length})`} />
-                <Tab label={`Čakajúce (${getFilteredPayments('pending').length})`} />
+                <Tab label={`Zaplatené (${getFilteredPayments('succeeded').length})`} />
+                <Tab label={`Nezaplatené (${getFilteredPayments('pending').length})`} />
                 <Tab label={`Neúspešné (${getFilteredPayments('failed').length})`} />
                 <Tab label={`Vrátené (${getFilteredPayments('refunded').length + getFilteredPayments('partially_refunded').length})`} />
               </Tabs>
@@ -610,6 +637,18 @@ function Payments() {
                                   color="success"
                                 >
                                   <PaymentIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                            {(['pending', 'succeeded'].includes(payment.status)) && (
+                              <Tooltip title={payment.status === 'succeeded' ? 'Označiť ako nezaplatené' : 'Označiť ako zaplatené'}>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleTogglePaymentStatus(payment)}
+                                  color={payment.status === 'succeeded' ? 'warning' : 'success'}
+                                  disabled={updatingStatus}
+                                >
+                                  <MoneyIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
                             )}

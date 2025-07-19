@@ -4,6 +4,7 @@ const {
   confirmPayment,
   getPayments,
   getPayment,
+  updatePaymentStatus,
   processRefund,
   generateInvoice,
   getPaymentStats
@@ -33,6 +34,7 @@ router.route('/:id')
   .get(getPayment);
 
 // Special actions
+router.put('/:id/status', requireStaff, updatePaymentStatus);
 router.post('/:id/refund', requireStaff, processRefund);
 router.get('/:id/invoice', generateInvoice);
 
