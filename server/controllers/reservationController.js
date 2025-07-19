@@ -372,7 +372,7 @@ const createReservation = asyncHandler(async (req, res, next) => {
       
       if (qrResult.success && qrResult.qrCodes) {
         // Calculate total amount including deposit
-        const rentalAmount = pricing.totalAmount;
+        const rentalAmount = pricing.totalAmount || (pricing.dailyRate * pricing.totalDays) || 0;
         const depositAmount = carDoc.pricing?.deposit || 0;
         const totalAmount = rentalAmount + depositAmount;
         

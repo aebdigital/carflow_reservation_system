@@ -863,7 +863,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
         
         if (qrResult.success && qrResult.qrCodes) {
           // Calculate total amount including deposit
-          const rentalAmount = finalPricing.totalAmount;
+          const rentalAmount = finalPricing.totalAmount || (finalPricing.dailyRate * finalPricing.totalDays) || 0;
           const depositAmount = car.pricing?.deposit || 0;
           const totalAmount = rentalAmount + depositAmount;
           
@@ -1431,7 +1431,7 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
         
         if (qrResult.success && qrResult.qrCodes) {
           // Calculate total amount including deposit
-          const rentalAmount = finalPricing.totalAmount;
+          const rentalAmount = finalPricing.totalAmount || (finalPricing.dailyRate * finalPricing.totalDays) || 0;
           const depositAmount = car.pricing?.deposit || 0;
           const totalAmount = rentalAmount + depositAmount;
           
@@ -2939,7 +2939,7 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
           } : null,
           startDate: reservation.startDate,
           endDate: reservation.endDate,
-          amount: reservation.qrCodes.amount || reservation.pricing?.totalAmount || 0
+          amount: reservation.qrCodes.amount || reservation.pricing?.totalAmount || (reservation.pricing?.dailyRate * reservation.pricing?.totalDays) || 0
         },
         qrCodes: {
           payBySquare: {
@@ -3105,7 +3105,7 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
           } : null,
           startDate: reservation.startDate,
           endDate: reservation.endDate,
-          amount: reservation.qrCodes.amount || reservation.pricing?.totalAmount || 0
+          amount: reservation.qrCodes.amount || reservation.pricing?.totalAmount || (reservation.pricing?.dailyRate * reservation.pricing?.totalDays) || 0
         },
         qrCodes: {
           payBySquare: {

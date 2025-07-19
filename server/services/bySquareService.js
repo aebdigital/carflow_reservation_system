@@ -121,7 +121,7 @@ class BySquareService {
     const dueDate = new Date(reservation.startDate);
     
     // Calculate total amount including deposit
-    const rentalAmount = reservation.pricing?.totalAmount || 0;
+    const rentalAmount = reservation.pricing?.totalAmount || (reservation.pricing?.dailyRate * reservation.pricing?.totalDays) || 0;
     const depositAmount = car.pricing?.deposit || 0;
     const totalAmount = rentalAmount + depositAmount;
     
