@@ -205,22 +205,22 @@ class PDFService {
     // Original coordinates: top-left origin, max measured Y = 700
     // PDF A4 height ≈ 842 points, so Y = 842 - original_Y
     const textPositions = {
-      'meno_najomcu': { x: 322, y: 774 },           // 842 - 68 = 774
-      'adresa_najomcu': { x: 329, y: 746 },         // 842 - 96 = 746
-      'cislo_op': { x: 338, y: 724 },               // 842 - 118 = 724
-      'telefon': { x: 332, y: 701 },                // 842 - 141 = 701
-      'email': { x: 334, y: 681 },                  // 842 - 161 = 681
-      'meno_vozidla': { x: 34, y: 620 },            // 842 - 222 = 620
+      'meno_najomcu': { x: 322, y: 770 },           // 842 - 68 = 774
+      'adresa_najomcu': { x: 322, y: 746 },         // 842 - 96 = 746
+      'cislo_op': { x: 322, y: 724 },               // 842 - 118 = 724
+      'telefon': { x: 322, y: 701 },                // 842 - 141 = 701
+      'email': { x: 334, y: 678 },                  // 842 - 161 = 681
+      'meno_vozidla': { x: 34, y: 618 },            // 842 - 222 = 620
       'ECV': { x: 185, y: 618 },                    // 842 - 224 = 618
-      'VIN': { x: 294, y: 619 },                    // 842 - 223 = 619
+      'VIN': { x: 294, y: 618 },                    // 842 - 223 = 619
       'rok_vyroby': { x: 468, y: 618 },             // 842 - 224 = 618
       'farba': { x: 516, y: 618 },                  // 842 - 224 = 618
       'zaciatok_najmu': { x: 361, y: 581 },         // 842 - 261 = 581
       'koniec_najmu': { x: 470, y: 581 },           // 842 - 261 = 581
       'denna_sadzba': { x: 223, y: 542 },           // 842 - 300 = 542
       'pocet_dni': { x: 359, y: 542 },              // 842 - 300 = 542
-      'cena_bez_depozitu': { x: 468, y: 542 },      // 842 - 300 = 542
-      'sluzby_priplatky': { x: 465, y: 523 },       // 842 - 319 = 523
+      'cena_bez_depozitu': { x: 466, y: 542 },      // 842 - 300 = 542
+      'sluzby_priplatky': { x: 466, y: 523 },       // 842 - 319 = 523
       'spolu_cena': { x: 466, y: 499 }              // 842 - 343 = 499
     };
     

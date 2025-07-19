@@ -361,6 +361,18 @@ class SMTP2GOService {
     return this.sendEmail(to, subject, html, text);
   }
 
+  // Customer cancellation email when admin cancels reservation
+  async sendCustomerCancellationNotification(to, cancellationData) {
+    const subject = `Zrusenie rezervacie #${cancellationData.reservationNumber}`;
+    
+    // Simple format to avoid JSON issues
+    const html = `<html><body><h2>Zrusenie rezervacie</h2><p>Vazeny/a ${cancellationData.customerName},</p><p>bohuzial musime vas informovat, ze vasa rezervacia bola zrusena.</p><p>Cislo rezervacie: ${cancellationData.reservationNumber}</p><p>Vozidlo: ${cancellationData.carInfo}</p><p>Datum vyzdvihnutia: ${cancellationData.startDate}</p><p>Datum vratenia: ${cancellationData.endDate}</p><p>Datum zrusenia: ${cancellationData.cancellationDate}</p>${cancellationData.reason ? `<p>Dovod zrusenia: ${cancellationData.reason}</p>` : ''}<p>Ak ste uhradili zalohu, bude vam vratena do 5-7 pracovnych dni.</p><p>Ospravedlnujeme sa za sposobene neprijemnosti.</p><p>S pozdravom, Vas CarFlow Team</p></body></html>`;
+    
+    const text = `Zrusenie rezervacie Vazeny/a ${cancellationData.customerName}, bohuzial musime vas informovat, ze vasa rezervacia bola zrusena. Cislo rezervacie: ${cancellationData.reservationNumber} Vozidlo: ${cancellationData.carInfo} Datum vyzdvihnutia: ${cancellationData.startDate} Datum vratenia: ${cancellationData.endDate} Datum zrusenia: ${cancellationData.cancellationDate}${cancellationData.reason ? ` Dovod zrusenia: ${cancellationData.reason}` : ''} Ak ste uhradili zalohu, bude vam vratena do 5-7 pracovnych dni. Ospravedlnujeme sa za sposobene neprijemnosti. S pozdravom, Vas CarFlow Team`;
+    
+    return this.sendEmail(to, subject, html, text);
+  }
+
   // Test with the exact structure provided by user
   async testSimpleEmail() {
     if (!this.isConfigured) {

@@ -588,63 +588,31 @@ const cancelReservation = asyncHandler(async (req, res, next) => {
 
   await reservation.save();
 
-  // 📧 Send customer notification email about cancellation
+  // 📧 Send customer notification email about cancellation (only to customer when admin cancels)
   try {
     const emailService = require('../services/emailService');
     
     if (emailService.isConfigured && reservation.customer && reservation.customer.email) {
-      const customerName = `${reservation.customer.firstName || ''} ${reservation.customer.lastName || ''}`.trim() || 'Vážený zákazník';
+      const customerName = `${reservation.customer.firstName || ''} ${reservation.customer.lastName || ''}`.trim() || 'Vazeny zakaznik';
       const carInfo = `${reservation.car.brand || ''} ${reservation.car.model || ''} ${reservation.car.year || ''}`.trim();
-      const startDate = new Date(reservation.startDate).toLocaleDateString('sk-SK', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-      const endDate = new Date(reservation.endDate).toLocaleDateString('sk-SK', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+      const startDate = new Date(reservation.startDate).toLocaleDateString('sk-SK');
+      const endDate = new Date(reservation.endDate).toLocaleDateString('sk-SK');
+      const cancellationDate = new Date().toLocaleDateString('sk-SK');
       
-      const cancellationSubject = `Zrušenie rezervácie #${reservation.reservationNumber} - CarFlow`;
-      const cancellationHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #d32f2f;">Zrušenie rezervácie</h2>
-          <p>${customerName},</p>
-          <p>Bohužiaľ musíme vás informovať, že vaša rezervácia bola zrušená.</p>
-          
-          <div style="background-color: #ffebee; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #d32f2f;">
-            <h3 style="margin-top: 0; color: #d32f2f;">Detaily zrušenej rezervácie</h3>
-            <p><strong>Číslo rezervácie:</strong> ${reservation.reservationNumber}</p>
-            <p><strong>Vozidlo:</strong> ${carInfo}</p>
-            <p><strong>Dátum vyzdvihnutia:</strong> ${startDate}</p>
-            <p><strong>Dátum vrátenia:</strong> ${endDate}</p>
-            <p><strong>Dátum zrušenia:</strong> ${new Date().toLocaleDateString('sk-SK')}</p>
-            ${reason ? `<p><strong>Dôvod zrušenia:</strong> ${reason}</p>` : ''}
-          </div>
-          
-          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0;">Ďalšie kroky</h3>
-            <p>• Ak ste uhradili zálohu alebo platbu, bude vám vrátená do 5-7 pracovných dní</p>
-            <p>• V prípade otázok nás kontaktujte na tel.: +421 xxx xxx xxx</p>
-            <p>• Radi vám pomôžeme nájsť náhradné vozidlo na iný termín</p>
-          </div>
-          
-          <p>Ospravedlňujeme sa za spôsobené nepríjemnosti a ďakujeme za pochopenie.</p>
-          
-          <p>S pozdravom,<br>CarFlow Team</p>
-          
-          <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
-          <p style="font-size: 12px; color: #666;">
-            Tento email ste dostali, pretože vaša rezervácia bola zrušená. Pre ďalšie otázky nás kontaktujte.
-          </p>
-        </div>
-      `;
+      // Prepare cancellation data for the simple Slovak email template
+      const cancellationData = {
+        customerName,
+        reservationNumber: reservation.reservationNumber,
+        carInfo,
+        startDate,
+        endDate,
+        cancellationDate,
+        reason: reason || null
+      };
 
-      await emailService.sendEmail(reservation.customer.email, cancellationSubject, cancellationHtml);
-      console.log('✅ [EMAIL] Cancellation notification sent to customer:', reservation.customer.email);
+      // Use the simple Slovak cancellation email template from emailService
+      await emailService.sendCustomerCancellationNotification(reservation.customer.email, cancellationData);
+      console.log('✅ [EMAIL] Slovak cancellation notification sent to customer:', reservation.customer.email);
     }
   } catch (emailError) {
     console.error('❌ [EMAIL] Failed to send cancellation notification:', emailError.message);

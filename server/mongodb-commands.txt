@@ -1,0 +1,19 @@
+// MongoDB Atlas Console Commands to Fix Email Index
+// Copy and paste these commands in MongoDB Atlas Data Explorer > car_rental_db > users collection
+
+// 1. Check current indexes
+db.users.getIndexes()
+
+// 2. Drop the old email unique index
+db.users.dropIndex("email_1")
+
+// 3. Create new compound unique index (email + tenantId)
+db.users.createIndex(
+  { "email": 1, "tenantId": 1 }, 
+  { "unique": true, "name": "email_1_tenantId_1" }
+)
+
+// 4. Verify the new index was created
+db.users.getIndexes()
+
+// After running these commands, users can have the same email across different tenants!
