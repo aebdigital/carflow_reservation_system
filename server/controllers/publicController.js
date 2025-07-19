@@ -596,40 +596,16 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     }
 
     if (!customer) {
-      console.log('🔄 [CUSTOMER DEBUG] No existing customer found - checking for global duplicates...');
+      console.log('🔄 [CUSTOMER DEBUG] No existing customer found in this tenant - creating new customer...');
       
-      // Check if customer exists globally (in any tenant)
-      const globalCustomer = await User.findOne({ 
-        email: finalCustomerEmail.toLowerCase()
-      });
-      
-      if (globalCustomer) {
-        console.log('🔍 [CUSTOMER DEBUG] Found global customer in different tenant - creating tenant-specific customer...');
-        
-        // Create a tenant-specific customer with unique email to avoid conflicts
-        // This allows the same person to book with different rental companies
-        const tenantSuffix = tenantId.toString().slice(-4);
-        const uniqueEmail = `${finalCustomerEmail.replace('@', `+${tenantSuffix}@`)}`;
-        
-        console.log('🔧 [CUSTOMER DEBUG] Will create tenant-specific customer with unique identifiers.');
-      }
-      
-      // Create new customer for this tenant
+      // Create new customer for this tenant - same email is OK in different tenants
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash('customer123', salt);
-
-      // Use unique identifiers if global customer exists
-      const uniqueEmail = globalCustomer ? 
-        `${finalCustomerEmail.replace('@', `+${tenantId.toString().slice(-4)}@`)}` : 
-        finalCustomerEmail;
-      
-      const uniqueLicenseNumber = globalCustomer && licenseNumber ? 
-        `${licenseNumber}-${tenantId.toString().slice(-4)}` : licenseNumber;
 
       const newCustomerData = {
         firstName,
         lastName,
-        email: uniqueEmail.toLowerCase(),
+        email: finalCustomerEmail.toLowerCase(),
         password: hashedPassword,
         phone,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
@@ -640,7 +616,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
           zipCode: address?.zipCode || '',
           country: address?.country || ''
         },
-        licenseNumber: uniqueLicenseNumber,
+        licenseNumber,
         licenseExpiry: licenseExpiry ? new Date(licenseExpiry) : undefined,
         role: 'customer',
         isActive: true,
@@ -1120,11 +1096,35 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       const value = error.keyValue[field];
       
       if (field === 'email') {
-        // Return success message for email duplicates - just use existing customer
-        return res.status(400).json({
-          success: false,
-          message: `An account with email '${value}' already exists. If this is your email, the system will use your existing account.`
-        });
+        // For email duplicates within the same tenant, find and use the existing customer
+        console.log('🔧 [CUSTOMER DEBUG] Email duplicate detected, finding existing customer in this tenant...');
+        
+        try {
+          const existingCustomer = await User.findOne({
+            email: value.toLowerCase(),
+            tenantId: tenantId,
+            role: 'customer',
+            isActive: true
+          });
+          
+          if (existingCustomer) {
+            console.log('✅ [CUSTOMER DEBUG] Found existing customer in this tenant, using existing customer');
+            customer = existingCustomer;
+            // Continue with reservation creation using existing customer
+          } else {
+            console.log('❌ [CUSTOMER DEBUG] No existing customer found in this tenant despite duplicate error');
+            return res.status(400).json({
+              success: false,
+              message: `An account with email '${value}' already exists. Please try again or contact support.`
+            });
+          }
+        } catch (findError) {
+          console.error('❌ [CUSTOMER DEBUG] Error finding existing customer:', findError);
+          return res.status(400).json({
+            success: false,
+            message: `An account with email '${value}' already exists. Please try again or contact support.`
+          });
+        }
       } else if (field === 'licenseNumber') {
         return res.status(400).json({
           success: false,
@@ -1136,9 +1136,9 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
           message: `Duplicate field value: ${field} = '${value}'. Please use another value.`
         });
       }
+    } else {
+      throw error;
     }
-    
-    throw error;
   }
 });
 
@@ -1717,18 +1717,39 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       const field = Object.keys(error.keyValue)[0];
       const value = error.keyValue[field];
       
-      // More helpful error message for duplicates
       if (field === 'email') {
-        return next(new AppError(`An account with email '${value}' already exists. If this is your email, the system will use your existing account.`, 400));
+        // For email duplicates within the same tenant, find and use the existing customer
+        console.log('🔧 [PUBLIC CUSTOMER DEBUG] Email duplicate detected, finding existing customer in this tenant...');
+        
+        try {
+          const existingCustomer = await User.findOne({
+            email: value.toLowerCase(),
+            tenantId: tenantId,
+            role: 'customer',
+            isActive: true
+          });
+          
+          if (existingCustomer) {
+            console.log('✅ [PUBLIC CUSTOMER DEBUG] Found existing customer in this tenant, using existing customer');
+            customer = existingCustomer;
+            // Continue with reservation creation using existing customer - don't return here
+          } else {
+            console.log('❌ [PUBLIC CUSTOMER DEBUG] No existing customer found in this tenant despite duplicate error');
+            return next(new AppError(`An account with email '${value}' already exists. Please try again or contact support.`, 400));
+          }
+        } catch (findError) {
+          console.error('❌ [PUBLIC CUSTOMER DEBUG] Error finding existing customer:', findError);
+          return next(new AppError(`An account with email '${value}' already exists. Please try again or contact support.`, 400));
+        }
       } else if (field === 'licenseNumber') {
         return next(new AppError(`A customer with license number '${value}' already exists. Please verify your license number.`, 400));
       } else {
         return next(new AppError(`Duplicate field value: ${field} = '${value}'. Please use another value.`, 400));
       }
+    } else {
+      console.error('Error creating customer for public reservation:', error);
+      throw error;
     }
-    
-    console.error('Error creating customer for public reservation:', error);
-    throw error;
   }
 });
 
