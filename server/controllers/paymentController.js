@@ -67,7 +67,27 @@ const createPaymentIntent = asyncHandler(async (req, res, next) => {
   }
 
   // Use reservation total amount if not provided
-  const paymentAmount = amount || reservation.pricing?.totalAmount || 0;
+  let paymentAmount = amount || reservation.pricing?.totalAmount || 0;
+  
+  // Fallback: if totalAmount is 0 but we have dailyRate and totalDays, calculate it
+  if (paymentAmount <= 0 && reservation.pricing?.dailyRate && reservation.pricing?.totalDays) {
+    const calculatedSubtotal = reservation.pricing.dailyRate * reservation.pricing.totalDays;
+    const calculatedTaxes = reservation.pricing.taxes || 0;
+    const calculatedFees = reservation.pricing.fees?.reduce((sum, fee) => sum + (fee.amount || 0), 0) || 0;
+    const calculatedDiscounts = reservation.pricing.discounts?.reduce((sum, discount) => sum + (discount.amount || 0), 0) || 0;
+    
+    paymentAmount = calculatedSubtotal + calculatedTaxes + calculatedFees - calculatedDiscounts;
+    
+    console.log('DEBUG: Calculated payment amount from reservation pricing:', {
+      dailyRate: reservation.pricing.dailyRate,
+      totalDays: reservation.pricing.totalDays,
+      calculatedSubtotal,
+      calculatedTaxes,
+      calculatedFees,
+      calculatedDiscounts,
+      finalAmount: paymentAmount
+    });
+  }
   
   if (paymentAmount <= 0) {
     console.log('DEBUG: Payment amount validation failed:', {
@@ -93,7 +113,7 @@ const createPaymentIntent = asyncHandler(async (req, res, next) => {
     },
     stripePaymentIntentId: paymentIntent.id,
     breakdown: {
-      subtotal: reservation.pricing?.subtotal || paymentAmount, // 🔧 FULL AMOUNT - No tax assumptions
+      subtotal: reservation.pricing?.subtotal || (reservation.pricing?.dailyRate * reservation.pricing?.totalDays) || paymentAmount,
       taxes: reservation.pricing?.taxes ? [{ 
         name: 'Tax', 
         rate: 0.1, 

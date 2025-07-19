@@ -175,7 +175,7 @@ function Payments() {
     if (mode === 'create' && reservation) {
       setFormData({
         reservation: reservation._id,
-        amount: reservation.pricing?.totalAmount || 0,
+        amount: reservation.pricing?.totalAmount || (reservation.pricing?.dailyRate * reservation.pricing?.totalDays) || 0,
         description: `Platba za rezerváciu ${reservation.reservationNumber}`,
         paymentMethod: 'card',
         dueDate: new Date().toISOString().split('T')[0]
@@ -927,7 +927,7 @@ function Payments() {
                           setFormData({
                             ...formData,
                             reservation: value?._id || '',
-                            amount: value?.pricing?.totalAmount || 0,
+                            amount: value?.pricing?.totalAmount || (value?.pricing?.dailyRate * value?.pricing?.totalDays) || 0,
                             description: value ? `Platba za rezerváciu ${value.reservationNumber}` : ''
                           })
                         }}
