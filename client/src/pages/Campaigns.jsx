@@ -419,14 +419,31 @@ function Campaigns() {
     return Array.isArray(combinedEmailData) && combinedEmailData.length > 0 ? combinedEmailData : mockEmailSubscriptions;
   }, [combinedEmailData, mockEmailSubscriptions, emailsLoading, usersLoading]);
   
-  const getActiveEmails = () => Array.isArray(currentEmailData) ? currentEmailData.filter(email => email && email.isActive) : []
-  const getInactiveEmails = () => Array.isArray(currentEmailData) ? currentEmailData.filter(email => email && !email.isActive) : []
-  const getEmailsBySource = (source) => Array.isArray(currentEmailData) ? currentEmailData.filter(email => email && email.source === source) : []
-  const getCustomerEmails = () => Array.isArray(currentEmailData) ? currentEmailData.filter(email => email && (email.source === 'customer' || email.originalSource === 'User')) : []
-  const getSubscriptionEmails = () => Array.isArray(currentEmailData) ? currentEmailData.filter(email => email && (email.source === 'subscription' || email.originalSource === 'EmailSubscription')) : []
+  const getActiveEmails = () => {
+    if (!Array.isArray(currentEmailData)) return [];
+    return currentEmailData.filter(email => email && email.isActive) || [];
+  }
+  const getInactiveEmails = () => {
+    if (!Array.isArray(currentEmailData)) return [];
+    return currentEmailData.filter(email => email && !email.isActive) || [];
+  }
+  const getEmailsBySource = (source) => {
+    if (!Array.isArray(currentEmailData)) return [];
+    return currentEmailData.filter(email => email && email.source === source) || [];
+  }
+  const getCustomerEmails = () => {
+    if (!Array.isArray(currentEmailData)) return [];
+    return currentEmailData.filter(email => email && (email.source === 'customer' || email.originalSource === 'User')) || [];
+  }
+  const getSubscriptionEmails = () => {
+    if (!Array.isArray(currentEmailData)) return [];
+    return currentEmailData.filter(email => email && (email.source === 'subscription' || email.originalSource === 'EmailSubscription')) || [];
+  }
 
-  return (
-    <Box>
+  // Error boundary for safer rendering
+  try {
+    return (
+      <Box>
       {/* Header */}
       <Box sx={{ 
         display: 'flex', 
@@ -472,7 +489,7 @@ function Campaigns() {
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={tabValue} onChange={handleTabChange} aria-label="campaigns tabs">
           <Tab label={`E-mailové kampane (${campaigns.length})`} />
-          <Tab label={`Databáza emailov (${emailSubscriptions.length})`} />
+          <Tab label={`Databáza emailov (${currentEmailData?.length || 0})`} />
         </Tabs>
       </Box>
 
@@ -607,7 +624,7 @@ function Campaigns() {
             <Card>
               <CardContent>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                  {emailSubscriptions.length}
+                  {currentEmailData?.length || 0}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Celkový počet emailov
@@ -619,7 +636,7 @@ function Campaigns() {
             <Card>
               <CardContent>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.main' }}>
-                  {getActiveEmails().length}
+                  {getActiveEmails()?.length || 0}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Aktívne odberateľky
@@ -631,7 +648,7 @@ function Campaigns() {
             <Card>
               <CardContent>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: 'info.main' }}>
-                  {getCustomerEmails().length}
+                  {getCustomerEmails()?.length || 0}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Registrovaní zákazníci
@@ -643,7 +660,7 @@ function Campaigns() {
             <Card>
               <CardContent>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: 'secondary.main' }}>
-                  {getSubscriptionEmails().length}
+                  {getSubscriptionEmails()?.length || 0}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Newsletter odbery
@@ -1011,7 +1028,20 @@ function Campaigns() {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       />
     </Box>
-  )
+    )
+  } catch (error) {
+    console.error('Error rendering Campaigns component:', error);
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography variant="h6" color="error" gutterBottom>
+          Nastala chyba pri načítaní kampane
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Skúste obnoviť stránku alebo sa obráťte na podporu.
+        </Typography>
+      </Box>
+    );
+  }
 }
 
 export default Campaigns 
