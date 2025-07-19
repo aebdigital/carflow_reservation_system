@@ -221,6 +221,7 @@ const EnhancedCarForm = ({
   const handleEditEquipment = useCallback((equipment, index) => {
     setEditingEquipmentIndex(index);
     handleChange('customEquipmentName', equipment.name);
+    handleChange('customEquipmentDescription', equipment.description || '');
     
     // Set the current icon as preview for editing
     setEquipmentIconFile(null);
@@ -276,6 +277,7 @@ const EnhancedCarForm = ({
     
     const equipmentItem = {
       name: name,
+      description: formData.customEquipmentDescription || '',
       icon: equipmentIconPreview,
       category: 'custom',
       iconType: 'file'
@@ -296,6 +298,7 @@ const EnhancedCarForm = ({
     
     // Reset form
     handleChange('customEquipmentName', '');
+    handleChange('customEquipmentDescription', '');
     setEquipmentIconFile(null);
     setEquipmentIconPreview(null);
     
@@ -308,6 +311,7 @@ const EnhancedCarForm = ({
   const handleCancelEquipmentEdit = useCallback(() => {
     setEditingEquipmentIndex(null);
     handleChange('customEquipmentName', '');
+    handleChange('customEquipmentDescription', '');
     setEquipmentIconFile(null);
     setEquipmentIconPreview(null);
     
@@ -1481,37 +1485,42 @@ const EnhancedCarForm = ({
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
                     {formData.equipment.map((item, index) => (
-                      <Chip
+                      <Tooltip 
                         key={index}
-                        label={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <img 
-                              src={item.icon} 
-                              alt="" 
-                              style={{ width: 16, height: 16, objectFit: 'contain' }}
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'inline';
-                              }}
-                            />
-                            <span style={{ display: 'none' }}>🔧</span>
-                            <span>{item.name}</span>
-                            {item.category === 'custom' && dialogMode !== 'view' && (
-                              <EditIcon 
-                                sx={{ 
-                                  fontSize: 14, 
-                                  ml: 0.5, 
-                                  cursor: 'pointer',
-                                  '&:hover': { color: 'primary.main' }
-                                }} 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditEquipment(item, index);
+                        title={item.description ? `${item.name}: ${item.description}` : item.name}
+                        arrow
+                        placement="top"
+                      >
+                        <Chip
+                          label={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <img 
+                                src={item.icon} 
+                                alt="" 
+                                style={{ width: 16, height: 16, objectFit: 'contain' }}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'inline';
                                 }}
                               />
-                            )}
-                          </Box>
-                        }
+                              <span style={{ display: 'none' }}>🔧</span>
+                              <span>{item.name}</span>
+                              {item.category === 'custom' && dialogMode !== 'view' && (
+                                <EditIcon 
+                                  sx={{ 
+                                    fontSize: 14, 
+                                    ml: 0.5, 
+                                    cursor: 'pointer',
+                                    '&:hover': { color: 'primary.main' }
+                                  }} 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditEquipment(item, index);
+                                  }}
+                                />
+                              )}
+                            </Box>
+                          }
                         onDelete={dialogMode !== 'view' ? () => {
                           const newEquipment = formData.equipment.filter((_, i) => i !== index);
                           handleChange('equipment', newEquipment);
@@ -1525,10 +1534,11 @@ const EnhancedCarForm = ({
                             backgroundColor: 'primary.50'
                           } : {}
                         }}
-                        onClick={item.category === 'custom' && dialogMode !== 'view' ? () => {
-                          handleEditEquipment(item, index);
-                        } : undefined}
-                      />
+                          onClick={item.category === 'custom' && dialogMode !== 'view' ? () => {
+                            handleEditEquipment(item, index);
+                          } : undefined}
+                        />
+                      </Tooltip>
                     ))}
                   </Box>
                 </Box>
@@ -1540,42 +1550,57 @@ const EnhancedCarForm = ({
                   <Typography variant="subtitle2" gutterBottom>
                     {editingEquipmentIndex !== null ? 'Upraviť výbavu' : 'Pridať vlastnú výbavu'}
                   </Typography>
-                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'end', mb: 2 }}>
-                    <TextField
-                      label="Názov výbavy"
-                      variant="outlined"
-                      size="small"
-                      value={formData.customEquipmentName || ''}
-                      onChange={(e) => handleChange('customEquipmentName', e.target.value)}
-                      placeholder="napr. Detské sedačky"
-                      sx={{ flexGrow: 1 }}
-                    />
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<CameraIcon />}
-                      onClick={() => equipmentIconInputRef.current?.click()}
-                    >
-                      Nahrať ikonu
-                    </Button>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      startIcon={editingEquipmentIndex !== null ? <EditIcon /> : <AddIcon />}
-                      onClick={handleAddOrUpdateEquipment}
-                      disabled={!formData.customEquipmentName?.trim() || !equipmentIconPreview}
-                    >
-                      {editingEquipmentIndex !== null ? 'Uložiť úpravu' : 'Pridať'}
-                    </Button>
-                    {editingEquipmentIndex !== null && (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'start' }}>
+                      <TextField
+                        label="Názov výbavy"
+                        variant="outlined"
+                        size="small"
+                        value={formData.customEquipmentName || ''}
+                        onChange={(e) => handleChange('customEquipmentName', e.target.value)}
+                        placeholder="napr. Detské sedačky"
+                        sx={{ flexGrow: 1 }}
+                      />
+                      <TextField
+                        label="Popis výbavy"
+                        variant="outlined"
+                        size="small"
+                        multiline
+                        rows={2}
+                        value={formData.customEquipmentDescription || ''}
+                        onChange={(e) => handleChange('customEquipmentDescription', e.target.value)}
+                        placeholder="Popis výbavy"
+                        sx={{ flexGrow: 1 }}
+                      />
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                       <Button
                         variant="outlined"
                         size="small"
-                        onClick={handleCancelEquipmentEdit}
+                        startIcon={<CameraIcon />}
+                        onClick={() => equipmentIconInputRef.current?.click()}
                       >
-                        Zrušiť
+                        Nahrať ikonu
                       </Button>
-                    )}
+                      <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={editingEquipmentIndex !== null ? <EditIcon /> : <AddIcon />}
+                        onClick={handleAddOrUpdateEquipment}
+                        disabled={!formData.customEquipmentName?.trim() || !equipmentIconPreview}
+                      >
+                        {editingEquipmentIndex !== null ? 'Uložiť úpravu' : 'Pridať'}
+                      </Button>
+                      {editingEquipmentIndex !== null && (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={handleCancelEquipmentEdit}
+                        >
+                          Zrušiť
+                        </Button>
+                      )}
+                    </Box>
                   </Box>
                   
                   {/* Icon preview */}
