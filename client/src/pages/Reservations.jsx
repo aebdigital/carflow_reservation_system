@@ -43,7 +43,6 @@ import {
   Visibility as ViewIcon,
   Receipt as ReceiptIcon,
   Download as DownloadIcon,
-  Description as ContractIcon,
   Assignment as SlovakAgreementIcon,
   CheckCircleOutline as ConfirmIcon,
   QrCode as QrCodeIcon,
@@ -546,17 +545,6 @@ function Reservations() {
     })
   }
 
-  // Handle downloading reservation contract PDF - TEMPORARILY DISABLED
-  const handleDownloadContract = async (reservationId) => {
-    // Temporarily disabled - PDF generation will be customized according to template
-    console.log('PDF download temporarily disabled');
-  };
-
-  // Handle previewing reservation contract PDF - TEMPORARILY DISABLED
-  const handlePreviewContract = async (reservationId) => {
-    // Temporarily disabled - PDF generation will be customized according to template
-    console.log('PDF preview temporarily disabled');
-  };
 
   const handleDownloadSlovakAgreement = async (reservationId) => {
     try {
@@ -801,30 +789,6 @@ function Reservations() {
                               </IconButton>
                             </Tooltip>
                           )}
-                          <Tooltip title="Generovanie PDF bude dostupné a prispôsobené podľa Vašej predlohy">
-                            <span>
-                              <IconButton
-                                size="small"
-                                onClick={() => handlePreviewContract(reservation._id)}
-                                color="primary"
-                                disabled={true}
-                              >
-                                <ContractIcon fontSize="small" />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-                          <Tooltip title="Generovanie PDF bude dostupné a prispôsobené podľa Vašej predlohy">
-                            <span>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDownloadContract(reservation._id)}
-                                color="secondary"
-                                disabled={true}
-                              >
-                                <DownloadIcon fontSize="small" />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
                           <Tooltip title="Generovanie Slovenskej zmluvy">
                             <IconButton 
                               size="small" 
@@ -852,17 +816,6 @@ function Reservations() {
                               <QrCodeIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          {reservation.status === 'cancelled' && (
-                            <Tooltip title="Vymazať rezerváciu">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDeleteClick(reservation)}
-                                color="error"
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -973,30 +926,6 @@ function Reservations() {
                               <CheckOutIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Generovanie PDF bude dostupné a prispôsobené podľa Vašej predlohy">
-                            <span>
-                              <IconButton
-                                size="small"
-                                onClick={() => handlePreviewContract(reservation._id)}
-                                color="primary"
-                                disabled={true}
-                              >
-                                <ContractIcon fontSize="small" />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-                          <Tooltip title="Generovanie PDF bude dostupné a prispôsobené podľa Vašej predlohy">
-                            <span>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDownloadContract(reservation._id)}
-                                color="secondary"
-                                disabled={true}
-                              >
-                                <DownloadIcon fontSize="small" />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
                           <Tooltip title="Generovanie Slovenskej zmluvy">
                             <IconButton 
                               size="small" 
@@ -1024,17 +953,6 @@ function Reservations() {
                               <QrCodeIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          {reservation.status === 'cancelled' && (
-                            <Tooltip title="Vymazať rezerváciu">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDeleteClick(reservation)}
-                                color="error"
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -1187,17 +1105,6 @@ function Reservations() {
                               <QrCodeIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          {reservation.status === 'cancelled' && (
-                            <Tooltip title="Vymazať rezerváciu">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDeleteClick(reservation)}
-                                color="error"
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -1324,17 +1231,6 @@ function Reservations() {
                               <QrCodeIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          {reservation.status === 'cancelled' && (
-                            <Tooltip title="Vymazať rezerváciu">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDeleteClick(reservation)}
-                                color="error"
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
