@@ -138,58 +138,70 @@ function Campaigns() {
 
   // Combine customer data from Users and EmailSubscriptions
   const combinedEmailData = React.useMemo(() => {
+    // Return empty array if data is still loading
+    if (emailsLoading || usersLoading) {
+      return [];
+    }
+    
     const emailMap = new Map();
     
-    // Add email subscriptions first
-    const emailSubs = emailSubscriptions?.data || [];
-    emailSubs.forEach(sub => {
-      emailMap.set(sub.email, {
-        id: sub._id || sub.id,
-        email: sub.email,
-        firstName: sub.firstName || '',
-        lastName: sub.lastName || '',
-        phone: sub.phone || '',
-        source: 'subscription',
-        tags: sub.tags || ['newsletter'],
-        isActive: sub.isActive !== undefined ? sub.isActive : true,
-        subscribedDate: sub.subscribedDate || sub.createdAt,
-        lastEmailDate: sub.lastEmailDate || '',
-        notes: sub.notes || '',
-        originalSource: 'EmailSubscription'
+    // Add email subscriptions first - handle different response structures
+    const emailSubs = emailSubscriptions?.data || emailSubscriptions || [];
+    if (Array.isArray(emailSubs)) {
+      emailSubs.forEach(sub => {
+        if (sub && sub.email) {
+          emailMap.set(sub.email, {
+            id: sub._id || sub.id || Math.random().toString(36),
+            email: sub.email,
+            firstName: sub.firstName || '',
+            lastName: sub.lastName || '',
+            phone: sub.phone || '',
+            source: 'subscription',
+            tags: Array.isArray(sub.tags) ? sub.tags : ['newsletter'],
+            isActive: sub.isActive !== undefined ? sub.isActive : true,
+            subscribedDate: sub.subscribedDate || sub.createdAt,
+            lastEmailDate: sub.lastEmailDate || '',
+            notes: sub.notes || '',
+            originalSource: 'EmailSubscription'
+          });
+        }
       });
-    });
+    }
     
-    // Add customers from Users database (they take priority if email exists in both)
+    // Add customers from Users database - handle different response structures
     const customers = users?.data || users || [];
-    customers.forEach(user => {
-      if (user.email && user.email.trim()) {
-        const existing = emailMap.get(user.email);
-        emailMap.set(user.email, {
-          id: user._id || user.id,
-          email: user.email,
-          firstName: user.firstName || '',
-          lastName: user.lastName || '',
-          phone: user.phone || '',
-          source: user.role === 'customer' ? 'customer' : 'website',
-          tags: existing?.tags || ['customer'],
-          isActive: !user.isBlacklisted && user.role === 'customer',
-          subscribedDate: existing?.subscribedDate || user.createdAt,
-          lastEmailDate: existing?.lastEmailDate || '',
-          notes: existing?.notes || (user.isBlacklisted ? 'Blacklisted user' : ''),
-          originalSource: 'User',
-          role: user.role,
-          isBlacklisted: user.isBlacklisted || false
-        });
-      }
-    });
+    if (Array.isArray(customers)) {
+      customers.forEach(user => {
+        if (user && user.email && user.email.trim()) {
+          const existing = emailMap.get(user.email);
+          emailMap.set(user.email, {
+            id: user._id || user.id || Math.random().toString(36),
+            email: user.email,
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            phone: user.phone || '',
+            source: user.role === 'customer' ? 'customer' : 'website',
+            tags: Array.isArray(existing?.tags) ? existing.tags : ['customer'],
+            isActive: !user.isBlacklisted && user.role === 'customer',
+            subscribedDate: existing?.subscribedDate || user.createdAt,
+            lastEmailDate: existing?.lastEmailDate || '',
+            notes: existing?.notes || (user.isBlacklisted ? 'Blacklisted user' : ''),
+            originalSource: 'User',
+            role: user.role,
+            isBlacklisted: user.isBlacklisted || false
+          });
+        }
+      });
+    }
     
-    return Array.from(emailMap.values()).sort((a, b) => {
+    const result = Array.from(emailMap.values());
+    return result.sort((a, b) => {
       // Sort by creation date, newest first
       const dateA = new Date(a.subscribedDate || 0);
       const dateB = new Date(b.subscribedDate || 0);
       return dateB - dateA;
     });
-  }, [emailSubscriptions, users]);
+  }, [emailSubscriptions, users, emailsLoading, usersLoading]);
 
   // Mock data fallback for when API data is not available
   const mockEmailSubscriptions = [
@@ -399,13 +411,19 @@ function Campaigns() {
     setTabValue(newValue)
   }
 
-  // Use combined data or fallback to mock data
-  const currentEmailData = combinedEmailData.length > 0 ? combinedEmailData : mockEmailSubscriptions
-  const getActiveEmails = () => currentEmailData.filter(email => email.isActive)
-  const getInactiveEmails = () => currentEmailData.filter(email => !email.isActive)
-  const getEmailsBySource = (source) => currentEmailData.filter(email => email.source === source)
-  const getCustomerEmails = () => currentEmailData.filter(email => email.source === 'customer' || email.originalSource === 'User')
-  const getSubscriptionEmails = () => currentEmailData.filter(email => email.source === 'subscription' || email.originalSource === 'EmailSubscription')
+  // Use combined data or fallback to mock data - ensure we always have an array
+  const currentEmailData = React.useMemo(() => {
+    if (emailsLoading || usersLoading) {
+      return []; // Return empty array while loading
+    }
+    return Array.isArray(combinedEmailData) && combinedEmailData.length > 0 ? combinedEmailData : mockEmailSubscriptions;
+  }, [combinedEmailData, mockEmailSubscriptions, emailsLoading, usersLoading]);
+  
+  const getActiveEmails = () => Array.isArray(currentEmailData) ? currentEmailData.filter(email => email && email.isActive) : []
+  const getInactiveEmails = () => Array.isArray(currentEmailData) ? currentEmailData.filter(email => email && !email.isActive) : []
+  const getEmailsBySource = (source) => Array.isArray(currentEmailData) ? currentEmailData.filter(email => email && email.source === source) : []
+  const getCustomerEmails = () => Array.isArray(currentEmailData) ? currentEmailData.filter(email => email && (email.source === 'customer' || email.originalSource === 'User')) : []
+  const getSubscriptionEmails = () => Array.isArray(currentEmailData) ? currentEmailData.filter(email => email && (email.source === 'subscription' || email.originalSource === 'EmailSubscription')) : []
 
   return (
     <Box>
@@ -685,28 +703,31 @@ function Campaigns() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {currentEmailData.map((email) => (
-                    <TableRow key={email.id}>
+                  {Array.isArray(currentEmailData) && currentEmailData.length > 0 ? (
+                    currentEmailData.map((email, index) => {
+                      if (!email || !email.email) return null;
+                      return (
+                      <TableRow key={email.id || email.email || index}>
                       <TableCell>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {email.email}
+                          {email.email || '—'}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        {email.firstName} {email.lastName}
+                        {(email.firstName || '') + ' ' + (email.lastName || '')}
                       </TableCell>
                       <TableCell>{email.phone || '—'}</TableCell>
                       <TableCell>
                         <Chip
-                          label={getSourceText(email.source)}
+                          label={getSourceText(email.source || 'manual')}
                           size="small"
-                          color={getSourceColor(email.source)}
+                          color={getSourceColor(email.source || 'manual')}
                         />
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                          {email.tags.map((tag, index) => (
-                            <Chip key={index} label={tag} size="small" variant="outlined" />
+                          {Array.isArray(email.tags) && email.tags.map((tag, tagIndex) => (
+                            <Chip key={tagIndex} label={tag || ''} size="small" variant="outlined" />
                           ))}
                         </Box>
                       </TableCell>
@@ -739,7 +760,17 @@ function Campaigns() {
                         </Tooltip>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={8} sx={{ textAlign: 'center', py: 4 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          {emailsLoading || usersLoading ? 'Načítavam dáta...' : 'Žiadne emaily neboli nájdené'}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
