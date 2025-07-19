@@ -51,7 +51,8 @@ import {
   useSendMassEmailMutation, 
   useGetCampaignStatsQuery,
   useGetEmailSubscriptionsQuery,
-  useGetEmailSubscriptionStatsQuery 
+  useGetEmailSubscriptionStatsQuery,
+  useGetUsersQuery
 } from '../store/store'
 
 function TabPanel({ children, value, index, ...other }) {
@@ -103,6 +104,7 @@ function Campaigns() {
   const { data: campaignStats, isLoading: statsLoading } = useGetCampaignStatsQuery()
   const { data: emailSubscriptions, isLoading: emailsLoading } = useGetEmailSubscriptionsQuery({ page: 1, limit: 100 })
   const { data: emailStats } = useGetEmailSubscriptionStatsQuery()
+  const { data: users, isLoading: usersLoading } = useGetUsersQuery()
 
   // Mock data for campaigns
   const campaigns = [
@@ -134,8 +136,63 @@ function Campaigns() {
     },
   ]
 
-  // Mock data for email database
-  const emailSubscriptions = [
+  // Combine customer data from Users and EmailSubscriptions
+  const combinedEmailData = React.useMemo(() => {
+    const emailMap = new Map();
+    
+    // Add email subscriptions first
+    const emailSubs = emailSubscriptions?.data || [];
+    emailSubs.forEach(sub => {
+      emailMap.set(sub.email, {
+        id: sub._id || sub.id,
+        email: sub.email,
+        firstName: sub.firstName || '',
+        lastName: sub.lastName || '',
+        phone: sub.phone || '',
+        source: 'subscription',
+        tags: sub.tags || ['newsletter'],
+        isActive: sub.isActive !== undefined ? sub.isActive : true,
+        subscribedDate: sub.subscribedDate || sub.createdAt,
+        lastEmailDate: sub.lastEmailDate || '',
+        notes: sub.notes || '',
+        originalSource: 'EmailSubscription'
+      });
+    });
+    
+    // Add customers from Users database (they take priority if email exists in both)
+    const customers = users?.data || users || [];
+    customers.forEach(user => {
+      if (user.email && user.email.trim()) {
+        const existing = emailMap.get(user.email);
+        emailMap.set(user.email, {
+          id: user._id || user.id,
+          email: user.email,
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          phone: user.phone || '',
+          source: user.role === 'customer' ? 'customer' : 'website',
+          tags: existing?.tags || ['customer'],
+          isActive: !user.isBlacklisted && user.role === 'customer',
+          subscribedDate: existing?.subscribedDate || user.createdAt,
+          lastEmailDate: existing?.lastEmailDate || '',
+          notes: existing?.notes || (user.isBlacklisted ? 'Blacklisted user' : ''),
+          originalSource: 'User',
+          role: user.role,
+          isBlacklisted: user.isBlacklisted || false
+        });
+      }
+    });
+    
+    return Array.from(emailMap.values()).sort((a, b) => {
+      // Sort by creation date, newest first
+      const dateA = new Date(a.subscribedDate || 0);
+      const dateB = new Date(b.subscribedDate || 0);
+      return dateB - dateA;
+    });
+  }, [emailSubscriptions, users]);
+
+  // Mock data fallback for when API data is not available
+  const mockEmailSubscriptions = [
     {
       id: 1,
       email: 'john.doe@example.com',
@@ -197,7 +254,9 @@ function Campaigns() {
 
   const getSourceColor = (source) => {
     switch (source) {
+      case 'customer': return 'success'
       case 'website': return 'primary'
+      case 'subscription': return 'secondary'
       case 'newsletter': return 'secondary'
       case 'manual': return 'default'
       case 'import': return 'info'
@@ -207,7 +266,9 @@ function Campaigns() {
 
   const getSourceText = (source) => {
     switch (source) {
+      case 'customer': return 'Zákazník'
       case 'website': return 'Webstránka'
+      case 'subscription': return 'Odber'
       case 'newsletter': return 'Newsletter'
       case 'manual': return 'Manuálne'
       case 'import': return 'Import'
@@ -338,9 +399,13 @@ function Campaigns() {
     setTabValue(newValue)
   }
 
-  const getActiveEmails = () => emailSubscriptions.filter(email => email.isActive)
-  const getInactiveEmails = () => emailSubscriptions.filter(email => !email.isActive)
-  const getEmailsBySource = (source) => emailSubscriptions.filter(email => email.source === source)
+  // Use combined data or fallback to mock data
+  const currentEmailData = combinedEmailData.length > 0 ? combinedEmailData : mockEmailSubscriptions
+  const getActiveEmails = () => currentEmailData.filter(email => email.isActive)
+  const getInactiveEmails = () => currentEmailData.filter(email => !email.isActive)
+  const getEmailsBySource = (source) => currentEmailData.filter(email => email.source === source)
+  const getCustomerEmails = () => currentEmailData.filter(email => email.source === 'customer' || email.originalSource === 'User')
+  const getSubscriptionEmails = () => currentEmailData.filter(email => email.source === 'subscription' || email.originalSource === 'EmailSubscription')
 
   return (
     <Box>
@@ -548,10 +613,10 @@ function Campaigns() {
             <Card>
               <CardContent>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: 'info.main' }}>
-                  {getEmailsBySource('website').length}
+                  {getCustomerEmails().length}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Z webstránky
+                  Registrovaní zákazníci
                 </Typography>
               </CardContent>
             </Card>
@@ -560,10 +625,10 @@ function Campaigns() {
             <Card>
               <CardContent>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: 'secondary.main' }}>
-                  {getEmailsBySource('newsletter').length}
+                  {getSubscriptionEmails().length}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Newsletter
+                  Newsletter odbery
                 </Typography>
               </CardContent>
             </Card>
@@ -599,6 +664,11 @@ function Campaigns() {
           <CardContent>
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
               Databáza emailov
+              {(emailsLoading || usersLoading) && (
+                <Typography component="span" sx={{ ml: 1, color: 'text.secondary', fontSize: '0.875rem' }}>
+                  (Načítavam...)
+                </Typography>
+              )}
             </Typography>
             <TableContainer>
               <Table>
@@ -615,7 +685,7 @@ function Campaigns() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {emailSubscriptions.map((email) => (
+                  {currentEmailData.map((email) => (
                     <TableRow key={email.id}>
                       <TableCell>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -642,14 +712,14 @@ function Campaigns() {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={email.isActive ? 'Aktívny' : 'Neaktívny'}
+                          label={email.isBlacklisted ? 'Blacklisted' : (email.isActive ? 'Aktívny' : 'Neaktívny')}
                           size="small"
-                          color={email.isActive ? 'success' : 'error'}
-                          icon={email.isActive ? <CheckCircleIcon /> : <BlockIcon />}
+                          color={email.isBlacklisted ? 'error' : (email.isActive ? 'success' : 'warning')}
+                          icon={email.isBlacklisted ? <BlockIcon /> : (email.isActive ? <CheckCircleIcon /> : <BlockIcon />)}
                         />
                       </TableCell>
                       <TableCell>
-                        {new Date(email.subscribedDate).toLocaleDateString('sk-SK')}
+                        {email.subscribedDate ? new Date(email.subscribedDate).toLocaleDateString('sk-SK') : '—'}
                       </TableCell>
                       <TableCell>
                         <Tooltip title="Zobraziť">
