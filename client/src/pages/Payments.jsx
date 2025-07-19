@@ -175,7 +175,7 @@ function Payments() {
     if (mode === 'create' && reservation) {
       setFormData({
         reservation: reservation._id,
-        amount: reservation.totalAmount || 0,
+        amount: reservation.pricing?.totalAmount || 0,
         description: `Platba za rezerváciu ${reservation.reservationNumber}`,
         paymentMethod: 'card',
         dueDate: new Date().toISOString().split('T')[0]
@@ -449,6 +449,47 @@ function Payments() {
       {/* Main Content - Only show when data is loaded */}
       {!paymentsLoading && !reservationsLoading && (
         <>
+          {/* Alert for confirmed reservations without payments */}
+          {getUnpaidReservations().length > 0 && (
+            <Alert severity="info" sx={{ mb: 3 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Potvrdené rezervácie čakajúce na vytvorenie faktúry
+              </Typography>
+              <Typography variant="body2">
+                Máte {getUnpaidReservations().length} potvrdenú/é rezerváciu/e bez platby. 
+                <Button 
+                  variant="text" 
+                  size="small" 
+                  onClick={() => handleOpenDialog('create')}
+                  sx={{ ml: 1 }}
+                >
+                  Vytvoriť faktúru
+                </Button>
+              </Typography>
+              <Box sx={{ mt: 1 }}>
+                {getUnpaidReservations().slice(0, 3).map((reservation) => (
+                  <Chip
+                    key={reservation._id}
+                    label={`${reservation.reservationNumber} - ${reservation.customer?.firstName} ${reservation.customer?.lastName}`}
+                    size="small"
+                    sx={{ mr: 1, mb: 1 }}
+                    onClick={() => handleOpenDialog('create', null, reservation)}
+                    clickable
+                  />
+                ))}
+                {getUnpaidReservations().length > 3 && (
+                  <Chip
+                    label={`+${getUnpaidReservations().length - 3} ďalších`}
+                    size="small"
+                    variant="outlined"
+                    onClick={() => handleOpenDialog('create')}
+                    clickable
+                  />
+                )}
+              </Box>
+            </Alert>
+          )}
+
           {/* Statistics Cards */}
           <Grid container spacing={3} sx={{ mb: 4, ml: 0 }}>
             <Grid item xs={12} md={3}>
@@ -509,13 +550,13 @@ function Payments() {
               <Card>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <InvoiceIcon color="info" sx={{ fontSize: 40 }} />
+                    <InvoiceIcon color="warning" sx={{ fontSize: 40 }} />
                     <Box>
                       <Typography variant="h6">
-                        {payments.filter(p => p.invoice?.invoiceNumber).length}
+                        {getUnpaidReservations().length}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Vygenerované faktúry
+                        Čakajúce faktúry
                       </Typography>
                     </Box>
                   </Box>
@@ -532,6 +573,7 @@ function Payments() {
                 <Tab label={`Nezaplatené (${getFilteredPayments('pending').length})`} />
                 <Tab label={`Neúspešné (${getFilteredPayments('failed').length})`} />
                 <Tab label={`Vrátené (${getFilteredPayments('refunded').length + getFilteredPayments('partially_refunded').length})`} />
+                <Tab label={`Čakajúce faktúry (${getUnpaidReservations().length})`} />
               </Tabs>
             </Box>
 
@@ -773,6 +815,90 @@ function Payments() {
                 </TableContainer>
               </TabPanel>
             ))}
+
+            {/* Waiting Invoices Tab - New tab for confirmed reservations without payments */}
+            <TabPanel value={tabValue} index={5}>
+              {getUnpaidReservations().length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    Žiadne potvrdené rezervácie bez platieb
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Všetky potvrdené rezervácie už majú vytvorené platby.
+                  </Typography>
+                </Box>
+              ) : (
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Rezervácia č.</TableCell>
+                        <TableCell>Zákazník</TableCell>
+                        <TableCell>Vozidlo</TableCell>
+                        <TableCell>Dátum prenájmu</TableCell>
+                        <TableCell>Suma</TableCell>
+                        <TableCell>Stav</TableCell>
+                        <TableCell>Akcie</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {getUnpaidReservations().map((reservation) => (
+                        <TableRow key={reservation._id}>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight="medium">
+                              {reservation.reservationNumber}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {reservation.customer?.firstName} {reservation.customer?.lastName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {reservation.customer?.email}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {reservation.car?.brand} {reservation.car?.model}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {reservation.car?.registrationNumber}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {new Date(reservation.startDate).toLocaleDateString('sk-SK')} - {new Date(reservation.endDate).toLocaleDateString('sk-SK')}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight="medium">
+                              {(reservation.pricing?.totalAmount || 0).toLocaleString('sk-SK', { style: 'currency', currency: 'EUR' })}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={reservation.status === 'confirmed' ? 'Potvrdená' : 'Čakajúca'}
+                              color={reservation.status === 'confirmed' ? 'success' : 'warning'}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              startIcon={<AddIcon />}
+                              onClick={() => handleOpenDialog('create', null, reservation)}
+                            >
+                              Vytvoriť faktúru
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </TabPanel>
           </Card>
 
           {/* Create/View/Refund Dialog */}
@@ -797,7 +923,7 @@ function Payments() {
                           `${option.reservationNumber} - ${option.customer?.firstName} ${option.customer?.lastName} (${option.car?.brand} ${option.car?.model})`
                         }
                         value={getUnpaidReservations().find(r => r._id === formData.reservation) || null}
-                        onChange={(e, value) => {
+                        onChange={(_, value) => {
                           setFormData({
                             ...formData,
                             reservation: value?._id || '',
@@ -842,7 +968,9 @@ function Payments() {
                         onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
                         disabled={dialogMode === 'view'}
                         required
-                        inputProps={{ min: 0, step: 0.01 }}
+                        error={formData.amount <= 0}
+                        helperText={formData.amount <= 0 ? "Suma musí byť väčšia ako 0 €" : "Suma sa automaticky načíta z rezervácie"}
+                        inputProps={{ min: 0.01, step: 0.01 }}
                       />
                     </Grid>
                     <Grid item xs={12} md={6}>
@@ -1010,7 +1138,7 @@ function Payments() {
                 <Button
                   onClick={handleCreatePayment}
                   variant="contained"
-                  disabled={creating || !formData.reservation}
+                  disabled={creating || !formData.reservation || !formData.amount || formData.amount <= 0}
                 >
                   {creating ? <CircularProgress size={20} /> : 'Vytvoriť faktúru'}
                 </Button>

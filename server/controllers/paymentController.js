@@ -70,7 +70,12 @@ const createPaymentIntent = asyncHandler(async (req, res, next) => {
   const paymentAmount = amount || reservation.pricing?.totalAmount || 0;
   
   if (paymentAmount <= 0) {
-    return next(new AppError('Invalid payment amount', 400));
+    console.log('DEBUG: Payment amount validation failed:', {
+      providedAmount: amount,
+      reservationPricing: reservation.pricing,
+      calculatedAmount: paymentAmount
+    });
+    return next(new AppError(`Invalid payment amount (${paymentAmount}). Please ensure the reservation has valid pricing or provide a valid amount.`, 400));
   }
 
   // Create demo payment intent
