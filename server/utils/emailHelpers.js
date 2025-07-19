@@ -121,7 +121,7 @@ async function sendReservationEmails(reservation, car, customer) {
     
     // Send email to admin
     try {
-      const adminEmail = process.env.CONTACT_EMAIL || 'peter@aebdig.com';
+      const adminEmail = 'peter@aebdig.com';
       console.log('📧 [EMAIL] Sending admin notification to:', adminEmail);
       const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData);
       results.push({ type: 'admin', success: true, result: adminResult });
