@@ -768,6 +768,29 @@ export const api = createApi({
         body: commentData,
       }),
     }),
+
+    // Campaign endpoints
+    sendMassEmail: builder.mutation({
+      query: (campaignData) => ({
+        url: 'campaigns/send',
+        method: 'POST',
+        body: campaignData,
+      }),
+    }),
+    getCampaignStats: builder.query({
+      query: () => 'campaigns/stats',
+    }),
+
+    // Email subscription endpoints  
+    getEmailSubscriptions: builder.query({
+      query: (params) => ({
+        url: 'email-subscriptions',
+        params,
+      }),
+    }),
+    getEmailSubscriptionStats: builder.query({
+      query: () => 'email-subscriptions/stats',
+    }),
   }),
 })
 
@@ -888,6 +911,14 @@ export const {
   useGetBlogTagsQuery,
   useLikeBlogMutation,
   useAddBlogCommentMutation,
+
+  // Campaign hooks
+  useSendMassEmailMutation,
+  useGetCampaignStatsQuery,
+
+  // Email subscription hooks
+  useGetEmailSubscriptionsQuery,
+  useGetEmailSubscriptionStatsQuery,
 } = api
 
 export const store = configureStore({

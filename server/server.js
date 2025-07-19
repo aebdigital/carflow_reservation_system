@@ -154,6 +154,7 @@ app.use('/api/send-email', emailRoutes); // Direct endpoint for frontend compati
 app.use('/api/contracts', contractRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/email-subscriptions', emailSubscriptionRoutes);
+app.use('/api/campaigns', require('./routes/campaigns'));
 app.use('/api/test', testRoutes); // Test routes for debugging
 
 // Health check endpoint

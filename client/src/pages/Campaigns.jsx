@@ -45,7 +45,14 @@ import {
   CheckCircle as CheckCircleIcon,
   Schedule as ScheduleIcon2
 } from '@mui/icons-material'
+import { Snackbar } from '@mui/material'
 import { t } from '../utils/translations'
+import { 
+  useSendMassEmailMutation, 
+  useGetCampaignStatsQuery,
+  useGetEmailSubscriptionsQuery,
+  useGetEmailSubscriptionStatsQuery 
+} from '../store/store'
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -89,6 +96,13 @@ function Campaigns() {
     isActive: true,
     notes: ''
   })
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+
+  // API hooks
+  const [sendMassEmail, { isLoading: isSending }] = useSendMassEmailMutation()
+  const { data: campaignStats, isLoading: statsLoading } = useGetCampaignStatsQuery()
+  const { data: emailSubscriptions, isLoading: emailsLoading } = useGetEmailSubscriptionsQuery({ page: 1, limit: 100 })
+  const { data: emailStats } = useGetEmailSubscriptionStatsQuery()
 
   // Mock data for campaigns
   const campaigns = [
@@ -278,10 +292,40 @@ function Campaigns() {
     })
   }
 
-  const handleSubmit = () => {
-    // Here you would implement the campaign creation/update logic
-    console.log('Campaign data:', formData)
-    handleCloseDialog()
+  const handleSubmit = async () => {
+    if (dialogMode === 'view') return;
+    
+    try {
+      if (dialogMode === 'create') {
+        // Send mass email campaign
+        const campaignData = {
+          subject: formData.subject,
+          content: formData.content,
+          targetCustomers: formData.targetCustomers
+        };
+        
+        console.log('Sending mass email campaign:', campaignData);
+        
+        const result = await sendMassEmail(campaignData).unwrap();
+        
+        setSnackbar({
+          open: true,
+          message: `Kampaň bola úspešne odoslaná! Odoslané: ${result.results.sent}, Neúspešné: ${result.results.failed}`,
+          severity: result.results.failed > 0 ? 'warning' : 'success'
+        });
+        
+        console.log('Campaign sent successfully:', result);
+      }
+      
+      handleCloseDialog();
+    } catch (error) {
+      console.error('Error sending campaign:', error);
+      setSnackbar({
+        open: true,
+        message: `Chyba pri odosielaní kampane: ${error.data?.message || error.message}`,
+        severity: 'error'
+      });
+    }
   }
 
   const handleEmailSubmit = () => {
@@ -404,8 +448,8 @@ function Campaigns() {
         </Grid>
 
         {/* Integration Notice */}
-        <Alert severity="info" sx={{ mb: 3 }}>
-          💡 Integrácia so SendGrid bude pridaná neskôr pre odosielanie hromadných e-mailov.
+        <Alert severity="success" sx={{ mb: 3 }}>
+          ✅ Hromadné e-maily sú funkčné! Použite tlačidlo "Vytvoriť kampaň" pre odoslanie e-mailu všetkým zákazníkom.
         </Alert>
 
         {/* Campaigns Table */}
@@ -723,8 +767,9 @@ function Campaigns() {
                 variant="contained" 
                 onClick={handleSubmit}
                 startIcon={<SendIcon />}
+                disabled={isSending}
               >
-                {dialogMode === 'create' ? t('sendCampaign') : t('save')}
+                {isSending ? 'Odosielam...' : (dialogMode === 'create' ? t('sendCampaign') : t('save'))}
               </Button>
             </>
           )}
@@ -855,6 +900,15 @@ function Campaigns() {
           )}
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        message={snackbar.message}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      />
     </Box>
   )
 }
