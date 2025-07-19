@@ -89,6 +89,12 @@ const userSchema = new mongoose.Schema({
     default: false
   },
   blacklistReason: String,
+  emailOptOut: {
+    type: Boolean,
+    default: false
+  },
+  emailOptOutDate: Date,
+  emailOptOutReason: String,
   totalBookings: {
     type: Number,
     default: 0

@@ -288,6 +288,14 @@ export const api = createApi({
         params,
       }),
     }),
+    toggleUserEmailOptOut: builder.mutation({
+      query: ({ id, optOut, reason }) => ({
+        url: `users/${id}/email-opt-out`,
+        method: 'PUT',
+        body: { optOut, reason },
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'User', id }, 'User'],
+    }),
     
     // Payment endpoints
     getPayments: builder.query({
@@ -919,6 +927,9 @@ export const {
   // Email subscription hooks
   useGetEmailSubscriptionsQuery,
   useGetEmailSubscriptionStatsQuery,
+  
+  // User management hooks
+  useToggleUserEmailOptOutMutation,
 } = api
 
 export const store = configureStore({

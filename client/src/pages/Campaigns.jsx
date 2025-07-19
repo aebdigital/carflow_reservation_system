@@ -52,7 +52,8 @@ import {
   useGetCampaignStatsQuery,
   useGetEmailSubscriptionsQuery,
   useGetEmailSubscriptionStatsQuery,
-  useGetUsersQuery
+  useGetUsersQuery,
+  useToggleUserEmailOptOutMutation
 } from '../store/store'
 
 function TabPanel({ children, value, index, ...other }) {
@@ -105,6 +106,7 @@ function Campaigns() {
   const { data: emailSubscriptions, isLoading: emailsLoading } = useGetEmailSubscriptionsQuery({ page: 1, limit: 100 })
   const { data: emailStats } = useGetEmailSubscriptionStatsQuery()
   const { data: users, isLoading: usersLoading } = useGetUsersQuery()
+  const [toggleEmailOptOut, { isLoading: isTogglingOptOut }] = useToggleUserEmailOptOutMutation()
 
   // Mock data for campaigns
   const campaigns = [
@@ -158,11 +160,14 @@ function Campaigns() {
             phone: sub.phone || '',
             source: 'subscription',
             tags: Array.isArray(sub.tags) ? sub.tags : ['newsletter'],
-            isActive: sub.isActive !== undefined ? sub.isActive : true,
+            isActive: (sub.isActive !== undefined ? sub.isActive : true) && !sub.emailOptOut,
             subscribedDate: sub.subscribedDate || sub.createdAt,
             lastEmailDate: sub.lastEmailDate || '',
-            notes: sub.notes || '',
-            originalSource: 'EmailSubscription'
+            notes: sub.notes || (sub.emailOptOut ? 'Email opt-out' : ''),
+            originalSource: 'EmailSubscription',
+            emailOptOut: sub.emailOptOut || false,
+            emailOptOutDate: sub.emailOptOutDate,
+            emailOptOutReason: sub.emailOptOutReason
           });
         }
       });
@@ -182,13 +187,16 @@ function Campaigns() {
             phone: user.phone || '',
             source: user.role === 'customer' ? 'customer' : 'website',
             tags: Array.isArray(existing?.tags) ? existing.tags : ['customer'],
-            isActive: !user.isBlacklisted && user.role === 'customer',
+            isActive: !user.isBlacklisted && user.role === 'customer' && !user.emailOptOut,
             subscribedDate: existing?.subscribedDate || user.createdAt,
             lastEmailDate: existing?.lastEmailDate || '',
-            notes: existing?.notes || (user.isBlacklisted ? 'Blacklisted user' : ''),
+            notes: existing?.notes || (user.isBlacklisted ? 'Blacklisted user' : (user.emailOptOut ? 'Email opt-out' : '')),
             originalSource: 'User',
             role: user.role,
-            isBlacklisted: user.isBlacklisted || false
+            isBlacklisted: user.isBlacklisted || false,
+            emailOptOut: user.emailOptOut || false,
+            emailOptOutDate: user.emailOptOutDate,
+            emailOptOutReason: user.emailOptOutReason
           });
         }
       });
@@ -411,6 +419,39 @@ function Campaigns() {
     setTabValue(newValue)
   }
 
+  const handleToggleEmailOptOut = async (email) => {
+    if (email.originalSource !== 'User') {
+      setSnackbar({
+        open: true,
+        message: 'Email opt-out možno zmeniť len pre registrovaných zákazníkov',
+        severity: 'warning'
+      });
+      return;
+    }
+
+    try {
+      const newOptOutStatus = !email.emailOptOut;
+      await toggleEmailOptOut({
+        id: email.id,
+        optOut: newOptOutStatus,
+        reason: newOptOutStatus ? 'Admin action - opted out' : 'Admin action - opted back in'
+      }).unwrap();
+
+      setSnackbar({
+        open: true,
+        message: `Email odber ${newOptOutStatus ? 'deaktivovaný' : 'aktivovaný'} pre ${email.email}`,
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Error toggling email opt-out:', error);
+      setSnackbar({
+        open: true,
+        message: `Chyba pri zmene odberu emailov: ${error.data?.message || error.message}`,
+        severity: 'error'
+      });
+    }
+  }
+
   // Use combined data or fallback to mock data - ensure we always have an array
   const currentEmailData = React.useMemo(() => {
     if (emailsLoading || usersLoading) {
@@ -438,6 +479,10 @@ function Campaigns() {
   const getSubscriptionEmails = () => {
     if (!Array.isArray(currentEmailData)) return [];
     return currentEmailData.filter(email => email && (email.source === 'subscription' || email.originalSource === 'EmailSubscription')) || [];
+  }
+  const getOptedOutEmails = () => {
+    if (!Array.isArray(currentEmailData)) return [];
+    return currentEmailData.filter(email => email && email.emailOptOut) || [];
   }
 
   // Error boundary for safer rendering
@@ -659,11 +704,11 @@ function Campaigns() {
           <Grid item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: 'secondary.main' }}>
-                  {getSubscriptionEmails()?.length || 0}
+                <Typography variant="h4" sx={{ fontWeight: 700, color: 'error.main' }}>
+                  {getOptedOutEmails()?.length || 0}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Newsletter odbery
+                  Odhlásení z emailov
                 </Typography>
               </CardContent>
             </Card>
@@ -715,6 +760,7 @@ function Campaigns() {
                     <TableCell sx={{ fontWeight: 600 }}>Zdroj</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Značky</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Stav</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Email odber</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Dátum registrácie</TableCell>
                     <TableCell></TableCell>
                   </TableRow>
@@ -757,6 +803,26 @@ function Campaigns() {
                         />
                       </TableCell>
                       <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Chip
+                            label={email.emailOptOut ? 'Odhlásený' : 'Odberateľ'}
+                            size="small"
+                            color={email.emailOptOut ? 'error' : 'success'}
+                            variant={email.emailOptOut ? 'filled' : 'outlined'}
+                          />
+                          {email.originalSource === 'User' && (
+                            <IconButton
+                              size="small"
+                              onClick={() => handleToggleEmailOptOut(email)}
+                              disabled={isTogglingOptOut}
+                              color={email.emailOptOut ? 'success' : 'error'}
+                            >
+                              {email.emailOptOut ? <EmailIcon fontSize="small" /> : <BlockIcon fontSize="small" />}
+                            </IconButton>
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
                         {email.subscribedDate ? new Date(email.subscribedDate).toLocaleDateString('sk-SK') : '—'}
                       </TableCell>
                       <TableCell>
@@ -781,7 +847,7 @@ function Campaigns() {
                   })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={8} sx={{ textAlign: 'center', py: 4 }}>
+                      <TableCell colSpan={9} sx={{ textAlign: 'center', py: 4 }}>
                         <Typography variant="body2" color="text.secondary">
                           {emailsLoading || usersLoading ? 'Načítavam dáta...' : 'Žiadne emaily neboli nájdené'}
                         </Typography>

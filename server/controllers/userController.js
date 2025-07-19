@@ -545,6 +545,52 @@ const searchUsers = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Toggle email opt-out status for user
+// @route   PUT /api/users/:id/email-opt-out
+// @access  Private/Admin
+const toggleEmailOptOut = asyncHandler(async (req, res, next) => {
+  const { optOut, reason } = req.body;
+  
+  console.log(`🔄 [USER CONTROLLER] Toggling email opt-out for user ${req.params.id}`);
+  console.log(`🔄 [USER CONTROLLER] Opt-out status: ${optOut}, Reason: ${reason}`);
+
+  // Find user within tenant scope
+  const user = await User.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  });
+
+  if (!user) {
+    return next(new AppError('User not found or access denied', 404));
+  }
+
+  // Update email opt-out status
+  user.emailOptOut = optOut;
+  if (optOut) {
+    user.emailOptOutDate = new Date();
+    user.emailOptOutReason = reason || 'Admin action';
+  } else {
+    user.emailOptOutDate = null;
+    user.emailOptOutReason = null;
+  }
+
+  await user.save();
+
+  console.log(`✅ [USER CONTROLLER] Email opt-out toggled for user ${user.email}: ${optOut}`);
+
+  res.status(200).json({
+    success: true,
+    message: `Email ${optOut ? 'opt-out enabled' : 'opt-out disabled'} for user`,
+    data: {
+      id: user._id,
+      email: user.email,
+      emailOptOut: user.emailOptOut,
+      emailOptOutDate: user.emailOptOutDate,
+      emailOptOutReason: user.emailOptOutReason
+    }
+  });
+});
+
 module.exports = {
   getUsers,
   getUser,
@@ -555,5 +601,6 @@ module.exports = {
   blacklistUser,
   unblacklistUser,
   getUserStats,
-  searchUsers
+  searchUsers,
+  toggleEmailOptOut
 }; 

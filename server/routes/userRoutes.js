@@ -9,7 +9,8 @@ const {
   blacklistUser,
   unblacklistUser,
   getUserStats,
-  searchUsers
+  searchUsers,
+  toggleEmailOptOut
 } = require('../controllers/userController');
 
 const { protect, requireAdmin, requireStaff, addTenantFilter, restrictRivalDomain } = require('../middleware/authMiddleware');
@@ -39,5 +40,6 @@ router.route('/:id')
 router.get('/:id/reservations', getUserReservations);
 router.put('/:id/blacklist', requireAdmin, blacklistUser);
 router.put('/:id/unblacklist', requireAdmin, unblacklistUser);
+router.put('/:id/email-opt-out', requireAdmin, toggleEmailOptOut);
 
 module.exports = router; 

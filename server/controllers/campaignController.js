@@ -21,18 +21,20 @@ const sendMassEmail = asyncHandler(async (req, res, next) => {
   try {
     // Get recipients based on target selection
     if (targetCustomers === 'all') {
-      // Get all customers from Users and EmailSubscriptions
+      // Get all customers from Users and EmailSubscriptions (excluding opt-out users)
       const [users, emailSubscriptions] = await Promise.all([
         User.find({ 
           tenantId, 
           role: 'customer',
-          email: { $exists: true, $ne: '' }
-        }).select('email firstName lastName'),
+          email: { $exists: true, $ne: '' },
+          emailOptOut: { $ne: true }
+        }).select('email firstName lastName emailOptOut'),
         EmailSubscription.find({ 
           tenantId,
           isActive: true,
-          email: { $exists: true, $ne: '' }
-        }).select('email firstName lastName')
+          email: { $exists: true, $ne: '' },
+          emailOptOut: { $ne: true }
+        }).select('email firstName lastName emailOptOut')
       ]);
 
       // Combine and deduplicate emails
@@ -60,12 +62,13 @@ const sendMassEmail = asyncHandler(async (req, res, next) => {
 
       recipients = Array.from(emailMap.values());
     } else if (targetCustomers === 'active') {
-      // Get only active email subscriptions
+      // Get only active email subscriptions (excluding opt-out users)
       const emailSubscriptions = await EmailSubscription.find({ 
         tenantId,
         isActive: true,
-        email: { $exists: true, $ne: '' }
-      }).select('email firstName lastName');
+        email: { $exists: true, $ne: '' },
+        emailOptOut: { $ne: true }
+      }).select('email firstName lastName emailOptOut');
 
       recipients = emailSubscriptions.map(sub => ({
         email: sub.email,

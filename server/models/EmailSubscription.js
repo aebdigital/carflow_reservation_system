@@ -43,6 +43,12 @@ const emailSubscriptionSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  emailOptOut: {
+    type: Boolean,
+    default: false
+  },
+  emailOptOutDate: Date,
+  emailOptOutReason: String,
   subscribedDate: {
     type: Date,
     default: Date.now
