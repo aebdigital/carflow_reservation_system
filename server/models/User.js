@@ -17,7 +17,6 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: [true, 'Email is required'],
-    unique: true,
     lowercase: true,
     trim: true,
     match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email']
@@ -105,12 +104,13 @@ const userSchema = new mongoose.Schema({
 });
 
 // Index for better performance
-userSchema.index({ email: 1 });
 userSchema.index({ licenseNumber: 1 });
 userSchema.index({ role: 1 });
 // Compound index for tenant-based queries
 userSchema.index({ tenantId: 1, role: 1 });
 userSchema.index({ tenantId: 1, isActive: 1 });
+// Compound unique index: email is unique within each tenant
+userSchema.index({ email: 1, tenantId: 1 }, { unique: true });
 
 // Generate unique storage folder path before saving
 userSchema.pre('save', async function(next) {
