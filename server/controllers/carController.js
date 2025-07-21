@@ -406,7 +406,7 @@ const createCar = asyncHandler(async (req, res, next) => {
           const keys = field.split('.');
           let obj = req.body;
           for (let i = 0; i < keys.length - 1; i++) {
-            if (obj && obj[keys[i]]) {
+            if (obj && obj[keys[i]] !== undefined && obj[keys[i]] !== null) {
               obj = obj[keys[i]];
             } else {
               return; // Skip if path doesn't exist
@@ -1118,7 +1118,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
           const keys = field.split('.');
           let obj = req.body;
           for (let i = 0; i < keys.length - 1; i++) {
-            if (obj && obj[keys[i]]) {
+            if (obj && obj[keys[i]] !== undefined && obj[keys[i]] !== null) {
               obj = obj[keys[i]];
             } else {
               return; // Skip if path doesn't exist
