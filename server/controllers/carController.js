@@ -1588,13 +1588,16 @@ const uploadCarImages = asyncHandler(async (req, res, next) => {
 // @route   DELETE /api/cars/:id/images/:imageIndex
 // @access  Private/Admin
 const deleteCarImage = asyncHandler(async (req, res, next) => {
-  const car = await Car.findById(req.params.id);
+  const car = await Car.findOne({ 
+    _id: req.params.id, 
+    tenantId: req.user.tenantId 
+  });
 
   if (!car) {
     return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
   }
 
-  const imageIndex = parseInt(req.params.imageIndex);
+  const imageIndex = parseInt(req.params.imageId);
   
   if (!car.images || imageIndex < 0 || imageIndex >= car.images.length) {
     return next(new AppError('Image not found', 404));
@@ -1605,7 +1608,7 @@ const deleteCarImage = asyncHandler(async (req, res, next) => {
   try {
     // Delete from Google Cloud Storage
     if (imageToDelete.filename) {
-      await cloudStorage.deleteCarImages(car._id.toString(), imageToDelete.filename);
+      await cloudStorage.deleteCarImages(car._id.toString(), req.user, imageToDelete.filename);
     }
   } catch (error) {
     console.error('Failed to delete image from cloud storage:', error);
@@ -1635,13 +1638,16 @@ const deleteCarImage = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/cars/:id/images/:imageIndex/primary
 // @access  Private/Admin
 const setPrimaryImage = asyncHandler(async (req, res, next) => {
-  const car = await Car.findById(req.params.id);
+  const car = await Car.findOne({ 
+    _id: req.params.id, 
+    tenantId: req.user.tenantId 
+  });
 
   if (!car) {
     return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
   }
 
-  const imageIndex = parseInt(req.params.imageIndex);
+  const imageIndex = parseInt(req.params.imageId);
   
   if (!car.images || imageIndex < 0 || imageIndex >= car.images.length) {
     return next(new AppError('Image not found', 404));
