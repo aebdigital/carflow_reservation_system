@@ -435,6 +435,12 @@ class CloudStorageService {
       }
     }
     
+    // Check for SVG files by looking for common SVG patterns in text
+    const bufferString = buffer.toString('utf8', 0, Math.min(1024, buffer.length)).toLowerCase();
+    if (bufferString.includes('<svg') || bufferString.includes('<?xml') && bufferString.includes('svg')) {
+      return 'image/svg+xml';
+    }
+    
     throw new Error('Unsupported file type');
   }
 
@@ -818,6 +824,68 @@ class CloudStorageService {
     } catch (error) {
       console.error('Error deleting blog image:', error);
       throw new Error(`Failed to delete blog image: ${error.message}`);
+    }
+  }
+
+  /**
+   * Upload equipment icon with tenant separation
+   * @param {Buffer} fileBuffer - Icon file buffer
+   * @param {string} originalName - Original filename
+   * @param {string} carId - Car ID for folder organization
+   * @param {Object} user - User object with storageFolder
+   * @returns {Promise<string>} Public URL of uploaded icon
+   */
+  async uploadEquipmentIcon(fileBuffer, originalName, carId, user) {
+    await this.checkConfiguration();
+
+    try {
+      // Validate file type (SVG or PNG for icons)
+      const fileType = await this.getFileType(fileBuffer);
+      const isSvg = originalName.toLowerCase().endsWith('.svg');
+      
+      if (!['image/png', 'image/svg+xml'].includes(fileType) && !isSvg) {
+        throw new Error('Invalid file type. Only PNG and SVG files are allowed for equipment icons.');
+      }
+
+      // Validate file size (max 1MB for icons)
+      if (fileBuffer.length > 1024 * 1024) {
+        throw new Error('File too large. Maximum size for equipment icons: 1MB');
+      }
+
+      // Generate unique filename for the icon
+      const fileExtension = path.extname(originalName).toLowerCase();
+      const iconFileName = `${uuidv4()}${fileExtension}`;
+      
+      // Use car-specific folder path for complete tenant separation
+      const iconPath = `${user.storageFolder}/cars/${carId}/equipment/${iconFileName}`;
+
+      // Upload icon to Google Cloud Storage
+      const file = this.bucket.file(iconPath);
+      
+      await file.save(fileBuffer, {
+        metadata: {
+          contentType: isSvg ? 'image/svg+xml' : fileType,
+          cacheControl: 'public, max-age=31536000' // Cache for 1 year
+        }
+      });
+
+      // Try to make the file public
+      try {
+        await file.makePublic();
+      } catch (aclError) {
+        console.warn('⚠️  Could not make equipment icon public:', aclError.message);
+      }
+
+      // Return the public URL
+      const publicUrl = `https://storage.googleapis.com/${this.bucketName}/${iconPath}`;
+      
+      console.log(`✅ Equipment icon uploaded successfully: ${publicUrl}`);
+      
+      return publicUrl;
+      
+    } catch (error) {
+      console.error('Error uploading equipment icon:', error);
+      throw new Error(`Failed to upload equipment icon: ${error.message}`);
     }
   }
 }

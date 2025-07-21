@@ -288,7 +288,39 @@ const createCar = asyncHandler(async (req, res, next) => {
         });
       }
 
-      // Handle equipment array
+      // Handle equipment array - process nested equipment objects
+      const equipmentKeys = Object.keys(req.body).filter(key => key.startsWith('equipment['));
+      if (equipmentKeys.length > 0) {
+        const equipmentMap = {};
+        
+        equipmentKeys.forEach(key => {
+          try {
+            const match = key.match(/equipment\[(\d+)\]\[(.+)\]/);
+            if (match) {
+              const [, index, field] = match;
+              const numIndex = parseInt(index, 10);
+              
+              if (!equipmentMap[numIndex]) {
+                equipmentMap[numIndex] = {};
+              }
+              equipmentMap[numIndex][field] = req.body[key];
+              delete req.body[key];
+            }
+          } catch (error) {
+            console.error(`Error processing equipment field ${key}:`, error);
+          }
+        });
+        
+        // Convert map to array, filtering out empty objects
+        req.body.equipment = Object.keys(equipmentMap)
+          .sort((a, b) => parseInt(a) - parseInt(b))
+          .map(index => equipmentMap[index])
+          .filter(item => item && Object.keys(item).length > 0 && item.name);
+        
+        console.log('🚗 [CAR CREATE] Processed equipment array:', JSON.stringify(req.body.equipment, null, 2));
+      }
+      
+      // Handle legacy equipment array format (fallback)
       if (req.body['equipment[]']) {
         req.body.equipment = Array.isArray(req.body['equipment[]']) 
           ? req.body['equipment[]'] 
@@ -752,6 +784,50 @@ const createCar = asyncHandler(async (req, res, next) => {
     }
   }
 
+  // Handle equipment icon uploads if any
+  console.log('🚗 [CAR CREATE] Processing equipment icons...');
+  if (car.equipment && Array.isArray(car.equipment)) {
+    const equipmentIconPromises = car.equipment.map(async (equipmentItem, index) => {
+      // Look for equipment icon files in req.files
+      const equipmentIconFile = req.files?.find(file => 
+        file.fieldname === `equipmentIcon_${index}` || 
+        file.fieldname === `equipment[${index}][iconFile]`
+      );
+      
+      if (equipmentIconFile && equipmentItem.name) {
+        try {
+          console.log(`🚗 [CAR CREATE] Uploading icon for equipment: ${equipmentItem.name}`);
+          const iconUrl = await cloudStorage.uploadEquipmentIcon(
+            equipmentIconFile.buffer,
+            equipmentIconFile.originalname,
+            car._id.toString(),
+            req.user
+          );
+          
+          // Update the equipment item with the uploaded icon URL
+          equipmentItem.icon = iconUrl;
+          console.log(`🚗 [CAR CREATE] Icon uploaded successfully: ${iconUrl}`);
+          
+          return true;
+        } catch (error) {
+          console.error(`🚗 [CAR CREATE] Failed to upload equipment icon for ${equipmentItem.name}:`, error);
+          // Keep the equipment item even if icon upload fails
+          return false;
+        }
+      }
+      return false;
+    });
+    
+    // Wait for all icon uploads to complete
+    const uploadResults = await Promise.all(equipmentIconPromises);
+    const successfulUploads = uploadResults.filter(result => result === true).length;
+    
+    if (successfulUploads > 0) {
+      console.log(`🚗 [CAR CREATE] Successfully uploaded ${successfulUploads} equipment icons`);
+      await car.save();
+    }
+  }
+
     // Check for document validity notifications
     const notifications = car.checkDocumentValidity();
     if (notifications.length > 0) {
@@ -1012,9 +1088,42 @@ const updateCar = asyncHandler(async (req, res, next) => {
         });
       }
 
-      // Handle equipment array
+      // Handle equipment array - process nested equipment objects
+      const equipmentKeys = Object.keys(req.body).filter(key => key.startsWith('equipment['));
+      if (equipmentKeys.length > 0) {
+        console.log('🚗 [CAR UPDATE] Step 4h: Processing nested equipment array...');
+        const equipmentMap = {};
+        
+        equipmentKeys.forEach(key => {
+          try {
+            const match = key.match(/equipment\[(\d+)\]\[(.+)\]/);
+            if (match) {
+              const [, index, field] = match;
+              const numIndex = parseInt(index, 10);
+              
+              if (!equipmentMap[numIndex]) {
+                equipmentMap[numIndex] = {};
+              }
+              equipmentMap[numIndex][field] = req.body[key];
+              delete req.body[key];
+            }
+          } catch (error) {
+            console.error(`Error processing equipment field ${key}:`, error);
+          }
+        });
+        
+        // Convert map to array, filtering out empty objects
+        req.body.equipment = Object.keys(equipmentMap)
+          .sort((a, b) => parseInt(a) - parseInt(b))
+          .map(index => equipmentMap[index])
+          .filter(item => item && Object.keys(item).length > 0 && item.name);
+        
+        console.log('🚗 [CAR UPDATE] Processed equipment array:', JSON.stringify(req.body.equipment, null, 2));
+      }
+      
+      // Handle legacy equipment array format (fallback)
       if (req.body['equipment[]']) {
-        console.log('🚗 [CAR UPDATE] Step 4h: Processing equipment array...');
+        console.log('🚗 [CAR UPDATE] Step 4h: Processing legacy equipment array...');
         req.body.equipment = Array.isArray(req.body['equipment[]']) 
           ? req.body['equipment[]'] 
           : [req.body['equipment[]']];
@@ -1388,6 +1497,50 @@ const updateCar = asyncHandler(async (req, res, next) => {
       }
       
       console.log('🚗 [CAR UPDATE] Step 8b: Car updated successfully! ID:', car._id);
+      
+      // Handle equipment icon uploads if any
+      console.log('🚗 [CAR UPDATE] Step 8c: Processing equipment icons...');
+      if (car.equipment && Array.isArray(car.equipment)) {
+        const equipmentIconPromises = car.equipment.map(async (equipmentItem, index) => {
+          // Look for equipment icon files in req.files
+          const equipmentIconFile = req.files?.find(file => 
+            file.fieldname === `equipmentIcon_${index}` || 
+            file.fieldname === `equipment[${index}][iconFile]`
+          );
+          
+          if (equipmentIconFile && equipmentItem.name) {
+            try {
+              console.log(`🚗 [CAR UPDATE] Uploading icon for equipment: ${equipmentItem.name}`);
+              const iconUrl = await cloudStorage.uploadEquipmentIcon(
+                equipmentIconFile.buffer,
+                equipmentIconFile.originalname,
+                car._id.toString(),
+                req.user
+              );
+              
+              // Update the equipment item with the uploaded icon URL
+              equipmentItem.icon = iconUrl;
+              console.log(`🚗 [CAR UPDATE] Icon uploaded successfully: ${iconUrl}`);
+              
+              return true;
+            } catch (error) {
+              console.error(`🚗 [CAR UPDATE] Failed to upload equipment icon for ${equipmentItem.name}:`, error);
+              // Keep the equipment item even if icon upload fails
+              return false;
+            }
+          }
+          return false;
+        });
+        
+        // Wait for all icon uploads to complete
+        const uploadResults = await Promise.all(equipmentIconPromises);
+        const successfulUploads = uploadResults.filter(result => result === true).length;
+        
+        if (successfulUploads > 0) {
+          console.log(`🚗 [CAR UPDATE] Successfully uploaded ${successfulUploads} equipment icons`);
+          await car.save();
+        }
+      }
       
       // DEBUG: Log the updated car's technical data
       console.log('🚗 [CAR UPDATE] === UPDATED CAR TECHNICAL DATA ===');

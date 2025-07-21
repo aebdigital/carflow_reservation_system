@@ -746,9 +746,17 @@ function Cars() {
               formDataToSend.append('features[]', feature);
             });
           } else if (key === 'equipment') {
-            // Handle equipment array
-            formData[key].forEach(item => {
-              formDataToSend.append('equipment[]', item);
+            // Handle equipment array - serialize each object properly
+            formData[key].forEach((item, index) => {
+              if (item && typeof item === 'object') {
+                Object.keys(item).forEach(itemKey => {
+                  if (item[itemKey] !== undefined && item[itemKey] !== null) {
+                    formDataToSend.append(`equipment[${index}][${itemKey}]`, item[itemKey]);
+                  }
+                });
+              } else if (typeof item === 'string') {
+                formDataToSend.append(`equipment[${index}][name]`, item);
+              }
             });
           } else if (key === 'badges') {
             // Handle badges array
@@ -834,9 +842,17 @@ function Cars() {
                 formDataToSend.append('features[]', feature);
               });
             } else if (key === 'equipment') {
-              // Handle equipment array
-              formData[key].forEach(item => {
-                formDataToSend.append('equipment[]', item);
+              // Handle equipment array - serialize each object properly
+              formData[key].forEach((item, index) => {
+                if (item && typeof item === 'object') {
+                  Object.keys(item).forEach(itemKey => {
+                    if (item[itemKey] !== undefined && item[itemKey] !== null) {
+                      formDataToSend.append(`equipment[${index}][${itemKey}]`, item[itemKey]);
+                    }
+                  });
+                } else if (typeof item === 'string') {
+                  formDataToSend.append(`equipment[${index}][name]`, item);
+                }
               });
             } else if (key === 'badges') {
               // Handle badges array
@@ -911,9 +927,17 @@ function Cars() {
                 formDataToSend.append('features[]', feature);
               });
             } else if (key === 'equipment') {
-              // Handle equipment array
-              formData[key].forEach(item => {
-                formDataToSend.append('equipment[]', item);
+              // Handle equipment array - serialize each object properly
+              formData[key].forEach((item, index) => {
+                if (item && typeof item === 'object') {
+                  Object.keys(item).forEach(itemKey => {
+                    if (item[itemKey] !== undefined && item[itemKey] !== null) {
+                      formDataToSend.append(`equipment[${index}][${itemKey}]`, item[itemKey]);
+                    }
+                  });
+                } else if (typeof item === 'string') {
+                  formDataToSend.append(`equipment[${index}][name]`, item);
+                }
               });
             } else if (key === 'badges') {
               // Handle badges array
