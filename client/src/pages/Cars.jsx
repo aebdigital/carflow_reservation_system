@@ -984,17 +984,21 @@ function Cars() {
 
   const renderCarCard = (car) => (
     <Grid item xs={12} sm={6} md={4} lg={4} xl={4} key={car._id}>
-      <Card sx={{ 
-        height: 400, // Increased height for better photo display
-        display: 'flex', 
-        flexDirection: 'column',
-        boxShadow: 2,
-        '&:hover': {
-          boxShadow: 4,
-          transform: 'translateY(-2px)',
-          transition: 'all 0.2s ease-in-out'
-        }
-      }}>
+      <Card 
+        onClick={() => handleOpenDialog('view', car)}
+        sx={{ 
+          height: 400, // Increased height for better photo display
+          display: 'flex', 
+          flexDirection: 'column',
+          boxShadow: 2,
+          cursor: 'pointer', // Show pointer cursor
+          '&:hover': {
+            boxShadow: 4,
+            transform: 'translateY(-2px)',
+            transition: 'all 0.2s ease-in-out'
+          }
+        }}
+      >
         <CardMedia
           component="img"
           height="200" // Increased image height for much better photo display
@@ -1097,7 +1101,10 @@ function Cars() {
             <Box>
               <IconButton 
                 size="medium" 
-                onClick={() => handleOpenDialog('view', car)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenDialog('view', car);
+                }}
                 color="primary"
                 sx={{ mr: 0.5, p: 0.6 }}
               >
@@ -1105,7 +1112,10 @@ function Cars() {
               </IconButton>
               <IconButton 
                 size="medium" 
-                onClick={() => handleOpenDialog('edit', car)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenDialog('edit', car);
+                }}
                 color="primary"
                 sx={{ mr: 0.5, p: 0.6 }}
               >
@@ -1113,7 +1123,10 @@ function Cars() {
               </IconButton>
               <IconButton 
                 size="medium" 
-                onClick={() => handleDelete(car._id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(car._id);
+                }}
                 color="error"
                 sx={{ p: 0.6 }}
               >
