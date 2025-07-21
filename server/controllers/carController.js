@@ -320,6 +320,35 @@ const createCar = asyncHandler(async (req, res, next) => {
       delete req.body['features[]'];
     }
 
+    // Handle damages array
+    const damagesKeys = Object.keys(req.body).filter(key => key.startsWith('damages['));
+    if (damagesKeys.length > 0) {
+        console.log('🚗 [CAR CREATE] Processing damages array...');
+        req.body.damages = [];
+        const damagesMap = {};
+        
+        damagesKeys.forEach(key => {
+            try {
+                const match = key.match(/damages\[(\d+)\]\[(.+)\]/);
+                if (match) {
+                    const [, index, field] = match;
+                    if (!damagesMap[index]) {
+                        damagesMap[index] = {};
+                    }
+                    damagesMap[index][field] = req.body[key];
+                    delete req.body[key];
+                }
+            } catch (error) {
+                console.error(`Error processing damages field ${key}:`, error);
+            }
+        });
+        
+        // Convert damages map to array
+        req.body.damages = Object.keys(damagesMap)
+            .sort((a, b) => parseInt(a) - parseInt(b))
+            .map(index => damagesMap[index]);
+    }
+
     // Handle maintenance object
     const maintenanceKeys = Object.keys(req.body).filter(key => key.startsWith('maintenance['));
     if (maintenanceKeys.length > 0) {
@@ -989,6 +1018,35 @@ const updateCar = asyncHandler(async (req, res, next) => {
         ? req.body['features[]'] 
         : [req.body['features[]']];
       delete req.body['features[]'];
+    }
+
+    // Handle damages array
+    const damagesKeys = Object.keys(req.body).filter(key => key.startsWith('damages['));
+    if (damagesKeys.length > 0) {
+        console.log('🚗 [CAR UPDATE] Step 4k2: Processing damages array...');
+        req.body.damages = [];
+        const damagesMap = {};
+        
+        damagesKeys.forEach(key => {
+            try {
+                const match = key.match(/damages\[(\d+)\]\[(.+)\]/);
+                if (match) {
+                    const [, index, field] = match;
+                    if (!damagesMap[index]) {
+                        damagesMap[index] = {};
+                    }
+                    damagesMap[index][field] = req.body[key];
+                    delete req.body[key];
+                }
+            } catch (error) {
+                console.error(`Error processing damages field ${key}:`, error);
+            }
+        });
+        
+        // Convert damages map to array
+        req.body.damages = Object.keys(damagesMap)
+            .sort((a, b) => parseInt(a) - parseInt(b))
+            .map(index => damagesMap[index]);
     }
 
     // Handle maintenance object
