@@ -735,6 +735,16 @@ function Cars() {
             formData[key].forEach(feature => {
               formDataToSend.append('features[]', feature);
             });
+          } else if (key === 'equipment') {
+            // Handle equipment array
+            formData[key].forEach(item => {
+              formDataToSend.append('equipment[]', item);
+            });
+          } else if (key === 'badges') {
+            // Handle badges array
+            formData[key].forEach(badge => {
+              formDataToSend.append('badges[]', badge);
+            });
           } else if (key === 'damages') {
             // Handle damages array
             formData[key].forEach((damage, index) => {
@@ -801,6 +811,16 @@ function Cars() {
               formData[key].forEach(feature => {
                 formDataToSend.append('features[]', feature);
               });
+            } else if (key === 'equipment') {
+              // Handle equipment array
+              formData[key].forEach(item => {
+                formDataToSend.append('equipment[]', item);
+              });
+            } else if (key === 'badges') {
+              // Handle badges array
+              formData[key].forEach(badge => {
+                formDataToSend.append('badges[]', badge);
+              });
             } else if (key === 'damages') {
               // Handle damages array
               formData[key].forEach((damage, index) => {
@@ -855,6 +875,16 @@ function Cars() {
               // Handle array
               formData[key].forEach(feature => {
                 formDataToSend.append('features[]', feature);
+              });
+            } else if (key === 'equipment') {
+              // Handle equipment array
+              formData[key].forEach(item => {
+                formDataToSend.append('equipment[]', item);
+              });
+            } else if (key === 'badges') {
+              // Handle badges array
+              formData[key].forEach(badge => {
+                formDataToSend.append('badges[]', badge);
               });
             } else if (key === 'damages') {
               // Handle damages array
