@@ -154,7 +154,7 @@ function Cars() {
     data: carsData, 
     isLoading: carsLoading, 
     error: carsError 
-  } = useGetCarsQuery()
+  } = useGetCarsQuery({ limit: 1000 }) // Load up to 1000 cars for admin panel
 
   const [createCar, { isLoading: creating }] = useCreateCarMutation()
   const [updateCar, { isLoading: updating }] = useUpdateCarMutation()
