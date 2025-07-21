@@ -763,7 +763,8 @@ function Cars() {
                 }
               });
             });
-          } else {
+          } else if (key !== 'images') {
+            // Skip images key - it's handled separately below
             formDataToSend.append(key, formData[key]);
           }
         });
@@ -850,7 +851,8 @@ function Cars() {
                   }
                 });
               });
-            } else {
+            } else if (key !== 'images') {
+              // Skip images key - it's handled separately below
               formDataToSend.append(key, formData[key]);
             }
           });
@@ -926,7 +928,8 @@ function Cars() {
                   }
                 });
               });
-            } else {
+            } else if (key !== 'images') {
+              // Skip images key - it's handled separately below
               formDataToSend.append(key, formData[key]);
             }
           });
