@@ -335,7 +335,16 @@ const createCar = asyncHandler(async (req, res, next) => {
                     if (!damagesMap[index]) {
                         damagesMap[index] = {};
                     }
-                    damagesMap[index][field] = req.body[key];
+                    let value = req.body[key];
+                    // Try to parse JSON strings (for Date objects, etc.)
+                    try {
+                        if (typeof value === 'string' && (value.startsWith('{') || value.startsWith('['))) {
+                            value = JSON.parse(value);
+                        }
+                    } catch (e) {
+                        // Keep original value if JSON parsing fails
+                    }
+                    damagesMap[index][field] = value;
                     delete req.body[key];
                 }
             } catch (error) {
@@ -1035,7 +1044,16 @@ const updateCar = asyncHandler(async (req, res, next) => {
                     if (!damagesMap[index]) {
                         damagesMap[index] = {};
                     }
-                    damagesMap[index][field] = req.body[key];
+                    let value = req.body[key];
+                    // Try to parse JSON strings (for Date objects, etc.)
+                    try {
+                        if (typeof value === 'string' && (value.startsWith('{') || value.startsWith('['))) {
+                            value = JSON.parse(value);
+                        }
+                    } catch (e) {
+                        // Keep original value if JSON parsing fails
+                    }
+                    damagesMap[index][field] = value;
                     delete req.body[key];
                 }
             } catch (error) {

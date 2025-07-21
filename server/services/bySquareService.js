@@ -47,8 +47,6 @@ class BySquareService {
       
       // Convert to XML
       const xmlData = this.buildXMLRequest(invoiceData);
-      console.log('📤 [BYSQUARE] Generated XML request:');
-      console.log(xmlData);
       
       console.log('📤 [BYSQUARE] Sending request to bySquare API...');
       

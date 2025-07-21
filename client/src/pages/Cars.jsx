@@ -746,10 +746,21 @@ function Cars() {
               formDataToSend.append('badges[]', badge);
             });
           } else if (key === 'damages') {
-            // Handle damages array
-            formData[key].forEach((damage, index) => {
+            // Handle damages array - filter out empty/invalid damages
+            const validDamages = formData[key].filter(damage => 
+              damage && 
+              typeof damage === 'object' && 
+              (damage.description || damage.severity || damage.location)
+            );
+            
+            validDamages.forEach((damage, index) => {
               Object.keys(damage).forEach(damageKey => {
-                formDataToSend.append(`damages[${index}][${damageKey}]`, damage[damageKey]);
+                const value = damage[damageKey];
+                if (value !== null && value !== undefined && value !== '') {
+                  // Convert objects to strings (like Date objects)
+                  const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+                  formDataToSend.append(`damages[${index}][${damageKey}]`, stringValue);
+                }
               });
             });
           } else {
@@ -822,10 +833,21 @@ function Cars() {
                 formDataToSend.append('badges[]', badge);
               });
             } else if (key === 'damages') {
-              // Handle damages array
-              formData[key].forEach((damage, index) => {
+              // Handle damages array - filter out empty/invalid damages
+              const validDamages = formData[key].filter(damage => 
+                damage && 
+                typeof damage === 'object' && 
+                (damage.description || damage.severity || damage.location)
+              );
+              
+              validDamages.forEach((damage, index) => {
                 Object.keys(damage).forEach(damageKey => {
-                  formDataToSend.append(`damages[${index}][${damageKey}]`, damage[damageKey]);
+                  const value = damage[damageKey];
+                  if (value !== null && value !== undefined && value !== '') {
+                    // Convert objects to strings (like Date objects)
+                    const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+                    formDataToSend.append(`damages[${index}][${damageKey}]`, stringValue);
+                  }
                 });
               });
             } else {
@@ -887,10 +909,21 @@ function Cars() {
                 formDataToSend.append('badges[]', badge);
               });
             } else if (key === 'damages') {
-              // Handle damages array
-              formData[key].forEach((damage, index) => {
+              // Handle damages array - filter out empty/invalid damages
+              const validDamages = formData[key].filter(damage => 
+                damage && 
+                typeof damage === 'object' && 
+                (damage.description || damage.severity || damage.location)
+              );
+              
+              validDamages.forEach((damage, index) => {
                 Object.keys(damage).forEach(damageKey => {
-                  formDataToSend.append(`damages[${index}][${damageKey}]`, damage[damageKey]);
+                  const value = damage[damageKey];
+                  if (value !== null && value !== undefined && value !== '') {
+                    // Convert objects to strings (like Date objects)
+                    const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+                    formDataToSend.append(`damages[${index}][${damageKey}]`, stringValue);
+                  }
                 });
               });
             } else {
