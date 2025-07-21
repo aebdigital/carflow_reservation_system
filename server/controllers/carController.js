@@ -1408,6 +1408,14 @@ const updateCar = asyncHandler(async (req, res, next) => {
       console.log('🚗 [CAR UPDATE] Error code:', error.code);
       console.log('🚗 [CAR UPDATE] Full error:', error);
       
+      // Check for validation errors
+      if (error.name === 'ValidationError') {
+        console.log('🚗 [CAR UPDATE] VALIDATION ERRORS:');
+        for (const field in error.errors) {
+          console.log(`🚗 [CAR UPDATE] - ${field}: ${error.errors[field].message}`);
+        }
+      }
+      
       // Handle specific MongoDB errors with detailed messages
       if (error.code === 11000) {
         // Duplicate key error
