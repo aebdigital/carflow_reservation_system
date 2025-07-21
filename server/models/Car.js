@@ -224,7 +224,7 @@ const carSchema = new mongoose.Schema({
     description: String,
     category: {
       type: String,
-      enum: ['safety', 'comfort', 'technology', 'performance', 'exterior', 'interior']
+      enum: ['safety', 'comfort', 'technology', 'performance', 'exterior', 'interior', 'custom']
     },
     isStandard: {
       type: Boolean,
