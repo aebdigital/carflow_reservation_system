@@ -94,28 +94,54 @@ const EnhancedCarForm = ({
       return;
     }
     
-    // Create new array with reordered images
-    const newImages = [...formData.images];
+    // Get combined images and reorder them
+    const combinedImages = getCombinedImages();
+    const newImages = [...combinedImages];
     const [removed] = newImages.splice(source.index, 1);
     newImages.splice(destination.index, 0, removed);
     
-    // Update order property for each image
+    // Update order property and set primary image (first image is always primary)
     const reorderedImages = newImages.map((image, index) => ({
       ...image,
-      order: index
+      order: index,
+      isPrimary: index === 0 // First image is always primary
     }));
+    
+    // Split back into existing and new images
+    const existingImages = reorderedImages.filter(img => !img.isNew);
     
     // Update form data
     setFormData(prev => ({
       ...prev,
-      images: reorderedImages
+      images: existingImages
     }));
     
     // Show notification
     if (onShowNotification) {
-      onShowNotification('Poradie obrázkov bolo zmenené', 'success');
+      onShowNotification('Poradie obrázkov bolo zmenené, prvý obrázok je teraz primárny', 'success');
     }
-  }, [formData.images, setFormData, onShowNotification]);
+  }, [getCombinedImages, setFormData, onShowNotification]);
+
+  // Combine existing and new images with proper ordering and primary handling
+  const getCombinedImages = useCallback(() => {
+    const existingImages = formData.images || [];
+    const newImages = imagePreviewUrls.map((previewData, index) => ({
+      _id: `new-${index}`,
+      url: previewData.url || previewData,
+      description: `Nový obrázok ${index + 1}`,
+      isPrimary: false,
+      order: existingImages.length + index,
+      isNew: true
+    }));
+    
+    // Combine all images and ensure first image is primary
+    const allImages = [...existingImages, ...newImages];
+    return allImages.map((image, index) => ({
+      ...image,
+      order: index,
+      isPrimary: index === 0
+    }));
+  }, [formData.images, imagePreviewUrls]);
 
   // Enhanced options with new categories
   const categoryOptions = [
@@ -987,11 +1013,11 @@ const EnhancedCarForm = ({
             Ideálne rozmery: 1200x800px, formát JPG/PNG, maximálne 5MB na obrázok
           </Alert>
           
-          {/* Show existing car images in view/edit mode with drag and drop support */}
-          {dialogMode !== 'create' && formData.images && formData.images.length > 0 && (
+          {/* Show all images (existing and new) with drag and drop support */}
+          {(getCombinedImages().length > 0 || (dialogMode !== 'create' && formData.images && formData.images.length > 0)) && (
             <Box sx={{ mb: 3 }}>
               <Typography variant="subtitle1" gutterBottom>
-                Existujúce obrázky ({formData.images.length})
+                Obrázky vozidla ({getCombinedImages().length})
                 {dialogMode === 'edit' && (
                   <Typography variant="body2" color="text.secondary" component="span" sx={{ ml: 1 }}>
                     (Presuňte obrázky pre zmenu poradia)
@@ -1012,7 +1038,7 @@ const EnhancedCarForm = ({
                       }}
                     >
                       <Grid container spacing={2}>
-                        {formData.images.map((image, index) => (
+                        {getCombinedImages().map((image, index) => (
                           <Draggable
                             key={image._id || `image-${index}`}
                             draggableId={image._id || `image-${index}`}
@@ -1042,7 +1068,7 @@ const EnhancedCarForm = ({
                                   <CardContent sx={{ p: 1 }}>
                                     <Box sx={{ position: 'relative' }}>
                                       <img
-                                        src={image.urls?.thumbnail || image.url}
+                                        src={image.urls?.thumbnail || image.url || (typeof image === 'string' ? image : '')}
                                         alt={image.description || `Obrázok ${index + 1}`}
                                         style={{ 
                                           width: '100%', 
@@ -1105,6 +1131,21 @@ const EnhancedCarForm = ({
                                         />
                                       )}
                                       
+                                      {image.isNew && (
+                                        <Chip
+                                          label="NOVÝ"
+                                          color="success"
+                                          size="small"
+                                          sx={{ 
+                                            position: 'absolute', 
+                                            top: 4, 
+                                            left: image.isPrimary ? 4 : 40,
+                                            backgroundColor: '#4caf50',
+                                            color: 'white'
+                                          }}
+                                        />
+                                      )}
+                                      
                                       {/* Order indicator */}
                                       <Chip
                                         label={`${index + 1}`}
@@ -1133,7 +1174,23 @@ const EnhancedCarForm = ({
                                             zIndex: 1
                                           }}
                                           size="small"
-                                          onClick={() => onDeleteExistingImage(index)}
+                                          onClick={() => {
+                                            if (image.isNew) {
+                                              // Handle new image deletion
+                                              const newImageIndex = getCombinedImages()
+                                                .slice(0, index)
+                                                .filter(img => img.isNew)
+                                                .length;
+                                              onImageRemove(newImageIndex);
+                                            } else {
+                                              // Handle existing image deletion
+                                              const existingImageIndex = getCombinedImages()
+                                                .slice(0, index)
+                                                .filter(img => !img.isNew)
+                                                .length;
+                                              onDeleteExistingImage(existingImageIndex);
+                                            }
+                                          }}
                                         >
                                           <DeleteIcon />
                                         </IconButton>
@@ -1210,101 +1267,9 @@ const EnhancedCarForm = ({
             </Box>
           )}
 
-          {/* New Image Previews (for uploads) */}
-          {imagePreviewUrls && imagePreviewUrls.length > 0 && (
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Nové obrázky na nahranie ({imagePreviewUrls.length})
-              </Typography>
-              <Grid container spacing={2}>
-                {imagePreviewUrls.map((previewData, index) => {
-                  console.log(`🖼️ [FORM] Rendering preview ${index + 1}:`, previewData);
-                  return (
-                  <Grid item xs={12} sm={6} md={4} key={index}>
-                    <Card>
-                      <CardContent sx={{ p: 2 }}>
-                        <Box sx={{ position: 'relative' }}>
-                          {/* Show actual image preview */}
-                          {previewData && previewData.url ? (
-                            <img
-                              src={previewData.url}
-                              alt={previewData.name || `Obrázok ${index + 1}`}
-                              style={{
-                                width: '100%',
-                                height: '120px',
-                                objectFit: 'cover',
-                                borderRadius: 4
-                              }}
-                              onError={(e) => {
-                                console.log('Image preview failed to load:', previewData.name);
-                                // Fallback to placeholder if image fails
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'flex';
-                              }}
-                            />
-                          ) : null}
-                          {/* Fallback placeholder */}
-                          <Box 
-                            sx={{ 
-                              width: '100%', 
-                              height: '120px', 
-                              backgroundColor: 'grey.100',
-                              borderRadius: 1,
-                              display: previewData && previewData.url ? 'none' : 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              border: '2px dashed',
-                              borderColor: 'grey.300'
-                            }}
-                          >
-                            <CameraIcon sx={{ fontSize: 40, color: 'grey.500', mb: 1 }} />
-                            <Typography variant="body2" color="text.secondary" align="center">
-                              {typeof previewData === 'object' ? previewData.name : `Obrázok ${index + 1}`}
-                            </Typography>
-                            {typeof previewData === 'object' && (
-                              <Typography variant="caption" color="text.secondary" align="center">
-                                {(previewData.size / 1024 / 1024).toFixed(2)} MB
-                              </Typography>
-                            )}
-                          </Box>
-                          {dialogMode !== 'view' && (
-                            <IconButton
-                              sx={{ 
-                                position: 'absolute',
-                                top: 4,
-                                right: 4,
-                                backgroundColor: 'rgba(0,0,0,0.5)',
-                                color: 'white',
-                                '&:hover': { backgroundColor: 'rgba(0,0,0,0.7)' }
-                              }}
-                              size="small"
-                              onClick={() => memoizedImageRemoveHandler(index)}
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          )}
-                          {index === 0 && (
-                            <Chip
-                              label="Primárny"
-                              color="primary"
-                              size="small"
-                              sx={{ position: 'absolute', bottom: 4, left: 4 }}
-                            />
-                          )}
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  );
-                })}
-              </Grid>
-            </Box>
-          )}
           
           {/* Show message when no images at all */}
-          {(!imagePreviewUrls || imagePreviewUrls.length === 0) && 
-           (dialogMode === 'create' || !formData.images || formData.images.length === 0) && (
+          {getCombinedImages().length === 0 && (
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <CameraIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
               <Typography variant="body1" color="text.secondary">
