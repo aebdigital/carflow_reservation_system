@@ -926,9 +926,12 @@ function Cars() {
     if (window.confirm(t('confirmDelete'))) {
       try {
         await deleteCar(carId).unwrap()
+        showNotification('Auto bolo úspešne zmazané!', 'success')
         console.log('Car deleted successfully')
       } catch (error) {
         console.error('Error deleting car:', error)
+        const errorMessage = error.data?.message || error.message || 'Neznáma chyba pri mazaní auta'
+        showNotification(`Chyba pri mazaní auta: ${errorMessage}`, 'error')
       }
     }
   }
