@@ -574,7 +574,7 @@ const createCar = asyncHandler(async (req, res, next) => {
     // Clean engine fields
     if (carData.engine) {
       ['displacement', 'power', 'torque', 'cylinders'].forEach(field => {
-        if (carData.engine[field] === '' || carData.engine[field] === null || carData.engine[field] === 0) {
+        if (carData.engine[field] === '' || carData.engine[field] === null) {
           carData.engine[field] = undefined;
         }
       });
@@ -583,7 +583,7 @@ const createCar = asyncHandler(async (req, res, next) => {
     // Clean fuel consumption fields
     if (carData.fuelConsumption) {
       ['city', 'highway', 'combined', 'co2Emissions'].forEach(field => {
-        if (carData.fuelConsumption[field] === '' || carData.fuelConsumption[field] === null || carData.fuelConsumption[field] === 0) {
+        if (carData.fuelConsumption[field] === '' || carData.fuelConsumption[field] === null) {
           carData.fuelConsumption[field] = undefined;
         }
       });
@@ -596,7 +596,7 @@ const createCar = asyncHandler(async (req, res, next) => {
           carData.maintenance[field] = undefined;
         }
       });
-      if (carData.maintenance.nextServiceMileage === '' || carData.maintenance.nextServiceMileage === null || carData.maintenance.nextServiceMileage === 0) {
+      if (carData.maintenance.nextServiceMileage === '' || carData.maintenance.nextServiceMileage === null) {
         carData.maintenance.nextServiceMileage = undefined;
       }
     }
@@ -608,7 +608,7 @@ const createCar = asyncHandler(async (req, res, next) => {
           carData.insurance[field] = undefined;
         }
       });
-      if (carData.insurance.coverageAmount === '' || carData.insurance.coverageAmount === null || carData.insurance.coverageAmount === 0) {
+      if (carData.insurance.coverageAmount === '' || carData.insurance.coverageAmount === null) {
         carData.insurance.coverageAmount = undefined;
       }
     }
@@ -1209,7 +1209,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
     // Clean engine fields
     if (req.body.engine) {
       ['displacement', 'power', 'torque', 'cylinders'].forEach(field => {
-        if (req.body.engine[field] === '' || req.body.engine[field] === null || req.body.engine[field] === 0) {
+        if (req.body.engine[field] === '' || req.body.engine[field] === null) {
           req.body.engine[field] = undefined;
         }
       });
@@ -1218,7 +1218,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
     // Clean fuel consumption fields
     if (req.body.fuelConsumption) {
       ['city', 'highway', 'combined', 'co2Emissions'].forEach(field => {
-        if (req.body.fuelConsumption[field] === '' || req.body.fuelConsumption[field] === null || req.body.fuelConsumption[field] === 0) {
+        if (req.body.fuelConsumption[field] === '' || req.body.fuelConsumption[field] === null) {
           req.body.fuelConsumption[field] = undefined;
         }
       });
@@ -1231,7 +1231,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
           req.body.maintenance[field] = undefined;
         }
       });
-      if (req.body.maintenance.nextServiceMileage === '' || req.body.maintenance.nextServiceMileage === null || req.body.maintenance.nextServiceMileage === 0) {
+      if (req.body.maintenance.nextServiceMileage === '' || req.body.maintenance.nextServiceMileage === null) {
         req.body.maintenance.nextServiceMileage = undefined;
       }
     }
@@ -1243,7 +1243,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
           req.body.insurance[field] = undefined;
         }
       });
-      if (req.body.insurance.coverageAmount === '' || req.body.insurance.coverageAmount === null || req.body.insurance.coverageAmount === 0) {
+      if (req.body.insurance.coverageAmount === '' || req.body.insurance.coverageAmount === null) {
         req.body.insurance.coverageAmount = undefined;
       }
     }
