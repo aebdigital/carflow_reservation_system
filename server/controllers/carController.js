@@ -778,6 +778,25 @@ const updateCar = asyncHandler(async (req, res, next) => {
     console.log('🚗 [CAR UPDATE] Starting car update process...');
     console.log('🚗 [CAR UPDATE] Car ID:', req.params.id);
     console.log('🚗 [CAR UPDATE] User ID:', req.user?._id);
+    
+    // DEBUG: Log raw FormData received
+    console.log('🚗 [CAR UPDATE] === RAW FORMDATA DEBUG ===');
+    console.log('🚗 [CAR UPDATE] Raw body keys:', Object.keys(req.body));
+    console.log('🚗 [CAR UPDATE] Raw fuelType:', req.body.fuelType);
+    console.log('🚗 [CAR UPDATE] Raw transmission:', req.body.transmission);
+    console.log('🚗 [CAR UPDATE] Raw drivetrain:', req.body.drivetrain);
+    console.log('🚗 [CAR UPDATE] Raw seats:', req.body.seats);
+    console.log('🚗 [CAR UPDATE] Raw doors:', req.body.doors);
+    console.log('🚗 [CAR UPDATE] Raw trunkVolume:', req.body.trunkVolume);
+    
+    // Check for nested objects
+    const engineKeys = Object.keys(req.body).filter(k => k.startsWith('engine['));
+    const fuelKeys = Object.keys(req.body).filter(k => k.startsWith('fuelConsumption['));
+    const mileageLimitKeys = Object.keys(req.body).filter(k => k.startsWith('mileageLimits['));
+    console.log('🚗 [CAR UPDATE] Engine keys:', engineKeys);
+    console.log('🚗 [CAR UPDATE] Fuel consumption keys:', fuelKeys);
+    console.log('🚗 [CAR UPDATE] MileageLimits keys:', mileageLimitKeys);
+    console.log('🚗 [CAR UPDATE] ============================');
     console.log('🚗 [CAR UPDATE] Tenant ID:', req.user?.tenantId);
     console.log('🚗 [CAR UPDATE] Files received:', req.files?.length || 0);
     console.log('🚗 [CAR UPDATE] Body keys:', Object.keys(req.body || {}));
@@ -1331,6 +1350,19 @@ const updateCar = asyncHandler(async (req, res, next) => {
     console.log('🚗 [CAR UPDATE] Step 7: Final update data keys:', Object.keys(req.body));
     console.log('🚗 [CAR UPDATE] Step 7a: Final mileage type:', typeof req.body.mileage);
     console.log('🚗 [CAR UPDATE] Step 7b: Final mileage value:', req.body.mileage);
+    
+    // DEBUG: Log all technical data fields
+    console.log('🚗 [CAR UPDATE] === TECHNICAL DATA DEBUG ===');
+    console.log('🚗 [CAR UPDATE] fuelType:', req.body.fuelType);
+    console.log('🚗 [CAR UPDATE] transmission:', req.body.transmission);
+    console.log('🚗 [CAR UPDATE] drivetrain:', req.body.drivetrain);
+    console.log('🚗 [CAR UPDATE] seats:', req.body.seats);
+    console.log('🚗 [CAR UPDATE] doors:', req.body.doors);
+    console.log('🚗 [CAR UPDATE] trunkVolume:', req.body.trunkVolume);
+    console.log('🚗 [CAR UPDATE] engine:', JSON.stringify(req.body.engine));
+    console.log('🚗 [CAR UPDATE] fuelConsumption:', JSON.stringify(req.body.fuelConsumption));
+    console.log('🚗 [CAR UPDATE] mileageLimits:', JSON.stringify(req.body.mileageLimits));
+    console.log('🚗 [CAR UPDATE] =============================');
     console.log('🚗 [CAR UPDATE] ======= MILEAGE DEBUG INFO =======');
     console.log('🚗 [CAR UPDATE] req.body.mileage type:', typeof req.body.mileage);
     console.log('🚗 [CAR UPDATE] req.body.mileage value:', req.body.mileage);
@@ -1356,6 +1388,20 @@ const updateCar = asyncHandler(async (req, res, next) => {
       }
       
       console.log('🚗 [CAR UPDATE] Step 8b: Car updated successfully! ID:', car._id);
+      
+      // DEBUG: Log the updated car's technical data
+      console.log('🚗 [CAR UPDATE] === UPDATED CAR TECHNICAL DATA ===');
+      console.log('🚗 [CAR UPDATE] Updated fuelType:', car.fuelType);
+      console.log('🚗 [CAR UPDATE] Updated transmission:', car.transmission);
+      console.log('🚗 [CAR UPDATE] Updated drivetrain:', car.drivetrain);
+      console.log('🚗 [CAR UPDATE] Updated seats:', car.seats);
+      console.log('🚗 [CAR UPDATE] Updated doors:', car.doors);
+      console.log('🚗 [CAR UPDATE] Updated trunkVolume:', car.trunkVolume);
+      console.log('🚗 [CAR UPDATE] Updated engine:', JSON.stringify(car.engine));
+      console.log('🚗 [CAR UPDATE] Updated fuelConsumption:', JSON.stringify(car.fuelConsumption));
+      console.log('🚗 [CAR UPDATE] Updated mileage:', JSON.stringify(car.mileage));
+      console.log('🚗 [CAR UPDATE] Updated mileageLimits:', JSON.stringify(car.mileageLimits));
+      console.log('🚗 [CAR UPDATE] ===============================');
     } catch (error) {
       console.log('🚗 [CAR UPDATE] Error caught in inner try-catch block:', error.name);
       console.log('🚗 [CAR UPDATE] Error message:', error.message);
