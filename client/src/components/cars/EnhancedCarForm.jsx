@@ -29,6 +29,7 @@ import {
   Tooltip,
   Badge
 } from '@mui/material';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
@@ -40,7 +41,8 @@ import {
   ExpandMore as ExpandMoreIcon,
   Camera as CameraIcon,
   Star as StarIcon,
-  LocalOffer as TagIcon
+  LocalOffer as TagIcon,
+  DragIndicator as DragIcon
 } from '@mui/icons-material';
 import DamageModal from './DamageModal';
 
@@ -82,6 +84,38 @@ const EnhancedCarForm = ({
   // Add ref for file input
   const fileInputRef = useRef(null);
   const equipmentIconInputRef = useRef(null);
+
+  // Handle drag and drop for image reordering
+  const handleImageDragEnd = useCallback((result) => {
+    const { destination, source } = result;
+    
+    // Check if dropped outside the list or in the same position
+    if (!destination || destination.index === source.index) {
+      return;
+    }
+    
+    // Create new array with reordered images
+    const newImages = [...formData.images];
+    const [removed] = newImages.splice(source.index, 1);
+    newImages.splice(destination.index, 0, removed);
+    
+    // Update order property for each image
+    const reorderedImages = newImages.map((image, index) => ({
+      ...image,
+      order: index
+    }));
+    
+    // Update form data
+    setFormData(prev => ({
+      ...prev,
+      images: reorderedImages
+    }));
+    
+    // Show notification
+    if (onShowNotification) {
+      onShowNotification('Poradie obrázkov bolo zmenené', 'success');
+    }
+  }, [formData.images, setFormData, onShowNotification]);
 
   // Enhanced options with new categories
   const categoryOptions = [
@@ -953,84 +987,170 @@ const EnhancedCarForm = ({
             Ideálne rozmery: 1200x800px, formát JPG/PNG, maximálne 5MB na obrázok
           </Alert>
           
-          {/* Show existing car images in view/edit mode */}
+          {/* Show existing car images in view/edit mode with drag and drop support */}
           {dialogMode !== 'create' && formData.images && formData.images.length > 0 && (
             <Box sx={{ mb: 3 }}>
               <Typography variant="subtitle1" gutterBottom>
                 Existujúce obrázky ({formData.images.length})
+                {dialogMode === 'edit' && (
+                  <Typography variant="body2" color="text.secondary" component="span" sx={{ ml: 1 }}>
+                    (Presuňte obrázky pre zmenu poradia)
+                  </Typography>
+                )}
               </Typography>
-              <Grid container spacing={2}>
-                {formData.images.map((image, index) => (
-                  <Grid item xs={12} sm={6} md={4} key={index}>
-                    <Card>
-                      <CardContent sx={{ p: 1 }}>
-                        <Box sx={{ position: 'relative' }}>
-                          <img
-                            src={image.urls?.thumbnail || image.url}
-                            alt={image.description || `Obrázok ${index + 1}`}
-                            style={{ 
-                              width: '100%', 
-                              height: '120px', 
-                              objectFit: 'cover',
-                              borderRadius: 4
-                            }}
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'flex';
-                            }}
-                          />
-                          {/* Fallback when image fails to load */}
-                          <Box 
-                            sx={{ 
-                              width: '100%', 
-                              height: '120px', 
-                              backgroundColor: 'grey.100',
-                              borderRadius: 1,
-                              display: 'none',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              border: '2px dashed',
-                              borderColor: 'grey.300'
-                            }}
+              <DragDropContext onDragEnd={handleImageDragEnd}>
+                <Droppable droppableId="images" direction="horizontal">
+                  {(provided, snapshot) => (
+                    <Box
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      sx={{
+                        backgroundColor: snapshot.isDraggingOver ? 'action.hover' : 'transparent',
+                        borderRadius: 1,
+                        transition: 'background-color 0.2s ease',
+                        p: 1
+                      }}
+                    >
+                      <Grid container spacing={2}>
+                        {formData.images.map((image, index) => (
+                          <Draggable
+                            key={image._id || `image-${index}`}
+                            draggableId={image._id || `image-${index}`}
+                            index={index}
+                            isDragDisabled={dialogMode === 'view'}
                           >
-                            <CameraIcon sx={{ fontSize: 40, color: 'grey.500', mb: 1 }} />
-                            <Typography variant="body2" color="text.secondary" align="center">
-                              Obrázok sa nepodarilo načítať
-                            </Typography>
-                          </Box>
-                          
-                          {image.isPrimary && (
-                            <Chip
-                              label="Primárny"
-                              color="primary"
-                              size="small"
-                              sx={{ position: 'absolute', bottom: 4, left: 4 }}
-                            />
-                          )}
-                          
-                          {dialogMode === 'edit' && (
-                            <IconButton
-                              sx={{ 
-                                position: 'absolute',
-                                top: 4,
-                                right: 4,
-                                backgroundColor: 'rgba(0,0,0,0.5)',
-                                color: 'white',
-                                '&:hover': { backgroundColor: 'rgba(0,0,0,0.7)' }
-                              }}
-                              size="small"
-                              onClick={() => onDeleteExistingImage(index)}
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          )}
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
+                            {(provided, snapshot) => (
+                              <Grid 
+                                item 
+                                xs={12} 
+                                sm={6} 
+                                md={4}
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                              >
+                                <Card
+                                  sx={{
+                                    transform: snapshot.isDragging ? 'rotate(5deg)' : 'none',
+                                    boxShadow: snapshot.isDragging ? 4 : 1,
+                                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                    cursor: dialogMode === 'edit' ? 'grab' : 'default',
+                                    '&:active': {
+                                      cursor: dialogMode === 'edit' ? 'grabbing' : 'default'
+                                    }
+                                  }}
+                                >
+                                  <CardContent sx={{ p: 1 }}>
+                                    <Box sx={{ position: 'relative' }}>
+                                      <img
+                                        src={image.urls?.thumbnail || image.url}
+                                        alt={image.description || `Obrázok ${index + 1}`}
+                                        style={{ 
+                                          width: '100%', 
+                                          height: '120px', 
+                                          objectFit: 'cover',
+                                          borderRadius: 4
+                                        }}
+                                        onError={(e) => {
+                                          e.target.style.display = 'none';
+                                          e.target.nextSibling.style.display = 'flex';
+                                        }}
+                                      />
+                                      {/* Fallback when image fails to load */}
+                                      <Box 
+                                        sx={{ 
+                                          width: '100%', 
+                                          height: '120px', 
+                                          backgroundColor: 'grey.100',
+                                          borderRadius: 1,
+                                          display: 'none',
+                                          flexDirection: 'column',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          border: '2px dashed',
+                                          borderColor: 'grey.300'
+                                        }}
+                                      >
+                                        <CameraIcon sx={{ fontSize: 40, color: 'grey.500', mb: 1 }} />
+                                        <Typography variant="body2" color="text.secondary" align="center">
+                                          Obrázok sa nepodarilo načítať
+                                        </Typography>
+                                      </Box>
+                                      
+                                      {/* Drag handle */}
+                                      {dialogMode === 'edit' && (
+                                        <Box
+                                          {...provided.dragHandleProps}
+                                          sx={{
+                                            position: 'absolute',
+                                            top: 4,
+                                            left: 4,
+                                            backgroundColor: 'rgba(0,0,0,0.6)',
+                                            borderRadius: '50%',
+                                            p: 0.5,
+                                            cursor: 'grab',
+                                            '&:active': { cursor: 'grabbing' },
+                                            zIndex: 2
+                                          }}
+                                        >
+                                          <DragIcon sx={{ color: 'white', fontSize: 20 }} />
+                                        </Box>
+                                      )}
+                                      
+                                      {image.isPrimary && (
+                                        <Chip
+                                          label="Primárny"
+                                          color="primary"
+                                          size="small"
+                                          sx={{ position: 'absolute', bottom: 4, left: 4 }}
+                                        />
+                                      )}
+                                      
+                                      {/* Order indicator */}
+                                      <Chip
+                                        label={`${index + 1}`}
+                                        size="small"
+                                        sx={{ 
+                                          position: 'absolute', 
+                                          bottom: 4, 
+                                          right: 4,
+                                          backgroundColor: 'rgba(0,0,0,0.7)',
+                                          color: 'white',
+                                          minWidth: 28,
+                                          height: 20,
+                                          fontSize: '0.75rem'
+                                        }}
+                                      />
+                                      
+                                      {dialogMode === 'edit' && (
+                                        <IconButton
+                                          sx={{ 
+                                            position: 'absolute',
+                                            top: 4,
+                                            right: 4,
+                                            backgroundColor: 'rgba(255,0,0,0.7)',
+                                            color: 'white',
+                                            '&:hover': { backgroundColor: 'rgba(255,0,0,0.9)' },
+                                            zIndex: 1
+                                          }}
+                                          size="small"
+                                          onClick={() => onDeleteExistingImage(index)}
+                                        >
+                                          <DeleteIcon />
+                                        </IconButton>
+                                      )}
+                                    </Box>
+                                  </CardContent>
+                                </Card>
+                              </Grid>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </Grid>
+                    </Box>
+                  )}
+                </Droppable>
+              </DragDropContext>
             </Box>
           )}
           
