@@ -472,6 +472,11 @@ function Cars() {
         console.log('🚗 [DIALOG] CREATE mode - preview URLs:', []);
       } else if (mode === 'edit' && car) {
         console.log('🚗 [DIALOG] EDIT mode - populating form data');
+        console.log('🚗 [DIALOG] DEBUG: car.status =', car.status);
+        console.log('🚗 [DIALOG] DEBUG: car.mileageLimits =', car.mileageLimits);
+        console.log('🚗 [DIALOG] DEBUG: car.mileage =', car.mileage);
+        console.log('🚗 [DIALOG] DEBUG: car.engine =', car.engine);
+        console.log('🚗 [DIALOG] DEBUG: car.fuelConsumption =', car.fuelConsumption);
         setFormData({
           brand: car.brand || '',
           model: car.model || '',
@@ -558,6 +563,11 @@ function Cars() {
         console.log('🚗 [DIALOG] EDIT mode - form populated, images reset');
       } else if (mode === 'view' && car) {
         console.log('🚗 [DIALOG] VIEW mode - populating read-only form data');
+        console.log('🚗 [DIALOG] DEBUG VIEW: car.status =', car.status);
+        console.log('🚗 [DIALOG] DEBUG VIEW: car.mileageLimits =', car.mileageLimits);
+        console.log('🚗 [DIALOG] DEBUG VIEW: car.mileage =', car.mileage);
+        console.log('🚗 [DIALOG] DEBUG VIEW: car.engine =', car.engine);
+        console.log('🚗 [DIALOG] DEBUG VIEW: car.fuelConsumption =', car.fuelConsumption);
         setFormData({
           brand: car.brand || '',
           model: car.model || '',
