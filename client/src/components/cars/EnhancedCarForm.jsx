@@ -85,6 +85,27 @@ const EnhancedCarForm = ({
   const fileInputRef = useRef(null);
   const equipmentIconInputRef = useRef(null);
 
+  // Combine existing and new images with proper ordering and primary handling
+  const getCombinedImages = useCallback(() => {
+    const existingImages = formData.images || [];
+    const newImages = imagePreviewUrls.map((previewData, index) => ({
+      _id: `new-${index}`,
+      url: previewData.url || previewData,
+      description: `Nový obrázok ${index + 1}`,
+      isPrimary: false,
+      order: existingImages.length + index,
+      isNew: true
+    }));
+    
+    // Combine all images and ensure first image is primary
+    const allImages = [...existingImages, ...newImages];
+    return allImages.map((image, index) => ({
+      ...image,
+      order: index,
+      isPrimary: index === 0
+    }));
+  }, [formData.images, imagePreviewUrls]);
+
   // Handle drag and drop for image reordering
   const handleImageDragEnd = useCallback((result) => {
     const { destination, source } = result;
@@ -121,27 +142,6 @@ const EnhancedCarForm = ({
       onShowNotification('Poradie obrázkov bolo zmenené, prvý obrázok je teraz primárny', 'success');
     }
   }, [getCombinedImages, setFormData, onShowNotification]);
-
-  // Combine existing and new images with proper ordering and primary handling
-  const getCombinedImages = useCallback(() => {
-    const existingImages = formData.images || [];
-    const newImages = imagePreviewUrls.map((previewData, index) => ({
-      _id: `new-${index}`,
-      url: previewData.url || previewData,
-      description: `Nový obrázok ${index + 1}`,
-      isPrimary: false,
-      order: existingImages.length + index,
-      isNew: true
-    }));
-    
-    // Combine all images and ensure first image is primary
-    const allImages = [...existingImages, ...newImages];
-    return allImages.map((image, index) => ({
-      ...image,
-      order: index,
-      isPrimary: index === 0
-    }));
-  }, [formData.images, imagePreviewUrls]);
 
   // Enhanced options with new categories
   const categoryOptions = [
