@@ -359,14 +359,24 @@ class SMTP2GOService {
 
   // Customer confirmation email for new reservation
   async sendCustomerReservationConfirmation(to, reservationData) {
-    const subject = `Potvrdenie rezervacie #${reservationData.reservationNumber}`;
+    const emailTemplateService = require('./emailTemplateService');
     
-    // Use the same simple format as admin email to avoid JSON issues
-    const html = `<html><body><h2>Potvrdenie rezervacie</h2><p>Vazeny/a ${reservationData.customerName},</p><p>dakujeme za vasu rezervaciu!</p><p>Cislo rezervacie: ${reservationData.reservationNumber}</p><p>Vozidlo: ${reservationData.carInfo}</p><p>Datum vyzdvihnutia: ${reservationData.startDate}</p><p>Datum vratenia: ${reservationData.endDate}</p><p>Celkova cena: ${reservationData.totalPrice}EUR</p><p>Dakujeme za vasu rezervaciu!</p><p>Vas CarFlow Team</p></body></html>`;
+    // Prepare template variables from actual backend data structure
+    const templateVariables = {
+      first_name: reservationData.customerName?.split(' ')[0] || '',
+      last_name: reservationData.customerName?.split(' ').slice(1).join(' ') || '',
+      car_brand: reservationData.carInfo?.split(' ')[0] || '',
+      car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
+      link_view: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}`
+    };
+
+    // Get processed email template
+    const emailData = await emailTemplateService.getEmailTemplate('reservation-confirmation', templateVariables);
     
-    const text = `Potvrdenie rezervacie Vazeny/a ${reservationData.customerName}, dakujeme za vasu rezervaciu! Cislo rezervacie: ${reservationData.reservationNumber} Vozidlo: ${reservationData.carInfo} Datum vyzdvihnutia: ${reservationData.startDate} Datum vratenia: ${reservationData.endDate} Celkova cena: ${reservationData.totalPrice}EUR Dakujeme za vasu rezervaciu! Vas CarFlow Team`;
+    // Override subject to match exact specification
+    const subject = '📥 Rezervácia prijatá';
     
-    return this.sendEmail(to, subject, html, text);
+    return this.sendEmail(to, subject, emailData.html);
   }
 
   // Customer cancellation email when admin cancels reservation
