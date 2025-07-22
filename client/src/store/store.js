@@ -161,6 +161,14 @@ export const api = createApi({
       }),
       invalidatesTags: (result, error, { carId }) => [{ type: 'Car', id: carId }, 'Car'],
     }),
+    reorderCarImages: builder.mutation({
+      query: ({ carId, imageIds }) => ({
+        url: `cars/${carId}/images/reorder`,
+        method: 'PUT',
+        body: { imageIds },
+      }),
+      invalidatesTags: (result, error, { carId }) => [{ type: 'Car', id: carId }, 'Car'],
+    }),
     
     // Reservation endpoints
     getReservations: builder.query({

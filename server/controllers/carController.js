@@ -1953,6 +1953,76 @@ const setPrimaryImage = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Reorder car images
+// @route   PUT /api/cars/:id/images/reorder
+// @access  Private/Admin
+const reorderCarImages = asyncHandler(async (req, res, next) => {
+  const { imageIds } = req.body;
+
+  if (!imageIds || !Array.isArray(imageIds)) {
+    return next(new AppError('imageIds array is required', 400));
+  }
+
+  const car = await Car.findOne({ 
+    _id: req.params.id, 
+    tenantId: req.user.tenantId 
+  });
+
+  if (!car) {
+    return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
+  }
+
+  if (!car.images || car.images.length === 0) {
+    return next(new AppError('Car has no images to reorder', 400));
+  }
+
+  // Validate that all imageIds exist in car.images
+  const existingImageIds = car.images.map(img => img._id.toString());
+  const invalidIds = imageIds.filter(id => !existingImageIds.includes(id));
+  
+  if (invalidIds.length > 0) {
+    return next(new AppError(`Invalid image IDs: ${invalidIds.join(', ')}`, 400));
+  }
+
+  if (imageIds.length !== existingImageIds.length) {
+    return next(new AppError('All image IDs must be provided for reordering', 400));
+  }
+
+  try {
+    // Create new ordered images array
+    const reorderedImages = [];
+    
+    imageIds.forEach((imageId, index) => {
+      const imageToMove = car.images.find(img => img._id.toString() === imageId);
+      if (imageToMove) {
+        reorderedImages.push({
+          ...imageToMove.toObject(),
+          order: index,
+          isPrimary: index === 0 // First image is always primary
+        });
+      }
+    });
+
+    // Update car with reordered images
+    car.images = reorderedImages;
+    await car.save();
+
+    console.log(`✅ [CAR] Images reordered for car ${car._id}: first image is now primary`);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        message: 'Images reordered successfully',
+        car: car
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ [CAR] Error reordering images:', error);
+    return next(new AppError('Failed to reorder images', 500));
+  }
+});
+
 // @desc    Get cars by location
 // @route   GET /api/cars/location/:locationName
 // @access  Private
@@ -2247,6 +2317,7 @@ module.exports = {
   getCarAvailability,
   uploadCarImages,
   deleteCarImage,
+  reorderCarImages,
   getCarsByLocation,
   getCarStats,
   setPrimaryImage,

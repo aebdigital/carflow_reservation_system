@@ -44,6 +44,7 @@ import {
   useDeleteCarMutation,
   useDeleteCarImageMutation,
   useSetPrimaryCarImageMutation,
+  useReorderCarImagesMutation,
 } from '../store/store'
 import { t } from '../utils/translations'
 import EnhancedCarForm from '../components/cars/EnhancedCarForm'
@@ -161,6 +162,7 @@ function Cars() {
   const [deleteCar] = useDeleteCarMutation()
   const [deleteCarImage] = useDeleteCarImageMutation()
   const [setPrimaryCarImage] = useSetPrimaryCarImageMutation()
+  const [reorderCarImages] = useReorderCarImagesMutation()
 
   const cars = carsData?.data || []
 
@@ -385,6 +387,23 @@ function Cars() {
     } catch (error) {
       console.error('Error deleting image:', error)
       showNotification('Chyba pri mazaní obrázka. Skúste to znova.', 'error')
+    }
+  }
+
+  // Handle reordering images
+  const handleReorderImages = async (imageIds) => {
+    if (!selectedCar || !selectedCar._id) return
+    
+    try {
+      await reorderCarImages({ 
+        carId: selectedCar._id, 
+        imageIds 
+      }).unwrap()
+      
+      console.log('✅ Images reordered successfully')
+    } catch (error) {
+      console.error('❌ Error reordering images:', error)
+      showNotification('Chyba pri zmene poradia obrázkov. Skúste to znova.', 'error')
     }
   }
 
@@ -1335,6 +1354,7 @@ function Cars() {
             selectedImages={selectedImages}
             imagePreviewUrls={imagePreviewUrls}
             onDeleteExistingImage={handleDeleteExistingImage}
+            onReorderImages={handleReorderImages}
             onShowNotification={showNotification}
           />
         </DialogContent>

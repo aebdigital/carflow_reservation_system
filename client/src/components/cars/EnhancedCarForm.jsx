@@ -57,6 +57,7 @@ const EnhancedCarForm = ({
   selectedImages = [],
   imagePreviewUrls = [],
   onDeleteExistingImage,
+  onReorderImages,
   onShowNotification
 }) => {
   // Reduce logging frequency to prevent performance issues
@@ -107,7 +108,7 @@ const EnhancedCarForm = ({
   }, [formData.images, imagePreviewUrls]);
 
   // Handle drag and drop for image reordering
-  const handleImageDragEnd = useCallback((result) => {
+  const handleImageDragEnd = useCallback(async (result) => {
     const { destination, source } = result;
     
     // Check if dropped outside the list or in the same position
@@ -131,17 +132,36 @@ const EnhancedCarForm = ({
     // Split back into existing and new images
     const existingImages = reorderedImages.filter(img => !img.isNew);
     
-    // Update form data
+    // Update form data locally
     setFormData(prev => ({
       ...prev,
       images: existingImages
     }));
     
+    // If we're editing and have existing images, save to backend
+    if (dialogMode === 'edit' && existingImages.length > 0 && onReorderImages) {
+      try {
+        const imageIds = reorderedImages
+          .filter(img => !img.isNew && img._id) // Only existing images with IDs
+          .map(img => img._id);
+        
+        if (imageIds.length > 0) {
+          await onReorderImages(imageIds);
+        }
+      } catch (error) {
+        console.error('❌ Error reordering images:', error);
+        if (onShowNotification) {
+          onShowNotification('Chyba pri ukladaní poradia obrázkov', 'error');
+        }
+        return; // Don't show success notification if backend call failed
+      }
+    }
+    
     // Show notification
     if (onShowNotification) {
       onShowNotification('Poradie obrázkov bolo zmenené, prvý obrázok je teraz primárny', 'success');
     }
-  }, [getCombinedImages, setFormData, onShowNotification]);
+  }, [getCombinedImages, setFormData, onShowNotification, onReorderImages, dialogMode]);
 
   // Enhanced options with new categories
   const categoryOptions = [

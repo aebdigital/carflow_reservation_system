@@ -75,6 +75,24 @@ class EmailService {
     return await smtp2goService.sendCustomerReservationConfirmed(customerEmail, reservationData);
   }
 
+  // Customer reservation edited notification (after admin edits)
+  async sendCustomerReservationEdited(customerEmail, reservationData) {
+    // Use SMTP2GO service which has the correct implementation
+    return await smtp2goService.sendCustomerReservationEdited(customerEmail, reservationData);
+  }
+
+  // Customer 24-hour reminder notification
+  async sendCustomerReservationReminder24(customerEmail, reservationData) {
+    // Use SMTP2GO service which has the correct implementation
+    return await smtp2goService.sendCustomerReservationReminder24(customerEmail, reservationData);
+  }
+
+  // Customer review request (24h after trip ends)
+  async sendCustomerReviewRequest(customerEmail, reservationData) {
+    // Use SMTP2GO service which has the correct implementation
+    return await smtp2goService.sendCustomerReviewRequest(customerEmail, reservationData);
+  }
+
   // Customer cancellation notification
   async sendCustomerCancellationNotification(customerEmail, cancellationData) {
     // Use SMTP2GO service which has the correct implementation

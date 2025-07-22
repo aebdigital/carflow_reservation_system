@@ -8,6 +8,7 @@ const {
   getCarAvailability,
   uploadCarImages,
   deleteCarImage,
+  reorderCarImages,
   getCarsByLocation,
   getCarStats,
   setPrimaryImage,
@@ -47,6 +48,7 @@ router.get('/:id/status', requireStaff, getCarStatus);
 router.post('/:id/images', requireStaff, uploadMultipleCarImages, handleMulterError, uploadCarImages);
 router.delete('/:id/images/:imageId', requireStaff, deleteCarImage);
 router.put('/:id/images/:imageId/primary', requireStaff, setPrimaryImage);
+router.put('/:id/images/reorder', requireStaff, reorderCarImages);
 
 // Test endpoint for debugging uploads
 router.post('/test-upload', requireAdmin, uploadMultipleCarImages, handleMulterError, testFileUpload);

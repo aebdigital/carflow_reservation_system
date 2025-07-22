@@ -406,16 +406,97 @@ class SMTP2GOService {
     return this.sendEmail(to, subject, emailData.html);
   }
 
+  // Customer notification when admin edits reservation
+  async sendCustomerReservationEdited(to, reservationData) {
+    const emailTemplateService = require('./emailTemplateService');
+    
+    // Prepare template variables from actual backend data structure
+    const templateVariables = {
+      first_name: reservationData.customerName?.split(' ')[0] || '',
+      last_name: reservationData.customerName?.split(' ').slice(1).join(' ') || '',
+      car_brand: reservationData.carInfo?.split(' ')[0] || '',
+      car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
+      date: reservationData.startDate || '',
+      time: new Date(reservationData.startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      link_view: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}`
+    };
+
+    // Get processed email template
+    const emailData = await emailTemplateService.getEmailTemplate('reservation-edited', templateVariables);
+    
+    // Set subject to match exact specification
+    const subject = '🔄 Zmena rezervácie';
+    
+    return this.sendEmail(to, subject, emailData.html);
+  }
+
   // Customer cancellation email when admin cancels reservation
   async sendCustomerCancellationNotification(to, cancellationData) {
-    const subject = `Zrusenie rezervacie #${cancellationData.reservationNumber}`;
+    const emailTemplateService = require('./emailTemplateService');
     
-    // Simple format to avoid JSON issues
-    const html = `<html><body><h2>Zrusenie rezervacie</h2><p>Vazeny/a ${cancellationData.customerName},</p><p>bohuzial musime vas informovat, ze vasa rezervacia bola zrusena.</p><p>Cislo rezervacie: ${cancellationData.reservationNumber}</p><p>Vozidlo: ${cancellationData.carInfo}</p><p>Datum vyzdvihnutia: ${cancellationData.startDate}</p><p>Datum vratenia: ${cancellationData.endDate}</p><p>Datum zrusenia: ${cancellationData.cancellationDate}</p>${cancellationData.reason ? `<p>Dovod zrusenia: ${cancellationData.reason}</p>` : ''}<p>Ak ste uhradili zalohu, bude vam vratena do 5-7 pracovnych dni.</p><p>Ospravedlnujeme sa za sposobene neprijemnosti.</p><p>S pozdravom, Vas CarFlow Team</p></body></html>`;
+    // Prepare template variables from actual backend data structure
+    const templateVariables = {
+      first_name: cancellationData.customerName?.split(' ')[0] || '',
+      last_name: cancellationData.customerName?.split(' ').slice(1).join(' ') || '',
+      car_brand: cancellationData.carInfo?.split(' ')[0] || '',
+      car_model: cancellationData.carInfo?.split(' ').slice(1).join(' ') || cancellationData.carInfo || '',
+      link_new: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/booking`
+    };
+
+    // Get processed email template
+    const emailData = await emailTemplateService.getEmailTemplate('reservation-cancelled', templateVariables);
     
-    const text = `Zrusenie rezervacie Vazeny/a ${cancellationData.customerName}, bohuzial musime vas informovat, ze vasa rezervacia bola zrusena. Cislo rezervacie: ${cancellationData.reservationNumber} Vozidlo: ${cancellationData.carInfo} Datum vyzdvihnutia: ${cancellationData.startDate} Datum vratenia: ${cancellationData.endDate} Datum zrusenia: ${cancellationData.cancellationDate}${cancellationData.reason ? ` Dovod zrusenia: ${cancellationData.reason}` : ''} Ak ste uhradili zalohu, bude vam vratena do 5-7 pracovnych dni. Ospravedlnujeme sa za sposobene neprijemnosti. S pozdravom, Vas CarFlow Team`;
+    // Set subject to match exact specification
+    const subject = '❌ Rezervácia zrušená';
     
-    return this.sendEmail(to, subject, html, text);
+    return this.sendEmail(to, subject, emailData.html);
+  }
+
+  // Customer 24-hour reminder email
+  async sendCustomerReservationReminder24(to, reservationData) {
+    const emailTemplateService = require('./emailTemplateService');
+    
+    // Prepare template variables from actual backend data structure
+    const templateVariables = {
+      first_name: reservationData.customerName?.split(' ')[0] || '',
+      last_name: reservationData.customerName?.split(' ').slice(1).join(' ') || '',
+      car_brand: reservationData.carInfo?.split(' ')[0] || '',
+      car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
+      date: reservationData.startDate || '',
+      time: new Date(reservationData.startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      pickup_location: 'Bratislava' // Default pickup location
+    };
+
+    // Get processed email template
+    const emailData = await emailTemplateService.getEmailTemplate('reservation-reminder24', templateVariables);
+    
+    // Set subject to match exact specification
+    const subject = '⏰ Pripomienka: Rezervácia zajtra';
+    
+    return this.sendEmail(to, subject, emailData.html);
+  }
+
+  // Customer review request email (24h after trip ends)
+  async sendCustomerReviewRequest(to, reservationData) {
+    const emailTemplateService = require('./emailTemplateService');
+    
+    // Prepare template variables from actual backend data structure
+    const templateVariables = {
+      first_name: reservationData.customerName?.split(' ')[0] || '',
+      last_name: reservationData.customerName?.split(' ').slice(1).join(' ') || '',
+      car_brand: reservationData.carInfo?.split(' ')[0] || '',
+      car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
+      google_review_link: process.env.GOOGLE_REVIEW_URL || 'https://g.page/r/YOUR_GOOGLE_BUSINESS_ID/review',
+      feedback_form_link: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/feedback?reservation=${reservationData.reservationNumber}`
+    };
+
+    // Get processed email template
+    const emailData = await emailTemplateService.getEmailTemplate('leave-review', templateVariables);
+    
+    // Set subject to match exact specification
+    const subject = '⭐ Ako sa Vám páčila jazda?';
+    
+    return this.sendEmail(to, subject, emailData.html);
   }
 
   // Test with the exact structure provided by user

@@ -214,6 +214,24 @@ const reservationSchema = new mongoose.Schema({
     }
   },
 
+  // 24-hour reminder tracking
+  reminder24h: {
+    sent: {
+      type: Boolean,
+      default: false
+    },
+    sentAt: Date
+  },
+
+  // Review request tracking (24h after trip ends)
+  reviewRequest: {
+    sent: {
+      type: Boolean,
+      default: false
+    },
+    sentAt: Date
+  },
+
   // Check-in information
   checkIn: {
     date: Date,

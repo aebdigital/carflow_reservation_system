@@ -541,6 +541,12 @@ const updateReservation = asyncHandler(async (req, res, next) => {
 
   req.body.lastModifiedBy = req.user._id;
 
+  // Store original values for comparison
+  const originalReservation = await Reservation.findById(req.params.id).populate([
+    { path: 'customer', select: 'firstName lastName email phone' },
+    { path: 'car', select: 'brand model year registrationNumber images' }
+  ]);
+
   reservation = await Reservation.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true
@@ -549,6 +555,33 @@ const updateReservation = asyncHandler(async (req, res, next) => {
     { path: 'car', select: 'brand model year registrationNumber images' },
     { path: 'payment' }
   ]);
+
+  // Check if critical fields were changed and send email notification
+  const criticalFieldsChanged = (
+    (req.body.startDate && originalReservation.startDate.toISOString() !== new Date(req.body.startDate).toISOString()) ||
+    (req.body.endDate && originalReservation.endDate.toISOString() !== new Date(req.body.endDate).toISOString()) ||
+    (req.body.car && originalReservation.car._id.toString() !== req.body.car.toString())
+  );
+
+  // Send email notification if critical fields changed and customer exists
+  if (criticalFieldsChanged && reservation.customer && reservation.customer.email) {
+    try {
+      const emailService = require('../services/emailService');
+      const emailHelpers = require('../utils/emailHelpers');
+      
+      if (emailService.isConfigured) {
+        // Prepare reservation data using existing helper
+        const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
+        
+        // Send edit notification email using new template
+        await emailService.sendCustomerReservationEdited(reservation.customer.email, emailData);
+        console.log('✅ [EMAIL] Reservation edit notification sent to customer:', reservation.customer.email);
+      }
+    } catch (emailError) {
+      console.error('❌ [EMAIL] Failed to send edit notification:', emailError.message);
+      // Don't fail the update if email fails
+    }
+  }
 
   res.status(200).json({
     success: true,
