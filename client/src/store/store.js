@@ -826,6 +826,7 @@ export const {
   useGetCarStatsQuery,
   useDeleteCarImageMutation,
   useSetPrimaryCarImageMutation,
+  useReorderCarImagesMutation,
   
   // Reservation hooks
   useGetReservationsQuery,
