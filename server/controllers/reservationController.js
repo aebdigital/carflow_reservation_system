@@ -658,71 +658,17 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
 
   await reservation.save();
 
-  // 📧 Send customer confirmation email
+  // 📧 Send customer confirmation email using new template system
   try {
     const emailService = require('../services/emailService');
+    const emailHelpers = require('../utils/emailHelpers');
     
     if (emailService.isConfigured && reservation.customer && reservation.customer.email) {
-      const customerName = `${reservation.customer.firstName || ''} ${reservation.customer.lastName || ''}`.trim() || 'Vážený zákazník';
-      const carInfo = `${reservation.car.brand || ''} ${reservation.car.model || ''} ${reservation.car.year || ''}`.trim();
-      const startDate = new Date(reservation.startDate).toLocaleDateString('sk-SK', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-      const endDate = new Date(reservation.endDate).toLocaleDateString('sk-SK', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      // Prepare reservation data using existing helper
+      const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
       
-      const confirmationSubject = `Potvrdenie rezervácie #${reservation.reservationNumber} - CarFlow`;
-      const confirmationHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2e7d32;">Potvrdenie rezervácie</h2>
-          <p>${customerName},</p>
-          <p>S radosťou vám potvrdzujeme vašu rezerváciu vozidla!</p>
-          
-          <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2e7d32;">
-            <h3 style="margin-top: 0; color: #2e7d32;">Detaily rezervácie</h3>
-            <p><strong>Číslo rezervácie:</strong> ${reservation.reservationNumber}</p>
-            <p><strong>Vozidlo:</strong> ${carInfo}</p>
-            <p><strong>Dátum a čas vyzdvihnutia:</strong> ${startDate}</p>
-            <p><strong>Dátum a čas vrátenia:</strong> ${endDate}</p>
-            <p><strong>Celková cena:</strong> ${(reservation.pricing?.totalAmount || 0).toFixed(2)}€</p>
-            <p><strong>Status:</strong> <span style="color: #2e7d32; font-weight: bold;">POTVRDENÉ</span></p>
-          </div>
-          
-          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0;">Dôležité informácie</h3>
-            <p>• Vozidlo si môžete vyzdvihnúť v dohodnutom čase a mieste</p>
-            <p>• Nezabudnite si priniesť platný vodičský preukaz a totožné doklady</p>
-            <p>• V prípade zmeny alebo zrušenia nás kontaktujte čo najskôr</p>
-            <p>• Pri vyzdvihnutí vozidla bude potrebné uhradiť zálohu (ak nebola uhradená)</p>
-          </div>
-          
-          <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
-            <p style="margin: 0;"><strong>Kontakt:</strong> +421 xxx xxx xxx | info@carflow.sk</p>
-          </div>
-          
-          <p>Tešíme sa na vás a prajeme príjemnú jazdu!</p>
-          
-          <p>S pozdravom,<br>CarFlow Team</p>
-          
-          <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
-          <p style="font-size: 12px; color: #666;">
-            Tento email ste dostali, pretože vaša rezervácia bola potvrdená. Uchovajte si tento email pre svoje záznamy.
-          </p>
-        </div>
-      `;
-
-      await emailService.sendEmail(reservation.customer.email, confirmationSubject, confirmationHtml);
+      // Send confirmation email using new template
+      await emailService.sendCustomerReservationConfirmed(reservation.customer.email, emailData);
       console.log('✅ [EMAIL] Confirmation notification sent to customer:', reservation.customer.email);
     }
   } catch (emailError) {

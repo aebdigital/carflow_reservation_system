@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Potvrdenie rezervácie ✅</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .emoji-large {
+            font-size: 48px;
+            margin: 20px 0;
+        }
+        .success-message {
+            background-color: #e8f5e8;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .main-message {
+            font-size: 16px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .car-info {
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #2196F3;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .car-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1976D2;
+        }
+        .reservation-details {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .detail-row {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .detail-icon {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 8px 5px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .button-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .button-danger {
+            background-color: #f44336;
+            color: white;
+        }
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .info-section {
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #2196F3;
+            margin: 20px 0;
+        }
+        .info-item {
+            margin: 10px 0;
+            font-size: 15px;
+        }
+        .contact {
+            text-align: center;
+            font-size: 16px;
+            color: #4CAF50;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .signature {
+            text-align: center;
+            margin: 30px 0;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="emoji-large">✅</div>
+            <div class="logo">RIVAL Autopožičovňa</div>
+        </div>
+        
+        <div class="content">
+            <div class="main-message">
+                <p>Dobrý deň <strong>{{first_name}} {{last_name}}</strong>,</p>
+                <p>ďakujeme, že ste si vybrali RIVAL Autopožičovňa 🚗.</p>
+            </div>
+            
+            <div class="success-message">
+                <div class="car-name">{{car_brand}} {{car_model}}</div>
+                <p><strong>Vaša rezervácia bola úspešne potvrdená 🎉</strong></p>
+            </div>
+            
+            <div class="reservation-details">
+                <div class="detail-row">
+                    <span class="detail-icon">📅</span>
+                    <span><strong>Dátum a čas:</strong> {{date}}, {{time}}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-icon">📍</span>
+                    <span><strong>Miesto prevzatia:</strong> {{pickup_location}}</span>
+                </div>
+            </div>
+            
+            <div class="button-container">
+                <a href="{{link_view}}" class="button button-primary">👉 Zobraziť rezerváciu</a>
+                <a href="{{link_cancel}}" class="button button-danger">❌ Zrušiť rezerváciu</a>
+            </div>
+            
+            <div class="info-section">
+                <div class="info-item">
+                    <strong>ℹ️</strong> Pred prevzatím vozidla predložte platný OP a vodičský preukaz.
+                </div>
+                <div class="info-item">
+                    <strong>🔑</strong> Po podpise zmluvy je vozidlo pripravené na jazdu.
+                </div>
+                <div class="info-item">
+                    <strong>💰</strong> Vratná kaucia podľa typu vozidla {{car_deposit}}.
+                </div>
+            </div>
+            
+            <div class="contact">
+                <p>☎️ V prípade otázok volajte +421 907 633 517.</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© {{current_year}} RIVAL Autopožičovňa. Všetky práva vyhradené.</p>
+        </div>
+    </div>
+</body>
+</html>

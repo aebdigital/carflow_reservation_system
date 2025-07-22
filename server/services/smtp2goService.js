@@ -379,6 +379,33 @@ class SMTP2GOService {
     return this.sendEmail(to, subject, emailData.html);
   }
 
+  // Customer confirmation email when admin confirms reservation
+  async sendCustomerReservationConfirmed(to, reservationData) {
+    const emailTemplateService = require('./emailTemplateService');
+    
+    // Prepare template variables from actual backend data structure
+    const templateVariables = {
+      first_name: reservationData.customerName?.split(' ')[0] || '',
+      last_name: reservationData.customerName?.split(' ').slice(1).join(' ') || '',
+      car_brand: reservationData.carInfo?.split(' ')[0] || '',
+      car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
+      date: reservationData.startDate || '',
+      time: new Date(reservationData.startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      pickup_location: 'Bratislava', // Default pickup location
+      car_deposit: `${reservationData.deposit || '500'}€`,
+      link_view: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}`,
+      link_cancel: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}/cancel`
+    };
+
+    // Get processed email template
+    const emailData = await emailTemplateService.getEmailTemplate('reservation-confirmed', templateVariables);
+    
+    // Set subject to match exact specification
+    const subject = '✅ Potvrdenie rezervácie';
+    
+    return this.sendEmail(to, subject, emailData.html);
+  }
+
   // Customer cancellation email when admin cancels reservation
   async sendCustomerCancellationNotification(to, cancellationData) {
     const subject = `Zrusenie rezervacie #${cancellationData.reservationNumber}`;

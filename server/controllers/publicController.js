@@ -838,7 +838,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       endDate: end,
       pickupLocation: defaultPickup,
       dropoffLocation: defaultDropoff,
-      status: 'confirmed', // 🔧 AUTO-CONFIRM: Set to confirmed instead of pending
+      status: 'pending', // 🔧 ADMIN APPROVAL: Set to pending, requires admin confirmation
       pricing: finalPricing, // Use calculated or frontend pricing
       appliedDiscountCodes,
       additionalDrivers: additionalDrivers || [],
@@ -1407,7 +1407,7 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       endDate: end,
       pickupLocation: defaultPickup,
       dropoffLocation: defaultDropoff,
-      status: 'confirmed', // 🔧 AUTO-CONFIRM: Set to confirmed instead of pending
+      status: 'pending', // 🔧 ADMIN APPROVAL: Set to pending, requires admin confirmation
       pricing: finalPricing, // Use calculated or frontend pricing
       additionalDrivers: additionalDrivers || [],
       specialRequests: specialRequests || '',
