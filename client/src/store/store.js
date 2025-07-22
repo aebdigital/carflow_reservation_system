@@ -167,7 +167,64 @@ export const api = createApi({
         method: 'PUT',
         body: { imageIds },
       }),
-      invalidatesTags: (result, error, { carId }) => [{ type: 'Car', id: carId }, 'Car'],
+      async onQueryStarted({ carId, imageIds }, { dispatch, queryFulfilled }) {
+        // Optimistic update
+        const patchResult = dispatch(
+          api.util.updateQueryData('getCars', undefined, (draft) => {
+            const car = draft.find(c => c._id === carId);
+            if (car && car.images) {
+              // Reorder images based on imageIds array
+              const reorderedImages = imageIds.map((id, index) => {
+                const image = car.images.find(img => img._id === id);
+                if (image) {
+                  return {
+                    ...image,
+                    order: index,
+                    isPrimary: index === 0 // First image is always primary
+                  };
+                }
+                return null;
+              }).filter(Boolean);
+              
+              // Add any images that weren't in the reorder list at the end
+              const unorderedImages = car.images.filter(img => !imageIds.includes(img._id));
+              car.images = [...reorderedImages, ...unorderedImages];
+            }
+          })
+        );
+
+        // Also update specific car cache
+        const patchCarResult = dispatch(
+          api.util.updateQueryData('getCar', carId, (draft) => {
+            if (draft && draft.images) {
+              // Reorder images based on imageIds array
+              const reorderedImages = imageIds.map((id, index) => {
+                const image = draft.images.find(img => img._id === id);
+                if (image) {
+                  return {
+                    ...image,
+                    order: index,
+                    isPrimary: index === 0 // First image is always primary
+                  };
+                }
+                return null;
+              }).filter(Boolean);
+              
+              // Add any images that weren't in the reorder list at the end
+              const unorderedImages = draft.images.filter(img => !imageIds.includes(img._id));
+              draft.images = [...reorderedImages, ...unorderedImages];
+            }
+          })
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          // Revert optimistic update on error
+          patchResult.undo();
+          patchCarResult.undo();
+        }
+      },
     }),
     
     // Reservation endpoints

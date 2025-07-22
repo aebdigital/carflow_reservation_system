@@ -118,7 +118,6 @@ const EnhancedCarForm = ({
     
     // Get combined images and reorder them
     const combinedImages = getCombinedImages();
-    const originalImages = [...combinedImages]; // Keep original order for rollback
     const newImages = [...combinedImages];
     const [removed] = newImages.splice(source.index, 1);
     newImages.splice(destination.index, 0, removed);
@@ -132,13 +131,6 @@ const EnhancedCarForm = ({
     
     // Split back into existing and new images
     const existingImages = reorderedImages.filter(img => !img.isNew);
-    const originalExistingImages = originalImages.filter(img => !img.isNew);
-    
-    // Update form data locally (optimistic update)
-    setFormData(prev => ({
-      ...prev,
-      images: existingImages
-    }));
     
     // If we're editing and have existing images, save to backend
     if (dialogMode === 'edit' && existingImages.length > 0 && onReorderImages) {
@@ -148,30 +140,27 @@ const EnhancedCarForm = ({
           .map(img => img._id);
         
         if (imageIds.length > 0) {
+          // RTK Query optimistic update will handle the UI changes
           await onReorderImages(imageIds);
-          // Show success notification only if backend call succeeded
           if (onShowNotification) {
             onShowNotification('Poradie obrázkov bolo zmenené, prvý obrázok je teraz primárny', 'success');
           }
         }
       } catch (error) {
         console.error('❌ Error reordering images:', error);
-        
-        // Revert local state to original order on error
-        setFormData(prev => ({
-          ...prev,
-          images: originalExistingImages
-        }));
-        
         if (onShowNotification) {
-          onShowNotification('Chyba pri ukladaní poradia obrázkov. Zmeny boli vrátené.', 'error');
+          onShowNotification('Chyba pri ukladaní poradia obrázkov. Skúste to znova.', 'error');
         }
-        return;
       }
     } else {
-      // For create mode or when no existing images, just show local success
+      // For create mode, update local state only (no backend call yet)
+      setFormData(prev => ({
+        ...prev,
+        images: existingImages
+      }));
+      
       if (onShowNotification) {
-        onShowNotification('Poradie obrázkov bolo zmenené, prvý obrázok je teraz primárny', 'success');
+        onShowNotification('Poradie obrázkov bolo zmenené lokálne', 'success');
       }
     }
   }, [getCombinedImages, setFormData, onShowNotification, onReorderImages, dialogMode]);
