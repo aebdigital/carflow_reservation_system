@@ -49,6 +49,13 @@ class SMTP2GOService {
     const cleanHtml = this.sanitizeHtmlForJson(html);
     const cleanSubject = this.sanitizeSubject(subject);
 
+    // Set proper UTF-8 headers for emoji and special character support
+    const headers = {
+      'Content-Type': 'text/html; charset=UTF-8',
+      'Content-Transfer-Encoding': '8bit',
+      'MIME-Version': '1.0'
+    };
+
     // Log raw vs cleaned content for debugging
     console.log('🔍 [SMTP2GO DEBUG] Content cleaning:');
     console.log('   Raw HTML length:', html ? html.length : 0);
@@ -79,7 +86,8 @@ class SMTP2GOService {
       to: cleanedToEmails,
       subject: cleanSubject,
       html_body: cleanHtml,              // ACTUAL HTML content
-      text_body: cleanText               // ACTUAL text content
+      text_body: cleanText,              // ACTUAL text content
+      headers: headers                   // UTF-8 and emoji support headers
     };
 
     // Log the payload structure (for debugging only)

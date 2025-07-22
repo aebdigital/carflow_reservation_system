@@ -199,7 +199,7 @@ const EnhancedCarForm = ({
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
     }
-  }, []); // Remove setFormData dependency - use functional updates instead
+  }, []);
 
   // Handle deeply nested changes - memoized to prevent re-renders
   const handleNestedChange = useCallback((path, value) => {
@@ -218,7 +218,7 @@ const EnhancedCarForm = ({
       current[keys[keys.length - 1]] = value;
       return updated;
     });
-  }, []); // Remove setFormData dependency
+  }, []);
 
   // Tab panel component - memoized to prevent re-renders
   const TabPanel = useCallback(({ children, value, index, ...other }) => (
@@ -398,7 +398,7 @@ const EnhancedCarForm = ({
       ...prev, 
       damages: (prev.damages || []).filter((_, i) => i !== index)
     }));
-  }, []); // Remove setFormData dependency
+  }, []);
 
   const handleDamageSubmit = useCallback((damageData) => {
     setFormData(prev => {
