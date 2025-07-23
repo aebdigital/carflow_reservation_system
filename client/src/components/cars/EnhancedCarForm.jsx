@@ -95,8 +95,16 @@ const EnhancedCarForm = ({
 
   // Combine existing and new images with proper ordering and primary handling
   const getCombinedImages = useCallback(() => {
+    console.log('📷 [COMBINED] getCombinedImages called');
+    console.log('📷 [COMBINED] Dialog mode:', dialogMode);
+    console.log('📷 [COMBINED] carData?.images:', carData?.images?.map(img => ({ id: img._id, order: img.order })));
+    console.log('📷 [COMBINED] formData.images:', formData.images?.map(img => ({ id: img._id, order: img.order })));
+    console.log('📷 [COMBINED] imagePreviewUrls length:', imagePreviewUrls.length);
+    
     // In edit mode, use real-time data from RTK Query cache, otherwise use formData
     const existingImages = (dialogMode === 'edit' && carData?.images) ? carData.images : (formData.images || []);
+    console.log('📷 [COMBINED] Using existing images:', existingImages.map(img => ({ id: img._id, order: img.order })));
+    
     const newImages = imagePreviewUrls.map((previewData, index) => ({
       _id: `new-${index}`,
       url: previewData.url || previewData,
@@ -108,27 +116,40 @@ const EnhancedCarForm = ({
     
     // Combine all images and ensure first image is primary
     const allImages = [...existingImages, ...newImages];
-    return allImages.map((image, index) => ({
+    const result = allImages.map((image, index) => ({
       ...image,
       order: index,
       isPrimary: index === 0
     }));
+    
+    console.log('📷 [COMBINED] Final combined images:', result.map(img => ({ id: img._id, order: img.order, isNew: img.isNew })));
+    return result;
   }, [dialogMode, carData?.images, formData.images, imagePreviewUrls]);
 
   // Handle drag and drop for image reordering
   const handleImageDragEnd = useCallback(async (result) => {
     const { destination, source } = result;
     
+    console.log('🎯 [DRAG] Drag end triggered');
+    console.log('🎯 [DRAG] Source index:', source.index, 'Destination index:', destination?.index);
+    console.log('🎯 [DRAG] Dialog mode:', dialogMode);
+    console.log('🎯 [DRAG] Car ID:', carId);
+    
     // Check if dropped outside the list or in the same position
     if (!destination || destination.index === source.index) {
+      console.log('🎯 [DRAG] No destination or same position, returning');
       return;
     }
     
     // Get combined images and reorder them
     const combinedImages = getCombinedImages();
+    console.log('🎯 [DRAG] Combined images before reorder:', combinedImages.map(img => ({ id: img._id, order: img.order, isNew: img.isNew })));
+    
     const newImages = [...combinedImages];
     const [removed] = newImages.splice(source.index, 1);
     newImages.splice(destination.index, 0, removed);
+    
+    console.log('🎯 [DRAG] Moved image:', removed._id, 'from', source.index, 'to', destination.index);
     
     // Update order property and set primary image (first image is always primary)
     const reorderedImages = newImages.map((image, index) => ({
@@ -137,8 +158,11 @@ const EnhancedCarForm = ({
       isPrimary: index === 0 // First image is always primary
     }));
     
+    console.log('🎯 [DRAG] Reordered images:', reorderedImages.map(img => ({ id: img._id, order: img.order, isNew: img.isNew })));
+    
     // Split back into existing and new images
     const existingImages = reorderedImages.filter(img => !img.isNew);
+    console.log('🎯 [DRAG] Existing images to reorder:', existingImages.map(img => ({ id: img._id, order: img.order })));
     
     // If we're editing and have existing images, save to backend
     if (dialogMode === 'edit' && existingImages.length > 0 && onReorderImages) {
@@ -147,21 +171,26 @@ const EnhancedCarForm = ({
           .filter(img => !img.isNew && img._id) // Only existing images with IDs
           .map(img => img._id);
         
+        console.log('🎯 [DRAG] Image IDs to send to backend:', imageIds);
+        
         if (imageIds.length > 0) {
+          console.log('🎯 [DRAG] Calling onReorderImages...');
           // RTK Query optimistic update will handle the UI changes
           await onReorderImages(imageIds);
+          console.log('🎯 [DRAG] onReorderImages completed successfully');
           if (onShowNotification) {
             onShowNotification('Poradie obrázkov bolo zmenené, prvý obrázok je teraz primárny', 'success');
           }
         }
       } catch (error) {
-        console.error('❌ Error reordering images:', error);
+        console.error('❌ [DRAG] Error reordering images:', error);
         if (onShowNotification) {
           onShowNotification('Chyba pri ukladaní poradia obrázkov. Skúste to znova.', 'error');
         }
       }
     } else {
       // For create mode, update local state only (no backend call yet)
+      console.log('🎯 [DRAG] Create mode - updating local state only');
       setFormData(prev => ({
         ...prev,
         images: existingImages
@@ -171,7 +200,7 @@ const EnhancedCarForm = ({
         onShowNotification('Poradie obrázkov bolo zmenené lokálne', 'success');
       }
     }
-  }, [getCombinedImages, setFormData, onShowNotification, onReorderImages, dialogMode]);
+  }, [getCombinedImages, setFormData, onShowNotification, onReorderImages, dialogMode, carId]);
 
   // Enhanced options with new categories
   const categoryOptions = [

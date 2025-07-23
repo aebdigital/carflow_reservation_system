@@ -168,11 +168,17 @@ export const api = createApi({
         body: { imageIds },
       }),
       async onQueryStarted({ carId, imageIds }, { dispatch, queryFulfilled }) {
+        console.log('🔄 [RTK] Starting optimistic update for car:', carId);
+        console.log('🔄 [RTK] Image IDs order:', imageIds);
+        
         // Optimistic update
         const patchResult = dispatch(
           api.util.updateQueryData('getCars', undefined, (draft) => {
+            console.log('🔄 [RTK] Updating getCars cache...');
             const car = draft.find(c => c._id === carId);
             if (car && car.images) {
+              console.log('🔄 [RTK] Found car in cache, original images:', car.images.map(img => ({ id: img._id, order: img.order })));
+              
               // Reorder images based on imageIds array
               const reorderedImages = imageIds.map((id, index) => {
                 const image = car.images.find(img => img._id === id);
@@ -189,6 +195,10 @@ export const api = createApi({
               // Add any images that weren't in the reorder list at the end
               const unorderedImages = car.images.filter(img => !imageIds.includes(img._id));
               car.images = [...reorderedImages, ...unorderedImages];
+              
+              console.log('🔄 [RTK] Updated getCars cache, new images:', car.images.map(img => ({ id: img._id, order: img.order })));
+            } else {
+              console.log('🔄 [RTK] Car not found in getCars cache or no images');
             }
           })
         );
@@ -196,7 +206,10 @@ export const api = createApi({
         // Also update specific car cache
         const patchCarResult = dispatch(
           api.util.updateQueryData('getCar', carId, (draft) => {
+            console.log('🔄 [RTK] Updating getCar cache for carId:', carId);
             if (draft && draft.images) {
+              console.log('🔄 [RTK] Found car in getCar cache, original images:', draft.images.map(img => ({ id: img._id, order: img.order })));
+              
               // Reorder images based on imageIds array
               const reorderedImages = imageIds.map((id, index) => {
                 const image = draft.images.find(img => img._id === id);
@@ -213,16 +226,24 @@ export const api = createApi({
               // Add any images that weren't in the reorder list at the end
               const unorderedImages = draft.images.filter(img => !imageIds.includes(img._id));
               draft.images = [...reorderedImages, ...unorderedImages];
+              
+              console.log('🔄 [RTK] Updated getCar cache, new images:', draft.images.map(img => ({ id: img._id, order: img.order })));
+            } else {
+              console.log('🔄 [RTK] Car not found in getCar cache or no images');
             }
           })
         );
 
         try {
+          console.log('🔄 [RTK] Waiting for backend mutation...');
           await queryFulfilled;
-        } catch {
+          console.log('✅ [RTK] Backend mutation succeeded');
+        } catch (error) {
+          console.log('❌ [RTK] Backend mutation failed:', error);
           // Revert optimistic update on error
           patchResult.undo();
           patchCarResult.undo();
+          console.log('🔄 [RTK] Optimistic updates reverted');
         }
       },
     }),

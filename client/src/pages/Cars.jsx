@@ -392,18 +392,26 @@ function Cars() {
 
   // Handle reordering images
   const handleReorderImages = async (imageIds) => {
-    if (!selectedCar || !selectedCar._id) return
+    console.log('🔧 [PARENT] handleReorderImages called');
+    console.log('🔧 [PARENT] selectedCar ID:', selectedCar?._id);
+    console.log('🔧 [PARENT] imageIds:', imageIds);
+    
+    if (!selectedCar || !selectedCar._id) {
+      console.log('🔧 [PARENT] No selectedCar or ID, returning');
+      return;
+    }
     
     try {
-      await reorderCarImages({ 
+      console.log('🔧 [PARENT] Calling reorderCarImages mutation...');
+      const result = await reorderCarImages({ 
         carId: selectedCar._id, 
         imageIds 
-      }).unwrap()
+      }).unwrap();
       
-      console.log('✅ Images reordered successfully')
+      console.log('✅ [PARENT] Images reordered successfully:', result);
     } catch (error) {
-      console.error('❌ Error reordering images:', error)
-      showNotification('Chyba pri zmene poradia obrázkov. Skúste to znova.', 'error')
+      console.error('❌ [PARENT] Error reordering images:', error);
+      showNotification('Chyba pri zmene poradia obrázkov. Skúste to znova.', 'error');
     }
   }
 
