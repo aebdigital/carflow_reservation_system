@@ -158,12 +158,35 @@ async function sendReservationEmails(reservation, car, customer) {
       console.log('📧 [EMAIL] Sending customer confirmation to:', customer.email);
       console.log('📧 [EMAIL] Customer data:', { name: `${customer.firstName} ${customer.lastName}`, email: customer.email });
       const customerResult = await emailService.sendCustomerReservationConfirmation(customer.email, emailData);
-      results.push({ type: 'customer', success: true, result: customerResult });
+      results.push({ type: 'customer_email', success: true, result: customerResult });
       console.log('✅ [EMAIL] Customer confirmation sent successfully to:', customer.email);
     } catch (customerError) {
       console.error('❌ [EMAIL] Failed to send customer confirmation:', customerError.message);
       console.error('❌ [EMAIL] Customer error stack:', customerError.stack);
-      results.push({ type: 'customer', success: false, error: customerError.message });
+      results.push({ type: 'customer_email', success: false, error: customerError.message });
+    }
+    
+    // Send confirmation SMS to customer
+    try {
+      if (customer.phone) {
+        console.log('📱 [SMS] Sending customer confirmation SMS to:', customer.phone);
+        const bulkGateService = require('../services/bulkGateService');
+        
+        if (bulkGateService.isConfigured) {
+          const smsResult = await bulkGateService.sendReservationConfirmation(customer.phone, emailData);
+          results.push({ type: 'customer_sms', success: true, result: smsResult });
+          console.log('✅ [SMS] Customer confirmation SMS sent successfully to:', customer.phone);
+        } else {
+          console.warn('⚠️ [SMS] BulkGate not configured, skipping SMS');
+          results.push({ type: 'customer_sms', success: false, error: 'BulkGate not configured' });
+        }
+      } else {
+        console.warn('⚠️ [SMS] No phone number provided, skipping SMS');
+        results.push({ type: 'customer_sms', success: false, error: 'No phone number' });
+      }
+    } catch (smsError) {
+      console.error('❌ [SMS] Failed to send customer confirmation SMS:', smsError.message);
+      results.push({ type: 'customer_sms', success: false, error: smsError.message });
     }
     
     // Check if at least one email was sent successfully

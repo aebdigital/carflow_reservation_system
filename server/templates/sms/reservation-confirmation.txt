@@ -1,0 +1,2 @@
+RIVAL Autopožičovňa: Vaša rezervácia vozidla {car_brand} {car_model} od {date} do {date_to} je úspešne prijatá. Po jej potvrdení Vás budeme ihneď informovať. Tešíme sa na Vás!
+📞 +421 907 633 517

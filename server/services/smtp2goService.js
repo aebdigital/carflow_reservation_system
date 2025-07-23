@@ -403,7 +403,22 @@ class SMTP2GOService {
     // Set subject to match exact specification
     const subject = '✅ Potvrdenie rezervácie';
     
-    return this.sendEmail(to, subject, emailData.html);
+    // Send email
+    const emailResult = await this.sendEmail(to, subject, emailData.html);
+    
+    // Send SMS if phone number available
+    try {
+      const bulkGateService = require('./bulkGateService');
+      if (bulkGateService.isConfigured && reservationData.customerPhone) {
+        console.log('📱 [SMS] Sending reservation confirmed SMS to:', reservationData.customerPhone);
+        await bulkGateService.sendReservationConfirmed(reservationData.customerPhone, reservationData);
+        console.log('✅ [SMS] Reservation confirmed SMS sent successfully');
+      }
+    } catch (smsError) {
+      console.error('❌ [SMS] Failed to send reservation confirmed SMS:', smsError.message);
+    }
+    
+    return emailResult;
   }
 
   // Customer notification when admin edits reservation
@@ -427,7 +442,22 @@ class SMTP2GOService {
     // Set subject to match exact specification
     const subject = '🔄 Zmena rezervácie';
     
-    return this.sendEmail(to, subject, emailData.html);
+    // Send email
+    const emailResult = await this.sendEmail(to, subject, emailData.html);
+    
+    // Send SMS if phone number available
+    try {
+      const bulkGateService = require('./bulkGateService');
+      if (bulkGateService.isConfigured && reservationData.customerPhone) {
+        console.log('📱 [SMS] Sending reservation edited SMS to:', reservationData.customerPhone);
+        await bulkGateService.sendReservationEdited(reservationData.customerPhone, reservationData);
+        console.log('✅ [SMS] Reservation edited SMS sent successfully');
+      }
+    } catch (smsError) {
+      console.error('❌ [SMS] Failed to send reservation edited SMS:', smsError.message);
+    }
+    
+    return emailResult;
   }
 
   // Customer cancellation email when admin cancels reservation
@@ -449,7 +479,22 @@ class SMTP2GOService {
     // Set subject to match exact specification
     const subject = '❌ Rezervácia zrušená';
     
-    return this.sendEmail(to, subject, emailData.html);
+    // Send email
+    const emailResult = await this.sendEmail(to, subject, emailData.html);
+    
+    // Send SMS if phone number available
+    try {
+      const bulkGateService = require('./bulkGateService');
+      if (bulkGateService.isConfigured && cancellationData.customerPhone) {
+        console.log('📱 [SMS] Sending reservation cancelled SMS to:', cancellationData.customerPhone);
+        await bulkGateService.sendReservationCancelled(cancellationData.customerPhone, cancellationData);
+        console.log('✅ [SMS] Reservation cancelled SMS sent successfully');
+      }
+    } catch (smsError) {
+      console.error('❌ [SMS] Failed to send reservation cancelled SMS:', smsError.message);
+    }
+    
+    return emailResult;
   }
 
   // Customer 24-hour reminder email
@@ -473,7 +518,22 @@ class SMTP2GOService {
     // Set subject to match exact specification
     const subject = '⏰ Pripomienka: Rezervácia zajtra';
     
-    return this.sendEmail(to, subject, emailData.html);
+    // Send email
+    const emailResult = await this.sendEmail(to, subject, emailData.html);
+    
+    // Send SMS if phone number available
+    try {
+      const bulkGateService = require('./bulkGateService');
+      if (bulkGateService.isConfigured && reservationData.customerPhone) {
+        console.log('📱 [SMS] Sending 24h reminder SMS to:', reservationData.customerPhone);
+        await bulkGateService.sendReservationReminder24(reservationData.customerPhone, reservationData);
+        console.log('✅ [SMS] 24h reminder SMS sent successfully');
+      }
+    } catch (smsError) {
+      console.error('❌ [SMS] Failed to send 24h reminder SMS:', smsError.message);
+    }
+    
+    return emailResult;
   }
 
   // Customer review request email (24h after trip ends)
@@ -496,7 +556,22 @@ class SMTP2GOService {
     // Set subject to match exact specification
     const subject = '⭐ Ako sa Vám páčila jazda?';
     
-    return this.sendEmail(to, subject, emailData.html);
+    // Send email
+    const emailResult = await this.sendEmail(to, subject, emailData.html);
+    
+    // Send SMS if phone number available
+    try {
+      const bulkGateService = require('./bulkGateService');
+      if (bulkGateService.isConfigured && reservationData.customerPhone) {
+        console.log('📱 [SMS] Sending review request SMS to:', reservationData.customerPhone);
+        await bulkGateService.sendReviewRequest(reservationData.customerPhone, reservationData);
+        console.log('✅ [SMS] Review request SMS sent successfully');
+      }
+    } catch (smsError) {
+      console.error('❌ [SMS] Failed to send review request SMS:', smsError.message);
+    }
+    
+    return emailResult;
   }
 
   // Test with the exact structure provided by user
