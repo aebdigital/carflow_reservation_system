@@ -115,7 +115,8 @@ const EnhancedCarForm = ({
     console.log('📷 [COMBINED] imagePreviewUrls length:', imagePreviewUrls.length);
     
     // In edit mode, use real-time data from RTK Query cache, otherwise use formData
-    const existingImages = (dialogMode === 'edit' && carData?.images) ? carData.images : (formData.images || []);
+    // Fix: carData has structure {success: true, data: {...}}, so we need carData.data.images
+    const existingImages = (dialogMode === 'edit' && carData?.data?.images) ? carData.data.images : (formData.images || []);
     console.log('📷 [COMBINED] Using existing images:', existingImages.map(img => ({ id: img._id, order: img.order })));
     
     const newImages = imagePreviewUrls.map((previewData, index) => ({
@@ -137,7 +138,7 @@ const EnhancedCarForm = ({
     
     console.log('📷 [COMBINED] Final combined images:', result.map(img => ({ id: img._id, order: img.order, isNew: img.isNew })));
     return result;
-  }, [dialogMode, carData?.images, formData.images, imagePreviewUrls]);
+  }, [dialogMode, carData?.data?.images, formData.images, imagePreviewUrls]);
 
   // Handle drag and drop for image reordering
   const handleImageDragEnd = useCallback(async (result) => {

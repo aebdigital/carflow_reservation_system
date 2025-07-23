@@ -207,12 +207,17 @@ export const api = createApi({
         const patchCarResult = dispatch(
           api.util.updateQueryData('getCar', carId, (draft) => {
             console.log('🔄 [RTK] Updating getCar cache for carId:', carId);
-            if (draft && draft.images) {
-              console.log('🔄 [RTK] Found car in getCar cache, original images:', draft.images.map(img => ({ id: img._id, order: img.order })));
+            console.log('🔄 [RTK] Draft structure:', draft ? Object.keys(draft) : 'no draft');
+            
+            // Handle both direct car object and {success, data} wrapper format
+            const carObj = draft?.data ? draft.data : draft;
+            
+            if (carObj && carObj.images) {
+              console.log('🔄 [RTK] Found car in getCar cache, original images:', carObj.images.map(img => ({ id: img._id, order: img.order })));
               
               // Reorder images based on imageIds array
               const reorderedImages = imageIds.map((id, index) => {
-                const image = draft.images.find(img => img._id === id);
+                const image = carObj.images.find(img => img._id === id);
                 if (image) {
                   return {
                     ...image,
@@ -224,12 +229,13 @@ export const api = createApi({
               }).filter(Boolean);
               
               // Add any images that weren't in the reorder list at the end
-              const unorderedImages = draft.images.filter(img => !imageIds.includes(img._id));
-              draft.images = [...reorderedImages, ...unorderedImages];
+              const unorderedImages = carObj.images.filter(img => !imageIds.includes(img._id));
+              carObj.images = [...reorderedImages, ...unorderedImages];
               
-              console.log('🔄 [RTK] Updated getCar cache, new images:', draft.images.map(img => ({ id: img._id, order: img.order })));
+              console.log('🔄 [RTK] Updated getCar cache, new images:', carObj.images.map(img => ({ id: img._id, order: img.order })));
             } else {
               console.log('🔄 [RTK] Car not found in getCar cache or no images');
+              console.log('🔄 [RTK] carObj:', carObj);
             }
           })
         );
