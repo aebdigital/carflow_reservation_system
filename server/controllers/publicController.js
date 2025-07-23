@@ -2893,7 +2893,7 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
     }
 
     // Check if reservation has QR codes
-    if (!reservation.qrCodes || !reservation.qrCodes.payBySquare) {
+    if (!reservation.qrCodes || (!reservation.qrCodes.payBySquareRental && !reservation.qrCodes.payBySquare)) {
       return res.status(200).json({
         success: true,
         message: 'QR codes not available for this reservation',
@@ -2917,7 +2917,8 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
         bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquareRental, 'png', 300) : 
         (reservation.qrCodes.payBySquare ? bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquare, 'png', 300) : null),
       payBySquareDeposit: reservation.qrCodes.payBySquareDeposit ? 
-        bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquareDeposit, 'png', 300) : null
+        bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquareDeposit, 'png', 300) : 
+        (reservation.qrCodes.qrPlatbaCz ? bySquareService.generateQRImageUrl(reservation.qrCodes.qrPlatbaCz, 'png', 300) : null)
     };
 
     res.status(200).json({
@@ -2961,6 +2962,17 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
             code: reservation.qrCodes.payBySquareDeposit,
             imageUrl: qrImageUrls.payBySquareDeposit,
             format: 'Slovak PayBySquare - Deposit'
+          } : null,
+          // Keep old structure for compatibility
+          payBySquare: reservation.qrCodes.payBySquare ? {
+            code: reservation.qrCodes.payBySquare,
+            imageUrl: qrImageUrls.payBySquareRental,
+            format: 'Slovak PayBySquare - Legacy'
+          } : null,
+          qrPlatbaCz: reservation.qrCodes.qrPlatbaCz ? {
+            code: reservation.qrCodes.qrPlatbaCz,
+            imageUrl: qrImageUrls.payBySquareDeposit,
+            format: 'Czech QR Platba - Legacy'
           } : null
         },
         paymentDetails: {
@@ -3018,7 +3030,7 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
     }
 
     // Check if reservation has QR codes
-    if (!reservation.qrCodes || !reservation.qrCodes.payBySquare) {
+    if (!reservation.qrCodes || (!reservation.qrCodes.payBySquareRental && !reservation.qrCodes.payBySquare)) {
       // Try to generate QR codes if they don't exist
       try {
         const bySquareService = require('../services/bySquareService');
@@ -3070,7 +3082,7 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
       }
       
       // If still no QR codes after attempt
-      if (!reservation.qrCodes || !reservation.qrCodes.payBySquare) {
+      if (!reservation.qrCodes || (!reservation.qrCodes.payBySquareRental && !reservation.qrCodes.payBySquare)) {
         return res.status(200).json({
           success: true,
           message: 'QR codes not available for this reservation',
@@ -3095,7 +3107,8 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
         bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquareRental, 'png', 300) : 
         (reservation.qrCodes.payBySquare ? bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquare, 'png', 300) : null),
       payBySquareDeposit: reservation.qrCodes.payBySquareDeposit ? 
-        bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquareDeposit, 'png', 300) : null
+        bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquareDeposit, 'png', 300) : 
+        (reservation.qrCodes.qrPlatbaCz ? bySquareService.generateQRImageUrl(reservation.qrCodes.qrPlatbaCz, 'png', 300) : null)
     };
 
     res.status(200).json({
@@ -3139,6 +3152,17 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
             code: reservation.qrCodes.payBySquareDeposit,
             imageUrl: qrImageUrls.payBySquareDeposit,
             format: 'Slovak PayBySquare - Deposit'
+          } : null,
+          // Keep old structure for compatibility
+          payBySquare: reservation.qrCodes.payBySquare ? {
+            code: reservation.qrCodes.payBySquare,
+            imageUrl: qrImageUrls.payBySquareRental,
+            format: 'Slovak PayBySquare - Legacy'
+          } : null,
+          qrPlatbaCz: reservation.qrCodes.qrPlatbaCz ? {
+            code: reservation.qrCodes.qrPlatbaCz,
+            imageUrl: qrImageUrls.payBySquareDeposit,
+            format: 'Czech QR Platba - Legacy'
           } : null
         },
         paymentDetails: {

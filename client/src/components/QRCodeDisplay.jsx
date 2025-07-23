@@ -190,7 +190,7 @@ const QRCodeDisplay = ({ reservationId, onClose, open = false }) => {
 
             {/* QR Codes - 2 Slovak QR Codes */}
             <Grid container spacing={3}>
-              {qrData.qrCodes.payBySquareRental && (
+              {(qrData.qrCodes.payBySquareRental || qrData.qrCodes.payBySquare) && (
                 <Grid item xs={12} md={6}>
                   <Card>
                     <CardContent sx={{ textAlign: 'center' }}>
@@ -200,22 +200,25 @@ const QRCodeDisplay = ({ reservationId, onClose, open = false }) => {
                       </Box>
                       <Box sx={{ mb: 2 }}>
                         <img 
-                          src={qrData.qrCodes.payBySquareRental.imageUrl} 
+                          src={(qrData.qrCodes.payBySquareRental || qrData.qrCodes.payBySquare)?.imageUrl} 
                           alt="Rental PayBySquare QR Code"
                           style={{ width: '200px', height: '200px', border: '1px solid #ddd' }}
                         />
                       </Box>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
-                        QR kód pre platbu nájomného
+                        {qrData.qrCodes.payBySquareRental ? 'QR kód pre platbu nájomného' : 'QR kód pre platbu (celková suma)'}
                       </Typography>
                       <Typography variant="body1" fontWeight="medium" sx={{ mb: 2 }}>
-                        Suma: {(qrData.reservation.amount - (qrData.reservation.car?.pricing?.deposit || 0)).toFixed(2)} €
+                        Suma: {qrData.qrCodes.payBySquareRental ? 
+                          (qrData.reservation.amount - (qrData.reservation.car?.pricing?.deposit || 0)).toFixed(2) : 
+                          qrData.reservation.amount?.toFixed(2)
+                        } €
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', mt: 2 }}>
                         <Tooltip title="Kopírovať QR kód">
                           <IconButton 
                             size="small" 
-                            onClick={() => handleCopyText(qrData.qrCodes.payBySquareRental.code, 'Rental PayBySquare')}
+                            onClick={() => handleCopyText((qrData.qrCodes.payBySquareRental || qrData.qrCodes.payBySquare)?.code, qrData.qrCodes.payBySquareRental ? 'Rental PayBySquare' : 'PayBySquare')}
                           >
                             <CopyIcon />
                           </IconButton>
@@ -223,7 +226,7 @@ const QRCodeDisplay = ({ reservationId, onClose, open = false }) => {
                         <Tooltip title="Stiahnuť QR obrázok">
                           <IconButton 
                             size="small" 
-                            onClick={() => handleDownloadQR(qrData.qrCodes.payBySquareRental.imageUrl, 'Rental PayBySquare')}
+                            onClick={() => handleDownloadQR((qrData.qrCodes.payBySquareRental || qrData.qrCodes.payBySquare)?.imageUrl, qrData.qrCodes.payBySquareRental ? 'Rental PayBySquare' : 'PayBySquare')}
                           >
                             <DownloadIcon />
                           </IconButton>
@@ -234,7 +237,7 @@ const QRCodeDisplay = ({ reservationId, onClose, open = false }) => {
                 </Grid>
               )}
 
-              {qrData.qrCodes.payBySquareDeposit && (
+              {(qrData.qrCodes.payBySquareDeposit || (qrData.qrCodes.qrPlatbaCz && qrData.reservation.car?.pricing?.deposit > 0)) && (
                 <Grid item xs={12} md={6}>
                   <Card>
                     <CardContent sx={{ textAlign: 'center' }}>
@@ -244,13 +247,13 @@ const QRCodeDisplay = ({ reservationId, onClose, open = false }) => {
                       </Box>
                       <Box sx={{ mb: 2 }}>
                         <img 
-                          src={qrData.qrCodes.payBySquareDeposit.imageUrl} 
+                          src={(qrData.qrCodes.payBySquareDeposit || qrData.qrCodes.qrPlatbaCz)?.imageUrl} 
                           alt="Deposit PayBySquare QR Code"
                           style={{ width: '200px', height: '200px', border: '1px solid #ddd' }}
                         />
                       </Box>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
-                        QR kód pre platbu zábezpeky
+                        {qrData.qrCodes.payBySquareDeposit ? 'QR kód pre platbu zábezpeky' : 'QR kód (Czech) - pre zábezpeku'}
                       </Typography>
                       <Typography variant="body1" fontWeight="medium" sx={{ mb: 2 }}>
                         Suma: {(qrData.reservation.car?.pricing?.deposit || 0).toFixed(2)} €
@@ -259,7 +262,7 @@ const QRCodeDisplay = ({ reservationId, onClose, open = false }) => {
                         <Tooltip title="Kopírovať QR kód">
                           <IconButton 
                             size="small" 
-                            onClick={() => handleCopyText(qrData.qrCodes.payBySquareDeposit.code, 'Deposit PayBySquare')}
+                            onClick={() => handleCopyText((qrData.qrCodes.payBySquareDeposit || qrData.qrCodes.qrPlatbaCz)?.code, qrData.qrCodes.payBySquareDeposit ? 'Deposit PayBySquare' : 'QR Platba CZ')}
                           >
                             <CopyIcon />
                           </IconButton>
@@ -267,7 +270,7 @@ const QRCodeDisplay = ({ reservationId, onClose, open = false }) => {
                         <Tooltip title="Stiahnuť QR obrázok">
                           <IconButton 
                             size="small" 
-                            onClick={() => handleDownloadQR(qrData.qrCodes.payBySquareDeposit.imageUrl, 'Deposit PayBySquare')}
+                            onClick={() => handleDownloadQR((qrData.qrCodes.payBySquareDeposit || qrData.qrCodes.qrPlatbaCz)?.imageUrl, qrData.qrCodes.payBySquareDeposit ? 'Deposit PayBySquare' : 'QR Platba CZ')}
                           >
                             <DownloadIcon />
                           </IconButton>
