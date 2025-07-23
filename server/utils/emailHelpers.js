@@ -22,6 +22,13 @@ function prepareReservationEmailData(reservation, car, customer) {
   // Calculate discount amount
   const totalDiscounts = reservation.pricing?.discounts?.reduce((sum, discount) => sum + (discount.amount || 0), 0) || 0;
 
+  // Helper function to generate QR image URL
+  const getQRImageUrl = (qrCode) => {
+    if (!qrCode) return null;
+    const encodedData = encodeURIComponent(qrCode);
+    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedData}&format=png`;
+  };
+
   return {
     // Reservation info
     reservationNumber: reservation.reservationNumber || reservation._id.toString().slice(-8),
@@ -62,7 +69,22 @@ function prepareReservationEmailData(reservation, car, customer) {
     subtotal: (reservation.pricing?.subtotal || reservation.pricing?.totalAmount || 0).toFixed(2),
     discount: totalDiscounts.toFixed(2),
     totalPrice: (reservation.pricing?.totalAmount || 0).toFixed(2),
-    deposit: (car.pricing?.deposit || car.deposit || 0).toFixed(2)
+    deposit: (car.pricing?.deposit || car.deposit || 0).toFixed(2),
+
+    // QR Code information
+    qr_codes_available: !!(reservation.qrCodes && (reservation.qrCodes.payBySquareRental || reservation.qrCodes.payBySquare)),
+    qr_rental_url: getQRImageUrl(reservation.qrCodes?.payBySquareRental || reservation.qrCodes?.payBySquare),
+    qr_deposit_url: getQRImageUrl(reservation.qrCodes?.payBySquareDeposit || reservation.qrCodes?.qrPlatbaCz),
+    rental_amount: ((reservation.pricing?.totalAmount || 0) - (car.pricing?.deposit || car.deposit || 0)).toFixed(2),
+    deposit_amount: (car.pricing?.deposit || car.deposit || 0).toFixed(2),
+    total_amount: (reservation.pricing?.totalAmount || 0).toFixed(2),
+    variable_symbol: reservation.qrCodes?.variableSymbol || reservation.reservationNumber?.replace(/[^0-9]/g, '') || '',
+    bank_account: reservation.qrCodes?.bankAccount || 'SK6807200000000000000000',
+    
+    // Display control variables
+    qr_section_display: (reservation.qrCodes && (reservation.qrCodes.payBySquareRental || reservation.qrCodes.payBySquare)) ? 'block' : 'none',
+    qr_rental_display: (reservation.qrCodes?.payBySquareRental || reservation.qrCodes?.payBySquare) ? 'block' : 'none',
+    qr_deposit_display: (reservation.qrCodes?.payBySquareDeposit || reservation.qrCodes?.qrPlatbaCz) ? 'block' : 'none'
   };
 }
 
