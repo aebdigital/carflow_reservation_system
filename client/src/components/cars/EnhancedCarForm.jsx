@@ -103,6 +103,8 @@ const EnhancedCarForm = ({
   console.log('🔍 [QUERY] carData exists:', !!carData);
   console.log('🔍 [QUERY] carData.images exists:', !!carData?.images);
   console.log('🔍 [QUERY] carData.images length:', carData?.images?.length);
+  console.log('🔍 [QUERY] carData full object:', carData);
+  console.log('🔍 [QUERY] carData keys:', carData ? Object.keys(carData) : 'no carData');
 
   // Combine existing and new images with proper ordering and primary handling
   const getCombinedImages = useCallback(() => {
@@ -141,6 +143,7 @@ const EnhancedCarForm = ({
   const handleImageDragEnd = useCallback(async (result) => {
     const { destination, source } = result;
     
+    console.log('🎯 [DRAG] =================== DRAG START ===================');
     console.log('🎯 [DRAG] Drag end triggered');
     console.log('🎯 [DRAG] Source index:', source.index, 'Destination index:', destination?.index);
     console.log('🎯 [DRAG] Dialog mode:', dialogMode);
