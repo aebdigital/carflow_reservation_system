@@ -276,9 +276,25 @@ class BulkGateService {
   /**
    * Format date for Slovak SMS
    */
-  formatDate(dateString) {
-    if (!dateString) return '';
-    const date = new Date(dateString);
+  formatDate(dateInput) {
+    if (!dateInput) return '';
+    
+    // Handle both Date objects and string inputs
+    let date;
+    if (dateInput instanceof Date) {
+      date = dateInput;
+    } else if (typeof dateInput === 'string') {
+      date = new Date(dateInput);
+    } else {
+      return '';
+    }
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.warn('⚠️ [BULKGATE] Invalid date for formatting:', dateInput);
+      return '';
+    }
+    
     return date.toLocaleDateString('sk-SK', {
       day: '2-digit',
       month: '2-digit',
@@ -289,9 +305,25 @@ class BulkGateService {
   /**
    * Format time for Slovak SMS
    */
-  formatTime(dateString) {
-    if (!dateString) return '';
-    const date = new Date(dateString);
+  formatTime(dateInput) {
+    if (!dateInput) return '';
+    
+    // Handle both Date objects and string inputs
+    let date;
+    if (dateInput instanceof Date) {
+      date = dateInput;
+    } else if (typeof dateInput === 'string') {
+      date = new Date(dateInput);
+    } else {
+      return '';
+    }
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.warn('⚠️ [BULKGATE] Invalid date for time formatting:', dateInput);
+      return '';
+    }
+    
     return date.toLocaleTimeString('sk-SK', {
       hour: '2-digit',
       minute: '2-digit'

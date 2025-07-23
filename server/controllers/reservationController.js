@@ -699,8 +699,8 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
       // Prepare reservation data using existing helper
       const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
       
-      // Send confirmation email using new template
-      await emailService.sendCustomerReservationConfirmed(reservation.customer.email, emailData);
+      // Send confirmation email using new template, pass both emailData and raw reservation
+      await emailService.sendCustomerReservationConfirmed(reservation.customer.email, emailData, reservation);
       console.log('✅ [EMAIL] Confirmation notification sent to customer:', reservation.customer.email);
     }
   } catch (emailError) {

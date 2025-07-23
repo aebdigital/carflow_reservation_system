@@ -173,7 +173,13 @@ async function sendReservationEmails(reservation, car, customer) {
         const bulkGateService = require('../services/bulkGateService');
         
         if (bulkGateService.isConfigured) {
-          const smsResult = await bulkGateService.sendReservationConfirmation(customer.phone, emailData);
+          // Create SMS data with raw reservation dates, not formatted emailData  
+          const smsData = {
+            ...emailData,
+            startDate: reservation.startDate,  // Raw date from DB
+            endDate: reservation.endDate       // Raw date from DB
+          };
+          const smsResult = await bulkGateService.sendReservationConfirmation(customer.phone, smsData);
           results.push({ type: 'customer_sms', success: true, result: smsResult });
           console.log('✅ [SMS] Customer confirmation SMS sent successfully to:', customer.phone);
         } else {

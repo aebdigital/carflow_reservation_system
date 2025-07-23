@@ -380,7 +380,7 @@ class SMTP2GOService {
   }
 
   // Customer confirmation email when admin confirms reservation
-  async sendCustomerReservationConfirmed(to, reservationData) {
+  async sendCustomerReservationConfirmed(to, reservationData, rawReservation = null) {
     const emailTemplateService = require('./emailTemplateService');
     
     // Prepare template variables from actual backend data structure
@@ -411,7 +411,13 @@ class SMTP2GOService {
       const bulkGateService = require('./bulkGateService');
       if (bulkGateService.isConfigured && reservationData.customerPhone) {
         console.log('📱 [SMS] Sending reservation confirmed SMS to:', reservationData.customerPhone);
-        await bulkGateService.sendReservationConfirmed(reservationData.customerPhone, reservationData);
+        // Create SMS data with raw dates if available, otherwise use formatted data
+        const smsData = rawReservation ? {
+          ...reservationData,
+          startDate: rawReservation.startDate,  // Raw date from DB
+          endDate: rawReservation.endDate       // Raw date from DB
+        } : reservationData;
+        await bulkGateService.sendReservationConfirmed(reservationData.customerPhone, smsData);
         console.log('✅ [SMS] Reservation confirmed SMS sent successfully');
       }
     } catch (smsError) {
@@ -450,6 +456,7 @@ class SMTP2GOService {
       const bulkGateService = require('./bulkGateService');
       if (bulkGateService.isConfigured && reservationData.customerPhone) {
         console.log('📱 [SMS] Sending reservation edited SMS to:', reservationData.customerPhone);
+        // Use formatted data for edited SMS (no raw reservation available here)
         await bulkGateService.sendReservationEdited(reservationData.customerPhone, reservationData);
         console.log('✅ [SMS] Reservation edited SMS sent successfully');
       }
