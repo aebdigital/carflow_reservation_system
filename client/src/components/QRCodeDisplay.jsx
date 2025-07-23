@@ -146,6 +146,22 @@ const QRCodeDisplay = ({ reservationId, onClose, open = false }) => {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="body2" color="text.secondary">
+                      Nájomné:
+                    </Typography>
+                    <Typography variant="body1" fontWeight="medium">
+                      {(qrData.reservation.amount - (qrData.reservation.car?.pricing?.deposit || 0)).toFixed(2)} €
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Zábezpeka:
+                    </Typography>
+                    <Typography variant="body1" fontWeight="medium">
+                      {(qrData.reservation.car?.pricing?.deposit || 0).toFixed(2)} €
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
                       Celková suma:
                     </Typography>
                     <Typography variant="body1" fontWeight="medium">
@@ -172,31 +188,34 @@ const QRCodeDisplay = ({ reservationId, onClose, open = false }) => {
               </CardContent>
             </Card>
 
-            {/* QR Codes */}
+            {/* QR Codes - 2 Slovak QR Codes */}
             <Grid container spacing={3}>
-              {qrData.qrCodes.payBySquare && (
+              {qrData.qrCodes.payBySquareRental && (
                 <Grid item xs={12} md={6}>
                   <Card>
                     <CardContent sx={{ textAlign: 'center' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 2 }}>
-                        <Typography variant="h6">🇸🇰 PayBySquare</Typography>
-                        <Chip label="Slovensko" color="success" size="small" />
+                        <Typography variant="h6">🇸🇰 Nájomné</Typography>
+                        <Chip label="Rental" color="primary" size="small" />
                       </Box>
                       <Box sx={{ mb: 2 }}>
                         <img 
-                          src={qrData.qrCodes.payBySquare.imageUrl} 
-                          alt="PayBySquare QR Code"
+                          src={qrData.qrCodes.payBySquareRental.imageUrl} 
+                          alt="Rental PayBySquare QR Code"
                           style={{ width: '200px', height: '200px', border: '1px solid #ddd' }}
                         />
                       </Box>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
-                        Naskenujte svojim slovenským bankovým aplikáciou
+                        QR kód pre platbu nájomného
+                      </Typography>
+                      <Typography variant="body1" fontWeight="medium" sx={{ mb: 2 }}>
+                        Suma: {(qrData.reservation.amount - (qrData.reservation.car?.pricing?.deposit || 0)).toFixed(2)} €
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', mt: 2 }}>
                         <Tooltip title="Kopírovať QR kód">
                           <IconButton 
                             size="small" 
-                            onClick={() => handleCopyText(qrData.qrCodes.payBySquare.code, 'PayBySquare')}
+                            onClick={() => handleCopyText(qrData.qrCodes.payBySquareRental.code, 'Rental PayBySquare')}
                           >
                             <CopyIcon />
                           </IconButton>
@@ -204,7 +223,7 @@ const QRCodeDisplay = ({ reservationId, onClose, open = false }) => {
                         <Tooltip title="Stiahnuť QR obrázok">
                           <IconButton 
                             size="small" 
-                            onClick={() => handleDownloadQR(qrData.qrCodes.payBySquare.imageUrl, 'PayBySquare')}
+                            onClick={() => handleDownloadQR(qrData.qrCodes.payBySquareRental.imageUrl, 'Rental PayBySquare')}
                           >
                             <DownloadIcon />
                           </IconButton>
@@ -215,29 +234,32 @@ const QRCodeDisplay = ({ reservationId, onClose, open = false }) => {
                 </Grid>
               )}
 
-              {qrData.qrCodes.qrPlatbaCz && (
+              {qrData.qrCodes.payBySquareDeposit && (
                 <Grid item xs={12} md={6}>
                   <Card>
                     <CardContent sx={{ textAlign: 'center' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 2 }}>
-                        <Typography variant="h6">🇨🇿 QR Platba</Typography>
-                        <Chip label="Česko" color="info" size="small" />
+                        <Typography variant="h6">🇸🇰 Zábezpeka</Typography>
+                        <Chip label="Deposit" color="warning" size="small" />
                       </Box>
                       <Box sx={{ mb: 2 }}>
                         <img 
-                          src={qrData.qrCodes.qrPlatbaCz.imageUrl} 
-                          alt="QR Platba CZ QR Code"
+                          src={qrData.qrCodes.payBySquareDeposit.imageUrl} 
+                          alt="Deposit PayBySquare QR Code"
                           style={{ width: '200px', height: '200px', border: '1px solid #ddd' }}
                         />
                       </Box>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
-                        Naskenujte svojim českým bankovým aplikáciou
+                        QR kód pre platbu zábezpeky
+                      </Typography>
+                      <Typography variant="body1" fontWeight="medium" sx={{ mb: 2 }}>
+                        Suma: {(qrData.reservation.car?.pricing?.deposit || 0).toFixed(2)} €
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', mt: 2 }}>
                         <Tooltip title="Kopírovať QR kód">
                           <IconButton 
                             size="small" 
-                            onClick={() => handleCopyText(qrData.qrCodes.qrPlatbaCz.code, 'QR Platba CZ')}
+                            onClick={() => handleCopyText(qrData.qrCodes.payBySquareDeposit.code, 'Deposit PayBySquare')}
                           >
                             <CopyIcon />
                           </IconButton>
@@ -245,7 +267,7 @@ const QRCodeDisplay = ({ reservationId, onClose, open = false }) => {
                         <Tooltip title="Stiahnuť QR obrázok">
                           <IconButton 
                             size="small" 
-                            onClick={() => handleDownloadQR(qrData.qrCodes.qrPlatbaCz.imageUrl, 'QR Platba CZ')}
+                            onClick={() => handleDownloadQR(qrData.qrCodes.payBySquareDeposit.imageUrl, 'Deposit PayBySquare')}
                           >
                             <DownloadIcon />
                           </IconButton>

@@ -875,9 +875,8 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
           
           // Update reservation with QR codes
           reservation.qrCodes = {
-            payBySquare: qrResult.qrCodes.payBySquare,
-            qrPlatbaCz: qrResult.qrCodes.qrPlatbaCz,
-            invoiceBySquare: qrResult.qrCodes.invoiceBySquare,
+            payBySquareRental: qrResult.qrCodes.payBySquareRental,
+            payBySquareDeposit: qrResult.qrCodes.payBySquareDeposit,
             generatedAt: new Date(),
             lastUpdated: new Date(),
             isActive: true,
@@ -1443,9 +1442,8 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
           
           // Update reservation with QR codes
           reservation.qrCodes = {
-            payBySquare: qrResult.qrCodes.payBySquare,
-            qrPlatbaCz: qrResult.qrCodes.qrPlatbaCz,
-            invoiceBySquare: qrResult.qrCodes.invoiceBySquare,
+            payBySquareRental: qrResult.qrCodes.payBySquareRental,
+            payBySquareDeposit: qrResult.qrCodes.payBySquareDeposit,
             generatedAt: new Date(),
             lastUpdated: new Date(),
             isActive: true,
@@ -2888,7 +2886,7 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
     const reservation = await Reservation.findById(reservationId)
       .select('qrCodes pricing status customer car startDate endDate reservationNumber')
       .populate('customer', 'firstName lastName email')
-      .populate('car', 'brand model year');
+      .populate('car', 'brand model year pricing');
     
     if (!reservation) {
       return next(new AppError('Reservation not found', 404));
@@ -2915,9 +2913,11 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
     const bySquareService = require('../services/bySquareService');
     
     const qrImageUrls = {
-      payBySquare: bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquare, 'png', 300),
-      qrPlatbaCz: reservation.qrCodes.qrPlatbaCz ? 
-        bySquareService.generateQRImageUrl(reservation.qrCodes.qrPlatbaCz, 'png', 300) : null
+      payBySquareRental: reservation.qrCodes.payBySquareRental ? 
+        bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquareRental, 'png', 300) : 
+        (reservation.qrCodes.payBySquare ? bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquare, 'png', 300) : null),
+      payBySquareDeposit: reservation.qrCodes.payBySquareDeposit ? 
+        bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquareDeposit, 'png', 300) : null
     };
 
     res.status(200).json({
@@ -2939,18 +2939,28 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
           } : null,
           startDate: reservation.startDate,
           endDate: reservation.endDate,
-          amount: reservation.qrCodes.amount || reservation.pricing?.totalAmount || (reservation.pricing?.dailyRate * reservation.pricing?.totalDays) || 0
+          amount: reservation.qrCodes.amount || reservation.pricing?.totalAmount || (reservation.pricing?.dailyRate * reservation.pricing?.totalDays) || 0,
+          car: reservation.car ? {
+            ...reservation.car.toObject(),
+            pricing: {
+              deposit: reservation.car.pricing?.deposit || 0
+            }
+          } : null
         },
         qrCodes: {
-          payBySquare: {
+          payBySquareRental: reservation.qrCodes.payBySquareRental ? {
+            code: reservation.qrCodes.payBySquareRental,
+            imageUrl: qrImageUrls.payBySquareRental,
+            format: 'Slovak PayBySquare - Rental'
+          } : (reservation.qrCodes.payBySquare ? {
             code: reservation.qrCodes.payBySquare,
-            imageUrl: qrImageUrls.payBySquare,
-            format: 'Slovak PayBySquare'
-          },
-          qrPlatbaCz: reservation.qrCodes.qrPlatbaCz ? {
-            code: reservation.qrCodes.qrPlatbaCz,
-            imageUrl: qrImageUrls.qrPlatbaCz,
-            format: 'Czech QR Platba'
+            imageUrl: qrImageUrls.payBySquareRental,
+            format: 'Slovak PayBySquare - Legacy'
+          } : null),
+          payBySquareDeposit: reservation.qrCodes.payBySquareDeposit ? {
+            code: reservation.qrCodes.payBySquareDeposit,
+            imageUrl: qrImageUrls.payBySquareDeposit,
+            format: 'Slovak PayBySquare - Deposit'
           } : null
         },
         paymentDetails: {
@@ -3001,7 +3011,7 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
     })
       .select('qrCodes pricing status customer car startDate endDate reservationNumber')
       .populate('customer', 'firstName lastName email')
-      .populate('car', 'brand model year');
+      .populate('car', 'brand model year pricing');
     
     if (!reservation) {
       return next(new AppError('Reservation not found', 404));
@@ -3081,9 +3091,11 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
     const bySquareService = require('../services/bySquareService');
     
     const qrImageUrls = {
-      payBySquare: bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquare, 'png', 300),
-      qrPlatbaCz: reservation.qrCodes.qrPlatbaCz ? 
-        bySquareService.generateQRImageUrl(reservation.qrCodes.qrPlatbaCz, 'png', 300) : null
+      payBySquareRental: reservation.qrCodes.payBySquareRental ? 
+        bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquareRental, 'png', 300) : 
+        (reservation.qrCodes.payBySquare ? bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquare, 'png', 300) : null),
+      payBySquareDeposit: reservation.qrCodes.payBySquareDeposit ? 
+        bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquareDeposit, 'png', 300) : null
     };
 
     res.status(200).json({
@@ -3105,18 +3117,28 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
           } : null,
           startDate: reservation.startDate,
           endDate: reservation.endDate,
-          amount: reservation.qrCodes.amount || reservation.pricing?.totalAmount || (reservation.pricing?.dailyRate * reservation.pricing?.totalDays) || 0
+          amount: reservation.qrCodes.amount || reservation.pricing?.totalAmount || (reservation.pricing?.dailyRate * reservation.pricing?.totalDays) || 0,
+          car: reservation.car ? {
+            ...reservation.car.toObject(),
+            pricing: {
+              deposit: reservation.car.pricing?.deposit || 0
+            }
+          } : null
         },
         qrCodes: {
-          payBySquare: {
+          payBySquareRental: reservation.qrCodes.payBySquareRental ? {
+            code: reservation.qrCodes.payBySquareRental,
+            imageUrl: qrImageUrls.payBySquareRental,
+            format: 'Slovak PayBySquare - Rental'
+          } : (reservation.qrCodes.payBySquare ? {
             code: reservation.qrCodes.payBySquare,
-            imageUrl: qrImageUrls.payBySquare,
-            format: 'Slovak PayBySquare'
-          },
-          qrPlatbaCz: reservation.qrCodes.qrPlatbaCz ? {
-            code: reservation.qrCodes.qrPlatbaCz,
-            imageUrl: qrImageUrls.qrPlatbaCz,
-            format: 'Czech QR Platba'
+            imageUrl: qrImageUrls.payBySquareRental,
+            format: 'Slovak PayBySquare - Legacy'
+          } : null),
+          payBySquareDeposit: reservation.qrCodes.payBySquareDeposit ? {
+            code: reservation.qrCodes.payBySquareDeposit,
+            imageUrl: qrImageUrls.payBySquareDeposit,
+            format: 'Slovak PayBySquare - Deposit'
           } : null
         },
         paymentDetails: {

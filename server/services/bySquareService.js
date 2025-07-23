@@ -19,7 +19,7 @@ class BySquareService {
    */
   async generateReservationQR(reservation, car, customer) {
     try {
-      console.log('🔄 [BYSQUARE] Generating QR code for reservation:', reservation._id);
+      console.log('🔄 [BYSQUARE] Generating 2 Slovak QR codes for reservation:', reservation._id);
       console.log('📋 [BYSQUARE] Input data:', {
         reservation: {
           id: reservation._id,
@@ -41,66 +41,28 @@ class BySquareService {
         }
       });
 
-      // Prepare invoice data in bySquare format
-      const invoiceData = this.prepareInvoiceData(reservation, car, customer);
-      console.log('📋 [BYSQUARE] Prepared invoice data:', JSON.stringify(invoiceData, null, 2));
+      // Generate QR code for rental amount only
+      const rentalQR = await this.generateRentalQR(reservation, car, customer);
       
-      // Convert to XML
-      const xmlData = this.buildXMLRequest(invoiceData);
+      // Generate QR code for deposit amount only (if exists)
+      let depositQR = null;
+      if (car.pricing?.deposit && car.pricing.deposit > 0) {
+        depositQR = await this.generateDepositQR(reservation, car, customer);
+      }
       
-      console.log('📤 [BYSQUARE] Sending request to bySquare API...');
-      
-      // Make API request
-      const response = await axios.post(this.apiUrl, xmlData, {
-        headers: {
-          'Content-Type': 'application/xml',
-          'Accept': 'application/xml'
-        },
-        timeout: 30000
-      });
-
-      console.log('📥 [BYSQUARE] Received response from bySquare API');
-      console.log('📥 [BYSQUARE] Response status:', response.status);
-      console.log('📥 [BYSQUARE] Response data:', response.data);
-      
-      // Parse XML response
-      const result = await this.parseResponse(response.data);
-      
-      console.log('✅ [BYSQUARE] QR codes generated successfully');
-      console.log('✅ [BYSQUARE] Parsed result:', result);
+      console.log('✅ [BYSQUARE] Both Slovak QR codes generated successfully');
       
       return {
         success: true,
         qrCodes: {
-          payBySquare: result.PayBySquare,
-          qrPlatbaCz: result.QrPlatbaCz,
-          invoiceBySquare: result.InvoiceBySquare
+          payBySquareRental: rentalQR,
+          payBySquareDeposit: depositQR
         },
-        packageConsumption: result.PackageConsuption || null
+        packageConsumption: rentalQR.PackageConsuption || null
       };
 
     } catch (error) {
-      console.error('❌ [BYSQUARE] Error generating QR code:', error.message);
-      
-      if (error.response) {
-        console.error('📋 [BYSQUARE] Error response status:', error.response.status);
-        console.error('📋 [BYSQUARE] Error response headers:', error.response.headers);
-        console.error('📋 [BYSQUARE] Error response data:', error.response.data);
-        
-        // Try to parse error response if it's XML
-        if (error.response.data && typeof error.response.data === 'string') {
-          try {
-            const xml2js = require('xml2js');
-            const parser = new xml2js.Parser({ explicitArray: false });
-            const parsedError = await parser.parseStringPromise(error.response.data);
-            console.error('📋 [BYSQUARE] Parsed error response:', JSON.stringify(parsedError, null, 2));
-          } catch (parseError) {
-            console.error('📋 [BYSQUARE] Could not parse error response as XML:', parseError.message);
-          }
-        }
-      } else if (error.request) {
-        console.error('📋 [BYSQUARE] No response received:', error.request);
-      }
+      console.error('❌ [BYSQUARE] Error generating QR codes:', error.message);
       
       return {
         success: false,
@@ -111,7 +73,227 @@ class BySquareService {
   }
 
   /**
-   * Prepare invoice data from reservation details
+   * Generate QR code specifically for rental amount
+   */
+  async generateRentalQR(reservation, car, customer) {
+    try {
+      console.log('🔄 [BYSQUARE] Generating rental QR code...');
+      
+      const invoiceData = this.prepareRentalInvoiceData(reservation, car, customer);
+      const xmlData = this.buildXMLRequest(invoiceData, true); // Slovak only
+      
+      const response = await axios.post(this.apiUrl, xmlData, {
+        headers: {
+          'Content-Type': 'application/xml',
+          'Accept': 'application/xml'
+        },
+        timeout: 30000
+      });
+      
+      const result = await this.parseResponse(response.data);
+      console.log('✅ [BYSQUARE] Rental QR code generated');
+      
+      return result.PayBySquare;
+    } catch (error) {
+      console.error('❌ [BYSQUARE] Error generating rental QR:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate QR code specifically for deposit amount
+   */
+  async generateDepositQR(reservation, car, customer) {
+    try {
+      console.log('🔄 [BYSQUARE] Generating deposit QR code...');
+      
+      const invoiceData = this.prepareDepositInvoiceData(reservation, car, customer);
+      const xmlData = this.buildXMLRequest(invoiceData, true); // Slovak only
+      
+      const response = await axios.post(this.apiUrl, xmlData, {
+        headers: {
+          'Content-Type': 'application/xml',
+          'Accept': 'application/xml'
+        },
+        timeout: 30000
+      });
+      
+      const result = await this.parseResponse(response.data);
+      console.log('✅ [BYSQUARE] Deposit QR code generated');
+      
+      return result.PayBySquare;
+    } catch (error) {
+      console.error('❌ [BYSQUARE] Error generating deposit QR:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Prepare invoice data for rental amount only
+   */
+  prepareRentalInvoiceData(reservation, car, customer) {
+    const invoiceNumber = reservation.reservationNumber || `RES-${reservation._id.toString().slice(-8)}`;
+    const issueDate = new Date(reservation.createdAt || Date.now());
+    const dueDate = new Date(reservation.startDate);
+    
+    // Calculate rental amount only (no deposit)
+    const rentalAmount = reservation.pricing?.totalAmount || (reservation.pricing?.dailyRate * reservation.pricing?.totalDays) || 0;
+    
+    // Generate variable symbol from reservation number and ID + R for rental
+    const reservationDigits = reservation.reservationNumber ? 
+      reservation.reservationNumber.replace(/[^0-9]/g, '') : 
+      reservation._id.toString().slice(-8);
+    const variableSymbol = reservationDigits.slice(-9).padStart(9, '0') + '1'; // End with 1 for rental
+    
+    return {
+      invoiceId: invoiceNumber + '-RENTAL',
+      issueDate: issueDate.toISOString(),
+      taxPointDate: issueDate.toISOString(),
+      paymentDueDate: dueDate.toISOString(),
+      localCurrencyCode: 'EUR',
+      
+      // Supplier (Car Rental Company)
+      supplier: {
+        partyName: 'CarFlow Rental',
+        companyTaxID: '12345678',
+        companyVATID: 'SK12345678',
+        address: {
+          streetName: 'Main Street',
+          buildingNumber: '123',
+          cityName: 'Bratislava',
+          postalZone: '81108',
+          country: 'SVK'
+        },
+        contact: {
+          name: 'CarFlow Support',
+          email: 'info@carflow.sk'
+        }
+      },
+      
+      // Customer
+      customer: {
+        partyName: `${customer.firstName} ${customer.lastName}`,
+        email: customer.email,
+        phone: customer.phone || '',
+        address: customer.address ? {
+          streetName: customer.address.street || '',
+          cityName: customer.address.city || '',
+          postalZone: customer.address.zipCode || '',
+          country: customer.address.country || 'SVK'
+        } : {}
+      },
+      
+      // Financial details - RENTAL ONLY
+      amount: rentalAmount,
+      currencyCode: 'EUR',
+      
+      // Payment details for QR
+      bankAccount: 'SK6807200000000000000000',
+      variableSymbol: variableSymbol,
+      constantSymbol: '0308',
+      specificSymbol: '',
+      beneficiaryName: 'CarFlow Rental',
+      paymentNote: `Car rental: ${car.brand} ${car.model} (${reservation.startDate.toISOString().split('T')[0]} - ${reservation.endDate.toISOString().split('T')[0]})`,
+      
+      // Invoice items - rental only
+      items: [
+        {
+          itemName: `Car Rental - ${car.brand} ${car.model} ${car.year}`,
+          periodFromDate: reservation.startDate.toISOString(),
+          periodToDate: reservation.endDate.toISOString(),
+          quantity: reservation.pricing?.totalDays || 1,
+          unitPrice: reservation.pricing?.dailyRate || 50,
+          lineTotal: rentalAmount,
+          taxRate: 0
+        }
+      ]
+    };
+  }
+
+  /**
+   * Prepare invoice data for deposit amount only
+   */
+  prepareDepositInvoiceData(reservation, car, customer) {
+    const invoiceNumber = reservation.reservationNumber || `RES-${reservation._id.toString().slice(-8)}`;
+    const issueDate = new Date(reservation.createdAt || Date.now());
+    const dueDate = new Date(reservation.startDate);
+    
+    // Deposit amount only
+    const depositAmount = car.pricing?.deposit || 0;
+    
+    // Generate variable symbol from reservation number and ID + D for deposit
+    const reservationDigits = reservation.reservationNumber ? 
+      reservation.reservationNumber.replace(/[^0-9]/g, '') : 
+      reservation._id.toString().slice(-8);
+    const variableSymbol = reservationDigits.slice(-9).padStart(9, '0') + '2'; // End with 2 for deposit
+    
+    return {
+      invoiceId: invoiceNumber + '-DEPOSIT',
+      issueDate: issueDate.toISOString(),
+      taxPointDate: issueDate.toISOString(),
+      paymentDueDate: dueDate.toISOString(),
+      localCurrencyCode: 'EUR',
+      
+      // Supplier (Car Rental Company)
+      supplier: {
+        partyName: 'CarFlow Rental',
+        companyTaxID: '12345678',
+        companyVATID: 'SK12345678',
+        address: {
+          streetName: 'Main Street',
+          buildingNumber: '123',
+          cityName: 'Bratislava',
+          postalZone: '81108',
+          country: 'SVK'
+        },
+        contact: {
+          name: 'CarFlow Support',
+          email: 'info@carflow.sk'
+        }
+      },
+      
+      // Customer
+      customer: {
+        partyName: `${customer.firstName} ${customer.lastName}`,
+        email: customer.email,
+        phone: customer.phone || '',
+        address: customer.address ? {
+          streetName: customer.address.street || '',
+          cityName: customer.address.city || '',
+          postalZone: customer.address.zipCode || '',
+          country: customer.address.country || 'SVK'
+        } : {}
+      },
+      
+      // Financial details - DEPOSIT ONLY
+      amount: depositAmount,
+      currencyCode: 'EUR',
+      
+      // Payment details for QR
+      bankAccount: 'SK6807200000000000000000',
+      variableSymbol: variableSymbol,
+      constantSymbol: '0308',
+      specificSymbol: '',
+      beneficiaryName: 'CarFlow Rental',
+      paymentNote: `Security deposit: ${car.brand} ${car.model} (${reservation.startDate.toISOString().split('T')[0]} - ${reservation.endDate.toISOString().split('T')[0]})`,
+      
+      // Invoice items - deposit only
+      items: [
+        {
+          itemName: `Security Deposit - ${car.brand} ${car.model}`,
+          periodFromDate: reservation.startDate.toISOString(),
+          periodToDate: reservation.endDate.toISOString(),
+          quantity: 1,
+          unitPrice: depositAmount,
+          lineTotal: depositAmount,
+          taxRate: 0
+        }
+      ]
+    };
+  }
+
+  /**
+   * Prepare invoice data from reservation details (LEGACY - kept for compatibility)
    */
   prepareInvoiceData(reservation, car, customer) {
     const invoiceNumber = reservation.reservationNumber || `RES-${reservation._id.toString().slice(-8)}`;
@@ -217,8 +399,10 @@ class BySquareService {
 
   /**
    * Build XML request for bySquare API
+   * @param {Object} invoiceData - Invoice data object
+   * @param {boolean} slovakOnly - Generate only Slovak QR codes (default: false for both)
    */
-  buildXMLRequest(invoiceData) {
+  buildXMLRequest(invoiceData, slovakOnly = false) {
     const builder = new xml2js.Builder({
       rootName: 'BySquareXmlDocuments',
       xmldec: { version: '1.0', encoding: 'UTF-8' },
@@ -244,10 +428,10 @@ class BySquareService {
         ServiceUserId: this.serviceUserId
       } : {}),
       
-      // Country options (Slovak and Czech)
+      // Country options - Slovak only when specified
       CountryOptions: {
         Slovak: true,
-        Czech: true
+        Czech: !slovakOnly
       },
       
       // Invoice documents
