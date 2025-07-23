@@ -117,9 +117,13 @@ const EnhancedCarForm = ({
     console.log('📷 [COMBINED] formData.images:', formData.images?.map(img => ({ id: img._id, order: img.order })));
     console.log('📷 [COMBINED] imagePreviewUrls length:', imagePreviewUrls.length);
     
-    // In edit mode, use real-time data from RTK Query cache, otherwise use formData
-    // Fix: carData has structure {success: true, data: {...}}, so we need carData.data.images
-    const existingImages = (dialogMode === 'edit' && carData?.data?.images) ? carData.data.images : (formData.images || []);
+    // In edit mode, prefer formData (local state) if it exists, otherwise use RTK Query cache
+    // This ensures drag and drop changes are immediately visible
+    const existingImages = (formData.images && formData.images.length > 0) 
+      ? formData.images 
+      : (dialogMode === 'edit' && carData?.data?.images) 
+        ? carData.data.images 
+        : [];
     console.log('📷 [COMBINED] Using existing images:', existingImages.map(img => ({ id: img._id, order: img.order })));
     
     const newImages = imagePreviewUrls.map((previewData, index) => ({
@@ -182,6 +186,12 @@ const EnhancedCarForm = ({
     const existingImages = reorderedImages.filter(img => !img.isNew);
     console.log('🎯 [DRAG] Existing images to reorder:', existingImages.map(img => ({ id: img._id, order: img.order })));
     
+    // Always update local state immediately for instant UI response
+    setFormData(prev => ({
+      ...prev,
+      images: existingImages
+    }));
+    
     // If we're editing and have existing images, save to backend
     if (dialogMode === 'edit' && existingImages.length > 0 && onReorderImages) {
       try {
@@ -193,9 +203,14 @@ const EnhancedCarForm = ({
         
         if (imageIds.length > 0) {
           console.log('🎯 [DRAG] Calling onReorderImages...');
-          // RTK Query optimistic update will handle the UI changes
-          await onReorderImages(imageIds);
-          console.log('🎯 [DRAG] onReorderImages completed successfully');
+          // Call backend but don't await - let it happen in background
+          onReorderImages(imageIds).catch(error => {
+            console.error('❌ [DRAG] Error reordering images:', error);
+            if (onShowNotification) {
+              onShowNotification('Chyba pri ukladaní poradia obrázkov.', 'error');
+            }
+          });
+          
           if (onShowNotification) {
             onShowNotification('Poradie obrázkov bolo zmenené, prvý obrázok je teraz primárny', 'success');
           }
@@ -207,13 +222,8 @@ const EnhancedCarForm = ({
         }
       }
     } else {
-      // For create mode, update local state only (no backend call yet)
-      console.log('🎯 [DRAG] Create mode - updating local state only');
-      setFormData(prev => ({
-        ...prev,
-        images: existingImages
-      }));
-      
+      // For create mode, just show local success
+      console.log('🎯 [DRAG] Create mode - updated local state');
       if (onShowNotification) {
         onShowNotification('Poradie obrázkov bolo zmenené lokálne', 'success');
       }
