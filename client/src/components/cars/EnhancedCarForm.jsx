@@ -102,7 +102,9 @@ const EnhancedCarForm = ({
   console.log('🔍 [QUERY] error:', error);
   console.log('🔍 [QUERY] carData exists:', !!carData);
   console.log('🔍 [QUERY] carData.images exists:', !!carData?.images);
+  console.log('🔍 [QUERY] carData.data.images exists:', !!carData?.data?.images);
   console.log('🔍 [QUERY] carData.images length:', carData?.images?.length);
+  console.log('🔍 [QUERY] carData.data.images length:', carData?.data?.images?.length);
   console.log('🔍 [QUERY] carData full object:', carData);
   console.log('🔍 [QUERY] carData keys:', carData ? Object.keys(carData) : 'no carData');
 
@@ -110,7 +112,8 @@ const EnhancedCarForm = ({
   const getCombinedImages = useCallback(() => {
     console.log('📷 [COMBINED] getCombinedImages called');
     console.log('📷 [COMBINED] Dialog mode:', dialogMode);
-    console.log('📷 [COMBINED] carData?.images:', carData?.images?.map(img => ({ id: img._id, order: img.order })));
+    console.log('📷 [COMBINED] carData?.images (old path):', carData?.images?.map(img => ({ id: img._id, order: img.order })));
+    console.log('📷 [COMBINED] carData?.data?.images (new path):', carData?.data?.images?.map(img => ({ id: img._id, order: img.order })));
     console.log('📷 [COMBINED] formData.images:', formData.images?.map(img => ({ id: img._id, order: img.order })));
     console.log('📷 [COMBINED] imagePreviewUrls length:', imagePreviewUrls.length);
     
