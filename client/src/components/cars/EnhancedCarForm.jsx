@@ -89,9 +89,20 @@ const EnhancedCarForm = ({
   const equipmentIconInputRef = useRef(null);
 
   // Get real-time car data from RTK Query for edit mode
-  const { data: carData } = useGetCarQuery(carId, {
+  const { data: carData, isLoading, isError, error } = useGetCarQuery(carId, {
     skip: !carId || dialogMode === 'create'
   });
+
+  console.log('🔍 [QUERY] useGetCarQuery status:');
+  console.log('🔍 [QUERY] carId:', carId);
+  console.log('🔍 [QUERY] dialogMode:', dialogMode);
+  console.log('🔍 [QUERY] skip condition:', !carId || dialogMode === 'create');
+  console.log('🔍 [QUERY] isLoading:', isLoading);
+  console.log('🔍 [QUERY] isError:', isError);
+  console.log('🔍 [QUERY] error:', error);
+  console.log('🔍 [QUERY] carData exists:', !!carData);
+  console.log('🔍 [QUERY] carData.images exists:', !!carData?.images);
+  console.log('🔍 [QUERY] carData.images length:', carData?.images?.length);
 
   // Combine existing and new images with proper ordering and primary handling
   const getCombinedImages = useCallback(() => {
