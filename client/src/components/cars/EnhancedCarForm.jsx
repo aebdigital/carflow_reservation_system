@@ -45,6 +45,7 @@ import {
   DragIndicator as DragIcon
 } from '@mui/icons-material';
 import DamageModal from './DamageModal';
+import { useGetCarQuery } from '../../store/store';
 
 // Enhanced car form with comprehensive features
 const EnhancedCarForm = ({ 
@@ -52,6 +53,7 @@ const EnhancedCarForm = ({
   setFormData, 
   formErrors, 
   dialogMode = 'create',
+  carId,
   onImageChange,
   onImageRemove,
   selectedImages = [],
@@ -86,9 +88,15 @@ const EnhancedCarForm = ({
   const fileInputRef = useRef(null);
   const equipmentIconInputRef = useRef(null);
 
+  // Get real-time car data from RTK Query for edit mode
+  const { data: carData } = useGetCarQuery(carId, {
+    skip: !carId || dialogMode === 'create'
+  });
+
   // Combine existing and new images with proper ordering and primary handling
   const getCombinedImages = useCallback(() => {
-    const existingImages = formData.images || [];
+    // In edit mode, use real-time data from RTK Query cache, otherwise use formData
+    const existingImages = (dialogMode === 'edit' && carData?.images) ? carData.images : (formData.images || []);
     const newImages = imagePreviewUrls.map((previewData, index) => ({
       _id: `new-${index}`,
       url: previewData.url || previewData,
@@ -105,7 +113,7 @@ const EnhancedCarForm = ({
       order: index,
       isPrimary: index === 0
     }));
-  }, [formData.images, imagePreviewUrls]);
+  }, [dialogMode, carData?.images, formData.images, imagePreviewUrls]);
 
   // Handle drag and drop for image reordering
   const handleImageDragEnd = useCallback(async (result) => {

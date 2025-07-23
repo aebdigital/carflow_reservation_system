@@ -1349,6 +1349,7 @@ function Cars() {
             setFormData={setFormData}
             formErrors={formErrors}
             dialogMode={dialogMode}
+            carId={selectedCar?._id}
             onImageChange={handleImageChange}
             onImageRemove={removeImage}
             selectedImages={selectedImages}
