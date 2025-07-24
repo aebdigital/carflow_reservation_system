@@ -1,187 +1,225 @@
-const asyncHandler = require('express-async-handler');
 const Settings = require('../models/Settings');
-const AppError = require('../utils/AppError');
 
 // @desc    Get settings for current tenant
 // @route   GET /api/settings
 // @access  Private/Admin
-const getSettings = asyncHandler(async (req, res) => {
-  const tenantId = req.user.tenantId;
-  
-  const settings = await Settings.getForTenant(tenantId);
-  
-  res.status(200).json({
-    success: true,
-    data: settings
-  });
-});
+const getSettings = async (req, res) => {
+  try {
+    const tenantId = req.user.tenantId;
+    
+    const settings = await Settings.getForTenant(tenantId);
+    
+    res.status(200).json({
+      success: true,
+      data: settings
+    });
+  } catch (error) {
+    console.error('❌ [SETTINGS] Error getting settings:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
 
 // @desc    Update settings for current tenant
 // @route   PUT /api/settings
 // @access  Private/Admin
-const updateSettings = asyncHandler(async (req, res) => {
-  const tenantId = req.user.tenantId;
-  
-  const settings = await Settings.findOneAndUpdate(
-    { tenantId },
-    { $set: req.body },
-    { new: true, runValidators: true }
-  );
-  
-  if (!settings) {
-    return res.status(404).json({
+const updateSettings = async (req, res) => {
+  try {
+    const tenantId = req.user.tenantId;
+    
+    const settings = await Settings.findOneAndUpdate(
+      { tenantId },
+      { $set: req.body },
+      { new: true, runValidators: true }
+    );
+    
+    if (!settings) {
+      return res.status(404).json({
+        success: false,
+        message: 'Settings not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: settings
+    });
+  } catch (error) {
+    console.error('❌ [SETTINGS] Error updating settings:', error.message);
+    res.status(500).json({
       success: false,
-      message: 'Settings not found'
+      message: 'Server error'
     });
   }
-  
-  res.status(200).json({
-    success: true,
-    data: settings
-  });
-});
+};
 
 // @desc    Add pickup location
 // @route   POST /api/settings/pickup-locations
 // @access  Private/Admin
-const addPickupLocation = asyncHandler(async (req, res) => {
-  const tenantId = req.user.tenantId;
-  const { name, address, isDefault, coordinates, openingHours, notes } = req.body;
-  
-  if (!name || !address) {
-    return res.status(400).json({
+const addPickupLocation = async (req, res) => {
+  try {
+    const tenantId = req.user.tenantId;
+    const { name, address, isDefault, coordinates, openingHours, notes } = req.body;
+    
+    if (!name || !address) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name and address are required'
+      });
+    }
+    
+    const settings = await Settings.getForTenant(tenantId);
+    
+    // If this is set as default, remove default from others
+    if (isDefault) {
+      settings.business.pickupLocations.forEach(loc => {
+        loc.isDefault = false;
+      });
+    }
+    
+    const newLocation = {
+      name,
+      address,
+      isDefault: isDefault || false,
+      isActive: true,
+      coordinates,
+      openingHours: openingHours || '08:00 - 18:00',
+      notes
+    };
+    
+    settings.business.pickupLocations.push(newLocation);
+    await settings.save();
+    
+    res.status(201).json({
+      success: true,
+      data: settings
+    });
+  } catch (error) {
+    console.error('❌ [SETTINGS] Error adding pickup location:', error.message);
+    res.status(500).json({
       success: false,
-      message: 'Name and address are required'
+      message: 'Server error'
     });
   }
-  
-  const settings = await Settings.getForTenant(tenantId);
-  
-  // If this is set as default, remove default from others
-  if (isDefault) {
-    settings.business.pickupLocations.forEach(loc => {
-      loc.isDefault = false;
-    });
-  }
-  
-  const newLocation = {
-    name,
-    address,
-    isDefault: isDefault || false,
-    isActive: true,
-    coordinates,
-    openingHours: openingHours || '08:00 - 18:00',
-    notes
-  };
-  
-  settings.business.pickupLocations.push(newLocation);
-  await settings.save();
-  
-  res.status(201).json({
-    success: true,
-    data: settings
-  });
-});
+};
 
 // @desc    Update pickup location
 // @route   PUT /api/settings/pickup-locations/:locationId
 // @access  Private/Admin
-const updatePickupLocation = asyncHandler(async (req, res) => {
-  const tenantId = req.user.tenantId;
-  const { locationId } = req.params;
-  
-  const settings = await Settings.getForTenant(tenantId);
-  
-  const location = settings.business.pickupLocations.id(locationId);
-  if (!location) {
-    return res.status(404).json({
-      success: false,
-      message: 'Pickup location not found'
-    });
-  }
-  
-  // If this is set as default, remove default from others
-  if (req.body.isDefault) {
-    settings.business.pickupLocations.forEach(loc => {
-      if (loc._id.toString() !== locationId) {
-        loc.isDefault = false;
+const updatePickupLocation = async (req, res) => {
+  try {
+    const tenantId = req.user.tenantId;
+    const { locationId } = req.params;
+    
+    const settings = await Settings.getForTenant(tenantId);
+    
+    const location = settings.business.pickupLocations.id(locationId);
+    if (!location) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pickup location not found'
+      });
+    }
+    
+    // If this is set as default, remove default from others
+    if (req.body.isDefault) {
+      settings.business.pickupLocations.forEach(loc => {
+        if (loc._id.toString() !== locationId) {
+          loc.isDefault = false;
+        }
+      });
+    }
+    
+    // Update location properties
+    Object.keys(req.body).forEach(key => {
+      if (req.body[key] !== undefined) {
+        location[key] = req.body[key];
       }
     });
+    
+    await settings.save();
+    
+    res.status(200).json({
+      success: true,
+      data: settings
+    });
+  } catch (error) {
+    console.error('❌ [SETTINGS] Error updating pickup location:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
-  
-  // Update location properties
-  Object.keys(req.body).forEach(key => {
-    if (req.body[key] !== undefined) {
-      location[key] = req.body[key];
-    }
-  });
-  
-  await settings.save();
-  
-  res.status(200).json({
-    success: true,
-    data: settings
-  });
-});
+};
 
 // @desc    Delete pickup location
 // @route   DELETE /api/settings/pickup-locations/:locationId
 // @access  Private/Admin
-const deletePickupLocation = asyncHandler(async (req, res) => {
-  const tenantId = req.user.tenantId;
-  const { locationId } = req.params;
-  
-  const settings = await Settings.getForTenant(tenantId);
-  
-  const location = settings.business.pickupLocations.id(locationId);
-  if (!location) {
-    return res.status(404).json({
-      success: false,
-      message: 'Pickup location not found'
-    });
-  }
-  
-  // Don't allow deleting the last location
-  if (settings.business.pickupLocations.length <= 1) {
-    return res.status(400).json({
-      success: false,
-      message: 'Cannot delete the last pickup location'
-    });
-  }
-  
-  // If deleting default location, set another one as default
-  if (location.isDefault) {
-    const otherLocation = settings.business.pickupLocations.find(
-      loc => loc._id.toString() !== locationId && loc.isActive
-    );
-    if (otherLocation) {
-      otherLocation.isDefault = true;
+const deletePickupLocation = async (req, res) => {
+  try {
+    const tenantId = req.user.tenantId;
+    const { locationId } = req.params;
+    
+    const settings = await Settings.getForTenant(tenantId);
+    
+    const location = settings.business.pickupLocations.id(locationId);
+    if (!location) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pickup location not found'
+      });
     }
+    
+    // Don't allow deleting the last location
+    if (settings.business.pickupLocations.length <= 1) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete the last pickup location'
+      });
+    }
+    
+    // If deleting default location, set another one as default
+    if (location.isDefault) {
+      const otherLocation = settings.business.pickupLocations.find(
+        loc => loc._id.toString() !== locationId && loc.isActive
+      );
+      if (otherLocation) {
+        otherLocation.isDefault = true;
+      }
+    }
+    
+    location.remove();
+    await settings.save();
+    
+    res.status(200).json({
+      success: true,
+      data: settings
+    });
+  } catch (error) {
+    console.error('❌ [SETTINGS] Error deleting pickup location:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
-  
-  location.remove();
-  await settings.save();
-  
-  res.status(200).json({
-    success: true,
-    data: settings
-  });
-});
+};
 
 // @desc    Send customer support contact form
 // @route   POST /api/settings/contact-support
 // @access  Private/Admin
-const sendSupportContact = asyncHandler(async (req, res) => {
-  const { name, email, phone, subject, message, urgency } = req.body;
-  
-  if (!name || !email || !subject || !message) {
-    return res.status(400).json({
-      success: false,
-      message: 'Name, email, subject and message are required'
-    });
-  }
-  
+const sendSupportContact = async (req, res) => {
   try {
+    const { name, email, phone, subject, message, urgency } = req.body;
+    
+    if (!name || !email || !subject || !message) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, email, subject and message are required'
+      });
+    }
+    
     const emailService = require('../services/emailService');
     
     if (!emailService.isConfigured) {
@@ -265,7 +303,7 @@ const sendSupportContact = asyncHandler(async (req, res) => {
       message: 'Nepodarilo sa odoslať správu. Skúste to prosím znovu alebo nás kontaktujte priamo na +421 907 633 517.'
     });
   }
-});
+};
 
 module.exports = {
   getSettings,
