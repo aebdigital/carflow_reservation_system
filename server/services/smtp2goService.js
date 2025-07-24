@@ -508,6 +508,9 @@ class SMTP2GOService {
   async sendCustomerReservationReminder24(to, reservationData) {
     const emailTemplateService = require('./emailTemplateService');
     
+    // Get pickup location from settings
+    const pickupLocation = await this.getPickupLocation(reservationData.tenantId);
+    
     // Prepare template variables from actual backend data structure
     const templateVariables = {
       first_name: reservationData.customerName?.split(' ')[0] || '',
@@ -516,7 +519,7 @@ class SMTP2GOService {
       car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
       date: reservationData.startDate || '',
       time: new Date(reservationData.startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
-      pickup_location: 'Bratislava' // Default pickup location
+      pickup_location: pickupLocation
     };
 
     // Get processed email template
@@ -643,6 +646,20 @@ class SMTP2GOService {
       req.write(postData);
       req.end();
     });
+  }
+
+  /**
+   * Get pickup location from settings
+   */
+  async getPickupLocation(tenantId) {
+    try {
+      const Settings = require('../models/Settings');
+      const settings = await Settings.getForTenant(tenantId);
+      return settings.getDefaultPickupLocation();
+    } catch (error) {
+      console.warn('⚠️ [SMTP2GO] Could not fetch pickup location, using default:', error.message);
+      return 'Bratislava';
+    }
   }
 
   // Test email service

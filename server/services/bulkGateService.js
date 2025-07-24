@@ -241,12 +241,15 @@ class BulkGateService {
    * Send 24-hour reminder SMS
    */
   async sendReservationReminder24(phoneNumber, reservationData) {
+    // Get pickup location from settings
+    const pickupLocation = await this.getPickupLocation(reservationData.tenantId);
+    
     const variables = {
       car_brand: reservationData.carInfo?.split(' ')[0] || '',
       car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || '',
       date: this.formatDate(reservationData.startDate),
       time: this.formatTime(reservationData.startDate),
-      pickup_location: 'Bratislava' // Default pickup location
+      pickup_location: pickupLocation
     };
 
     const message = this.getSMSTemplate('reservation-reminder24', variables);
@@ -328,6 +331,20 @@ class BulkGateService {
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  /**
+   * Get pickup location from settings
+   */
+  async getPickupLocation(tenantId) {
+    try {
+      const Settings = require('../models/Settings');
+      const settings = await Settings.getForTenant(tenantId);
+      return settings.getDefaultPickupLocation();
+    } catch (error) {
+      console.warn('⚠️ [BULKGATE] Could not fetch pickup location, using default:', error.message);
+      return 'Bratislava';
+    }
   }
 
   /**

@@ -84,7 +84,10 @@ function prepareReservationEmailData(reservation, car, customer) {
     // Display control variables
     qr_section_display: (reservation.qrCodes && (reservation.qrCodes.payBySquareRental || reservation.qrCodes.payBySquare)) ? 'block' : 'none',
     qr_rental_display: (reservation.qrCodes?.payBySquareRental || reservation.qrCodes?.payBySquare) ? 'block' : 'none',
-    qr_deposit_display: (reservation.qrCodes?.payBySquareDeposit || reservation.qrCodes?.qrPlatbaCz) ? 'block' : 'none'
+    qr_deposit_display: (reservation.qrCodes?.payBySquareDeposit || reservation.qrCodes?.qrPlatbaCz) ? 'block' : 'none',
+    
+    // Tenant info for settings lookup
+    tenantId: reservation.tenantId || customer.tenantId || car.tenantId
   };
 }
 

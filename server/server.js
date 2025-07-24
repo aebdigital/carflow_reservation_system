@@ -23,6 +23,7 @@ const emailRoutes = require('./routes/emailRoutes');
 const contractRoutes = require('./routes/contractRoutes');
 const blogRoutes = require('./routes/blogRoutes');
 const emailSubscriptionRoutes = require('./routes/emailSubscriptions');
+const settingsRoutes = require('./routes/settingsRoutes');
 const testRoutes = require('./routes/testRoutes');
 
 // Import middleware
@@ -154,6 +155,7 @@ app.use('/api/send-email', emailRoutes); // Direct endpoint for frontend compati
 app.use('/api/contracts', contractRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/email-subscriptions', emailSubscriptionRoutes);
+app.use('/api/settings', settingsRoutes);
 app.use('/api/campaigns', require('./routes/campaigns'));
 app.use('/api/test', testRoutes); // Test routes for debugging
 
