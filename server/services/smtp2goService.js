@@ -391,7 +391,7 @@ class SMTP2GOService {
       car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
       date: reservationData.startDate || '',
       time: new Date(reservationData.startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
-      pickup_location: 'Bratislava', // Default pickup location
+      pickup_location: 'Banska Bystrica', // Default pickup location
       car_deposit: `${reservationData.deposit || '500'}€`,
       link_view: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}`,
       link_cancel: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}/cancel`
@@ -658,7 +658,7 @@ class SMTP2GOService {
       return settings.getDefaultPickupLocation();
     } catch (error) {
       console.warn('⚠️ [SMTP2GO] Could not fetch pickup location, using default:', error.message);
-      return 'Bratislava';
+      return 'Banska Bystrica';
     }
   }
 

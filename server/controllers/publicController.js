@@ -811,17 +811,27 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       finalPricing.totalAmount = finalPricing.subtotal + finalPricing.taxes - discountAmount;
     }
 
-    // Default pickup/dropoff locations if not provided
-    const defaultPickup = pickupLocation || {
-      name: car.location?.name || 'Main Office',
-      address: car.location?.address || {
-        street: '123 Main St',
-        city: 'City',
-        state: 'State',
-        zipCode: '12345',
-        country: 'Country'
-      }
+    // Default pickup/dropoff locations if not provided - get from settings
+    let defaultPickupFromSettings = {
+      name: 'Banska Bystrica',
+      address: 'Banska Bystrica, Slovensko'
     };
+    
+    try {
+      const Settings = require('../models/Settings');
+      const settings = await Settings.getForTenant(tenantId);
+      const defaultLocationData = settings.business.pickupLocations.find(loc => loc.isDefault);
+      if (defaultLocationData) {
+        defaultPickupFromSettings = {
+          name: defaultLocationData.name,
+          address: defaultLocationData.address
+        };
+      }
+    } catch (error) {
+      console.warn('⚠️ [PUBLIC] Could not fetch pickup location from settings, using fallback:', error.message);
+    }
+    
+    const defaultPickup = pickupLocation || defaultPickupFromSettings;
 
     const defaultDropoff = dropoffLocation || defaultPickup;
 
@@ -1379,17 +1389,27 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       console.log('📊 [PRICING DEBUG] Backend calculated pricing (no taxes):', JSON.stringify(finalPricing, null, 2));
     }
 
-    // Default pickup/dropoff locations if not provided
-    const defaultPickup = pickupLocation || {
-      name: car.location?.name || 'Main Office',
-      address: car.location?.address || {
-        street: '123 Main St',
-        city: 'City',
-        state: 'State',
-        zipCode: '12345',
-        country: 'Country'
-      }
+    // Default pickup/dropoff locations if not provided - get from settings
+    let defaultPickupFromSettings = {
+      name: 'Banska Bystrica',
+      address: 'Banska Bystrica, Slovensko'
     };
+    
+    try {
+      const Settings = require('../models/Settings');
+      const settings = await Settings.getForTenant(tenantId);
+      const defaultLocationData = settings.business.pickupLocations.find(loc => loc.isDefault);
+      if (defaultLocationData) {
+        defaultPickupFromSettings = {
+          name: defaultLocationData.name,
+          address: defaultLocationData.address
+        };
+      }
+    } catch (error) {
+      console.warn('⚠️ [PUBLIC] Could not fetch pickup location from settings, using fallback:', error.message);
+    }
+    
+    const defaultPickup = pickupLocation || defaultPickupFromSettings;
 
     const defaultDropoff = dropoffLocation || defaultPickup;
 
@@ -3308,6 +3328,56 @@ const getReservationSlovakAgreementByUser = asyncHandler(async (req, res, next) 
   }
 });
 
+// @desc    Get pickup locations by user email (PUBLIC)
+// @route   GET /api/public/users/:email/pickup-locations
+// @access  Public
+const getPickupLocationsByUser = asyncHandler(async (req, res, next) => {
+  const userEmail = req.params.email;
+  
+  if (!userEmail) {
+    return next(new AppError('User email is required', 400));
+  }
+
+  try {
+    // Find user by email to get tenantId
+    const user = await User.findOne({ email: userEmail });
+    
+    if (!user) {
+      return next(new AppError('User not found', 404));
+    }
+
+    // Get settings for this tenant
+    const Settings = require('../models/Settings');
+    const settings = await Settings.getForTenant(user.tenantId);
+    
+    // Get active pickup locations
+    const pickupLocations = settings.getActivePickupLocations();
+    
+    // Return pickup locations
+    res.status(200).json({
+      success: true,
+      data: {
+        pickupLocations: pickupLocations.map(location => ({
+          id: location._id,
+          name: location.name,
+          address: location.address,
+          openingHours: location.openingHours,
+          isDefault: location.isDefault,
+          coordinates: location.coordinates,
+          notes: location.notes
+        })),
+        defaultLocation: settings.getDefaultPickupLocation()
+      }
+    });
+
+    console.log('✅ [PUBLIC] Pickup locations retrieved successfully for:', userEmail);
+
+  } catch (error) {
+    console.error('❌ [PUBLIC] Error getting pickup locations:', error);
+    return next(new AppError('Error retrieving pickup locations', 500));
+  }
+});
+
 module.exports = {
   createPublicReservation,
   getCarsByUser,
@@ -3330,5 +3400,6 @@ module.exports = {
   getReservationQR,
   getReservationQRByUser,
   getReservationSlovakAgreement,
-  getReservationSlovakAgreementByUser
+  getReservationSlovakAgreementByUser,
+  getPickupLocationsByUser
 }; 

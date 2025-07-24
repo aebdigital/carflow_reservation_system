@@ -53,7 +53,7 @@ const settingsSchema = new mongoose.Schema({
     
     defaultPickupLocation: {
       type: String,
-      default: 'Bratislava'
+      default: 'Banska Bystrica'
     }
   },
   
@@ -109,8 +109,8 @@ settingsSchema.statics.getForTenant = async function(tenantId) {
       tenantId,
       business: {
         pickupLocations: [{
-          name: 'Bratislava - Hlavné',
-          address: 'Bratislava, Slovensko',
+          name: 'Banska Bystrica - Hlavné',
+          address: 'Banska Bystrica, Slovensko',
           isDefault: true,
           isActive: true
         }]

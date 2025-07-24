@@ -26,7 +26,8 @@ const {
   getReservationQR,
   getReservationQRByUser,
   getReservationSlovakAgreement,
-  getReservationSlovakAgreementByUser
+  getReservationSlovakAgreementByUser,
+  getPickupLocationsByUser
 } = require('../controllers/publicController');
 
 // Import blog controller functions
@@ -91,6 +92,7 @@ router.get('/users/:email/reservations/:id/slovak-agreement', getReservationSlov
 
 // Website settings endpoints
 router.get('/users/:email/website-settings', getWebsiteSettingsByUser); // Get website settings
+router.get('/users/:email/pickup-locations', getPickupLocationsByUser); // Get pickup locations
 router.get('/users/:email/info-bar', getInfoBarByUser); // Get active info bar
 router.get('/users/:email/modal', getModalByUser); // Get active modal
 

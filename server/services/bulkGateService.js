@@ -343,7 +343,7 @@ class BulkGateService {
       return settings.getDefaultPickupLocation();
     } catch (error) {
       console.warn('⚠️ [BULKGATE] Could not fetch pickup location, using default:', error.message);
-      return 'Bratislava';
+      return 'Banska Bystrica';
     }
   }
 
