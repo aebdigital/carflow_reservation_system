@@ -8,7 +8,7 @@ const {
   deletePickupLocation,
   sendSupportContact
 } = require('../controllers/settingsController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/authMiddleware');
 const { validateRequest } = require('../middleware/validation');
 const { body } = require('express-validator');
 

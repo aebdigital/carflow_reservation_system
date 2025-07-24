@@ -18,7 +18,7 @@ const baseQuery = fetchBaseQuery({
 export const api = createApi({
   reducerPath: 'api',
   baseQuery,
-  tagTypes: ['User', 'Car', 'Reservation', 'Payment', 'WebsiteSettings', 'DiscountCode', 'Banner', 'Contract', 'Blog', 'PublicBlog', 'BlogCategory', 'BlogTag'],
+  tagTypes: ['User', 'Car', 'Reservation', 'Payment', 'WebsiteSettings', 'DiscountCode', 'Banner', 'Contract', 'Blog', 'PublicBlog', 'BlogCategory', 'BlogTag', 'Settings'],
   endpoints: (builder) => ({
     // Auth endpoints
     login: builder.mutation({
@@ -891,6 +891,50 @@ export const api = createApi({
     getEmailSubscriptionStats: builder.query({
       query: () => 'email-subscriptions/stats',
     }),
+
+    // Settings endpoints
+    getSettings: builder.query({
+      query: () => 'settings',
+      providesTags: ['Settings'],
+    }),
+    updateSettings: builder.mutation({
+      query: (settingsData) => ({
+        url: 'settings',
+        method: 'PUT',
+        body: settingsData,
+      }),
+      invalidatesTags: ['Settings'],
+    }),
+    addPickupLocation: builder.mutation({
+      query: (locationData) => ({
+        url: 'settings/pickup-locations',
+        method: 'POST',
+        body: locationData,
+      }),
+      invalidatesTags: ['Settings'],
+    }),
+    updatePickupLocation: builder.mutation({
+      query: ({ locationId, ...locationData }) => ({
+        url: `settings/pickup-locations/${locationId}`,
+        method: 'PUT',
+        body: locationData,
+      }),
+      invalidatesTags: ['Settings'],
+    }),
+    deletePickupLocation: builder.mutation({
+      query: (locationId) => ({
+        url: `settings/pickup-locations/${locationId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Settings'],
+    }),
+    sendSupportContact: builder.mutation({
+      query: (contactData) => ({
+        url: 'settings/contact-support',
+        method: 'POST',
+        body: contactData,
+      }),
+    }),
   }),
 })
 
@@ -1020,6 +1064,14 @@ export const {
   // Email subscription hooks
   useGetEmailSubscriptionsQuery,
   useGetEmailSubscriptionStatsQuery,
+
+  // Settings hooks
+  useGetSettingsQuery,
+  useUpdateSettingsMutation,
+  useAddPickupLocationMutation,
+  useUpdatePickupLocationMutation,
+  useDeletePickupLocationMutation,
+  useSendSupportContactMutation,
   
   // User management hooks
   useToggleUserEmailOptOutMutation,
