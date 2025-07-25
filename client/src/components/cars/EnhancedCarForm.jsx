@@ -1665,47 +1665,77 @@ const EnhancedCarForm = ({
                       >
                         <Chip
                           label={
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              <img 
-                                src={item.icon} 
-                                alt="" 
-                                style={{ width: 16, height: 16, objectFit: 'contain' }}
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  e.target.nextSibling.style.display = 'inline';
-                                }}
-                              />
-                              <span style={{ display: 'none' }}>🔧</span>
-                              <span>{item.name}</span>
-                              {item.category === 'custom' && dialogMode !== 'view' && (
-                                <EditIcon 
-                                  sx={{ 
-                                    fontSize: 14, 
-                                    ml: 0.5, 
-                                    cursor: 'pointer',
-                                    '&:hover': { color: 'primary.main' }
-                                  }} 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleEditEquipment(item, index);
+                            <Box sx={{ 
+                              display: 'flex', 
+                              flexDirection: 'column',
+                              alignItems: 'flex-start', 
+                              gap: 0.5,
+                              py: 0.5
+                            }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <img 
+                                  src={item.icon} 
+                                  alt="" 
+                                  style={{ width: 24, height: 24, objectFit: 'contain' }}
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.nextSibling.style.display = 'inline';
                                   }}
                                 />
+                                <span style={{ display: 'none', fontSize: '20px' }}>🔧</span>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                  {item.name}
+                                </Typography>
+                                {item.category === 'custom' && dialogMode !== 'view' && (
+                                  <EditIcon 
+                                    sx={{ 
+                                      fontSize: 16, 
+                                      ml: 0.5, 
+                                      cursor: 'pointer',
+                                      '&:hover': { color: 'primary.main' }
+                                    }} 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEditEquipment(item, index);
+                                    }}
+                                  />
+                                )}
+                              </Box>
+                              {item.description && (
+                                <Typography 
+                                  variant="caption" 
+                                  sx={{ 
+                                    color: 'text.secondary',
+                                    fontSize: '0.75rem',
+                                    lineHeight: 1.2,
+                                    maxWidth: '200px'
+                                  }}
+                                >
+                                  {item.description}
+                                </Typography>
                               )}
                             </Box>
                           }
-                        onDelete={dialogMode !== 'view' ? () => {
-                          const newEquipment = formData.equipment.filter((_, i) => i !== index);
-                          handleChange('equipment', newEquipment);
-                        } : undefined}
-                        deleteIcon={<DeleteIcon />}
-                        color="primary"
-                        variant="outlined"
-                        sx={{
-                          cursor: item.category === 'custom' && dialogMode !== 'view' ? 'pointer' : 'default',
-                          '&:hover': item.category === 'custom' && dialogMode !== 'view' ? {
-                            backgroundColor: 'primary.50'
-                          } : {}
-                        }}
+                          onDelete={dialogMode !== 'view' ? () => {
+                            const newEquipment = formData.equipment.filter((_, i) => i !== index);
+                            handleChange('equipment', newEquipment);
+                          } : undefined}
+                          deleteIcon={<DeleteIcon />}
+                          color="primary"
+                          variant="outlined"
+                          size="medium"
+                          sx={{
+                            height: 'auto',
+                            minHeight: item.description ? '64px' : '48px',
+                            cursor: item.category === 'custom' && dialogMode !== 'view' ? 'pointer' : 'default',
+                            '& .MuiChip-label': {
+                              padding: '8px 12px',
+                              whiteSpace: 'normal'
+                            },
+                            '&:hover': item.category === 'custom' && dialogMode !== 'view' ? {
+                              backgroundColor: 'primary.50'
+                            } : {}
+                          }}
                           onClick={item.category === 'custom' && dialogMode !== 'view' ? () => {
                             handleEditEquipment(item, index);
                           } : undefined}
@@ -1814,20 +1844,40 @@ const EnhancedCarForm = ({
               
               <Box sx={{ mb: 2 }}>
                 {formData.badges && formData.badges.length > 0 ? (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
                     {formData.badges.map((badge, index) => (
                       <Chip
                         key={index}
-                        label={badge.text}
+                        label={
+                          <Box sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 1,
+                            py: 0.5
+                          }}>
+                            <TagIcon sx={{ fontSize: 18 }} />
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                              {badge.text}
+                            </Typography>
+                          </Box>
+                        }
                         style={{
                           backgroundColor: badge.style?.backgroundColor || '#ff4444',
-                          color: badge.style?.textColor || '#ffffff'
+                          color: badge.style?.textColor || '#ffffff',
+                          minHeight: '40px'
                         }}
                         onDelete={dialogMode !== 'view' ? () => {
                           const newBadges = formData.badges.filter((_, i) => i !== index);
                           handleChange('badges', newBadges);
                         } : undefined}
-                        deleteIcon={<DeleteIcon />}
+                        deleteIcon={<DeleteIcon sx={{ fontSize: 18 }} />}
+                        size="medium"
+                        sx={{
+                          height: 'auto',
+                          '& .MuiChip-label': {
+                            padding: '6px 12px'
+                          }
+                        }}
                       />
                     ))}
                   </Box>
@@ -1868,18 +1918,18 @@ const EnhancedCarForm = ({
                   <Typography variant="subtitle2" gutterBottom>
                     Rýchle pridanie:
                   </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
                     {[
-                      { text: 'NOVINKA', color: '#4caf50' },
-                      { text: 'AKCIA', color: '#ff9800' },
-                      { text: 'TOP PONUKA', color: '#2196f3' },
-                      { text: 'LUXUS', color: '#9c27b0' },
-                      { text: 'ECO', color: '#8bc34a' },
+                      { text: 'NOVINKA', color: '#4caf50', icon: '🆕' },
+                      { text: 'AKCIA', color: '#ff9800', icon: '🔥' },
+                      { text: 'TOP PONUKA', color: '#2196f3', icon: '⭐' },
+                      { text: 'LUXUS', color: '#9c27b0', icon: '💎' },
+                      { text: 'ECO', color: '#8bc34a', icon: '🌱' },
                     ].map(badge => (
                       <Button
                         key={badge.text}
                         variant="outlined"
-                        size="small"
+                        size="medium"
                         onClick={() => {
                           const newBadge = {
                             text: badge.text,
@@ -1898,10 +1948,20 @@ const EnhancedCarForm = ({
                             handleChange('badges', [...existingBadges, newBadge]);
                           }
                         }}
+                        startIcon={<span style={{ fontSize: '16px' }}>{badge.icon}</span>}
                         sx={{ 
                           borderColor: badge.color,
                           color: badge.color,
-                          '&:hover': { backgroundColor: badge.color, color: 'white' }
+                          minHeight: '40px',
+                          fontSize: '0.85rem',
+                          fontWeight: 600,
+                          '&:hover': { 
+                            backgroundColor: badge.color, 
+                            color: 'white',
+                            '& .MuiButton-startIcon': {
+                              filter: 'brightness(1.2)'
+                            }
+                          }
                         }}
                       >
                         {badge.text}
