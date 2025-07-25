@@ -27,7 +27,16 @@ const {
   getReservationQRByUser,
   getReservationSlovakAgreement,
   getReservationSlovakAgreementByUser,
-  getPickupLocationsByUser
+  getPickupLocationsByUser,
+  getCarEquipmentByUser,
+  getCarBadgesByUser,
+  getCarSpecificationsByUser,
+  getCarPricingByUser,
+  getCarBrandsByUser,
+  getCarsByBrandByUser,
+  getCarModelsByBrandByUser,
+  getCarsByEquipmentByUser,
+  searchCarsByUser
 } = require('../controllers/publicController');
 
 // Import blog controller functions
@@ -81,6 +90,15 @@ router.get('/users/:email/cars', getCarsByUser); // Get cars for tenant
 router.get('/users/:email/cars/:carId', getCarByUser); // Get single car for tenant
 router.get('/users/:email/cars/:carId/availability', getCarAvailabilityByUser); // Check car availability
 router.get('/users/:email/cars/:carId/calendar', getCarCalendarByUser); // Get car booking calendar
+router.get('/users/:email/cars/:carId/equipment', getCarEquipmentByUser); // Get car equipment only
+router.get('/users/:email/cars/:carId/badges', getCarBadgesByUser); // Get car badges only
+router.get('/users/:email/cars/:carId/specifications', getCarSpecificationsByUser); // Get car specifications only
+router.get('/users/:email/cars/:carId/pricing', getCarPricingByUser); // Get car pricing only
+router.get('/users/:email/cars/brands', getCarBrandsByUser); // Get all available car brands
+router.get('/users/:email/cars/by-brand/:brand', getCarsByBrandByUser); // Get cars by specific brand
+router.get('/users/:email/cars/models/:brand', getCarModelsByBrandByUser); // Get models for specific brand
+router.get('/users/:email/cars/by-equipment/:equipmentName', getCarsByEquipmentByUser); // Find cars with specific equipment
+router.get('/users/:email/cars/search', searchCarsByUser); // Advanced car search with filters
 router.get('/users/:email/cars/category/:category', getCarsByCategoryAndUser); // Get cars by category
 router.get('/users/:email/cars/reserved-dates', getReservedDatesByUser); // Get reserved dates for multiple cars
 router.get('/users/:email/features', getAvailableFeaturesByUser); // Get available features

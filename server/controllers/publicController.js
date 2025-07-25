@@ -3378,6 +3378,679 @@ const getPickupLocationsByUser = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Get car equipment only
+// @route   GET /api/public/users/:email/cars/:carId/equipment
+// @access  Public
+const getCarEquipmentByUser = asyncHandler(async (req, res, next) => {
+  const { email, carId } = req.params;
+  
+  try {
+    const tenantId = await getTenantByUserEmail(email);
+    
+    const car = await Car.findOne({
+      _id: carId,
+      tenantId,
+      isActive: true,
+      status: 'active'
+    }).select('equipment brand model year');
+    
+    if (!car) {
+      return next(new AppError('Car not found', 404));
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        carId: car._id,
+        carInfo: {
+          brand: car.brand,
+          model: car.model,
+          year: car.year
+        },
+        equipment: car.equipment || []
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting car equipment:', error);
+    return next(new AppError('Error retrieving car equipment', 500));
+  }
+});
+
+// @desc    Get car badges only
+// @route   GET /api/public/users/:email/cars/:carId/badges
+// @access  Public
+const getCarBadgesByUser = asyncHandler(async (req, res, next) => {
+  const { email, carId } = req.params;
+  
+  try {
+    const tenantId = await getTenantByUserEmail(email);
+    
+    const car = await Car.findOne({
+      _id: carId,
+      tenantId,
+      isActive: true,
+      status: 'active'
+    }).select('badges brand model year');
+    
+    if (!car) {
+      return next(new AppError('Car not found', 404));
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        carId: car._id,
+        carInfo: {
+          brand: car.brand,
+          model: car.model,
+          year: car.year
+        },
+        badges: car.badges || []
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting car badges:', error);
+    return next(new AppError('Error retrieving car badges', 500));
+  }
+});
+
+// @desc    Get car specifications only
+// @route   GET /api/public/users/:email/cars/:carId/specifications
+// @access  Public
+const getCarSpecificationsByUser = asyncHandler(async (req, res, next) => {
+  const { email, carId } = req.params;
+  
+  try {
+    const tenantId = await getTenantByUserEmail(email);
+    
+    const car = await Car.findOne({
+      _id: carId,
+      tenantId,
+      isActive: true,
+      status: 'active'
+    }).select('technicalSpecs brand model year');
+    
+    if (!car) {
+      return next(new AppError('Car not found', 404));
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        carId: car._id,
+        carInfo: {
+          brand: car.brand,
+          model: car.model,
+          year: car.year
+        },
+        specifications: car.technicalSpecs || {}
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting car specifications:', error);
+    return next(new AppError('Error retrieving car specifications', 500));
+  }
+});
+
+// @desc    Get car pricing only
+// @route   GET /api/public/users/:email/cars/:carId/pricing
+// @access  Public
+const getCarPricingByUser = asyncHandler(async (req, res, next) => {
+  const { email, carId } = req.params;
+  
+  try {
+    const tenantId = await getTenantByUserEmail(email);
+    
+    const car = await Car.findOne({
+      _id: carId,
+      tenantId,
+      isActive: true,
+      status: 'active'
+    }).select('pricing dailyRate brand model year');
+    
+    if (!car) {
+      return next(new AppError('Car not found', 404));
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        carId: car._id,
+        carInfo: {
+          brand: car.brand,
+          model: car.model,
+          year: car.year
+        },
+        pricing: car.pricing || { dailyRate: car.dailyRate || 0 }
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting car pricing:', error);
+    return next(new AppError('Error retrieving car pricing', 500));
+  }
+});
+
+// @desc    Get all available car brands
+// @route   GET /api/public/users/:email/cars/brands
+// @access  Public
+const getCarBrandsByUser = asyncHandler(async (req, res, next) => {
+  const { email } = req.params;
+  
+  try {
+    const tenantId = await getTenantByUserEmail(email);
+    
+    const brands = await Car.distinct('brand', {
+      tenantId,
+      isActive: true,
+      status: 'active'
+    });
+    
+    // Get count for each brand
+    const brandCounts = await Promise.all(
+      brands.map(async (brand) => {
+        const count = await Car.countDocuments({
+          tenantId,
+          brand,
+          isActive: true,
+          status: 'active'
+        });
+        return { brand, count };
+      })
+    );
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        brands: brandCounts.sort((a, b) => a.brand.localeCompare(b.brand)),
+        total: brands.length
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting car brands:', error);
+    return next(new AppError('Error retrieving car brands', 500));
+  }
+});
+
+// @desc    Get cars by specific brand
+// @route   GET /api/public/users/:email/cars/by-brand/:brand
+// @access  Public
+const getCarsByBrandByUser = asyncHandler(async (req, res, next) => {
+  const { email, brand } = req.params;
+  const { 
+    page = 1, 
+    limit = 25, 
+    category, 
+    fuelType, 
+    transmission,
+    available,
+    startDate,
+    endDate 
+  } = req.query;
+  
+  try {
+    const tenantId = await getTenantByUserEmail(email);
+    
+    let query = {
+      tenantId,
+      brand: new RegExp(brand, 'i'), // Case insensitive search
+      isActive: true,
+      status: 'active'
+    };
+    
+    // Add additional filters
+    if (category) query.category = category;
+    if (fuelType) query.fuelType = fuelType;
+    if (transmission) query.transmission = transmission;
+    
+    let cars = await Car.find(query)
+      .select('_id brand model year color category fuelType transmission seats doors description pricing location features images equipment badges status')
+      .sort({ model: 1, year: -1 });
+    
+    // Filter by availability if dates provided
+    if (available === 'true' && startDate && endDate) {
+      const availableCars = [];
+      
+      for (const car of cars) {
+        const overlappingReservations = await Reservation.find({
+          car: car._id,
+          tenantId: car.tenantId,
+          status: { $in: ['confirmed', 'ongoing'] },
+          $or: [
+            {
+              startDate: { $lte: new Date(startDate) },
+              endDate: { $gte: new Date(startDate) }
+            },
+            {
+              startDate: { $lte: new Date(endDate) },
+              endDate: { $gte: new Date(endDate) }
+            },
+            {
+              startDate: { $gte: new Date(startDate) },
+              endDate: { $lte: new Date(endDate) }
+            }
+          ]
+        });
+        
+        if (overlappingReservations.length === 0) {
+          availableCars.push(car);
+        }
+      }
+      
+      cars = availableCars;
+    }
+    
+    // Apply pagination
+    const startIndex = (parseInt(page) - 1) * parseInt(limit);
+    const endIndex = startIndex + parseInt(limit);
+    const paginatedCars = cars.slice(startIndex, endIndex);
+    
+    res.status(200).json({
+      success: true,
+      data: paginatedCars,
+      count: paginatedCars.length,
+      total: cars.length,
+      brand: brand,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(cars.length / parseInt(limit)),
+        hasNext: endIndex < cars.length,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting cars by brand:', error);
+    return next(new AppError('Error retrieving cars by brand', 500));
+  }
+});
+
+// @desc    Get models for specific brand
+// @route   GET /api/public/users/:email/cars/models/:brand
+// @access  Public
+const getCarModelsByBrandByUser = asyncHandler(async (req, res, next) => {
+  const { email, brand } = req.params;
+  
+  try {
+    const tenantId = await getTenantByUserEmail(email);
+    
+    const models = await Car.distinct('model', {
+      tenantId,
+      brand: new RegExp(brand, 'i'),
+      isActive: true,
+      status: 'active'
+    });
+    
+    // Get count and year range for each model
+    const modelDetails = await Promise.all(
+      models.map(async (model) => {
+        const cars = await Car.find({
+          tenantId,
+          brand: new RegExp(brand, 'i'),
+          model,
+          isActive: true,
+          status: 'active'
+        }).select('year');
+        
+        const years = cars.map(car => car.year).filter(year => year);
+        const minYear = years.length > 0 ? Math.min(...years) : null;
+        const maxYear = years.length > 0 ? Math.max(...years) : null;
+        
+        return {
+          model,
+          count: cars.length,
+          yearRange: years.length > 0 ? {
+            from: minYear,
+            to: maxYear
+          } : null
+        };
+      })
+    );
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        brand: brand,
+        models: modelDetails.sort((a, b) => a.model.localeCompare(b.model)),
+        total: models.length
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting car models:', error);
+    return next(new AppError('Error retrieving car models', 500));
+  }
+});
+
+// @desc    Find cars with specific equipment
+// @route   GET /api/public/users/:email/cars/by-equipment/:equipmentName
+// @access  Public
+const getCarsByEquipmentByUser = asyncHandler(async (req, res, next) => {
+  const { email, equipmentName } = req.params;
+  const { 
+    page = 1, 
+    limit = 25, 
+    category, 
+    brand,
+    available,
+    startDate,
+    endDate 
+  } = req.query;
+  
+  try {
+    const tenantId = await getTenantByUserEmail(email);
+    
+    let query = {
+      tenantId,
+      isActive: true,
+      status: 'active',
+      'equipment.name': new RegExp(equipmentName, 'i')
+    };
+    
+    // Add additional filters
+    if (category) query.category = category;
+    if (brand) query.brand = new RegExp(brand, 'i');
+    
+    let cars = await Car.find(query)
+      .select('_id brand model year color category fuelType transmission seats doors description pricing location features images equipment badges status')
+      .sort({ 'pricing.dailyRate': 1, brand: 1, model: 1 });
+    
+    // Filter by availability if dates provided
+    if (available === 'true' && startDate && endDate) {
+      const availableCars = [];
+      
+      for (const car of cars) {
+        const overlappingReservations = await Reservation.find({
+          car: car._id,
+          tenantId: car.tenantId,
+          status: { $in: ['confirmed', 'ongoing'] },
+          $or: [
+            {
+              startDate: { $lte: new Date(startDate) },
+              endDate: { $gte: new Date(startDate) }
+            },
+            {
+              startDate: { $lte: new Date(endDate) },
+              endDate: { $gte: new Date(endDate) }
+            },
+            {
+              startDate: { $gte: new Date(startDate) },
+              endDate: { $lte: new Date(endDate) }
+            }
+          ]
+        });
+        
+        if (overlappingReservations.length === 0) {
+          availableCars.push(car);
+        }
+      }
+      
+      cars = availableCars;
+    }
+    
+    // Apply pagination
+    const startIndex = (parseInt(page) - 1) * parseInt(limit);
+    const endIndex = startIndex + parseInt(limit);
+    const paginatedCars = cars.slice(startIndex, endIndex);
+    
+    res.status(200).json({
+      success: true,
+      data: paginatedCars,
+      count: paginatedCars.length,
+      total: cars.length,
+      equipment: equipmentName,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(cars.length / parseInt(limit)),
+        hasNext: endIndex < cars.length,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting cars by equipment:', error);
+    return next(new AppError('Error retrieving cars by equipment', 500));
+  }
+});
+
+// @desc    Advanced car search with multiple filters
+// @route   GET /api/public/users/:email/cars/search
+// @access  Public
+const searchCarsByUser = asyncHandler(async (req, res, next) => {
+  const { email } = req.params;
+  const {
+    // Search terms
+    q, // General search query
+    brand,
+    model,
+    
+    // Filters
+    category,
+    fuelType,
+    transmission,
+    color,
+    yearFrom,
+    yearTo,
+    priceFrom,
+    priceTo,
+    seats,
+    doors,
+    
+    // Equipment and badges
+    equipment, // comma-separated
+    badges, // comma-separated
+    
+    // Availability
+    available,
+    startDate,
+    endDate,
+    
+    // Sorting and pagination
+    sortBy = 'dailyRate',
+    sortOrder = 'asc',
+    page = 1,
+    limit = 25
+  } = req.query;
+  
+  try {
+    const tenantId = await getTenantByUserEmail(email);
+    
+    let query = {
+      tenantId,
+      isActive: true,
+      status: 'active'
+    };
+    
+    // General search across multiple fields
+    if (q) {
+      const searchRegex = new RegExp(q, 'i');
+      query.$or = [
+        { brand: searchRegex },
+        { model: searchRegex },
+        { color: searchRegex },
+        { category: searchRegex },
+        { description: searchRegex },
+        { 'equipment.name': searchRegex },
+        { 'badges.name': searchRegex }
+      ];
+    }
+    
+    // Specific filters
+    if (brand) query.brand = new RegExp(brand, 'i');
+    if (model) query.model = new RegExp(model, 'i');
+    if (category) {
+      if (category.includes(',')) {
+        query.category = { $in: category.split(',') };
+      } else {
+        query.category = category;
+      }
+    }
+    if (fuelType) {
+      if (fuelType.includes(',')) {
+        query.fuelType = { $in: fuelType.split(',') };
+      } else {
+        query.fuelType = fuelType;
+      }
+    }
+    if (transmission) query.transmission = transmission;
+    if (color) {
+      if (color.includes(',')) {
+        query.color = { $in: color.split(',') };
+      } else {
+        query.color = color;
+      }
+    }
+    
+    // Year range
+    if (yearFrom || yearTo) {
+      query.year = {};
+      if (yearFrom) query.year.$gte = parseInt(yearFrom);
+      if (yearTo) query.year.$lte = parseInt(yearTo);
+    }
+    
+    // Seats and doors
+    if (seats) query.seats = { $gte: parseInt(seats) };
+    if (doors) query.doors = parseInt(doors);
+    
+    // Equipment filter
+    if (equipment) {
+      const equipmentList = equipment.split(',');
+      query['equipment.name'] = { $in: equipmentList.map(eq => new RegExp(eq.trim(), 'i')) };
+    }
+    
+    // Badges filter
+    if (badges) {
+      const badgesList = badges.split(',');
+      query['badges.name'] = { $in: badgesList.map(badge => new RegExp(badge.trim(), 'i')) };
+    }
+    
+    let cars = await Car.find(query)
+      .select('_id brand model year color category fuelType transmission seats doors description pricing location features images equipment badges status')
+      .lean();
+    
+    // Price range filter (applied after query since pricing can be in different formats)
+    if (priceFrom || priceTo) {
+      cars = cars.filter(car => {
+        const dailyRate = car.pricing?.dailyRate || car.dailyRate || 0;
+        let matchesPrice = true;
+        if (priceFrom) matchesPrice = matchesPrice && dailyRate >= parseFloat(priceFrom);
+        if (priceTo) matchesPrice = matchesPrice && dailyRate <= parseFloat(priceTo);
+        return matchesPrice;
+      });
+    }
+    
+    // Filter by availability if dates provided
+    if (available === 'true' && startDate && endDate) {
+      const availableCars = [];
+      
+      for (const car of cars) {
+        const overlappingReservations = await Reservation.find({
+          car: car._id,
+          tenantId: car.tenantId,
+          status: { $in: ['confirmed', 'ongoing'] },
+          $or: [
+            {
+              startDate: { $lte: new Date(startDate) },
+              endDate: { $gte: new Date(startDate) }
+            },
+            {
+              startDate: { $lte: new Date(endDate) },
+              endDate: { $gte: new Date(endDate) }
+            },
+            {
+              startDate: { $gte: new Date(startDate) },
+              endDate: { $lte: new Date(endDate) }
+            }
+          ]
+        });
+        
+        if (overlappingReservations.length === 0) {
+          availableCars.push(car);
+        }
+      }
+      
+      cars = availableCars;
+    }
+    
+    // Apply sorting
+    cars.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortBy) {
+        case 'dailyRate':
+        case 'price':
+          aValue = a.pricing?.dailyRate || a.dailyRate || 0;
+          bValue = b.pricing?.dailyRate || b.dailyRate || 0;
+          break;
+        case 'year':
+          aValue = a.year || 0;
+          bValue = b.year || 0;
+          break;
+        case 'brand':
+          aValue = a.brand || '';
+          bValue = b.brand || '';
+          break;
+        case 'model':
+          aValue = a.model || '';
+          bValue = b.model || '';
+          break;
+        case 'seats':
+          aValue = a.seats || 0;
+          bValue = b.seats || 0;
+          break;
+        default:
+          aValue = a[sortBy] || '';
+          bValue = b[sortBy] || '';
+      }
+      
+      if (typeof aValue === 'string') {
+        return sortOrder === 'desc' ? bValue.localeCompare(aValue) : aValue.localeCompare(bValue);
+      } else {
+        return sortOrder === 'desc' ? bValue - aValue : aValue - bValue;
+      }
+    });
+    
+    // Apply pagination
+    const startIndex = (parseInt(page) - 1) * parseInt(limit);
+    const endIndex = startIndex + parseInt(limit);
+    const paginatedCars = cars.slice(startIndex, endIndex);
+    
+    res.status(200).json({
+      success: true,
+      data: paginatedCars,
+      count: paginatedCars.length,
+      total: cars.length,
+      searchQuery: q,
+      filters: {
+        brand,
+        model,
+        category,
+        fuelType,
+        transmission,
+        color,
+        yearFrom,
+        yearTo,
+        priceFrom,
+        priceTo,
+        equipment,
+        badges,
+        available,
+        startDate,
+        endDate
+      },
+      sorting: {
+        sortBy,
+        sortOrder
+      },
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(cars.length / parseInt(limit)),
+        hasNext: endIndex < cars.length,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error searching cars:', error);
+    return next(new AppError('Error searching cars', 500));
+  }
+});
+
 module.exports = {
   createPublicReservation,
   getCarsByUser,
@@ -3401,5 +4074,14 @@ module.exports = {
   getReservationQRByUser,
   getReservationSlovakAgreement,
   getReservationSlovakAgreementByUser,
-  getPickupLocationsByUser
+  getPickupLocationsByUser,
+  getCarEquipmentByUser,
+  getCarBadgesByUser,
+  getCarSpecificationsByUser,
+  getCarPricingByUser,
+  getCarBrandsByUser,
+  getCarsByBrandByUser,
+  getCarModelsByBrandByUser,
+  getCarsByEquipmentByUser,
+  searchCarsByUser
 }; 
