@@ -114,6 +114,19 @@ class EmailService {
       
       let html = fs.readFileSync(templatePath, 'utf8');
       
+      // Handle conditional blocks (simple if/else logic)
+      // Handle {{#if variable}} ... {{/if}} blocks
+      html = html.replace(/\{\{#if\s+(\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g, (match, varName, content) => {
+        const value = data[varName];
+        return (value && value !== '' && value !== null && value !== undefined) ? content : '';
+      });
+      
+      // Handle {{#unless variable}} ... {{/unless}} blocks  
+      html = html.replace(/\{\{#unless\s+(\w+)\}\}([\s\S]*?)\{\{\/unless\}\}/g, (match, varName, content) => {
+        const value = data[varName];
+        return (!value || value === '' || value === null || value === undefined) ? content : '';
+      });
+      
       // Replace template variables with data
       // Support both Handlebars-style {{variable}} and simple template replacement
       Object.keys(data).forEach(key => {
