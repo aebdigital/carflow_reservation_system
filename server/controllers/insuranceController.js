@@ -1,6 +1,5 @@
-const asyncHandler = require('express-async-handler');
 const AdditionalService = require('../models/AdditionalService');
-const AppError = require('../utils/appError');
+const { asyncHandler, AppError } = require('../middleware/errorHandler');
 
 // @desc    Get all insurance items (public endpoint)
 // @route   GET /api/insurance
