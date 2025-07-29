@@ -1459,7 +1459,9 @@ const sendPaymentNotification = asyncHandler(async (req, res, next) => {
 
   } catch (error) {
     console.error('Error sending payment notification:', error);
-    return next(new AppError('Chyba pri odosielaní upomienky platby', 500));
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
+    return next(new AppError(`Chyba pri odosielaní upomienky platby: ${error.message}`, 500));
   }
 });
 

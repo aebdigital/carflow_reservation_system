@@ -98,6 +98,39 @@ class EmailService {
     // Use SMTP2GO service which has the correct implementation
     return await smtp2goService.sendCustomerCancellationNotification(customerEmail, cancellationData);
   }
+
+  // Send templated email by loading template from templates/email/ folder
+  async sendTemplatedEmail(to, subject, templateName, data) {
+    const fs = require('fs');
+    const path = require('path');
+    
+    try {
+      // Load template from templates/email/ folder
+      const templatePath = path.join(__dirname, '..', 'templates', 'email', `${templateName}.html`);
+      
+      if (!fs.existsSync(templatePath)) {
+        throw new Error(`Email template not found: ${templateName}.html`);
+      }
+      
+      let html = fs.readFileSync(templatePath, 'utf8');
+      
+      // Replace template variables with data
+      // Support both Handlebars-style {{variable}} and simple template replacement
+      Object.keys(data).forEach(key => {
+        const value = data[key] || '';
+        // Replace {{key}} and {{{key}}} patterns
+        html = html.replace(new RegExp(`{{${key}}}`, 'g'), value);
+        html = html.replace(new RegExp(`{{{${key}}}}`, 'g'), value);
+      });
+      
+      // Send the email
+      return await this.sendEmail(to, subject, html);
+      
+    } catch (error) {
+      console.error(`Error sending templated email (${templateName}):`, error);
+      throw new Error(`Failed to send templated email: ${error.message}`);
+    }
+  }
 }
 
 module.exports = new EmailService();
