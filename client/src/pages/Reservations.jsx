@@ -46,6 +46,8 @@ import {
   Assignment as SlovakAgreementIcon,
   CheckCircleOutline as ConfirmIcon,
   QrCode as QrCodeIcon,
+  Payment as PaymentIcon,
+  Email as EmailIcon,
 } from '@mui/icons-material'
 import {
   useGetReservationsQuery,
@@ -54,6 +56,8 @@ import {
   useCancelReservationMutation,
   useDeleteReservationMutation,
   useConfirmReservationMutation,
+  useConfirmPaymentMutation,
+  useSendPaymentNotificationMutation,
   useCheckInReservationMutation,
   useCheckOutReservationMutation,
   useGetCarsQuery,
@@ -186,6 +190,8 @@ function Reservations() {
   const [cancelReservation] = useCancelReservationMutation()
   const [deleteReservation] = useDeleteReservationMutation()
   const [confirmReservation] = useConfirmReservationMutation()
+  const [confirmPayment] = useConfirmPaymentMutation()
+  const [sendPaymentNotification] = useSendPaymentNotificationMutation()
   const [checkInReservation] = useCheckInReservationMutation()
   const [checkOutReservation] = useCheckOutReservationMutation()
   const [generateSlovakAgreement] = useGenerateReservationSlovakAgreementMutation()
@@ -201,6 +207,7 @@ function Reservations() {
     const colors = {
       pending: 'warning',
       confirmed: 'info',
+      zaplatene: 'success',
       ongoing: 'primary',
       completed: 'success',
       cancelled: 'error',
@@ -214,6 +221,7 @@ function Reservations() {
     const statusTexts = {
       pending: t('pending'),
       confirmed: t('confirmed'),
+      zaplatene: 'Zaplatené',
       ongoing: t('ongoing'),
       completed: t('completed'),
       cancelled: t('cancelled'),
@@ -492,9 +500,36 @@ function Reservations() {
     }
   }
 
+  const handleConfirmPayment = async (reservation) => {
+    try {
+      const result = await confirmPayment({
+        id: reservation._id,
+        notes: 'Payment confirmed by admin'
+      }).unwrap()
+      console.log('Payment confirmed successfully:', result)
+      // Show success message or notification here if needed
+    } catch (error) {
+      console.error('Error confirming payment:', error)
+      alert('Chyba pri potvrdení platby: ' + (error?.data?.message || error.message))
+    }
+  }
+
+  const handleSendPaymentNotification = async (reservation) => {
+    try {
+      const result = await sendPaymentNotification({
+        id: reservation._id
+      }).unwrap()
+      console.log('Payment notification sent successfully:', result)
+      alert('Upomienka platby bola úspešne odoslaná na ' + result.data?.sentTo)
+    } catch (error) {
+      console.error('Error sending payment notification:', error)
+      alert('Chyba pri odosielaní upomienky: ' + (error?.data?.message || error.message))
+    }
+  }
+
   const handleCheckIn = async (reservation) => {
     try {
-      await checkInReservation({
+      const result = await checkInReservation({
         id: reservation._id,
         date: new Date(),
         mileage: 0,
@@ -502,8 +537,10 @@ function Reservations() {
         condition: 'Good',
         notes: 'Check-in completed by admin'
       }).unwrap()
+      console.log('Check-in successful:', result)
     } catch (error) {
       console.error('Error checking in reservation:', error)
+      alert('Chyba pri check-in: ' + (error?.data?.message || error.message))
     }
   }
 
@@ -737,11 +774,54 @@ function Reservations() {
                             </Tooltip>
                           )}
                           {reservation.status === 'confirmed' && (
+                            <>
+                              <Tooltip title="Potvrdiť platbu">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => {
+                                    console.log('Payment confirmation clicked for:', reservation._id);
+                                    handleConfirmPayment(reservation);
+                                  }}
+                                  color="success"
+                                  sx={{ 
+                                    backgroundColor: 'success.light', 
+                                    '&:hover': { backgroundColor: 'success.main' } 
+                                  }}
+                                >
+                                  <PaymentIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Poslať upomienku platby">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => {
+                                    console.log('Payment notification clicked for:', reservation._id);
+                                    handleSendPaymentNotification(reservation);
+                                  }}
+                                  color="warning"
+                                  sx={{ 
+                                    backgroundColor: 'warning.light', 
+                                    '&:hover': { backgroundColor: 'warning.main' } 
+                                  }}
+                                >
+                                  <EmailIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </>
+                          )}
+                          {reservation.status === 'zaplatene' && (
                             <Tooltip title="Check In">
                               <IconButton
                                 size="small"
-                                onClick={() => handleCheckIn(reservation)}
+                                onClick={() => {
+                                  console.log('Check-in clicked for:', reservation._id);
+                                  handleCheckIn(reservation);
+                                }}
                                 color="primary"
+                                sx={{ 
+                                  backgroundColor: 'primary.light', 
+                                  '&:hover': { backgroundColor: 'primary.main' } 
+                                }}
                               >
                                 <CheckInIcon fontSize="small" />
                               </IconButton>
@@ -2157,6 +2237,7 @@ function Reservations() {
                     >
                       <MenuItem value="pending">{t('pending')}</MenuItem>
                       <MenuItem value="confirmed">{t('confirmed')}</MenuItem>
+                      <MenuItem value="zaplatene">Zaplatené</MenuItem>
                       <MenuItem value="ongoing">{t('ongoing')}</MenuItem>
                       <MenuItem value="completed">{t('completed')}</MenuItem>
                       <MenuItem value="cancelled">{t('cancelled')}</MenuItem>
