@@ -202,6 +202,17 @@ function Reservations() {
   const users = usersData?.data || []
   const payments = paymentsData?.data || []
 
+  // Debug: Log all reservation statuses
+  React.useEffect(() => {
+    if (reservations.length > 0) {
+      console.log('=== RESERVATION STATUSES DEBUG ===');
+      reservations.forEach(r => {
+        console.log(`Reservation ${r.reservationNumber}: status = "${r.status}"`);
+      });
+      console.log('Available statuses in enum:', ['pending', 'confirmed', 'zaplatene', 'ongoing', 'completed', 'cancelled', 'no-show']);
+    }
+  }, [reservations]);
+
   // Status color mapping
   const getStatusColor = (status) => {
     const colors = {
@@ -775,6 +786,7 @@ function Reservations() {
                           )}
                           {reservation.status === 'confirmed' && (
                             <>
+                              {console.log(`[DEBUG] Showing payment buttons for reservation ${reservation.reservationNumber} with status: ${reservation.status}`)}
                               <Tooltip title="Potvrdiť platbu">
                                 <IconButton
                                   size="small"
@@ -810,22 +822,25 @@ function Reservations() {
                             </>
                           )}
                           {reservation.status === 'zaplatene' && (
-                            <Tooltip title="Check In">
-                              <IconButton
-                                size="small"
-                                onClick={() => {
-                                  console.log('Check-in clicked for:', reservation._id);
-                                  handleCheckIn(reservation);
-                                }}
-                                color="primary"
-                                sx={{ 
-                                  backgroundColor: 'primary.light', 
-                                  '&:hover': { backgroundColor: 'primary.main' } 
-                                }}
-                              >
-                                <CheckInIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
+                            <>
+                              {console.log(`[DEBUG] Showing check-in button for reservation ${reservation.reservationNumber} with status: ${reservation.status}`)}
+                              <Tooltip title="Check In">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => {
+                                    console.log('Check-in clicked for:', reservation._id);
+                                    handleCheckIn(reservation);
+                                  }}
+                                  color="primary"
+                                  sx={{ 
+                                    backgroundColor: 'primary.light', 
+                                    '&:hover': { backgroundColor: 'primary.main' } 
+                                  }}
+                                >
+                                  <CheckInIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </>
                           )}
                           {reservation.status === 'ongoing' && (
                             <Tooltip title="Check Out">
