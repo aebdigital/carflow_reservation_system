@@ -71,7 +71,7 @@ const reservationSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'ongoing', 'completed', 'cancelled', 'no-show'],
+    enum: ['pending', 'confirmed', 'zaplatene', 'ongoing', 'completed', 'cancelled', 'no-show'],
     default: 'pending'
   },
   pricing: {
@@ -296,6 +296,24 @@ const reservationSchema = new mongoose.Schema({
   lastModifiedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  },
+
+  // Payment tracking
+  paymentStatus: {
+    confirmedAt: Date,
+    confirmedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    paymentNotificationSent: {
+      type: Boolean,
+      default: false
+    },
+    paymentNotificationSentAt: Date,
+    paymentNotificationSentBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
   },
   appliedDiscountCodes: [{
     discountCode: {

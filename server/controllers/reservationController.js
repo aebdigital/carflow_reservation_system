@@ -731,8 +731,8 @@ const checkInReservation = asyncHandler(async (req, res, next) => {
     return next(new AppError(`Rezervácia s ID ${req.params.id} nebola nájdená`, 404));
   }
 
-  if (reservation.status !== 'confirmed') {
-    return next(new AppError('Len potvrdené rezervácie je možné overiť', 400));
+  if (reservation.status !== 'zaplatene') {
+    return next(new AppError('Len zaplatené rezervácie je možné overiť', 400));
   }
 
   const { mileage, fuelLevel, condition, notes, photos } = req.body;
@@ -1337,6 +1337,132 @@ const getPDFTemplateFields = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Confirm payment for reservation (set status to 'zaplatene')
+// @route   PUT /api/reservations/:id/confirm-payment
+// @access  Private/Staff
+const confirmPayment = asyncHandler(async (req, res, next) => {
+  const { notes } = req.body;
+  
+  const reservation = await Reservation.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  }).populate([
+    { path: 'customer', select: 'firstName lastName email phone' },
+    { path: 'car', select: 'brand model year registrationNumber' }
+  ]);
+
+  if (!reservation) {
+    return next(new AppError(`Rezervácia s ID ${req.params.id} nebola nájdená`, 404));
+  }
+
+  if (reservation.status !== 'confirmed') {
+    return next(new AppError('Len potvrdené rezervácie je možné označiť ako zaplatené', 400));
+  }
+
+  // Update reservation status and payment tracking
+  reservation.status = 'zaplatene';
+  reservation.paymentStatus = {
+    confirmedAt: new Date(),
+    confirmedBy: req.user._id
+  };
+  
+  if (notes) {
+    reservation.notes = `${reservation.notes || ''}\n[PLATBA POTVRDENÁ ${new Date().toLocaleString('sk-SK')}]: ${notes}`.trim();
+  }
+
+  await reservation.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Platba bola úspešne potvrdená',
+    data: reservation
+  });
+});
+
+// @desc    Send payment notification email
+// @route   POST /api/reservations/:id/send-payment-notification
+// @access  Private/Staff
+const sendPaymentNotification = asyncHandler(async (req, res, next) => {
+  const emailService = require('../services/emailService');
+  
+  const reservation = await Reservation.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  }).populate([
+    { path: 'customer', select: 'firstName lastName email phone' },
+    { path: 'car', select: 'brand model year registrationNumber' }
+  ]);
+
+  if (!reservation) {
+    return next(new AppError(`Rezervácia s ID ${req.params.id} nebola nájdená`, 404));
+  }
+
+  if (reservation.status !== 'confirmed') {
+    return next(new AppError('Upomienka platby sa môže poslať len pre potvrdené rezervácie', 400));
+  }
+
+  if (reservation.status === 'zaplatene') {
+    return next(new AppError('Rezervácia je už zaplatená', 400));
+  }
+
+  try {
+    // Get business/tenant details
+    const businessUser = await User.findOne({ tenantId: req.user.tenantId, role: 'admin' });
+    
+    // Prepare email data
+    const emailData = {
+      customerName: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
+      reservationNumber: reservation.reservationNumber,
+      carBrand: reservation.car.brand,
+      carModel: reservation.car.model,
+      carYear: reservation.car.year,
+      startDate: reservation.startDate.toLocaleDateString('sk-SK'),
+      endDate: reservation.endDate.toLocaleDateString('sk-SK'),
+      totalDays: reservation.pricing.totalDays,
+      pickupLocation: reservation.pickupLocation.name,
+      totalAmount: reservation.pricing.totalAmount,
+      businessName: businessUser?.companyName || 'Požičovňa vozidiel',
+      businessAddress: businessUser?.address || '',
+      contactEmail: businessUser?.email || '',
+      contactPhone: businessUser?.phone || '',
+      businessHours: '08:00 - 18:00',
+      bankDetails: reservation.bySquarePayment || null,
+      qrPaymentCode: null // Will be generated if needed
+    };
+
+    // Send payment notification email
+    await emailService.sendTemplatedEmail(
+      reservation.customer.email,
+      'Upomienka platby rezervácie',
+      'payment-notification',
+      emailData
+    );
+
+    // Update tracking
+    reservation.paymentStatus = {
+      ...reservation.paymentStatus,
+      paymentNotificationSent: true,
+      paymentNotificationSentAt: new Date(),
+      paymentNotificationSentBy: req.user._id
+    };
+    
+    await reservation.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Upomienka platby bola úspešne odoslaná',
+      data: {
+        sentTo: reservation.customer.email,
+        sentAt: new Date()
+      }
+    });
+
+  } catch (error) {
+    console.error('Error sending payment notification:', error);
+    return next(new AppError('Chyba pri odosielaní upomienky platby', 500));
+  }
+});
+
 module.exports = {
   getReservations,
   getReservation,
@@ -1350,5 +1476,7 @@ module.exports = {
   getReservationStats,
   generateReservationContract,
   generateSlovakAgreement,
-  getPDFTemplateFields
+  getPDFTemplateFields,
+  confirmPayment,
+  sendPaymentNotification
 }; 

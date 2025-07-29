@@ -12,7 +12,9 @@ const {
   getReservationStats,
   generateReservationContract,
   generateSlovakAgreement,
-  getPDFTemplateFields
+  getPDFTemplateFields,
+  confirmPayment,
+  sendPaymentNotification
 } = require('../controllers/reservationController');
 
 const { protect, requireStaff, addTenantFilter, restrictRivalDomain } = require('../middleware/authMiddleware');
@@ -43,6 +45,8 @@ router.route('/:id')
 // Special actions
 router.put('/:id/cancel', cancelReservation);
 router.put('/:id/confirm', confirmReservation);
+router.put('/:id/confirm-payment', requireStaff, confirmPayment);
+router.post('/:id/send-payment-notification', requireStaff, sendPaymentNotification);
 router.put('/:id/checkin', requireStaff, checkInReservation);
 router.put('/:id/checkout', requireStaff, checkOutReservation);
 
