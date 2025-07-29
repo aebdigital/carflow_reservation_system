@@ -18,6 +18,7 @@ const websiteRoutes = require('./routes/websiteRoutes');
 const discountCodeRoutes = require('./routes/discountCodeRoutes');
 const equipmentRoutes = require('./routes/equipmentRoutes');
 const additionalServiceRoutes = require('./routes/additionalServices');
+const insuranceRoutes = require('./routes/insuranceRoutes');
 const bannerRoutes = require('./routes/banners');
 const emailRoutes = require('./routes/emailRoutes');
 const contractRoutes = require('./routes/contractRoutes');
@@ -149,6 +150,7 @@ app.use('/api/website', websiteRoutes);
 app.use('/api/discount-codes', discountCodeRoutes);
 app.use('/api/equipment', equipmentRoutes);
 app.use('/api/additional-services', additionalServiceRoutes);
+app.use('/api/insurance', insuranceRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/send-email', emailRoutes); // Direct endpoint for frontend compatibility

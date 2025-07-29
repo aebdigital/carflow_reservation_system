@@ -29,6 +29,7 @@ const additionalServiceSchema = new mongoose.Schema({
     enum: [
       'driving_comfort',      // JAZDA A KOMFORT
       'insurance_assistance', // POISTENIE A ASISTENCIA
+      'poistenie',           // POISTENIE (separate category for public API)
       'time_services',       // ČASOVÉ SLUŽBY A PREVZATIE
       'delivery_pickup',     // PRISTAVENIE / VYZDVIHNUTIE MIMO STREDISKA
       'family_accessories',  // RODINA A DOPLNKY
@@ -194,6 +195,7 @@ additionalServiceSchema.virtual('displayName').get(function() {
   const categoryNames = {
     driving_comfort: 'Jazda a komfort',
     insurance_assistance: 'Poistenie a asistencia',
+    poistenie: 'Poistenie',
     time_services: 'Časové služby',
     delivery_pickup: 'Pristavenie/Vyzdvihnutie',
     family_accessories: 'Rodina a doplnky',
