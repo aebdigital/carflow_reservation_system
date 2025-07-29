@@ -56,7 +56,7 @@ import {
   useCancelReservationMutation,
   useDeleteReservationMutation,
   useConfirmReservationMutation,
-  useConfirmPaymentMutation,
+  useConfirmReservationPaymentMutation,
   useSendPaymentNotificationMutation,
   useCheckInReservationMutation,
   useCheckOutReservationMutation,
@@ -190,7 +190,7 @@ function Reservations() {
   const [cancelReservation] = useCancelReservationMutation()
   const [deleteReservation] = useDeleteReservationMutation()
   const [confirmReservation] = useConfirmReservationMutation()
-  const [confirmPayment] = useConfirmPaymentMutation()
+  const [confirmReservationPayment] = useConfirmReservationPaymentMutation()
   const [sendPaymentNotification] = useSendPaymentNotificationMutation()
   const [checkInReservation] = useCheckInReservationMutation()
   const [checkOutReservation] = useCheckOutReservationMutation()
@@ -513,7 +513,7 @@ function Reservations() {
 
   const handleConfirmPayment = async (reservation) => {
     try {
-      const result = await confirmPayment({
+      const result = await confirmReservationPayment({
         id: reservation._id,
         notes: 'Payment confirmed by admin'
       }).unwrap()
