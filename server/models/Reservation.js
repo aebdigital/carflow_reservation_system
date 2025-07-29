@@ -315,6 +315,20 @@ const reservationSchema = new mongoose.Schema({
       ref: 'User'
     }
   },
+
+  // Kros API invoice tracking
+  krosInvoiceId: {
+    type: String,
+    index: true
+  },
+  krosInvoiceCreatedAt: Date,
+  krosInvoiceStatus: {
+    type: String,
+    enum: ['pending', 'created', 'sent', 'paid', 'failed'],
+    default: 'pending'
+  },
+  invoicePdfScheduledAt: Date,
+  invoicePdfSentAt: Date,
   appliedDiscountCodes: [{
     discountCode: {
       type: mongoose.Schema.Types.ObjectId,

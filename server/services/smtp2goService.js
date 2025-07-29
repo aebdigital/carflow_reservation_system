@@ -662,6 +662,100 @@ class SMTP2GOService {
     }
   }
 
+  // Send email with attachments
+  async sendEmailWithAttachment(to, subject, html, attachments = [], text = null) {
+    if (!this.isConfigured) {
+      throw new Error('SMTP2GO service not properly configured. Please set SMTP2GO_API_KEY.');
+    }
+
+    // Clean and validate email addresses
+    const toEmails = Array.isArray(to) ? to : [to];
+    const cleanedToEmails = toEmails.map(email => typeof email === 'string' ? email.trim() : email);
+    
+    // Use the full sender format - SMTP2GO can handle display names
+    const senderEmail = process.env.EMAIL_FROM || 'noreply@carflow.sk';
+
+    console.log('📎 [SMTP2GO] Sending email with attachments to:', cleanedToEmails);
+    console.log('📎 [SMTP2GO] Attachments count:', attachments.length);
+
+    // Clean and sanitize content to avoid JSON issues
+    const cleanText = text ? this.sanitizeTextForJson(text) : this.sanitizeTextForJson(this.stripHtml(html));
+    const cleanHtml = this.sanitizeHtmlForJson(html);
+    const cleanSubject = this.sanitizeSubject(subject);
+
+    const payload = {
+      api_key: this.apiKey,
+      to: cleanedToEmails,
+      sender: senderEmail,
+      subject: cleanSubject,
+      text_body: cleanText,
+      html_body: cleanHtml,
+      attachments: attachments.map(attachment => ({
+        filename: attachment.filename,
+        fileblob: attachment.content, // base64 encoded content
+        mimetype: attachment.type || 'application/octet-stream'
+      }))
+    };
+
+    console.log('📎 [SMTP2GO] Payload prepared with', attachments.length, 'attachments');
+
+    return new Promise((resolve, reject) => {
+      const postData = JSON.stringify(payload);
+
+      const options = {
+        hostname: 'api.smtp2go.com',
+        port: 443,
+        path: '/v3/email/send',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          try {
+            const response = JSON.parse(data);
+            
+            console.log('📎 [SMTP2GO] Response status:', res.statusCode);
+            console.log('📎 [SMTP2GO] Response body:', response);
+
+            if (res.statusCode === 200 && response.data && response.data.succeeded > 0) {
+              console.log('✅ [SMTP2GO] Email with attachments sent successfully');
+              resolve({
+                success: true,
+                messageId: response.data.message_id || 'unknown',
+                response: response
+              });
+            } else {
+              console.error('❌ [SMTP2GO] Email with attachments failed:', response);
+              reject(new Error(`SMTP2GO API error: ${response.data?.error || 'Unknown error'}`));
+            }
+          } catch (parseError) {
+            console.error('❌ [SMTP2GO] Failed to parse response:', parseError.message);
+            console.error('❌ [SMTP2GO] Raw response:', data);
+            reject(new Error(`Failed to parse SMTP2GO response: ${parseError.message}`));
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        console.error('❌ [SMTP2GO] Request error:', error.message);
+        reject(new Error(`SMTP2GO request failed: ${error.message}`));
+      });
+
+      req.write(postData);
+      req.end();
+    });
+  }
+
   // Test email service
   async testConnection() {
     if (!this.isConfigured) {

@@ -196,6 +196,10 @@ const PORT = process.env.PORT || 3001;
 const reminderScheduler = require('./services/reminderScheduler');
 reminderScheduler.start();
 
+// Initialize the invoice PDF scheduler
+const invoicePdfScheduler = require('./services/invoicePdfScheduler');
+console.log('📧 Invoice PDF scheduler initialized');
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);

@@ -808,6 +808,25 @@ const checkOutReservation = asyncHandler(async (req, res, next) => {
     }
   });
 
+  // 📄 Schedule invoice PDF email for 24 hours later when reservation is completed
+  try {
+    if (reservation.krosInvoiceId) {
+      console.log('📧 Scheduling invoice PDF email for 24h after completion');
+      
+      // Schedule the invoice email using node-cron (will be sent 24h later)
+      const scheduledTime = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+      reservation.invoicePdfScheduledAt = scheduledTime;
+      await reservation.save();
+      
+      console.log(`✅ Invoice PDF email scheduled for: ${scheduledTime.toISOString()}`);
+    } else {
+      console.log('ℹ️ No Kros invoice ID found, skipping PDF email scheduling');
+    }
+  } catch (scheduleError) {
+    console.error('❌ Error scheduling invoice PDF email:', scheduleError.message);
+    // Don't fail the checkout if scheduling fails
+  }
+
   res.status(200).json({
     success: true,
     data: reservation
@@ -1371,6 +1390,33 @@ const confirmPayment = asyncHandler(async (req, res, next) => {
   }
 
   await reservation.save();
+
+  // 📄 Create invoice in Kros API when payment is confirmed
+  try {
+    const krosApiService = require('../services/krosApiService');
+    
+    if (krosApiService.isReady()) {
+      console.log('📄 Creating invoice in Kros API for reservation:', reservation.reservationNumber);
+      
+      const invoiceResult = await krosApiService.createInvoice(reservation);
+      
+      if (invoiceResult.success) {
+        // Store Kros invoice ID in reservation for future reference
+        reservation.krosInvoiceId = invoiceResult.invoiceId;
+        reservation.krosInvoiceCreatedAt = new Date();
+        await reservation.save();
+        
+        console.log('✅ Invoice created successfully in Kros API with ID:', invoiceResult.invoiceId);
+      } else {
+        console.warn('⚠️ Failed to create invoice in Kros API:', invoiceResult.error);
+      }
+    } else {
+      console.log('ℹ️ Kros API not configured, skipping invoice creation');
+    }
+  } catch (invoiceError) {
+    console.error('❌ Error creating invoice in Kros API:', invoiceError.message);
+    // Don't fail the payment confirmation if invoice creation fails
+  }
 
   res.status(200).json({
     success: true,
