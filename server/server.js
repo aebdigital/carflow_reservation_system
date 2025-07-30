@@ -27,6 +27,7 @@ const blogRoutes = require('./routes/blogRoutes');
 const emailSubscriptionRoutes = require('./routes/emailSubscriptions');
 const settingsRoutes = require('./routes/settingsRoutes');
 const testRoutes = require('./routes/testRoutes');
+const krosTestRoutes = require('./routes/krosTestRoutes');
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
@@ -162,6 +163,7 @@ app.use('/api/email-subscriptions', emailSubscriptionRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/campaigns', require('./routes/campaigns'));
 app.use('/api/test', testRoutes); // Test routes for debugging
+app.use('/api/test', krosTestRoutes); // Kros integration test routes
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
