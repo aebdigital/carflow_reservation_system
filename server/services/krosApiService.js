@@ -11,13 +11,12 @@ class KrosApiService {
     console.log('🔧 Checking Kros API configuration...');
     
     this.apiToken = process.env.KROS_API_TOKEN;
-    this.companyId = process.env.KROS_COMPANY_ID;
     
-    if (this.apiToken && this.companyId) {
+    if (this.apiToken) {
       this.isConfigured = true;
       console.log('✅ Kros API configured successfully');
     } else {
-      console.warn('⚠️ Kros API not configured. Missing KROS_API_TOKEN or KROS_COMPANY_ID');
+      console.warn('⚠️ Kros API not configured. Missing KROS_API_TOKEN');
     }
   }
 
@@ -43,7 +42,7 @@ class KrosApiService {
    */
   async createInvoice(reservationData) {
     if (!this.isConfigured) {
-      throw new Error('Kros API not configured. Please set KROS_API_TOKEN and KROS_COMPANY_ID');
+      throw new Error('Kros API not configured. Please set KROS_API_TOKEN');
     }
 
     try {
@@ -82,7 +81,7 @@ class KrosApiService {
    */
   async getInvoicePDF(invoiceId, reportId = 19) {
     if (!this.isConfigured) {
-      throw new Error('Kros API not configured. Please set KROS_API_TOKEN and KROS_COMPANY_ID');
+      throw new Error('Kros API not configured. Please set KROS_API_TOKEN');
     }
 
     try {
@@ -118,7 +117,7 @@ class KrosApiService {
    */
   async getInvoice(invoiceId) {
     if (!this.isConfigured) {
-      throw new Error('Kros API not configured. Please set KROS_API_TOKEN and KROS_COMPANY_ID');
+      throw new Error('Kros API not configured. Please set KROS_API_TOKEN');
     }
 
     try {
