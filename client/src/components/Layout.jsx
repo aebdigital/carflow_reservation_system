@@ -44,24 +44,34 @@ import { clearStateOnLogout } from '../store/authSlice'
 
 const drawerWidth = 280
 
-const menuItems = [
-  { text: t('dashboard'), icon: <DashboardIcon />, path: '/' },
-  { text: t('reservations'), icon: <ReservationsIcon />, path: '/reservations' },
-  { text: t('fleetManagement'), icon: <CarsIcon />, path: '/cars' },
-  { text: 'Doplnkové služby', icon: <ServicesIcon />, path: '/additional-services' },
-  { text: t('customers'), icon: <CustomersIcon />, path: '/customers' },
-  { text: t('calendar'), icon: <CalendarIcon />, path: '/calendar' },
-  { text: t('payments'), icon: <PaymentsIcon />, path: '/payments' },
-  { text: t('campaigns'), icon: <CampaignIcon />, path: '/campaigns' },
-  { text: t('contracts'), icon: <ContractIcon />, path: '/contracts' },
-  { text: 'Webstránka', icon: <WebsiteIcon />, path: '/website' },
-  { text: t('settings'), icon: <SettingsIcon />, path: '/settings' },
-]
-
 function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
   const user = useSelector(selectCurrentUser)
+
+  // Base menu items
+  const baseMenuItems = [
+    { text: t('dashboard'), icon: <DashboardIcon />, path: '/' },
+    { text: t('reservations'), icon: <ReservationsIcon />, path: '/reservations' },
+    { text: t('fleetManagement'), icon: <CarsIcon />, path: '/cars' },
+    { text: 'Doplnkové služby', icon: <ServicesIcon />, path: '/additional-services' },
+    { text: t('customers'), icon: <CustomersIcon />, path: '/customers' },
+    { text: t('calendar'), icon: <CalendarIcon />, path: '/calendar' },
+    { text: t('payments'), icon: <PaymentsIcon />, path: '/payments' },
+    { text: t('campaigns'), icon: <CampaignIcon />, path: '/campaigns' },
+    { text: t('contracts'), icon: <ContractIcon />, path: '/contracts' },
+    { text: 'Webstránka', icon: <WebsiteIcon />, path: '/website' },
+    { text: t('settings'), icon: <SettingsIcon />, path: '/settings' },
+  ]
+
+  // Filter menu items based on user
+  const menuItems = baseMenuItems.filter(item => {
+    // Hide payments section for user "rival"
+    if (item.path === '/payments' && user?.email === 'rival@test.sk') {
+      return false;
+    }
+    return true;
+  })
   const [logoutUser] = useLogoutMutation()
   const dispatch = useDispatch()
   
