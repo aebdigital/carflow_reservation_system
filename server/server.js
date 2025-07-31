@@ -20,6 +20,8 @@ const equipmentRoutes = require('./routes/equipmentRoutes');
 const additionalServiceRoutes = require('./routes/additionalServices');
 const insuranceRoutes = require('./routes/insuranceRoutes');
 const rivalInsuranceRoutes = require('./routes/rivalInsuranceRoutes');
+const extendedInsuranceRoutes = require('./routes/extendedInsuranceRoutes');
+const rivalExtendedInsuranceRoutes = require('./routes/rivalExtendedInsuranceRoutes');
 const bannerRoutes = require('./routes/banners');
 const emailRoutes = require('./routes/emailRoutes');
 const contractRoutes = require('./routes/contractRoutes');
@@ -154,6 +156,8 @@ app.use('/api/equipment', equipmentRoutes);
 app.use('/api/additional-services', additionalServiceRoutes);
 app.use('/api/insurance', insuranceRoutes);
 app.use('/api/rival-insurance', rivalInsuranceRoutes);
+app.use('/api/extended-insurance', extendedInsuranceRoutes);
+app.use('/api/rival-extended-insurance', rivalExtendedInsuranceRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/send-email', emailRoutes); // Direct endpoint for frontend compatibility
