@@ -171,6 +171,16 @@ function AdditionalServices() {
       icon: <SecurityIcon />,
       color: '#ff9800'
     },
+    poistenie: {
+      label: 'Poistenie',
+      icon: <SecurityIcon />,
+      color: '#f44336'
+    },
+    poistenie_asistencia_rozsierene: {
+      label: 'Poistenie a asistencia rozšírené',
+      icon: <SecurityIcon />,
+      color: '#d32f2f'
+    },
     time_services: {
       label: 'Časové služby',
       icon: <ScheduleIcon />,
@@ -480,7 +490,10 @@ function AdditionalServices() {
               mb: 2, 
               display: 'flex',
               backgroundColor: snapshot.isDragging ? '#f5f5f5' : 'white',
-              boxShadow: snapshot.isDragging ? 3 : 1
+              boxShadow: snapshot.isDragging ? 3 : 1,
+              maxWidth: '100%',
+              width: '100%',
+              overflow: 'hidden'
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', pl: 1 }}>
@@ -513,17 +526,32 @@ function AdditionalServices() {
               </Box>
             )}
             
-            <CardContent sx={{ flex: '1 0 auto', py: 1 }}>
+            <CardContent sx={{ flex: '1 0 auto', py: 1, minWidth: 0 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="h6" component="div">
+                <Box sx={{ flex: 1, minWidth: 0, mr: 2 }}>
+                  <Typography variant="h6" component="div" sx={{ 
+                    wordBreak: 'break-word',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
                     {service.name}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ 
+                    mb: 1,
+                    wordBreak: 'break-word',
+                    overflow: 'hidden',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical'
+                  }}>
                     {service.description}
                   </Typography>
                   
-                  <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                  <Stack direction="row" spacing={1} sx={{ 
+                    mb: 1,
+                    flexWrap: 'wrap',
+                    gap: 0.5
+                  }}>
                     <Chip
                       label={categoryConfig[service.category]?.label || service.category}
                       icon={categoryConfig[service.category]?.icon}
@@ -555,7 +583,11 @@ function AdditionalServices() {
                   </Stack>
                 </Box>
                 
-                <Box sx={{ display: 'flex', gap: 1 }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: 1,
+                  flexShrink: 0
+                }}>
                   <Tooltip title="Zobraziť">
                     <IconButton 
                       size="small" 
