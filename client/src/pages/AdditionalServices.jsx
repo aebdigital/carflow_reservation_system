@@ -529,7 +529,7 @@ function AdditionalServices() {
             
             <CardContent sx={{ flex: '1 0 auto', py: 1, minWidth: 0, overflow: 'hidden' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                <Box sx={{ flex: 1, minWidth: 0, mr: 2, maxWidth: 'calc(100% - 150px)' }}>
+                <Box sx={{ flex: 1, minWidth: 0, mr: 2, maxWidth: 'calc(100% - 160px)' }}>
                   <Typography variant="h6" component="div" sx={{ 
                     wordBreak: 'break-word',
                     overflow: 'hidden',
@@ -547,7 +547,9 @@ function AdditionalServices() {
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical'
                   }}>
-                    {service.description}
+                    {service.description && service.description.length > 100 
+                      ? service.description.substring(0, 100) + '...' 
+                      : service.description}
                   </Typography>
                   
                   <Stack direction="row" spacing={1} sx={{ 
@@ -592,8 +594,10 @@ function AdditionalServices() {
                   display: 'flex', 
                   gap: 1,
                   flexShrink: 0,
-                  width: '140px',
-                  justifyContent: 'flex-end'
+                  minWidth: '150px',
+                  width: '150px',
+                  justifyContent: 'flex-end',
+                  alignItems: 'flex-start'
                 }}>
                   <Tooltip title="Zobraziť">
                     <IconButton 
