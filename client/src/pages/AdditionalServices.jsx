@@ -491,8 +491,9 @@ function AdditionalServices() {
               display: 'flex',
               backgroundColor: snapshot.isDragging ? '#f5f5f5' : 'white',
               boxShadow: snapshot.isDragging ? 3 : 1,
-              maxWidth: '100%',
+              maxWidth: 'calc(100vw - 32px)',
               width: '100%',
+              minWidth: 0,
               overflow: 'hidden'
             }}
           >
@@ -526,13 +527,15 @@ function AdditionalServices() {
               </Box>
             )}
             
-            <CardContent sx={{ flex: '1 0 auto', py: 1, minWidth: 0 }}>
+            <CardContent sx={{ flex: '1 0 auto', py: 1, minWidth: 0, overflow: 'hidden' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                 <Box sx={{ flex: 1, minWidth: 0, mr: 2 }}>
                   <Typography variant="h6" component="div" sx={{ 
                     wordBreak: 'break-word',
                     overflow: 'hidden',
-                    textOverflow: 'ellipsis'
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    maxWidth: '100%'
                   }}>
                     {service.name}
                   </Typography>
@@ -550,7 +553,9 @@ function AdditionalServices() {
                   <Stack direction="row" spacing={1} sx={{ 
                     mb: 1,
                     flexWrap: 'wrap',
-                    gap: 0.5
+                    gap: 0.5,
+                    maxWidth: '100%',
+                    overflow: 'hidden'
                   }}>
                     <Chip
                       label={categoryConfig[service.category]?.label || service.category}
