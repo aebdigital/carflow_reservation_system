@@ -529,7 +529,7 @@ function AdditionalServices() {
             
             <CardContent sx={{ flex: '1 0 auto', py: 1, minWidth: 0, overflow: 'hidden' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                <Box sx={{ flex: 1, minWidth: 0, mr: 2 }}>
+                <Box sx={{ flex: 1, minWidth: 0, mr: 2, maxWidth: 'calc(100% - 150px)' }}>
                   <Typography variant="h6" component="div" sx={{ 
                     wordBreak: 'break-word',
                     overflow: 'hidden',
@@ -591,7 +591,9 @@ function AdditionalServices() {
                 <Box sx={{ 
                   display: 'flex', 
                   gap: 1,
-                  flexShrink: 0
+                  flexShrink: 0,
+                  width: '140px',
+                  justifyContent: 'flex-end'
                 }}>
                   <Tooltip title="Zobraziť">
                     <IconButton 
