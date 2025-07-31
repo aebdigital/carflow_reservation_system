@@ -69,7 +69,7 @@ const translations = {
     doors: 'Počet dverí',
     mileage: 'Najazdené km',
     description: 'Popis',
-    deposit: 'Záloha',
+    deposit: 'Depozit',
     dailyRate: 'Denná sadzba',
     weeklyRate: 'Týždenná sadzba',
     monthlyRate: 'Mesačná sadzba',

@@ -101,6 +101,7 @@ function Cars() {
         '4-10days': '',
         '11-17days': '',
         '18-24days': '',
+        '25-29days': '',
         '30plus': 'dohoda - volať/písať mail'
       }
     },
@@ -548,6 +549,7 @@ function Cars() {
               '4-10days': car.pricing?.rates?.['4-10days'] || '',
               '11-17days': car.pricing?.rates?.['11-17days'] || '',
               '18-24days': car.pricing?.rates?.['18-24days'] || '',
+              '25-29days': car.pricing?.rates?.['25-29days'] || '',
               '30plus': 'dohoda - volať/písať mail'
             }
           },
@@ -639,6 +641,7 @@ function Cars() {
               '4-10days': car.pricing?.rates?.['4-10days'] || '',
               '11-17days': car.pricing?.rates?.['11-17days'] || '',
               '18-24days': car.pricing?.rates?.['18-24days'] || '',
+              '25-29days': car.pricing?.rates?.['25-29days'] || '',
               '30plus': 'dohoda - volať/písať mail'
             }
           },
@@ -1034,7 +1037,7 @@ function Cars() {
   }
 
   const renderCarCard = (car) => (
-    <Grid item xs={12} sm={6} md={4} lg={4} xl={4} key={car._id}>
+    <Grid item xs={12} sm={6} md={4} lg={3} xl={3} key={car._id}>
       <Card 
         onClick={() => handleOpenDialog('view', car)}
         sx={{ 

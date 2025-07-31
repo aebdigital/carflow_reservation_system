@@ -154,7 +154,7 @@ const QRCodeDisplay = ({ reservationId, onClose, open = false }) => {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="body2" color="text.secondary">
-                      Zábezpeka:
+                      Depozit:
                     </Typography>
                     <Typography variant="body1" fontWeight="medium">
                       {(qrData.reservation.car?.pricing?.deposit || 0).toFixed(2)} €
@@ -196,7 +196,7 @@ const QRCodeDisplay = ({ reservationId, onClose, open = false }) => {
                     <CardContent sx={{ textAlign: 'center' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 2 }}>
                         <Typography variant="h6">🇸🇰 Nájomné</Typography>
-                        <Chip label="Rental" color="primary" size="small" />
+                        <Chip label="Nájomné" color="primary" size="small" />
                       </Box>
                       <Box sx={{ mb: 2 }}>
                         <img 
@@ -242,8 +242,8 @@ const QRCodeDisplay = ({ reservationId, onClose, open = false }) => {
                   <Card>
                     <CardContent sx={{ textAlign: 'center' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 2 }}>
-                        <Typography variant="h6">🇸🇰 Zábezpeka</Typography>
-                        <Chip label="Deposit" color="warning" size="small" />
+                        <Typography variant="h6">🇸🇰 Depozit</Typography>
+                        <Chip label="Depozit" color="warning" size="small" />
                       </Box>
                       <Box sx={{ mb: 2 }}>
                         <img 
@@ -253,7 +253,7 @@ const QRCodeDisplay = ({ reservationId, onClose, open = false }) => {
                         />
                       </Box>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
-                        {qrData.qrCodes.payBySquareDeposit ? 'QR kód pre platbu zábezpeky' : 'QR kód (Czech) - pre zábezpeku'}
+                        {qrData.qrCodes.payBySquareDeposit ? 'QR kód pre platbu depozitu' : 'QR kód (Czech) - pre depozit'}
                       </Typography>
                       <Typography variant="body1" fontWeight="medium" sx={{ mb: 2 }}>
                         Suma: {(qrData.reservation.car?.pricing?.deposit || 0).toFixed(2)} €

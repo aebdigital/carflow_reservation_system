@@ -685,7 +685,6 @@ const BlogSettings = () => {
             <Tab label="Základné info" />
             <Tab label="Obsah" />
             <Tab label="SEO a sociálne siete" />
-            <Tab label="Nastavenia" />
           </Tabs>
 
           {/* Basic Info Tab */}
@@ -951,34 +950,6 @@ const BlogSettings = () => {
           )}
 
           {/* Settings Tab */}
-          {activeTab === 3 && (
-            <Box sx={{ mt: 2 }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={blogData.commentsEnabled}
-                    onChange={(e) => setBlogData(prev => ({ ...prev, commentsEnabled: e.target.checked }))}
-                  />
-                }
-                label="Povoliť komentáre"
-              />
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Stav</InputLabel>
-                <Select
-                  value={blogData.status}
-                  onChange={(e) => setBlogData(prev => ({ ...prev, status: e.target.value }))}
-                  label="Stav"
-                >
-                  <MenuItem value="draft">Koncept</MenuItem>
-                  <MenuItem value="published">Publikované</MenuItem>
-                  <MenuItem value="archived">Archivované</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseBlogDialog}>Zrušiť</Button>

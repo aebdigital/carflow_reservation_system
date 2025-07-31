@@ -717,7 +717,7 @@ const EnhancedCarForm = ({
           </Grid>
 
           <Grid item xs={12}>
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 3 }} />
             <Typography variant="h6" gutterBottom>Motor</Typography>
           </Grid>
 
@@ -767,7 +767,7 @@ const EnhancedCarForm = ({
           </Grid>
 
           <Grid item xs={12}>
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 3 }} />
             <Typography variant="h6" gutterBottom>Základné parametre</Typography>
           </Grid>
 
@@ -827,7 +827,7 @@ const EnhancedCarForm = ({
           </Grid>
 
           <Grid item xs={12}>
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 3 }} />
             <Typography variant="h6" gutterBottom>Spotreba paliva</Typography>
           </Grid>
 
@@ -930,7 +930,7 @@ const EnhancedCarForm = ({
           </Grid>
 
           <Grid item xs={12}>
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 3 }} />
             <Typography variant="h6" gutterBottom>Platnosť dokumentov</Typography>
             <Typography variant="body2" color="text.secondary" gutterBottom>
               Systém automaticky upozorní 30 dní pred expirovaním
@@ -989,12 +989,12 @@ const EnhancedCarForm = ({
           </Grid>
 
           <Grid item xs={12}>
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 3 }} />
             <Typography variant="h6" gutterBottom>Poškodenia</Typography>
           </Grid>
 
           <Grid item xs={12}>
-            <Paper variant="outlined" sx={{ p: 2 }}>
+            <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
               {formData.damages && formData.damages.length > 0 ? (
                 formData.damages.map((damage, index) => (
                   <Card key={index} sx={{ mb: 2 }}>
@@ -1514,7 +1514,7 @@ const EnhancedCarForm = ({
             </Grid>
 
             <Grid item xs={12}>
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 3 }} />
               <Typography variant="h6" gutterBottom>Časové sadzby</Typography>
             </Grid>
 
@@ -1591,6 +1591,20 @@ const EnhancedCarForm = ({
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
+                label="25-29 dní"
+                type="number"
+                value={formData.pricing?.rates?.['25-29days'] || ''}
+                onChange={(e) => handleNestedChange('pricing.rates.25-29days', parseFloat(e.target.value))}
+                disabled={dialogMode === 'view'}
+                InputProps={{
+                  endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                }}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
                 label="30+ dní"
                 value="dohoda - volať/písať mail"
                 disabled
@@ -1599,7 +1613,7 @@ const EnhancedCarForm = ({
             </Grid>
 
             <Grid item xs={12}>
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 3 }} />
               <Typography variant="h6" gutterBottom>Kilometrové limity</Typography>
             </Grid>
 
@@ -1836,7 +1850,7 @@ const EnhancedCarForm = ({
             </Grid>
 
             <Grid item xs={12}>
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 3 }} />
               <Typography variant="h6" gutterBottom>Značky a štítky</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Pridajte pútavé značky pre marketing vozidla
