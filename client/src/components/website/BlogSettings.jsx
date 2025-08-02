@@ -38,9 +38,6 @@ import {
   UnpublishedOutlined as UnpublishIcon,
   Image as ImageIcon,
   ExpandMore as ExpandMoreIcon,
-  Visibility as ViewIcon,
-  ThumbUp as LikeIcon,
-  Comment as CommentIcon,
   Schedule as ScheduleIcon,
   Search as SearchIcon
 } from '@mui/icons-material';
@@ -130,36 +127,6 @@ const BlogSettings = () => {
   const [toggleBlogStatus] = useToggleBlogStatusMutation();
   const [uploadBlogImage] = useUploadBlogImageMutation();
 
-  // Test function to create a simple blog
-  const createTestBlog = async () => {
-    try {
-      setAlert({ type: 'info', message: 'Vytváram test blog...' });
-      
-      const testBlogData = {
-        title: 'Test Blog - ' + new Date().toLocaleString(),
-        slug: 'test-blog-' + Date.now(),
-        excerpt: 'Toto je testovací blog post na overenie funkcionality systému.',
-        content: '<p>Toto je obsah testovacieho blog postu. <strong>Systém funguje správne!</strong></p>',
-        category: 'general',
-        tags: ['test', 'debug'],
-        status: 'published',
-        publishDate: new Date().toISOString().split('T')[0]
-      };
-      
-      console.log('🧪 Creating test blog:', testBlogData);
-      const result = await createBlog(testBlogData).unwrap();
-      console.log('🧪 Test blog created:', result);
-      
-      setAlert({ type: 'success', message: 'Test blog bol úspešne vytvorený!' });
-      refetch();
-    } catch (error) {
-      console.error('🧪 Error creating test blog:', error);
-      setAlert({ 
-        type: 'error', 
-        message: `Chyba pri vytváraní test blogu: ${error.data?.message || error.message}` 
-      });
-    }
-  };
 
   // Clear alert after 5 seconds
   useEffect(() => {
@@ -549,17 +516,6 @@ const BlogSettings = () => {
                 Nový blog
               </Button>
             </Grid>
-            <Grid item xs={6} md={2}>
-              <Button
-                fullWidth
-                variant="outlined"
-                color="secondary"
-                onClick={createTestBlog}
-                sx={{ height: '56px' }}
-              >
-                Test blog
-              </Button>
-            </Grid>
           </Grid>
 
           {/* Blog List */}
@@ -620,20 +576,6 @@ const BlogSettings = () => {
                         />
                       </Stack>
 
-                      <Stack direction="row" spacing={1} sx={{ mb: 2 }} alignItems="center">
-                        <Stack direction="row" spacing={0.5} alignItems="center">
-                          <ViewIcon fontSize="small" color="action" />
-                          <Typography variant="caption">{blog.views || 0}</Typography>
-                        </Stack>
-                        <Stack direction="row" spacing={0.5} alignItems="center">
-                          <LikeIcon fontSize="small" color="action" />
-                          <Typography variant="caption">{blog.likes || 0}</Typography>
-                        </Stack>
-                        <Stack direction="row" spacing={0.5} alignItems="center">
-                          <CommentIcon fontSize="small" color="action" />
-                          <Typography variant="caption">{blog.commentCount || 0}</Typography>
-                        </Stack>
-                      </Stack>
 
                       <Stack direction="row" spacing={1}>
                         <IconButton 
@@ -684,7 +626,6 @@ const BlogSettings = () => {
           <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
             <Tab label="Základné info" />
             <Tab label="Obsah" />
-            <Tab label="SEO a sociálne siete" />
           </Tabs>
 
           {/* Basic Info Tab */}
@@ -846,108 +787,6 @@ const BlogSettings = () => {
           )}
 
           {/* SEO & Social Tab */}
-          {activeTab === 2 && (
-            <Box sx={{ mt: 2 }}>
-              <Accordion defaultExpanded>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography variant="subtitle1">SEO nastavenia</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12}>
-                      <TextField
-                        fullWidth
-                        label="Meta titulok"
-                        value={blogData.seo.metaTitle}
-                        onChange={(e) => setBlogData(prev => ({
-                          ...prev,
-                          seo: { ...prev.seo, metaTitle: e.target.value }
-                        }))}
-                        margin="normal"
-                        helperText={`${blogData.seo.metaTitle.length}/60 znakov`}
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        fullWidth
-                        label="Meta popis"
-                        value={blogData.seo.metaDescription}
-                        onChange={(e) => setBlogData(prev => ({
-                          ...prev,
-                          seo: { ...prev.seo, metaDescription: e.target.value }
-                        }))}
-                        multiline
-                        rows={2}
-                        margin="normal"
-                        helperText={`${blogData.seo.metaDescription.length}/160 znakov`}
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <Typography variant="subtitle2" gutterBottom>SEO kľúčové slová</Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
-                        {blogData.seo.keywords.map((keyword, index) => (
-                          <Chip
-                            key={index}
-                            label={keyword}
-                            onDelete={() => removeKeyword(keyword)}
-                            size="small"
-                          />
-                        ))}
-                      </Box>
-                      <Stack direction="row" spacing={1}>
-                        <TextField
-                          size="small"
-                          placeholder="Pridať kľúčové slovo"
-                          value={newKeyword}
-                          onChange={(e) => setNewKeyword(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && addKeyword()}
-                        />
-                        <Button onClick={addKeyword} variant="outlined" size="small">
-                          Pridať
-                        </Button>
-                      </Stack>
-                    </Grid>
-                  </Grid>
-                </AccordionDetails>
-              </Accordion>
-
-              <Accordion>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography variant="subtitle1">Sociálne siete</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12}>
-                      <TextField
-                        fullWidth
-                        label="Titulok pre sociálne siete"
-                        value={blogData.socialMedia.ogTitle}
-                        onChange={(e) => setBlogData(prev => ({
-                          ...prev,
-                          socialMedia: { ...prev.socialMedia, ogTitle: e.target.value }
-                        }))}
-                        margin="normal"
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        fullWidth
-                        label="Popis pre sociálne siete"
-                        value={blogData.socialMedia.ogDescription}
-                        onChange={(e) => setBlogData(prev => ({
-                          ...prev,
-                          socialMedia: { ...prev.socialMedia, ogDescription: e.target.value }
-                        }))}
-                        multiline
-                        rows={2}
-                        margin="normal"
-                      />
-                    </Grid>
-                  </Grid>
-                </AccordionDetails>
-              </Accordion>
-            </Box>
-          )}
 
           {/* Settings Tab */}
         </DialogContent>

@@ -202,18 +202,18 @@ function Cars() {
     setSnackbar(prev => ({ ...prev, open: false }))
   }
 
-  // Category options
-  const categoryOptions = [
-    { value: 'economy', label: t('economy') },
-    { value: 'compact', label: t('compact') },
-    { value: 'midsize', label: t('midsize') },
-    { value: 'fullsize', label: t('fullsize') },
-    { value: 'luxury', label: t('luxury') },
-    { value: 'suv', label: t('suv') },
-    { value: 'minivan', label: t('minivan') },
-    { value: 'convertible', label: t('convertible') },
-    { value: 'sports', label: t('sports') }
-  ]
+  // Get actual categories from the cars data
+  const getActualCategories = () => {
+    const categoriesFromCars = [...new Set(cars.map(car => car.category))].filter(Boolean)
+    
+    // Create options using actual categories with fallback display names
+    return categoriesFromCars.map(category => ({
+      value: category,
+      label: t(category.toLowerCase()) || category
+    }))
+  }
+  
+  const categoryOptions = getActualCategories()
 
   // Fuel type options
   const fuelTypeOptions = [

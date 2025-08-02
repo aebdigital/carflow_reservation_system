@@ -101,7 +101,6 @@ function Customers() {
     lastName: '',
     email: '',
     phone: '',
-    password: '',
     dateOfBirth: null,
     licenseNumber: '',
     licenseExpiry: null,
@@ -111,11 +110,6 @@ function Customers() {
       state: '',
       zipCode: '',
       country: ''
-    },
-    emergencyContact: {
-      name: '',
-      relationship: '',
-      phone: ''
     },
     preferences: {
       carType: '',
@@ -244,12 +238,6 @@ function Customers() {
       errors.phone = 'Neplatný formát telefónneho čísla'
     }
     
-    // Password is required for new users
-    if (dialogMode === 'create' && !formData.password.trim()) {
-      errors.password = 'Heslo je povinné'
-    } else if (formData.password && formData.password.length < 6) {
-      errors.password = 'Heslo musí mať aspoň 6 znakov'
-    }
     
     // Customer-specific validations
     if (formData.role === 'customer') {
@@ -274,10 +262,6 @@ function Customers() {
         licenseExpiry: formData.licenseExpiry ? new Date(formData.licenseExpiry).toISOString() : undefined
       }
 
-      // For edit mode, don't include password if it's empty
-      if (dialogMode === 'edit' && !formData.password.trim()) {
-        delete customerData.password
-      }
 
       // Remove undefined fields
       Object.keys(customerData).forEach(key => {
@@ -331,12 +315,10 @@ function Customers() {
         lastName: customer.lastName || '',
         email: customer.email || '',
         phone: customer.phone || '',
-        password: '', // Don't pre-fill password for editing
         dateOfBirth: customer.dateOfBirth ? new Date(customer.dateOfBirth).toISOString().split('T')[0] : null,
         licenseNumber: customer.licenseNumber || '',
         licenseExpiry: customer.licenseExpiry ? new Date(customer.licenseExpiry).toISOString().split('T')[0] : null,
         address: customer.address || initialFormState.address,
-        emergencyContact: customer.emergencyContact || initialFormState.emergencyContact,
         preferences: customer.preferences || initialFormState.preferences,
         role: customer.role || 'customer',
         status: customer.status || 'active'
@@ -704,21 +686,32 @@ function Customers() {
         <DialogContent>
           {dialogMode === 'view' && selectedCustomer ? (
             <Grid container spacing={3} sx={{ mt: 1 }}>
-              <Grid item xs={12} md={6}>
+              {/* Personal Information */}
+              <Grid item xs={12}>
                 <Typography variant="h6" gutterBottom>Osobné informácie</Typography>
+              </Grid>
+              <Grid item xs={12} md={6}>
                 <Typography variant="body1" fontWeight="medium" gutterBottom>
-                      {selectedCustomer.firstName} {selectedCustomer.lastName}
-                    </Typography>
+                  {selectedCustomer.firstName} {selectedCustomer.lastName}
+                </Typography>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
                   Email: {selectedCustomer.email}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
                   Telefón: {selectedCustomer.phone || 'Neuvedené'}
                 </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Dátum narodenia: {selectedCustomer.dateOfBirth ? new Date(selectedCustomer.dateOfBirth).toLocaleDateString() : 'Neuvedené'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Stav: {getStatusText(selectedCustomer.status)}
+                </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Člen od: {selectedCustomer.createdAt ? new Date(selectedCustomer.createdAt).toLocaleDateString() : 'N/A'}
                 </Typography>
               </Grid>
+              
+              {/* License Information */}
               <Grid item xs={12} md={6}>
                 <Typography variant="h6" gutterBottom>Informácie o vodičskom preukaze</Typography>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -728,6 +721,53 @@ function Customers() {
                   Platnosť preukazu: {selectedCustomer.licenseExpiry ? new Date(selectedCustomer.licenseExpiry).toLocaleDateString() : 'Neuvedené'}
                 </Typography>
               </Grid>
+              
+              {/* Address Information */}
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>Adresa</Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Ulica: {selectedCustomer.address?.street || 'Neuvedené'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Mesto: {selectedCustomer.address?.city || 'Neuvedené'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Región/Kraj: {selectedCustomer.address?.state || 'Neuvedené'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Krajina: {selectedCustomer.address?.country || 'Neuvedené'}
+                </Typography>
+              </Grid>
+              
+              {/* Preferences */}
+              {selectedCustomer.preferences && (
+                <>
+                  <Grid item xs={12}>
+                    <Typography variant="h6" gutterBottom>Preferencie</Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Typ auta: {selectedCustomer.preferences.carType || 'Neuvedené'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Prevodovka: {selectedCustomer.preferences.transmission || 'Neuvedené'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Email notifikácie: {selectedCustomer.preferences.notifications?.email ? 'Povolené' : 'Zakázané'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      SMS notifikácie: {selectedCustomer.preferences.notifications?.sms ? 'Povolené' : 'Zakázané'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Propagačné emaily: {selectedCustomer.preferences.notifications?.promotions ? 'Povolené' : 'Zakázané'}
+                    </Typography>
+                  </Grid>
+                </>
+              )}
+              
+              {/* Reservation Statistics */}
               <Grid item xs={12}>
                 <Typography variant="h6" gutterBottom>Štatistiky rezervácií</Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -926,49 +966,6 @@ function Customers() {
                   onChange={(e) => setFormData({
                     ...formData,
                     address: { ...formData.address, country: e.target.value }
-                  })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-
-              {/* Emergency Contact */}
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom>
-                  Núdzový kontakt
-                </Typography>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label="Meno núdzového kontaktu"
-                  value={formData.emergencyContact.name}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    emergencyContact: { ...formData.emergencyContact, name: e.target.value }
-                  })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label="Vzťah"
-                  value={formData.emergencyContact.relationship}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    emergencyContact: { ...formData.emergencyContact, relationship: e.target.value }
-                  })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label="Telefón núdzového kontaktu"
-                  value={formData.emergencyContact.phone}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    emergencyContact: { ...formData.emergencyContact, phone: e.target.value }
                   })}
                   disabled={dialogMode === 'view'}
                 />

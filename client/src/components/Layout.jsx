@@ -66,12 +66,18 @@ function Layout() {
 
   // Filter menu items based on user
   const menuItems = baseMenuItems.filter(item => {
-    // Hide payments section for user "rival"
+    // Hide payments section for user "rival@test.sk"
     if (item.path === '/payments' && user?.email === 'rival@test.sk') {
+      console.log('🔐 [MENU FILTER] Hiding payments for rival@test.sk user');
       return false;
     }
     return true;
   })
+  
+  // Debug log for troubleshooting
+  console.log('🔐 [MENU DEBUG] Current user email:', user?.email);
+  console.log('🔐 [MENU DEBUG] Menu items count:', menuItems.length);
+  console.log('🔐 [MENU DEBUG] Has payments item:', menuItems.some(item => item.path === '/payments'));
   const [logoutUser] = useLogoutMutation()
   const dispatch = useDispatch()
   

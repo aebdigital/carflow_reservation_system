@@ -71,7 +71,7 @@ import { t } from '../utils/translations'
 
 function Contracts() {
   const [openDialog, setOpenDialog] = useState(false)
-  const [dialogMode, setDialogMode] = useState('create') // 'create', 'edit', 'view'
+  const [dialogMode, setDialogMode] = useState('create') // 'create', 'view'
   const [selectedContract, setSelectedContract] = useState(null)
   const [alert, setAlert] = useState(null)
   const [formData, setFormData] = useState({
@@ -267,7 +267,7 @@ function Contracts() {
         notes: '',
         status: 'draft'
       })
-    } else if (mode === 'edit' && contract) {
+    } else if (mode === 'view' && contract) {
       setFormData(contract)
     }
     
@@ -283,10 +283,45 @@ function Contracts() {
     const reservation = availableReservations.find(r => r._id === reservationId)
     if (reservation) {
       const days = Math.ceil((new Date(reservation.endDate) - new Date(reservation.startDate)) / (1000 * 60 * 60 * 24));
-      const dailyRate = reservation.car?.dailyRate || 0;
-      const subtotal = dailyRate * days;
-      const servicesTotal = 0; // Will be set manually
-      const totalAmount = subtotal + servicesTotal;
+      
+      // Calculate base rental cost
+      const dailyRate = reservation.pricing?.dailyRate || reservation.car?.pricing?.dailyRate || 0;
+      const rentalAmount = reservation.pricing?.totalAmount || (dailyRate * days);
+      
+      // Calculate additional services cost
+      let servicesTotal = 0;
+      const additionalServices = [];
+      
+      if (reservation.additionalServices && reservation.additionalServices.length > 0) {
+        reservation.additionalServices.forEach(service => {
+          const servicePrice = service.pricing?.amount || 0;
+          const serviceTotalPrice = service.pricing?.type === 'per_day' ? servicePrice * days : servicePrice;
+          servicesTotal += serviceTotalPrice;
+          
+          additionalServices.push({
+            name: service.name || 'Neznáma služba',
+            price: serviceTotalPrice,
+            type: service.pricing?.type || 'fixed'
+          });
+        });
+      }
+      
+      // Calculate insurance costs if any
+      if (reservation.insurance && reservation.insurance.length > 0) {
+        reservation.insurance.forEach(insurance => {
+          const insurancePrice = insurance.pricing?.amount || 0;
+          const insuranceTotalPrice = insurance.pricing?.type === 'per_day' ? insurancePrice * days : insurancePrice;
+          servicesTotal += insuranceTotalPrice;
+          
+          additionalServices.push({
+            name: insurance.name || 'Poistenie',
+            price: insuranceTotalPrice,
+            type: insurance.pricing?.type || 'fixed'
+          });
+        });
+      }
+      
+      const totalAmount = rentalAmount + servicesTotal;
 
       setFormData(prev => ({
         ...prev,
@@ -323,15 +358,15 @@ function Contracts() {
           returnLocation: reservation.dropoffLocation?.name || '',
           totalDays: days,
           dailyRate: dailyRate,
-          totalAmount: subtotal
+          totalAmount: rentalAmount
         },
         services: {
-          additionalServices: [],
-          servicesTotal: 0
+          additionalServices: additionalServices,
+          servicesTotal: servicesTotal
         },
         pricing: {
-          subtotal: subtotal,
-          servicesTotal: 0,
+          subtotal: rentalAmount,
+          servicesTotal: servicesTotal,
           totalAmount: totalAmount
         }
       }))
@@ -355,12 +390,6 @@ function Contracts() {
         console.log('Creating contract with data:', contractData);
         await createContract(contractData).unwrap()
         setAlert({ type: 'success', message: 'Zmluva bola úspešne vytvorená!' })
-      } else if (dialogMode === 'edit') {
-        // For edit mode, send the full formData but exclude reservationId
-        const { reservationId, ...updateData } = formData;
-        await updateContract({ id: selectedContract._id, ...updateData }).unwrap()
-        setAlert({ type: 'success', message: 'Zmluva bola úspešne aktualizovaná!' })
-      }
       
       handleCloseDialog()
       refetch()
@@ -668,15 +697,6 @@ function Contracts() {
                         <ViewIcon fontSize="small" />
                       </IconButton>
                           </Tooltip>
-                          <Tooltip title="Upraviť">
-                            <IconButton 
-                              size="small" 
-                              onClick={() => handleOpenDialog('edit', contract)}
-                              disabled={contract.status === 'signed'}
-                            >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                          </Tooltip>
                           <Tooltip title="Stiahnuť PDF">
                       <IconButton 
                         size="small" 
@@ -734,7 +754,6 @@ function Contracts() {
       >
         <DialogTitle>
           {dialogMode === 'create' && 'Nová zmluva'}
-          {dialogMode === 'edit' && 'Upraviť zmluvu'}
           {dialogMode === 'view' && 'Zobraziť zmluvu'}
         </DialogTitle>
         
@@ -1214,9 +1233,9 @@ function Contracts() {
               <Button 
                 type="submit" 
                 variant="contained" 
-                disabled={creating || updating}
+                disabled={creating}
               >
-                {creating || updating ? 'Ukladá sa...' : 'Uložiť'}
+                {creating ? 'Ukladá sa...' : 'Uložiť'}
               </Button>
           )}
         </DialogActions>

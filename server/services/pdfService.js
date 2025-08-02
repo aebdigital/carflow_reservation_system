@@ -8,6 +8,56 @@ class PDFService {
   }
 
   /**
+   * Normalize text to handle special characters properly
+   * @param {string} text - Input text
+   * @returns {string} Normalized text
+   */
+  normalizeText(text) {
+    if (!text || typeof text !== 'string') {
+      return '';
+    }
+    
+    // Handle common Slovak special characters
+    const charMap = {
+      'á': 'a', 'à': 'a', 'ä': 'a', 'â': 'a', 'ã': 'a', 'å': 'a',
+      'Á': 'A', 'À': 'A', 'Ä': 'A', 'Â': 'A', 'Ã': 'A', 'Å': 'A',
+      'é': 'e', 'è': 'e', 'ë': 'e', 'ê': 'e',
+      'É': 'E', 'È': 'E', 'Ë': 'E', 'Ê': 'E',
+      'í': 'i', 'ì': 'i', 'ï': 'i', 'î': 'i',
+      'Í': 'I', 'Ì': 'I', 'Ï': 'I', 'Î': 'I',
+      'ó': 'o', 'ò': 'o', 'ö': 'o', 'ô': 'o', 'õ': 'o',
+      'Ó': 'O', 'Ò': 'O', 'Ö': 'O', 'Ô': 'O', 'Õ': 'O',
+      'ú': 'u', 'ù': 'u', 'ü': 'u', 'û': 'u',
+      'Ú': 'U', 'Ù': 'U', 'Ü': 'U', 'Û': 'U',
+      'ý': 'y', 'ÿ': 'y',
+      'Ý': 'Y', 'Ÿ': 'Y',
+      'ľ': 'l', 'Ľ': 'L',
+      'ľ': 'l', 'Ľ': 'L',
+      'ň': 'n', 'Ň': 'N',
+      'ř': 'r', 'Ř': 'R',
+      'š': 's', 'Š': 'S',
+      'ť': 't', 'Ť': 'T',
+      'ž': 'z', 'Ž': 'Z',
+      'ĺ': 'l', 'Ĺ': 'L',
+      'ŕ': 'r', 'Ŕ': 'R',
+      'ô': 'o', 'Ô': 'O',
+      'č': 'c', 'Č': 'C',
+      'ď': 'd', 'Ď': 'D'
+    };
+    
+    // Replace special characters
+    let normalized = text;
+    for (const [special, replacement] of Object.entries(charMap)) {
+      normalized = normalized.replace(new RegExp(special, 'g'), replacement);
+    }
+    
+    // Remove any remaining non-ASCII characters that might cause issues
+    normalized = normalized.replace(/[^\x00-\x7F]/g, '?');
+    
+    return normalized;
+  }
+
+  /**
    * Generate filled rental agreement PDF
    * @param {Object} reservation - The reservation object
    * @param {Object} car - The car object
@@ -92,7 +142,7 @@ class PDFService {
       return customer.idNumber || customer.licenseNumber || 'Neuvedené';
     };
     
-    return {
+    const formData = {
       // Customer information - Slovak field names
       'meno_najomcu': `${customer.firstName || 'Neuvedené'} ${customer.lastName || 'Neuvedené'}`,
       'adresa_najomcu': formatAddress(customer.address),
@@ -123,6 +173,14 @@ class PDFService {
       'datum_vytvorenia': new Date().toLocaleDateString('sk-SK'),
       'stav_rezervacie': this.getStatusInSlovak(reservation.status)
     };
+    
+    // Apply text normalization to all string values
+    const normalizedFormData = {};
+    for (const [key, value] of Object.entries(formData)) {
+      normalizedFormData[key] = this.normalizeText(value);
+    }
+    
+    return normalizedFormData;
   }
 
   /**
@@ -227,14 +285,15 @@ class PDFService {
     // Add text to PDF
     for (const [key, position] of Object.entries(textPositions)) {
       if (formData[key]) {
-        firstPage.drawText(formData[key], {
+        const normalizedText = this.normalizeText(formData[key]);
+        firstPage.drawText(normalizedText, {
           x: position.x,
           y: position.y,
           size: 10,
           font: font,
           color: rgb(0, 0, 0)
         });
-        console.log(`✅ [PDF] Added text overlay '${key}' at (${position.x}, ${position.y}): ${formData[key]}`);
+        console.log(`✅ [PDF] Added text overlay '${key}' at (${position.x}, ${position.y}): ${normalizedText}`);
       }
     }
     

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import {
   Box,
   Grid,
@@ -15,6 +15,8 @@ import {
   TableRow,
   Paper,
   IconButton,
+  CircularProgress,
+  Alert,
 } from '@mui/material'
 import {
   DirectionsCar as CarIcon,
@@ -26,97 +28,12 @@ import {
 } from '@mui/icons-material'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { t } from '../utils/translations'
+import { 
+  useGetReservationsQuery, 
+  useGetCarsQuery, 
+  useGetUsersQuery 
+} from '../store/store'
 
-// Mock data for demo
-const statsData = [
-  {
-    title: t('monthlyRevenue'),
-    value: '127 580€',
-    change: '+12.5%',
-    icon: <RevenueIcon sx={{ fontSize: 40 }} />,
-    color: '#4caf50',
-    bgColor: '#e8f5e8',
-  },
-  {
-    title: t('activeReservations'),
-    value: '23',
-    change: '+5.2%',
-    icon: <ReservationIcon sx={{ fontSize: 40 }} />,
-    color: '#2196f3',
-    bgColor: '#e3f2fd',
-  },
-  {
-    title: t('available'),
-    value: '45',
-    change: '-2.1%',
-    icon: <CarIcon sx={{ fontSize: 40 }} />,
-    color: '#ff9800',
-    bgColor: '#fff3e0',
-  },
-  {
-    title: t('totalCustomers'),
-    value: '1,234',
-    change: '+8.7%',
-    icon: <CustomerIcon sx={{ fontSize: 40 }} />,
-    color: '#9c27b0',
-    bgColor: '#f3e5f5',
-  },
-]
-
-const revenueData = [
-  { month: 'Jan', revenue: 65000 },
-  { month: 'Feb', revenue: 59000 },
-  { month: 'Mar', revenue: 80000 },
-  { month: 'Apr', revenue: 81000 },
-  { month: 'Máj', revenue: 56000 },
-  { month: 'Jún', revenue: 87000 },
-]
-
-const fleetData = [
-  { name: t('available'), value: 45, color: '#4caf50' },
-  { name: t('booked'), value: 23, color: '#2196f3' },
-  { name: t('maintenance'), value: 7, color: '#ff9800' },
-  { name: t('outOfService'), value: 3, color: '#f44336' },
-]
-
-const recentReservations = [
-  {
-    id: 'RES001234',
-    customer: 'John Doe',
-    car: '2023 Toyota Camry',
-    startDate: '2024-01-15',
-    endDate: '2024-01-20',
-    status: 'confirmed',
-    amount: '380€',
-  },
-  {
-    id: 'RES001235',
-    customer: 'Jane Smith',
-    car: '2023 Honda Accord',
-    startDate: '2024-01-16',
-    endDate: '2024-01-18',
-    status: 'ongoing',
-    amount: '240€',
-  },
-  {
-    id: 'RES001236',
-    customer: 'Mike Johnson',
-    car: '2023 BMW X5',
-    startDate: '2024-01-17',
-    endDate: '2024-01-22',
-    status: 'pending',
-    amount: '950€',
-  },
-  {
-    id: 'RES001237',
-    customer: 'Sarah Wilson',
-    car: '2023 Mercedes C-Class',
-    startDate: '2024-01-18',
-    endDate: '2024-01-25',
-    status: 'confirmed',
-    amount: '1 260€',
-  },
-]
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -149,6 +66,119 @@ const getStatusText = (status) => {
 }
 
 function Dashboard() {
+  // API hooks to get real data
+  const { 
+    data: reservationsData, 
+    isLoading: reservationsLoading, 
+    error: reservationsError 
+  } = useGetReservationsQuery({ populate: 'customer,car' })
+  
+  const { 
+    data: carsData, 
+    isLoading: carsLoading, 
+    error: carsError 
+  } = useGetCarsQuery({})
+  
+  const { 
+    data: usersData, 
+    isLoading: usersLoading, 
+    error: usersError 
+  } = useGetUsersQuery({ role: 'customer' })
+
+  // Process real data
+  const dashboardData = useMemo(() => {
+    const reservations = reservationsData?.data || []
+    const cars = carsData?.data || []
+    const customers = usersData?.data || []
+
+    // Filter confirmed reservations only
+    const confirmedReservations = reservations.filter(res => res.status === 'confirmed')
+    const activeReservations = reservations.filter(res => ['confirmed', 'ongoing'].includes(res.status))
+    
+    // Calculate revenue from confirmed reservations
+    const monthlyRevenue = confirmedReservations.reduce((sum, res) => {
+      const amount = res.pricing?.totalAmount || 0
+      return sum + amount
+    }, 0)
+
+    // Calculate fleet stats
+    const availableCars = cars.filter(car => car.status === 'active').length
+    const carsInMaintenance = cars.filter(car => car.status === 'unavailable').length
+    const carsOutOfService = cars.filter(car => car.status === 'archived').length
+    const bookedCars = activeReservations.length
+
+    // Recent reservations (confirmed only, last 5)
+    const recentReservations = confirmedReservations
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 5)
+
+    return {
+      stats: {
+        monthlyRevenue,
+        activeReservations: confirmedReservations.length,
+        availableCars,
+        totalCustomers: customers.length
+      },
+      fleetData: [
+        { name: t('available'), value: availableCars, color: '#4caf50' },
+        { name: t('booked'), value: bookedCars, color: '#2196f3' },
+        { name: t('maintenance'), value: carsInMaintenance, color: '#ff9800' },
+        { name: t('outOfService'), value: carsOutOfService, color: '#f44336' },
+      ],
+      recentReservations
+    }
+  }, [reservationsData, carsData, usersData])
+
+  // Stats cards configuration
+  const statsData = [
+    {
+      title: t('monthlyRevenue'),
+      value: `${dashboardData.stats.monthlyRevenue.toFixed(0)}€`,
+      icon: <RevenueIcon sx={{ fontSize: 40 }} />,
+      color: '#4caf50',
+      bgColor: '#e8f5e8',
+    },
+    {
+      title: 'Potvrdené rezervácie',
+      value: dashboardData.stats.activeReservations.toString(),
+      icon: <ReservationIcon sx={{ fontSize: 40 }} />,
+      color: '#2196f3',
+      bgColor: '#e3f2fd',
+    },
+    {
+      title: t('available'),
+      value: dashboardData.stats.availableCars.toString(),
+      icon: <CarIcon sx={{ fontSize: 40 }} />,
+      color: '#ff9800',
+      bgColor: '#fff3e0',
+    },
+    {
+      title: t('totalCustomers'),
+      value: dashboardData.stats.totalCustomers.toString(),
+      icon: <CustomerIcon sx={{ fontSize: 40 }} />,
+      color: '#9c27b0',
+      bgColor: '#f3e5f5',
+    },
+  ]
+
+  // Loading state
+  if (reservationsLoading || carsLoading || usersLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  // Error state
+  if (reservationsError || carsError || usersError) {
+    return (
+      <Alert severity="error" sx={{ m: 3 }}>
+        Chyba pri načítavaní údajov: {reservationsError?.message || carsError?.message || usersError?.message}
+      </Alert>
+    )
+  }
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
@@ -189,59 +219,15 @@ function Dashboard() {
                     </Typography>
                   </Box>
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <TrendingUpIcon 
-                    sx={{ 
-                      fontSize: 16, 
-                      color: stat.change.startsWith('+') ? 'success.main' : 'error.main',
-                      mr: 0.5 
-                    }} 
-                  />
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      color: stat.change.startsWith('+') ? 'success.main' : 'error.main',
-                      fontWeight: 600 
-                    }}
-                  >
-                    {stat.change}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>
-                    {t('vsLastMonth')}
-                  </Typography>
-                </Box>
               </CardContent>
             </Card>
           </Grid>
         ))}
       </Grid>
 
-      {/* Charts */}
+      {/* Fleet Overview */}
       <Grid container spacing={3} sx={{ mb: 4, mt: 3 }}>
-        {/* Revenue Chart */}
-        <Grid item xs={12} md={8}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                {t('monthlyRevenue')}
-              </Typography>
-              <Box sx={{ height: 300, mt: 2 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={revenueData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => [`${value}€`, t('revenue')]} />
-                    <Bar dataKey="revenue" fill="#1976d2" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Fleet Overview */}
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
@@ -251,14 +237,14 @@ function Dashboard() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={fleetData}
+                      data={dashboardData.fleetData}
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
                       outerRadius={100}
                       dataKey="value"
                     >
-                      {fleetData.map((entry, index) => (
+                      {dashboardData.fleetData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -267,7 +253,7 @@ function Dashboard() {
                 </ResponsiveContainer>
               </Box>
               <Box sx={{ mt: 2 }}>
-                {fleetData.map((item, index) => (
+                {dashboardData.fleetData.map((item, index) => (
                   <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <Box
                       sx={{
@@ -292,7 +278,7 @@ function Dashboard() {
         </Grid>
       </Grid>
 
-      {/* Recent Reservations */}
+      {/* Recent Confirmed Reservations */}
       <Card sx={{ mt: 3 }}>
         <CardContent>
           <Box sx={{ 
@@ -304,7 +290,7 @@ function Dashboard() {
             gap: { xs: 1, sm: 0 }
           }}>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              {t('recentReservations')}
+              Nedávne potvrdené rezervácie
             </Typography>
             <Typography 
               variant="body2" 
@@ -314,77 +300,93 @@ function Dashboard() {
               {t('viewAll')}
             </Typography>
           </Box>
-          <TableContainer sx={{ 
-            overflowX: 'auto',
-            maxWidth: { xs: 'calc(100vw - 64px)', sm: '100%' },
-            width: '100%',
-            '&::-webkit-scrollbar': {
-              height: 8,
-            },
-            '&::-webkit-scrollbar-track': {
-              backgroundColor: '#f1f1f1',
-              borderRadius: 4,
-            },
-            '&::-webkit-scrollbar-thumb': {
-              backgroundColor: '#c1c1c1',
-              borderRadius: 4,
-            },
-            '&::-webkit-scrollbar-thumb:hover': {
-              backgroundColor: '#a8a8a8',
-            },
-          }}>
-            <Table sx={{ 
-              minWidth: { xs: 800, sm: 'auto' },
-              width: { xs: 800, sm: '100%' }
+          {dashboardData.recentReservations.length === 0 ? (
+            <Alert severity="info">
+              Žiadne potvrdené rezervácie neboli nájdené.
+            </Alert>
+          ) : (
+            <TableContainer sx={{ 
+              overflowX: 'auto',
+              maxWidth: { xs: 'calc(100vw - 64px)', sm: '100%' },
+              width: '100%',
+              '&::-webkit-scrollbar': {
+                height: 8,
+              },
+              '&::-webkit-scrollbar-track': {
+                backgroundColor: '#f1f1f1',
+                borderRadius: 4,
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: '#c1c1c1',
+                borderRadius: 4,
+              },
+              '&::-webkit-scrollbar-thumb:hover': {
+                backgroundColor: '#a8a8a8',
+              },
             }}>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>{t('reservationId')}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{t('customerName')}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{t('carDetails')}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{t('dateRange')}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{t('status')}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{t('amount')}</TableCell>
-                  <TableCell></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {recentReservations.map((reservation) => (
-                  <TableRow key={reservation.id}>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {reservation.id}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>{reservation.customer}</TableCell>
-                    <TableCell>{reservation.car}</TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {reservation.startDate} - {reservation.endDate}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={getStatusText(reservation.status)}
-                        size="small"
-                        color={getStatusColor(reservation.status)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {reservation.amount}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <IconButton size="small">
-                        <ViewIcon fontSize="small" />
-                      </IconButton>
-                    </TableCell>
+              <Table sx={{ 
+                minWidth: { xs: 800, sm: 'auto' },
+                width: { xs: 800, sm: '100%' }
+              }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600 }}>{t('reservationId')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{t('customerName')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{t('carDetails')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{t('dateRange')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{t('status')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{t('amount')}</TableCell>
+                    <TableCell></TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {dashboardData.recentReservations.map((reservation) => (
+                    <TableRow key={reservation._id}>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {reservation.reservationNumber || reservation._id.slice(-8).toUpperCase()}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {reservation.customer ? 
+                          `${reservation.customer.firstName} ${reservation.customer.lastName}` :
+                          'N/A'
+                        }
+                      </TableCell>
+                      <TableCell>
+                        {reservation.car ? 
+                          `${reservation.car.brand} ${reservation.car.model}` :
+                          'N/A'
+                        }
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {new Date(reservation.startDate).toLocaleDateString()} - {new Date(reservation.endDate).toLocaleDateString()}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={getStatusText(reservation.status)}
+                          size="small"
+                          color={getStatusColor(reservation.status)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {reservation.pricing?.totalAmount?.toFixed(0) || '0'}€
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <IconButton size="small">
+                          <ViewIcon fontSize="small" />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
         </CardContent>
       </Card>
     </Box>

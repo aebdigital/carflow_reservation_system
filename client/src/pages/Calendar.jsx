@@ -349,20 +349,6 @@ function Calendar() {
         </CardContent>
       </Card>
 
-      {/* Legend */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Legenda stavov
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Chip label={t('available')} color="success" size="small" />
-            <Chip label="Rezervované" color="primary" size="small" />
-            <Chip label={t('maintenance')} color="warning" size="small" />
-            <Chip label={t('outOfService')} color="error" size="small" />
-          </Box>
-        </CardContent>
-      </Card>
 
       {/* Loading/Error States */}
       {(carsLoading || reservationsLoading) && (
@@ -619,6 +605,21 @@ function Calendar() {
         </Card>
       )}
 
+      {/* Legend */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Legenda stavov
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Chip label={t('available')} color="success" size="small" />
+            <Chip label="Rezervované" color="primary" size="small" />
+            <Chip label={t('maintenance')} color="warning" size="small" />
+            <Chip label={t('outOfService')} color="error" size="small" />
+          </Box>
+        </CardContent>
+      </Card>
+
       {/* Summary Statistics */}
       <Grid container spacing={3} sx={{ mt: 3, ml: 0 }}>
         <Grid item xs={12} md={3}>
@@ -633,7 +634,7 @@ function Calendar() {
                     {cars.filter(car => car.status === 'active').length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Available Cars
+                    Dostupné autá
                   </Typography>
                 </Box>
               </Box>
@@ -652,7 +653,7 @@ function Calendar() {
                     {reservations.filter(res => ['confirmed', 'ongoing'].includes(res.status) && res.status !== 'cancelled').length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Active Reservations
+                    Aktívne rezervácie
                   </Typography>
                 </Box>
               </Box>
@@ -671,7 +672,7 @@ function Calendar() {
                     {cars.filter(car => car.status === 'unavailable').length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    In Maintenance
+                    V údržbe
                   </Typography>
                 </Box>
               </Box>
@@ -690,7 +691,7 @@ function Calendar() {
                     {cars.filter(car => car.status === 'archived').length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Out of Service
+                    Mimo prevádzky
                   </Typography>
                 </Box>
               </Box>

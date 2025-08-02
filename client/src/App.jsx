@@ -23,12 +23,18 @@ import CustomerPortal from './pages/CustomerPortal'
 import Layout from './components/Layout'
 
 // Protected Route Component
-const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+const ProtectedRoute = ({ children, allowedRoles = [], restrictedForUsers = [] }) => {
   const isAuthenticated = useSelector(selectIsAuthenticated)
   const { user } = useSelector((state) => state.auth)
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
+  }
+  
+  // Check if current user is restricted from accessing this route
+  if (restrictedForUsers.length > 0 && restrictedForUsers.includes(user?.email)) {
+    console.log('🔐 [ROUTE PROTECTION] Access denied for user:', user?.email);
+    return <Navigate to="/" replace />
   }
   
   // If roles are specified, check if user has required role
@@ -148,7 +154,14 @@ function App() {
         <Route path="additional-services" element={<AdditionalServices />} />
         <Route path="customers" element={<Customers />} />
         <Route path="calendar" element={<Calendar />} />
-        <Route path="payments" element={<Payments />} />
+        <Route 
+          path="payments" 
+          element={
+            <ProtectedRoute restrictedForUsers={['rival@test.sk']}>
+              <Payments />
+            </ProtectedRoute>
+          } 
+        />
         <Route path="campaigns" element={<Campaigns />} />
         <Route path="contracts" element={<Contracts />} />
         <Route path="website" element={<Website />} />
