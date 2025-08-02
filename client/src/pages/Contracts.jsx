@@ -390,6 +390,7 @@ function Contracts() {
         console.log('Creating contract with data:', contractData);
         await createContract(contractData).unwrap()
         setAlert({ type: 'success', message: 'Zmluva bola úspešne vytvorená!' })
+      }
       
       handleCloseDialog()
       refetch()

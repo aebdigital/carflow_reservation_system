@@ -52,7 +52,6 @@ import {
   useUpdateUserMutation,
   useDeleteUserMutation,
   useBlacklistUserMutation,
-  useUnblacklistUserMutation,
   useGetReservationsQuery
 } from '../store/store'
 import { useSelector } from 'react-redux'
