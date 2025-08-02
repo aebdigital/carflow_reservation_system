@@ -95,11 +95,30 @@ function Dashboard() {
     const confirmedReservations = reservations.filter(res => res.status === 'confirmed')
     const activeReservations = reservations.filter(res => ['confirmed', 'ongoing'].includes(res.status))
     
-    // Calculate revenue from confirmed reservations
+    // Calculate total revenue from confirmed reservations
     const monthlyRevenue = confirmedReservations.reduce((sum, res) => {
       const amount = res.pricing?.totalAmount || 0
       return sum + amount
     }, 0)
+
+    // Calculate monthly chart data (all 12 months with 0 fallback)
+    const currentYear = new Date().getFullYear()
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Máj', 'Jún', 'Júl', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
+    
+    // Group reservations by month
+    const monthlyRevenueData = Array.from({ length: 12 }, (_, index) => {
+      const monthRevenue = confirmedReservations
+        .filter(res => {
+          const resDate = new Date(res.createdAt)
+          return resDate.getFullYear() === currentYear && resDate.getMonth() === index
+        })
+        .reduce((sum, res) => sum + (res.pricing?.totalAmount || 0), 0)
+      
+      return {
+        month: monthNames[index],
+        revenue: monthRevenue
+      }
+    })
 
     // Calculate fleet stats
     const availableCars = cars.filter(car => car.status === 'active').length
@@ -125,6 +144,7 @@ function Dashboard() {
         { name: t('maintenance'), value: carsInMaintenance, color: '#ff9800' },
         { name: t('outOfService'), value: carsOutOfService, color: '#f44336' },
       ],
+      monthlyRevenueData,
       recentReservations
     }
   }, [reservationsData, carsData, usersData])
@@ -225,7 +245,7 @@ function Dashboard() {
         ))}
       </Grid>
 
-      {/* Fleet Overview */}
+      {/* Fleet Overview and Monthly Revenue */}
       <Grid container spacing={3} sx={{ mb: 4, mt: 3 }}>
         <Grid item xs={12} md={6}>
           <Card>
@@ -272,6 +292,42 @@ function Dashboard() {
                     </Typography>
                   </Box>
                 ))}
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                Mesačné tržby {new Date().getFullYear()}
+              </Typography>
+              <Box sx={{ height: 300, mt: 2 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={dashboardData.monthlyRevenueData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="month" 
+                      fontSize={12}
+                      tick={{ fill: '#666' }}
+                    />
+                    <YAxis 
+                      fontSize={12}
+                      tick={{ fill: '#666' }}
+                      tickFormatter={(value) => `${value}€`}
+                    />
+                    <Tooltip 
+                      formatter={(value) => [`${value}€`, 'Tržby']}
+                      labelStyle={{ color: '#333' }}
+                    />
+                    <Bar 
+                      dataKey="revenue" 
+                      fill="#2196f3" 
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
               </Box>
             </CardContent>
           </Card>
