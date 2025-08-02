@@ -245,8 +245,44 @@ function Dashboard() {
         ))}
       </Grid>
 
-      {/* Fleet Overview and Monthly Revenue */}
+      {/* Monthly Revenue and Fleet Overview */}
       <Grid container spacing={3} sx={{ mb: 4, mt: 3 }}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                Mesačné tržby {new Date().getFullYear()}
+              </Typography>
+              <Box sx={{ height: 300, mt: 2 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={dashboardData.monthlyRevenueData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="month" 
+                      fontSize={12}
+                      tick={{ fill: '#666' }}
+                    />
+                    <YAxis 
+                      fontSize={12}
+                      tick={{ fill: '#666' }}
+                      tickFormatter={(value) => `${value}€`}
+                    />
+                    <Tooltip 
+                      formatter={(value) => [`${value}€`, 'Tržby']}
+                      labelStyle={{ color: '#333' }}
+                    />
+                    <Bar 
+                      dataKey="revenue" 
+                      fill="#2196f3" 
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
@@ -292,42 +328,6 @@ function Dashboard() {
                     </Typography>
                   </Box>
                 ))}
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                Mesačné tržby {new Date().getFullYear()}
-              </Typography>
-              <Box sx={{ height: 300, mt: 2 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={dashboardData.monthlyRevenueData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="month" 
-                      fontSize={12}
-                      tick={{ fill: '#666' }}
-                    />
-                    <YAxis 
-                      fontSize={12}
-                      tick={{ fill: '#666' }}
-                      tickFormatter={(value) => `${value}€`}
-                    />
-                    <Tooltip 
-                      formatter={(value) => [`${value}€`, 'Tržby']}
-                      labelStyle={{ color: '#333' }}
-                    />
-                    <Bar 
-                      dataKey="revenue" 
-                      fill="#2196f3" 
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
               </Box>
             </CardContent>
           </Card>
