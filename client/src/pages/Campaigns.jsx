@@ -108,35 +108,9 @@ function Campaigns() {
   const { data: users, isLoading: usersLoading } = useGetUsersQuery()
   const [toggleEmailOptOut, { isLoading: isTogglingOptOut }] = useToggleUserEmailOptOutMutation()
 
-  // Mock data for campaigns
-  const campaigns = [
-    {
-      id: 1,
-      name: 'Letná akcia 2024',
-      subject: 'Špeciálne zľavy na letné prenájmy!',
-      targetCustomers: 'all',
-      status: 'sent',
-      sentDate: '2024-06-15',
-      recipientCount: 1234,
-    },
-    {
-      id: 2,
-      name: 'Nové autá v našej flote',
-      subject: 'Objavte naše najnovšie vozidlá',
-      targetCustomers: 'active',
-      status: 'scheduled',
-      scheduledDate: '2024-07-01',
-      recipientCount: 856,
-    },
-    {
-      id: 3,
-      name: 'Víkendová akcia',
-      subject: 'Zľava 20% na víkendové prenájmy',
-      targetCustomers: 'all',
-      status: 'draft',
-      recipientCount: 0,
-    },
-  ]
+  // Real campaigns data - currently no persistent storage for campaigns
+  // Campaigns are sent directly via mass email API, not stored
+  const campaigns = []
 
   // Combine customer data from Users and EmailSubscriptions
   const combinedEmailData = React.useMemo(() => {
@@ -613,43 +587,53 @@ function Campaigns() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {campaigns.map((campaign) => (
-                    <TableRow key={campaign.id}>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {campaign.name}
+                  {campaigns.length > 0 ? (
+                    campaigns.map((campaign) => (
+                      <TableRow key={campaign.id}>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {campaign.name}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>{campaign.subject}</TableCell>
+                        <TableCell>
+                          {campaign.targetCustomers === 'all' ? t('allCustomers') : t('activeCustomersOnly')}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={getStatusText(campaign.status)}
+                            size="small"
+                            color={getStatusColor(campaign.status)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {campaign.recipientCount > 0 ? campaign.recipientCount : '—'}
+                        </TableCell>
+                        <TableCell>
+                          {campaign.sentDate || campaign.scheduledDate || '—'}
+                        </TableCell>
+                        <TableCell>
+                          <IconButton size="small" onClick={() => handleOpenDialog('view', campaign)}>
+                            <ViewIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton size="small" onClick={() => handleOpenDialog('edit', campaign)}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton size="small" color="error">
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} sx={{ textAlign: 'center', py: 4 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Žiadne kampane neboli zatiaľ vytvorené. Použite tlačidlo "Vytvoriť kampaň" pre vytvorenie novej kampane.
                         </Typography>
                       </TableCell>
-                      <TableCell>{campaign.subject}</TableCell>
-                      <TableCell>
-                        {campaign.targetCustomers === 'all' ? t('allCustomers') : t('activeCustomersOnly')}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={getStatusText(campaign.status)}
-                          size="small"
-                          color={getStatusColor(campaign.status)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {campaign.recipientCount > 0 ? campaign.recipientCount : '—'}
-                      </TableCell>
-                      <TableCell>
-                        {campaign.sentDate || campaign.scheduledDate || '—'}
-                      </TableCell>
-                      <TableCell>
-                        <IconButton size="small" onClick={() => handleOpenDialog('view', campaign)}>
-                          <ViewIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton size="small" onClick={() => handleOpenDialog('edit', campaign)}>
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton size="small" color="error">
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
