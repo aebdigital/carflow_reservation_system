@@ -200,16 +200,24 @@ function Dashboard() {
   }
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center',
+      width: '100%',
+      maxWidth: '1400px',
+      margin: '0 auto',
+      px: 2
+    }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, textAlign: 'center' }}>
         {t('dashboard')}
       </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 4, textAlign: 'center' }}>
         Vitajte späť!
       </Typography>
 
       {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Grid container spacing={3} sx={{ mb: 4, justifyContent: 'center', width: '100%' }}>
         {statsData.map((stat, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
             <Card>
@@ -246,7 +254,7 @@ function Dashboard() {
       </Grid>
 
       {/* Monthly Revenue and Fleet Overview */}
-      <Grid container spacing={3} sx={{ mb: 4, mt: 3 }}>
+      <Grid container spacing={3} sx={{ mb: 4, mt: 3, justifyContent: 'center', width: '100%' }}>
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
@@ -335,7 +343,7 @@ function Dashboard() {
       </Grid>
 
       {/* Recent Confirmed Reservations */}
-      <Card sx={{ mt: 3 }}>
+      <Card sx={{ mt: 3, width: '100%', maxWidth: '1200px' }}>
         <CardContent>
           <Box sx={{ 
             display: 'flex', 
