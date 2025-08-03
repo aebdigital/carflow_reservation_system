@@ -1349,8 +1349,8 @@ function Reservations() {
         }}
       >
         <DialogTitle>
-          {dialogMode === 'create' ? 'Create New Reservation' : 
-           dialogMode === 'edit' ? 'Edit Reservation' : 'View Reservation'}
+          {dialogMode === 'create' ? 'Vytvoriť novú rezerváciu' : 
+           dialogMode === 'edit' ? 'Upraviť rezerváciu' : 'Zobraziť rezerváciu'}
         </DialogTitle>
         <DialogContent>
           {dialogMode === 'view' && selectedReservation ? (
@@ -1360,10 +1360,10 @@ function Reservations() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Box>
                   <Typography variant="h5" gutterBottom>
-                    Reservation #{selectedReservation.reservationNumber}
+                    Rezervácia #{selectedReservation.reservationNumber}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Created: {new Date(selectedReservation.createdAt).toLocaleString()}
+                    Vytvorené: {new Date(selectedReservation.createdAt).toLocaleString()}
                   </Typography>
                 </Box>
                 <Chip
@@ -1380,7 +1380,7 @@ function Reservations() {
                   <Card variant="outlined">
                     <CardContent>
                       <Typography variant="h6" gutterBottom color="primary">
-                        Customer Information
+                        Informácie o zákazníkovi
                       </Typography>
                       {selectedReservation.customer ? (
                         <>
@@ -1391,17 +1391,17 @@ function Reservations() {
                             Email: {selectedReservation.customer.email}
                           </Typography>
                           <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Phone: {selectedReservation.customer.phone || 'Not provided'}
+                            Telefón: {selectedReservation.customer.phone || 'Nie je uvedené'}
                           </Typography>
                           {selectedReservation.customer.licenseNumber && (
                             <Typography variant="body2" color="text.secondary">
-                              License: {selectedReservation.customer.licenseNumber}
+                              Vodičský preukaz: {selectedReservation.customer.licenseNumber}
                             </Typography>
                           )}
                         </>
                       ) : (
                         <Typography variant="body2" color="text.secondary">
-                          Customer information not available
+                          Informácie o zákazníkovi nie sú dostupné
                         </Typography>
                       )}
                     </CardContent>
@@ -1463,35 +1463,35 @@ function Reservations() {
                       {/* Status Timeline */}
                       <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
                         <Typography variant="caption" color="text.secondary" gutterBottom display="block">
-                          RESERVATION TIMELINE
+                          ČASOVÁ OSA REZERVÁCIE
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                           <Chip 
-                            label="Created" 
+                            label="Vytvorené" 
                             size="small" 
                             color="success" 
                             variant={selectedReservation.createdAt ? "filled" : "outlined"}
                           />
                           <Chip 
-                            label="Confirmed" 
+                            label="Potvrdené" 
                             size="small" 
                             color="info" 
                             variant={['confirmed', 'ongoing', 'completed'].includes(selectedReservation.status) ? "filled" : "outlined"}
                           />
                           <Chip 
-                            label="Check-in" 
+                            label="Prevzatie" 
                             size="small" 
                             color="primary" 
                             variant={selectedReservation.checkIn?.date ? "filled" : "outlined"}
                           />
                           <Chip 
-                            label="Check-out" 
+                            label="Vrátenie" 
                             size="small" 
                             color="primary" 
                             variant={selectedReservation.checkOut?.date ? "filled" : "outlined"}
                           />
                           <Chip 
-                            label="Completed" 
+                            label="Dokončené" 
                             size="small" 
                             color="success" 
                             variant={selectedReservation.status === 'completed' ? "filled" : "outlined"}
@@ -1657,23 +1657,23 @@ function Reservations() {
                     <Card variant="outlined">
                       <CardContent>
                         <Typography variant="h6" gutterBottom color="primary">
-                          Check-in Details
+                          Detaily prevzatia
                         </Typography>
                         <Typography variant="body2" gutterBottom>
-                          <strong>Date:</strong> {new Date(selectedReservation.checkIn.date).toLocaleString()}
+                          <strong>Dátum:</strong> {new Date(selectedReservation.checkIn.date).toLocaleString()}
                         </Typography>
                         <Typography variant="body2" gutterBottom>
-                          <strong>Mileage:</strong> {selectedReservation.checkIn.mileage || 'Not recorded'}
+                          <strong>Nájazd:</strong> {selectedReservation.checkIn.mileage || 'Nezaznamenané'} km
                         </Typography>
                         <Typography variant="body2" gutterBottom>
-                          <strong>Fuel Level:</strong> {selectedReservation.checkIn.fuelLevel || 'Not recorded'}
+                          <strong>Hladina paliva:</strong> {selectedReservation.checkIn.fuelLevel || 'Nezaznamenané'}
                         </Typography>
                         <Typography variant="body2" gutterBottom>
-                          <strong>Condition:</strong> {selectedReservation.checkIn.condition || 'Not recorded'}
+                          <strong>Stav vozidla:</strong> {selectedReservation.checkIn.condition || 'Nezaznamenané'}
                         </Typography>
                         {selectedReservation.checkIn.notes && (
                           <Typography variant="body2" gutterBottom>
-                            <strong>Notes:</strong> {selectedReservation.checkIn.notes}
+                            <strong>Poznámky:</strong> {selectedReservation.checkIn.notes}
                           </Typography>
                         )}
                       </CardContent>
@@ -1687,23 +1687,23 @@ function Reservations() {
                     <Card variant="outlined">
                       <CardContent>
                         <Typography variant="h6" gutterBottom color="primary">
-                          Check-out Details
+                          Detaily vrátenia
                         </Typography>
                         <Typography variant="body2" gutterBottom>
-                          <strong>Date:</strong> {new Date(selectedReservation.checkOut.date).toLocaleString()}
+                          <strong>Dátum:</strong> {new Date(selectedReservation.checkOut.date).toLocaleString()}
                         </Typography>
                         <Typography variant="body2" gutterBottom>
-                          <strong>Mileage:</strong> {selectedReservation.checkOut.mileage || 'Not recorded'}
+                          <strong>Nájazd:</strong> {selectedReservation.checkOut.mileage || 'Nezaznamenané'} km
                         </Typography>
                         <Typography variant="body2" gutterBottom>
-                          <strong>Fuel Level:</strong> {selectedReservation.checkOut.fuelLevel || 'Not recorded'}
+                          <strong>Hladina paliva:</strong> {selectedReservation.checkOut.fuelLevel || 'Nezaznamenané'}
                         </Typography>
                         <Typography variant="body2" gutterBottom>
-                          <strong>Condition:</strong> {selectedReservation.checkOut.condition || 'Not recorded'}
+                          <strong>Stav vozidla:</strong> {selectedReservation.checkOut.condition || 'Nezaznamenané'}
                         </Typography>
                         {selectedReservation.checkOut.notes && (
                           <Typography variant="body2" gutterBottom>
-                            <strong>Notes:</strong> {selectedReservation.checkOut.notes}
+                            <strong>Poznámky:</strong> {selectedReservation.checkOut.notes}
                           </Typography>
                         )}
                         {selectedReservation.checkOut.additionalCharges && selectedReservation.checkOut.additionalCharges.length > 0 && (
