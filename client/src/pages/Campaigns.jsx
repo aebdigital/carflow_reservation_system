@@ -592,10 +592,6 @@ function Campaigns() {
           </Grid>
         </Grid>
 
-        {/* Integration Notice */}
-        <Alert severity="success" sx={{ mb: 3 }}>
-          ✅ Hromadné e-maily sú funkčné! Použite tlačidlo "Vytvoriť kampaň" pre odoslanie e-mailu všetkým zákazníkom.
-        </Alert>
 
         {/* Campaigns Table */}
         <Card>
@@ -834,11 +830,6 @@ function Campaigns() {
                         <Tooltip title="Upraviť">
                           <IconButton size="small" onClick={() => handleOpenEmailDialog('edit', email)}>
                             <EditIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Deaktivovať">
-                          <IconButton size="small" color="error">
-                            <BlockIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                       </TableCell>
