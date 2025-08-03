@@ -202,31 +202,33 @@ function Cars() {
     setSnackbar(prev => ({ ...prev, open: false }))
   }
 
-  // Get actual categories from the cars data
-  const getActualCategories = () => {
-    const categoriesFromCars = [...new Set(cars.map(car => car.category))].filter(Boolean)
-    
-    // Create options using actual categories with fallback display names
-    return categoriesFromCars.map(category => ({
-      value: category,
-      label: t(category.toLowerCase()) || category
-    }))
-  }
-  
-  const categoryOptions = getActualCategories()
-
-  // Fuel type options
-  const fuelTypeOptions = [
-    { value: 'gasoline', label: t('gasoline') },
-    { value: 'diesel', label: t('diesel') },
-    { value: 'hybrid', label: t('hybrid') },
-    { value: 'electric', label: t('electric') }
+  // Use the same category options as the car form to ensure consistency
+  const categoryOptions = [
+    { value: 'economy', label: 'Ekonomická trieda' },
+    { value: 'compact', label: 'Kompaktné vozidlá' },
+    { value: 'midsize', label: 'Stredná trieda' },
+    { value: 'fullsize', label: 'Vyššia trieda' },
+    { value: 'luxury', label: 'Luxusné vozidlá' },
+    { value: 'suv', label: 'SUV' },
+    { value: 'minivan', label: 'Viacmiestne vozidlá' },
+    { value: 'utility', label: 'Úžitkové vozidlá' },
+    { value: 'caravan', label: 'Karavany' },
+    { value: 'motorcycle', label: 'Motorky' },
   ]
 
-  // Transmission options
+  // Fuel type options - match exactly with car form
+  const fuelTypeOptions = [
+    { value: 'gasoline', label: 'Benzín' },
+    { value: 'diesel', label: 'Diesel' },
+    { value: 'hybrid', label: 'Hybrid' },
+    { value: 'electric', label: 'Elektro' },
+    { value: 'lpg', label: 'Plyn (LPG)' }
+  ]
+
+  // Transmission options - match exactly with car form
   const transmissionOptions = [
-    { value: 'manual', label: t('manual') },
-    { value: 'automatic', label: t('automatic') },
+    { value: 'manual', label: 'Manuálna' },
+    { value: 'automatic', label: 'Automatická' },
     { value: 'cvt', label: 'CVT' }
   ]
 
