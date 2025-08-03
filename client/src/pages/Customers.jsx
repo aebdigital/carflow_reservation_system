@@ -832,21 +832,6 @@ function Customers() {
                   required
                 />
               </Grid>
-              {dialogMode === 'create' && (
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Heslo"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    disabled={dialogMode === 'view'}
-                    error={!!formErrors.password}
-                    helperText={formErrors.password}
-                    required
-                  />
-                </Grid>
-              )}
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
