@@ -30,6 +30,7 @@ const {
   getPickupLocationsByUser,
   getCarEquipmentByUser,
   getCarBadgesByUser,
+  getCarExtendedInsuranceByUser,
   getCarSpecificationsByUser,
   getCarPricingByUser,
   getCarBrandsByUser,
@@ -98,6 +99,7 @@ router.get('/users/:email/cars/:carId/availability', getCarAvailabilityByUser); 
 router.get('/users/:email/cars/:carId/calendar', getCarCalendarByUser); // Get car booking calendar
 router.get('/users/:email/cars/:carId/equipment', getCarEquipmentByUser); // Get car equipment only
 router.get('/users/:email/cars/:carId/badges', getCarBadgesByUser); // Get car badges only
+router.get('/users/:email/cars/:carId/extended-insurance', getCarExtendedInsuranceByUser); // Get car extended insurance options only
 router.get('/users/:email/cars/:carId/specifications', getCarSpecificationsByUser); // Get car specifications only
 router.get('/users/:email/cars/:carId/pricing', getCarPricingByUser); // Get car pricing only
 router.get('/users/:email/cars/:carId', getCarByUser); // Get single car for tenant

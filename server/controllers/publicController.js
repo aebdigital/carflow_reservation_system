@@ -3454,6 +3454,58 @@ const getCarBadgesByUser = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Get car extended insurance options only
+// @route   GET /api/public/users/:email/cars/:carId/extended-insurance
+// @access  Public
+const getCarExtendedInsuranceByUser = asyncHandler(async (req, res, next) => {
+  const { email, carId } = req.params;
+  
+  try {
+    const tenantId = await getTenantByUserEmail(email);
+    
+    const car = await Car.findOne({
+      _id: carId,
+      tenantId,
+      isActive: true,
+      status: 'active'
+    }).select('addons brand model year');
+    
+    if (!car) {
+      return next(new AppError('Car not found', 404));
+    }
+    
+    // Filter addons to only include insurance-related ones
+    const extendedInsurance = car.addons ? car.addons.filter(addon => 
+      addon.isAvailable && 
+      addon.name && 
+      (addon.name.toLowerCase().includes('poistenie') || 
+       addon.name.toLowerCase().includes('insurance'))
+    ) : [];
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        carId: car._id,
+        carInfo: {
+          brand: car.brand,
+          model: car.model,
+          year: car.year
+        },
+        extendedInsurance: extendedInsurance.map(insurance => ({
+          _id: insurance._id,
+          name: insurance.name,
+          description: insurance.description,
+          price: insurance.price,
+          unit: insurance.unit
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getting car extended insurance:', error);
+    return next(new AppError('Error retrieving car extended insurance', 500));
+  }
+});
+
 // @desc    Get car specifications only
 // @route   GET /api/public/users/:email/cars/:carId/specifications
 // @access  Public
@@ -4077,6 +4129,7 @@ module.exports = {
   getPickupLocationsByUser,
   getCarEquipmentByUser,
   getCarBadgesByUser,
+  getCarExtendedInsuranceByUser,
   getCarSpecificationsByUser,
   getCarPricingByUser,
   getCarBrandsByUser,

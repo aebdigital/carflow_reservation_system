@@ -328,12 +328,48 @@ const createCar = asyncHandler(async (req, res, next) => {
         delete req.body['equipment[]'];
       }
 
-      // Handle badges array
+      // Handle badges array - support both old and new format
       if (req.body['badges[]']) {
+        // Old format: simple array
         req.body.badges = Array.isArray(req.body['badges[]']) 
           ? req.body['badges[]'] 
           : [req.body['badges[]']];
         delete req.body['badges[]'];
+      } else {
+        // New format: structured badge objects
+        const badges = [];
+        let badgeIndex = 0;
+        
+        while (req.body[`badges[${badgeIndex}][text]`]) {
+          const badge = {
+            text: req.body[`badges[${badgeIndex}][text]`],
+            type: req.body[`badges[${badgeIndex}][type]`] || 'corner',
+            style: {
+              backgroundColor: req.body[`badges[${badgeIndex}][style][backgroundColor]`] || '#ff4444',
+              textColor: req.body[`badges[${badgeIndex}][style][textColor]`] || '#ffffff',
+              position: req.body[`badges[${badgeIndex}][style][position]`] || 'top-right'
+            },
+            priority: parseInt(req.body[`badges[${badgeIndex}][priority]`]) || 0,
+            isActive: req.body[`badges[${badgeIndex}][isActive]`] !== 'false'
+          };
+          
+          badges.push(badge);
+          
+          // Clean up the individual fields
+          delete req.body[`badges[${badgeIndex}][text]`];
+          delete req.body[`badges[${badgeIndex}][type]`];
+          delete req.body[`badges[${badgeIndex}][style][backgroundColor]`];
+          delete req.body[`badges[${badgeIndex}][style][textColor]`];
+          delete req.body[`badges[${badgeIndex}][style][position]`];
+          delete req.body[`badges[${badgeIndex}][priority]`];
+          delete req.body[`badges[${badgeIndex}][isActive]`];
+          
+          badgeIndex++;
+        }
+        
+        if (badges.length > 0) {
+          req.body.badges = badges;
+        }
       }
 
       // Handle addons array
@@ -1130,13 +1166,50 @@ const updateCar = asyncHandler(async (req, res, next) => {
         delete req.body['equipment[]'];
       }
 
-      // Handle badges array
+      // Handle badges array - support both old and new format
       if (req.body['badges[]']) {
-        console.log('🚗 [CAR UPDATE] Step 4i: Processing badges array...');
+        console.log('🚗 [CAR UPDATE] Step 4i: Processing badges array (old format)...');
         req.body.badges = Array.isArray(req.body['badges[]']) 
           ? req.body['badges[]'] 
           : [req.body['badges[]']];
         delete req.body['badges[]'];
+      } else {
+        // New format: structured badge objects
+        console.log('🚗 [CAR UPDATE] Step 4i: Processing badges array (new format)...');
+        const badges = [];
+        let badgeIndex = 0;
+        
+        while (req.body[`badges[${badgeIndex}][text]`]) {
+          const badge = {
+            text: req.body[`badges[${badgeIndex}][text]`],
+            type: req.body[`badges[${badgeIndex}][type]`] || 'corner',
+            style: {
+              backgroundColor: req.body[`badges[${badgeIndex}][style][backgroundColor]`] || '#ff4444',
+              textColor: req.body[`badges[${badgeIndex}][style][textColor]`] || '#ffffff',
+              position: req.body[`badges[${badgeIndex}][style][position]`] || 'top-right'
+            },
+            priority: parseInt(req.body[`badges[${badgeIndex}][priority]`]) || 0,
+            isActive: req.body[`badges[${badgeIndex}][isActive]`] !== 'false'
+          };
+          
+          badges.push(badge);
+          
+          // Clean up the individual fields
+          delete req.body[`badges[${badgeIndex}][text]`];
+          delete req.body[`badges[${badgeIndex}][type]`];
+          delete req.body[`badges[${badgeIndex}][style][backgroundColor]`];
+          delete req.body[`badges[${badgeIndex}][style][textColor]`];
+          delete req.body[`badges[${badgeIndex}][style][position]`];
+          delete req.body[`badges[${badgeIndex}][priority]`];
+          delete req.body[`badges[${badgeIndex}][isActive]`];
+          
+          badgeIndex++;
+        }
+        
+        if (badges.length > 0) {
+          console.log(`🚗 [CAR UPDATE] Processed ${badges.length} badges:`, badges);
+          req.body.badges = badges;
+        }
       }
 
       // Handle addons array

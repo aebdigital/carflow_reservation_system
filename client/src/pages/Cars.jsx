@@ -791,9 +791,20 @@ function Cars() {
               }
             });
           } else if (key === 'badges') {
-            // Handle badges array
-            formData[key].forEach(badge => {
-              formDataToSend.append('badges[]', badge);
+            // Handle badges array - serialize badge objects properly
+            formData[key].forEach((badge, index) => {
+              if (typeof badge === 'object' && badge !== null) {
+                formDataToSend.append(`badges[${index}][text]`, badge.text || '');
+                formDataToSend.append(`badges[${index}][type]`, badge.type || 'corner');
+                formDataToSend.append(`badges[${index}][style][backgroundColor]`, badge.style?.backgroundColor || '#ff4444');
+                formDataToSend.append(`badges[${index}][style][textColor]`, badge.style?.textColor || '#ffffff');
+                formDataToSend.append(`badges[${index}][style][position]`, badge.style?.position || 'top-right');
+                formDataToSend.append(`badges[${index}][priority]`, badge.priority || 0);
+                formDataToSend.append(`badges[${index}][isActive]`, badge.isActive !== false);
+              } else {
+                // Fallback for simple string badges
+                formDataToSend.append('badges[]', badge);
+              }
             });
           } else if (key === 'damages') {
             // Handle damages array - filter out empty/invalid damages
@@ -887,9 +898,20 @@ function Cars() {
                 }
               });
             } else if (key === 'badges') {
-              // Handle badges array
-              formData[key].forEach(badge => {
-                formDataToSend.append('badges[]', badge);
+              // Handle badges array - serialize badge objects properly
+              formData[key].forEach((badge, index) => {
+                if (typeof badge === 'object' && badge !== null) {
+                  formDataToSend.append(`badges[${index}][text]`, badge.text || '');
+                  formDataToSend.append(`badges[${index}][type]`, badge.type || 'corner');
+                  formDataToSend.append(`badges[${index}][style][backgroundColor]`, badge.style?.backgroundColor || '#ff4444');
+                  formDataToSend.append(`badges[${index}][style][textColor]`, badge.style?.textColor || '#ffffff');
+                  formDataToSend.append(`badges[${index}][style][position]`, badge.style?.position || 'top-right');
+                  formDataToSend.append(`badges[${index}][priority]`, badge.priority || 0);
+                  formDataToSend.append(`badges[${index}][isActive]`, badge.isActive !== false);
+                } else {
+                  // Fallback for simple string badges
+                  formDataToSend.append('badges[]', badge);
+                }
               });
             } else if (key === 'damages') {
               // Handle damages array - filter out empty/invalid damages
@@ -972,9 +994,20 @@ function Cars() {
                 }
               });
             } else if (key === 'badges') {
-              // Handle badges array
-              formData[key].forEach(badge => {
-                formDataToSend.append('badges[]', badge);
+              // Handle badges array - serialize badge objects properly
+              formData[key].forEach((badge, index) => {
+                if (typeof badge === 'object' && badge !== null) {
+                  formDataToSend.append(`badges[${index}][text]`, badge.text || '');
+                  formDataToSend.append(`badges[${index}][type]`, badge.type || 'corner');
+                  formDataToSend.append(`badges[${index}][style][backgroundColor]`, badge.style?.backgroundColor || '#ff4444');
+                  formDataToSend.append(`badges[${index}][style][textColor]`, badge.style?.textColor || '#ffffff');
+                  formDataToSend.append(`badges[${index}][style][position]`, badge.style?.position || 'top-right');
+                  formDataToSend.append(`badges[${index}][priority]`, badge.priority || 0);
+                  formDataToSend.append(`badges[${index}][isActive]`, badge.isActive !== false);
+                } else {
+                  // Fallback for simple string badges
+                  formDataToSend.append('badges[]', badge);
+                }
               });
             } else if (key === 'damages') {
               // Handle damages array - filter out empty/invalid damages

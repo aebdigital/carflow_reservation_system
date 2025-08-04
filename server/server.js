@@ -30,6 +30,7 @@ const emailSubscriptionRoutes = require('./routes/emailSubscriptions');
 const settingsRoutes = require('./routes/settingsRoutes');
 const testRoutes = require('./routes/testRoutes');
 const krosTestRoutes = require('./routes/krosTestRoutes');
+const carServicesRoutes = require('./routes/carServices');
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
@@ -147,6 +148,7 @@ connectDB();
 app.use('/api/public', publicLimiter, publicRoutes); // Public routes (no auth required)
 app.use('/api/auth', authRoutes);
 app.use('/api/cars', carRoutes);
+app.use('/api/cars', carServicesRoutes); // Car services: extended insurance, equipment, badges
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
