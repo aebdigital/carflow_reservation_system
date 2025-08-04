@@ -371,6 +371,18 @@ const createCar = asyncHandler(async (req, res, next) => {
           req.body.badges = badges;
         }
       }
+      
+      // Check for problematic badge data and clean it up
+      if (req.body.badges && Array.isArray(req.body.badges)) {
+        const cleanBadges = req.body.badges.filter(badge => {
+          if (typeof badge === 'string' && badge === '[object Object]') {
+            console.log('🚗 [CAR CREATE] Filtering out [object Object] badge');
+            return false;
+          }
+          return true;
+        });
+        req.body.badges = cleanBadges;
+      }
 
       // Handle addons array
       if (req.body['addons[]']) {
@@ -1210,6 +1222,18 @@ const updateCar = asyncHandler(async (req, res, next) => {
           console.log(`🚗 [CAR UPDATE] Processed ${badges.length} badges:`, badges);
           req.body.badges = badges;
         }
+      }
+      
+      // Check for problematic badge data and clean it up
+      if (req.body.badges && Array.isArray(req.body.badges)) {
+        const cleanBadges = req.body.badges.filter(badge => {
+          if (typeof badge === 'string' && badge === '[object Object]') {
+            console.log('🚗 [CAR UPDATE] Filtering out [object Object] badge');
+            return false;
+          }
+          return true;
+        });
+        req.body.badges = cleanBadges;
       }
 
       // Handle addons array

@@ -21,7 +21,7 @@ const {
   deleteCarBadge
 } = require('../controllers/carServicesController');
 
-const { protect, restrictTo } = require('../middleware/auth');
+const { protect, restrictTo } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
