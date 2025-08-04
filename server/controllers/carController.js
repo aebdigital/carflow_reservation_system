@@ -96,6 +96,8 @@ const getCar = asyncHandler(async (req, res, next) => {
     return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
   }
 
+  console.log('🚗 [GET CAR] Returning car badges:', car.badges);
+  
   res.status(200).json({
     success: true,
     data: car
@@ -1219,8 +1221,10 @@ const updateCar = asyncHandler(async (req, res, next) => {
         }
         
         if (badges.length > 0) {
-          console.log(`🚗 [CAR UPDATE] Processed ${badges.length} badges:`, badges);
+          console.log(`🚗 [CAR UPDATE] ✅ BADGE PROCESSING: Processed ${badges.length} badges:`, JSON.stringify(badges, null, 2));
           req.body.badges = badges;
+        } else {
+          console.log('🚗 [CAR UPDATE] ❌ BADGE PROCESSING: No badges processed from new format');
         }
       }
       
@@ -1576,6 +1580,8 @@ const updateCar = asyncHandler(async (req, res, next) => {
     console.log('🚗 [CAR UPDATE] req.body.mileage JSON:', JSON.stringify(req.body.mileage, null, 2));
     console.log('🚗 [CAR UPDATE] ===================================');
     console.log('🚗 [CAR UPDATE] Step 8: Attempting to update car...');
+    console.log('🚗 [CAR UPDATE] 🏷️ FINAL BADGE DATA TO SAVE:', JSON.stringify(req.body.badges, null, 2));
+    console.log('🚗 [CAR UPDATE] 📦 Complete req.body keys before save:', Object.keys(req.body));
 
     try {
       console.log('🚗 [CAR UPDATE] Step 8a: Inside try block, calling findOneAndUpdate...');
@@ -1594,6 +1600,8 @@ const updateCar = asyncHandler(async (req, res, next) => {
       }
       
       console.log('🚗 [CAR UPDATE] Step 8b: Car updated successfully! ID:', car._id);
+      console.log('🚗 [CAR UPDATE] 🏷️ BADGES SAVED TO DATABASE:', JSON.stringify(car.badges, null, 2));
+      console.log('🚗 [CAR UPDATE] 🏷️ Badge count in saved car:', car.badges?.length || 0);
       
       // Handle equipment icon uploads if any
       console.log('🚗 [CAR UPDATE] Step 8c: Processing equipment icons...');
