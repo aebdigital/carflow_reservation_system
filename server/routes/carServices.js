@@ -21,7 +21,7 @@ const {
   deleteCarBadge
 } = require('../controllers/carServicesController');
 
-const { protect, restrictTo } = require('../middleware/authMiddleware');
+const { protect, requireStaff } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -33,46 +33,46 @@ router.use(protect);
 // ========================================
 
 // Get all extended insurance options across all cars
-router.get('/extended-insurance', restrictTo('admin', 'staff'), getExtendedInsuranceOptions);
+router.get('/extended-insurance', requireStaff, getExtendedInsuranceOptions);
 
 // Car-specific extended insurance routes
 router.route('/:carId/extended-insurance')
-  .post(restrictTo('admin', 'staff'), addExtendedInsurance);
+  .post(requireStaff, addExtendedInsurance);
 
 router.route('/:carId/extended-insurance/:insuranceId')
-  .put(restrictTo('admin', 'staff'), updateExtendedInsurance)
-  .delete(restrictTo('admin', 'staff'), deleteExtendedInsurance);
+  .put(requireStaff, updateExtendedInsurance)
+  .delete(requireStaff, deleteExtendedInsurance);
 
 // ========================================
 // EQUIPMENT ROUTES (Výbavy)
 // ========================================
 
 // Get all equipment across all cars
-router.get('/equipment', restrictTo('admin', 'staff'), getAllEquipment);
+router.get('/equipment', requireStaff, getAllEquipment);
 
 // Car-specific equipment routes
 router.route('/:carId/equipment')
-  .get(restrictTo('admin', 'staff'), getCarEquipment)
-  .post(restrictTo('admin', 'staff'), addCarEquipment);
+  .get(requireStaff, getCarEquipment)
+  .post(requireStaff, addCarEquipment);
 
 router.route('/:carId/equipment/:equipmentId')
-  .put(restrictTo('admin', 'staff'), updateCarEquipment)
-  .delete(restrictTo('admin', 'staff'), deleteCarEquipment);
+  .put(requireStaff, updateCarEquipment)
+  .delete(requireStaff, deleteCarEquipment);
 
 // ========================================
 // BADGES ROUTES (Značky)
 // ========================================
 
 // Get all badges across all cars
-router.get('/badges', restrictTo('admin', 'staff'), getAllBadges);
+router.get('/badges', requireStaff, getAllBadges);
 
 // Car-specific badge routes
 router.route('/:carId/badges')
-  .get(restrictTo('admin', 'staff'), getCarBadges)
-  .post(restrictTo('admin', 'staff'), addCarBadge);
+  .get(requireStaff, getCarBadges)
+  .post(requireStaff, addCarBadge);
 
 router.route('/:carId/badges/:badgeId')
-  .put(restrictTo('admin', 'staff'), updateCarBadge)
-  .delete(restrictTo('admin', 'staff'), deleteCarBadge);
+  .put(requireStaff, updateCarBadge)
+  .delete(requireStaff, deleteCarBadge);
 
 module.exports = router;
