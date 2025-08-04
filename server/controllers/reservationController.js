@@ -690,6 +690,37 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
 
   await reservation.save();
 
+  // 🔖 Automatically create contract when reservation is confirmed
+  try {
+    const Contract = require('../models/Contract');
+    
+    console.log('🔖 [AUTO CONTRACT] Checking if contract exists for reservation:', reservation._id);
+    
+    // Check if contract already exists
+    const existingContract = await Contract.findOne({
+      reservation: reservation._id,
+      tenantId: req.user.tenantId
+    });
+    
+    if (!existingContract) {
+      console.log('🔖 [AUTO CONTRACT] Creating automatic contract for confirmed reservation:', reservation._id);
+      
+      // Create contract automatically
+      const contract = await Contract.createFromReservation(
+        reservation._id,
+        req.user.tenantId,
+        req.user._id
+      );
+      
+      console.log('✅ [AUTO CONTRACT] Contract created automatically with ID:', contract._id);
+    } else {
+      console.log('ℹ️ [AUTO CONTRACT] Contract already exists for reservation:', reservation._id);
+    }
+  } catch (contractError) {
+    console.error('❌ [AUTO CONTRACT] Failed to create automatic contract:', contractError.message);
+    // Don't fail the confirmation if contract creation fails
+  }
+
   // 📧 Send customer confirmation email using new template system
   try {
     const emailService = require('../services/emailService');
