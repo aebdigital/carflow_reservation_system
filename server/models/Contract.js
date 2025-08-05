@@ -454,7 +454,12 @@ contractSchema.statics.createFromReservation = async function(reservationId, ten
   console.log('🔖 [CONTRACT MODEL] Contract data prepared:', JSON.stringify(contractData, null, 2));
   console.log('🔖 [CONTRACT MODEL] ✅ Customer (zákazník) successfully mapped from reservation');
   
-  return new this(contractData);
+  const contract = new this(contractData);
+  await contract.save();
+  
+  console.log('🔖 [CONTRACT MODEL] ✅ Contract saved to database with ID:', contract._id);
+  
+  return contract;
 };
 
 module.exports = mongoose.model('Contract', contractSchema); 
