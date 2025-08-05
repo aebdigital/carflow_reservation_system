@@ -51,7 +51,13 @@ class PDFService {
       normalized = normalized.replace(new RegExp(special, 'g'), replacement);
     }
     
-    // Remove any remaining non-ASCII characters that might cause issues
+    // Don't replace characters in text that looks like numbers, prices, dates, or IDs
+    // This prevents question marks in prices like "50.00 €" or dates like "31.12.2024"
+    if (/^[\d.,\-\/\s€$]+$/.test(text) || /^\d+[\w\d\-]*$/.test(text)) {
+      return text; // Return original for numeric/currency/date/ID patterns
+    }
+    
+    // Remove any remaining non-ASCII characters that might cause issues (only for text fields)
     normalized = normalized.replace(/[^\x00-\x7F]/g, '?');
     
     return normalized;
@@ -118,10 +124,20 @@ class PDFService {
     const endDate = new Date(reservation.endDate);
     const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
     
-    // Calculate pricing
+    // Calculate pricing - use actual dynamic pricing
     const basePrice = reservation.pricing?.subtotal || 0;
     const additionalServices = reservation.pricing?.fees?.reduce((sum, fee) => sum + fee.amount, 0) || 0;
     const totalPrice = reservation.pricing?.totalAmount || 0;
+    
+    // Calculate actual daily rate from total pricing (more accurate than stored dailyRate)
+    const actualDailyRate = days > 0 ? (basePrice / days) : (reservation.pricing?.dailyRate || 0);
+    
+    console.log('💰 [PDF PRICING] Days:', days);
+    console.log('💰 [PDF PRICING] Base price:', basePrice);
+    console.log('💰 [PDF PRICING] Stored daily rate:', reservation.pricing?.dailyRate);
+    console.log('💰 [PDF PRICING] Calculated daily rate:', actualDailyRate);
+    console.log('💰 [PDF PRICING] Additional services:', additionalServices);
+    console.log('💰 [PDF PRICING] Total price:', totalPrice);
     
     // Customer address formatting for Slovak format
     const formatAddress = (address) => {
@@ -161,8 +177,8 @@ class PDFService {
       'zaciatok_najmu': startDate.toLocaleDateString('sk-SK'),
       'koniec_najmu': endDate.toLocaleDateString('sk-SK'),
       
-      // Pricing
-      'denna_sadzba': `${reservation.pricing?.dailyRate || 0} €`,
+      // Pricing - use calculated dynamic daily rate
+      'denna_sadzba': `${actualDailyRate.toFixed(2)} €`,
       'pocet_dni': days.toString(),
       'cena_bez_depozitu': `${basePrice.toFixed(2)} €`,
       'sluzby_priplatky': `${additionalServices.toFixed(2)} €`,
