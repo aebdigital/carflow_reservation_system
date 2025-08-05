@@ -275,6 +275,13 @@ const EnhancedCarForm = ({
 
   // Handle form field changes - memoized to prevent re-renders
   const handleChange = useCallback((field, value, nestedField = null) => {
+    if (field === 'badges') {
+      console.log('🏷️ [HANDLE CHANGE] Updating badges field');
+      console.log('🏷️ [HANDLE CHANGE] New badges value:', JSON.stringify(value, null, 2));
+      console.log('🏷️ [HANDLE CHANGE] Value type:', typeof value);
+      console.log('🏷️ [HANDLE CHANGE] Value length:', value?.length);
+    }
+    
     if (nestedField) {
       setFormData(prev => ({
         ...prev,
@@ -285,6 +292,13 @@ const EnhancedCarForm = ({
       }));
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
+    }
+    
+    if (field === 'badges') {
+      // Log after state update (in next tick)
+      setTimeout(() => {
+        console.log('🏷️ [HANDLE CHANGE] Form state updated, checking formData.badges...');
+      }, 0);
     }
   }, []);
 
@@ -1917,6 +1931,9 @@ const EnhancedCarForm = ({
                         isActive: true
                       };
                       const newBadges = [...(formData.badges || []), newBadge];
+                      console.log('🏷️ [BADGE ADD] Adding new badge:', newBadge);
+                      console.log('🏷️ [BADGE ADD] Current badges before add:', formData.badges);
+                      console.log('🏷️ [BADGE ADD] New badges array:', newBadges);
                       handleChange('badges', newBadges);
                     }}
                     size="small"
@@ -1959,7 +1976,13 @@ const EnhancedCarForm = ({
                           const badgeExists = existingBadges.some(b => b.text === badge.text);
                           
                           if (!badgeExists) {
-                            handleChange('badges', [...existingBadges, newBadge]);
+                            console.log('🏷️ [QUICK BADGE] Adding quick badge:', newBadge);
+                            console.log('🏷️ [QUICK BADGE] Current badges before add:', existingBadges);
+                            const updatedBadges = [...existingBadges, newBadge];
+                            console.log('🏷️ [QUICK BADGE] Updated badges array:', updatedBadges);
+                            handleChange('badges', updatedBadges);
+                          } else {
+                            console.log('🏷️ [QUICK BADGE] Badge already exists:', badge.text);
                           }
                         }}
                         startIcon={<span style={{ fontSize: '16px' }}>{badge.icon}</span>}
