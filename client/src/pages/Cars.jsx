@@ -731,6 +731,10 @@ function Cars() {
 
     console.log('✅ Form validation passed, proceeding with submission...');
     console.log('📋 Form data:', formData);
+    console.log('🏷️ [FORM DATA BADGES] formData.badges exists:', !!formData.badges);
+    console.log('🏷️ [FORM DATA BADGES] formData.badges type:', typeof formData.badges);
+    console.log('🏷️ [FORM DATA BADGES] formData.badges length:', formData.badges?.length);
+    console.log('🏷️ [FORM DATA BADGES] formData.badges content:', JSON.stringify(formData.badges, null, 2));
     console.log('🖼️ Selected images:', selectedImages);
     console.log('🚗 [FRONTEND] ======= MILEAGE DEBUG INFO =======');
     console.log('🚗 [FRONTEND] formData.mileage type:', typeof formData.mileage);
@@ -792,6 +796,10 @@ function Cars() {
             });
           } else if (key === 'badges') {
             // Handle badges array - serialize badge objects properly
+            console.log('🏷️ [FRONTEND BADGES] Processing badges for key:', key);
+            console.log('🏷️ [FRONTEND BADGES] formData[badges] exists:', !!formData[key]);
+            console.log('🏷️ [FRONTEND BADGES] formData[badges] length:', formData[key]?.length);
+            console.log('🏷️ [FRONTEND BADGES] formData[badges] content:', JSON.stringify(formData[key], null, 2));
             formData[key].forEach((badge, index) => {
               if (typeof badge === 'object' && badge !== null) {
                 formDataToSend.append(`badges[${index}][text]`, badge.text || '');
@@ -899,6 +907,10 @@ function Cars() {
               });
             } else if (key === 'badges') {
               // Handle badges array - serialize badge objects properly
+              console.log('🏷️ [FRONTEND BADGES] Processing badges for key:', key);
+              console.log('🏷️ [FRONTEND BADGES] formData[badges] exists:', !!formData[key]);
+              console.log('🏷️ [FRONTEND BADGES] formData[badges] length:', formData[key]?.length);
+              console.log('🏷️ [FRONTEND BADGES] formData[badges] content:', JSON.stringify(formData[key], null, 2));
               formData[key].forEach((badge, index) => {
                 if (typeof badge === 'object' && badge !== null) {
                   formDataToSend.append(`badges[${index}][text]`, badge.text || '');
@@ -995,6 +1007,10 @@ function Cars() {
               });
             } else if (key === 'badges') {
               // Handle badges array - serialize badge objects properly
+              console.log('🏷️ [FRONTEND BADGES] Processing badges for key:', key);
+              console.log('🏷️ [FRONTEND BADGES] formData[badges] exists:', !!formData[key]);
+              console.log('🏷️ [FRONTEND BADGES] formData[badges] length:', formData[key]?.length);
+              console.log('🏷️ [FRONTEND BADGES] formData[badges] content:', JSON.stringify(formData[key], null, 2));
               formData[key].forEach((badge, index) => {
                 if (typeof badge === 'object' && badge !== null) {
                   formDataToSend.append(`badges[${index}][text]`, badge.text || '');
