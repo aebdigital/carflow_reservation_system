@@ -1168,7 +1168,8 @@ const updateCar = asyncHandler(async (req, res, next) => {
           .map(index => equipmentMap[index])
           .filter(item => item && Object.keys(item).length > 0 && item.name);
         
-        console.log('🚗 [CAR UPDATE] Processed equipment array:', JSON.stringify(req.body.equipment, null, 2));
+        console.log('🚗 [CAR UPDATE] ✅ EQUIPMENT PROCESSING: Processed equipment array:', JSON.stringify(req.body.equipment, null, 2));
+        console.log('🚗 [CAR UPDATE] ✅ EQUIPMENT PROCESSING: Equipment count:', req.body.equipment?.length || 0);
       }
       
       // Handle legacy equipment array format (fallback)
@@ -1581,6 +1582,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
     console.log('🚗 [CAR UPDATE] ===================================');
     console.log('🚗 [CAR UPDATE] Step 8: Attempting to update car...');
     console.log('🚗 [CAR UPDATE] 🏷️ FINAL BADGE DATA TO SAVE:', JSON.stringify(req.body.badges, null, 2));
+    console.log('🚗 [CAR UPDATE] 🔧 FINAL EQUIPMENT DATA TO SAVE:', JSON.stringify(req.body.equipment, null, 2));
     console.log('🚗 [CAR UPDATE] 📦 Complete req.body keys before save:', Object.keys(req.body));
 
     try {
@@ -1602,6 +1604,8 @@ const updateCar = asyncHandler(async (req, res, next) => {
       console.log('🚗 [CAR UPDATE] Step 8b: Car updated successfully! ID:', car._id);
       console.log('🚗 [CAR UPDATE] 🏷️ BADGES SAVED TO DATABASE:', JSON.stringify(car.badges, null, 2));
       console.log('🚗 [CAR UPDATE] 🏷️ Badge count in saved car:', car.badges?.length || 0);
+      console.log('🚗 [CAR UPDATE] 🔧 EQUIPMENT SAVED TO DATABASE:', JSON.stringify(car.equipment, null, 2));
+      console.log('🚗 [CAR UPDATE] 🔧 Equipment count in saved car:', car.equipment?.length || 0);
       
       // Handle equipment icon uploads if any
       console.log('🚗 [CAR UPDATE] Step 8c: Processing equipment icons...');

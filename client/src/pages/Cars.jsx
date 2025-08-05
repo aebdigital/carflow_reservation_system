@@ -735,6 +735,10 @@ function Cars() {
     console.log('🏷️ [FORM DATA BADGES] formData.badges type:', typeof formData.badges);
     console.log('🏷️ [FORM DATA BADGES] formData.badges length:', formData.badges?.length);
     console.log('🏷️ [FORM DATA BADGES] formData.badges content:', JSON.stringify(formData.badges, null, 2));
+    console.log('🔧 [FORM DATA EQUIPMENT] formData.equipment exists:', !!formData.equipment);
+    console.log('🔧 [FORM DATA EQUIPMENT] formData.equipment type:', typeof formData.equipment);
+    console.log('🔧 [FORM DATA EQUIPMENT] formData.equipment length:', formData.equipment?.length);
+    console.log('🔧 [FORM DATA EQUIPMENT] formData.equipment content:', JSON.stringify(formData.equipment, null, 2));
     console.log('🖼️ Selected images:', selectedImages);
     console.log('🚗 [FRONTEND] ======= MILEAGE DEBUG INFO =======');
     console.log('🚗 [FRONTEND] formData.mileage type:', typeof formData.mileage);
@@ -783,6 +787,10 @@ function Cars() {
             });
           } else if (key === 'equipment') {
             // Handle equipment array - serialize each object properly
+            console.log('🔧 [FRONTEND EQUIPMENT] Processing equipment for key:', key);
+            console.log('🔧 [FRONTEND EQUIPMENT] formData[equipment] exists:', !!formData[key]);
+            console.log('🔧 [FRONTEND EQUIPMENT] formData[equipment] length:', formData[key]?.length);
+            console.log('🔧 [FRONTEND EQUIPMENT] formData[equipment] content:', JSON.stringify(formData[key], null, 2));
             formData[key].forEach((item, index) => {
               if (item && typeof item === 'object') {
                 Object.keys(item).forEach(itemKey => {
@@ -894,6 +902,10 @@ function Cars() {
               });
             } else if (key === 'equipment') {
               // Handle equipment array - serialize each object properly
+              console.log('🔧 [FRONTEND EQUIPMENT] Processing equipment for key:', key);
+              console.log('🔧 [FRONTEND EQUIPMENT] formData[equipment] exists:', !!formData[key]);
+              console.log('🔧 [FRONTEND EQUIPMENT] formData[equipment] length:', formData[key]?.length);
+              console.log('🔧 [FRONTEND EQUIPMENT] formData[equipment] content:', JSON.stringify(formData[key], null, 2));
               formData[key].forEach((item, index) => {
                 if (item && typeof item === 'object') {
                   Object.keys(item).forEach(itemKey => {
@@ -994,6 +1006,10 @@ function Cars() {
               });
             } else if (key === 'equipment') {
               // Handle equipment array - serialize each object properly
+              console.log('🔧 [FRONTEND EQUIPMENT] Processing equipment for key:', key);
+              console.log('🔧 [FRONTEND EQUIPMENT] formData[equipment] exists:', !!formData[key]);
+              console.log('🔧 [FRONTEND EQUIPMENT] formData[equipment] length:', formData[key]?.length);
+              console.log('🔧 [FRONTEND EQUIPMENT] formData[equipment] content:', JSON.stringify(formData[key], null, 2));
               formData[key].forEach((item, index) => {
                 if (item && typeof item === 'object') {
                   Object.keys(item).forEach(itemKey => {
