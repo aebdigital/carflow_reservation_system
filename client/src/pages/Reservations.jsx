@@ -1427,7 +1427,7 @@ function Reservations() {
                             Kategória: {selectedReservation.car.category}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            Denná sadzba: {selectedReservation.car.dailyRate}€/deň
+                            Denná sadzba: {selectedReservation.pricing?.dailyRate?.toFixed(2) || 'Neuvedené'}€/deň
                           </Typography>
                         </>
                       ) : (
@@ -1547,7 +1547,7 @@ function Reservations() {
                   <Card variant="outlined">
                     <CardContent>
                       <Typography variant="h6" gutterBottom color="primary">
-                        Pickup Location
+                        Miesto prevzatia
                       </Typography>
                       {selectedReservation.pickupLocation ? (
                         <>
@@ -1572,7 +1572,7 @@ function Reservations() {
                         </>
                       ) : (
                         <Typography variant="body2" color="text.secondary">
-                          Pickup location not specified
+                          Miesto prevzatia nie je špecifikované
                         </Typography>
                       )}
                     </CardContent>
@@ -1584,7 +1584,7 @@ function Reservations() {
                   <Card variant="outlined">
                     <CardContent>
                       <Typography variant="h6" gutterBottom color="primary">
-                        Dropoff Location
+                        Miesto vrátenia
                       </Typography>
                       {selectedReservation.dropoffLocation ? (
                         <>
@@ -1609,7 +1609,7 @@ function Reservations() {
                         </>
                       ) : (
                         <Typography variant="body2" color="text.secondary">
-                          Dropoff location not specified
+                          Miesto vrátenia nie je špecifikované
                         </Typography>
                       )}
                     </CardContent>
@@ -1622,27 +1622,27 @@ function Reservations() {
                     <Card variant="outlined">
                       <CardContent>
                         <Typography variant="h6" gutterBottom color="primary">
-                          Terms and Conditions
+                          Obchodné podmienky
                         </Typography>
                         <Grid container spacing={2}>
                           <Grid item xs={12} md={3}>
                             <Typography variant="body2" gutterBottom>
-                              <strong>Mileage Limit:</strong> {selectedReservation.terms.mileageLimit === -1 ? 'Unlimited' : `${selectedReservation.terms.mileageLimit} miles`}
+                              <strong>Limit najazdených km:</strong> {selectedReservation.terms.mileageLimit === -1 ? 'Neobmedzené' : `${selectedReservation.terms.mileageLimit} km`}
                             </Typography>
                           </Grid>
                           <Grid item xs={12} md={3}>
                             <Typography variant="body2" gutterBottom>
-                              <strong>Fuel Policy:</strong> {selectedReservation.terms.fuelPolicy}
+                              <strong>Politika paliva:</strong> {selectedReservation.terms.fuelPolicy}
                             </Typography>
                           </Grid>
                           <Grid item xs={12} md={3}>
                             <Typography variant="body2" gutterBottom>
-                              <strong>Late Return Fee:</strong> ${selectedReservation.terms.lateReturnFee || 0}
+                              <strong>Poplatok za oneskorené vrátenie:</strong> {selectedReservation.terms.lateReturnFee || 0}€
                             </Typography>
                           </Grid>
                           <Grid item xs={12} md={3}>
                             <Typography variant="body2" gutterBottom>
-                              <strong>Cancellation:</strong> {selectedReservation.terms.cancellationPolicy || 'Standard policy'}
+                              <strong>Storno podmienky:</strong> {selectedReservation.terms.cancellationPolicy || 'Štandardné podmienky'}
                             </Typography>
                           </Grid>
                         </Grid>
@@ -1709,7 +1709,7 @@ function Reservations() {
                         {selectedReservation.checkOut.additionalCharges && selectedReservation.checkOut.additionalCharges.length > 0 && (
                           <>
                             <Typography variant="body2" fontWeight="medium" gutterBottom sx={{ mt: 1 }}>
-                              Additional Charges:
+                              Dodatočné poplatky:
                             </Typography>
                             {selectedReservation.checkOut.additionalCharges.map((charge, index) => (
                               <Typography key={index} variant="body2" gutterBottom>
@@ -1729,7 +1729,7 @@ function Reservations() {
                     <Card variant="outlined">
                       <CardContent>
                         <Typography variant="h6" gutterBottom color="primary">
-                          Additional Drivers
+                          Ďalší vodiči
                         </Typography>
                         {selectedReservation.additionalDrivers.map((driver, index) => (
                           <Box key={index} sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
@@ -1737,16 +1737,16 @@ function Reservations() {
                               {driver.firstName} {driver.lastName}
                             </Typography>
                             <Typography variant="body2" color="text.secondary" gutterBottom>
-                              License: {driver.licenseNumber}
+                              Vodičský preukaz: {driver.licenseNumber}
                             </Typography>
                             {driver.licenseExpiry && (
                               <Typography variant="body2" color="text.secondary" gutterBottom>
-                                License Expiry: {new Date(driver.licenseExpiry).toLocaleDateString()}
+                                Platnosť preukazu: {new Date(driver.licenseExpiry).toLocaleDateString()}
                               </Typography>
                             )}
                             {driver.relationship && (
                               <Typography variant="body2" color="text.secondary">
-                                Relationship: {driver.relationship}
+                                Vzťah: {driver.relationship}
                               </Typography>
                             )}
                           </Box>
@@ -1762,7 +1762,7 @@ function Reservations() {
                     <Card variant="outlined">
                       <CardContent>
                         <Typography variant="h6" gutterBottom color="primary">
-                          Special Requests
+                          Špeciálne požiadavky
                         </Typography>
                         <Typography variant="body2">
                           {selectedReservation.specialRequests}
@@ -1778,7 +1778,7 @@ function Reservations() {
                     <Card variant="outlined">
                       <CardContent>
                         <Typography variant="h6" gutterBottom color="primary">
-                          Notes
+                          Poznámky
                         </Typography>
                         <Typography variant="body2">
                           {selectedReservation.notes}
@@ -1794,11 +1794,11 @@ function Reservations() {
                     <Card variant="outlined">
                       <CardContent>
                         <Typography variant="h6" gutterBottom color="primary">
-                          Customer Rating
+                          Hodnotenie zákazníka
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                           <Typography variant="body1" fontWeight="medium">
-                            Rating: {selectedReservation.rating.score}/5
+                            Hodnotenie: {selectedReservation.rating.score}/5
                           </Typography>
                           <Box sx={{ display: 'flex' }}>
                             {[...Array(5)].map((_, i) => (
