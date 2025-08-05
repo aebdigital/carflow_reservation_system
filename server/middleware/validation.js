@@ -32,7 +32,10 @@ const serviceValidation = {
       .withMessage('Service description must be between 1 and 500 characters'),
     
     body('category')
-      .isIn(['driving_comfort', 'insurance_assistance', 'time_services', 'delivery_pickup', 'family_accessories', 'specialized'])
+      .isIn([
+        'driving_comfort', 'insurance_assistance', 'time_services', 'delivery_pickup', 'family_accessories', 'specialized',
+        'poistenie', 'poistenie_asistencia_rozsierene', 'doplnkove_sluzby', 'rozsirene_poistenie', 'extended_insurance'
+      ])
       .withMessage('Invalid service category'),
     
     body('pricing.type')
@@ -128,7 +131,10 @@ const serviceValidation = {
     
     body('category')
       .optional()
-      .isIn(['driving_comfort', 'insurance_assistance', 'time_services', 'delivery_pickup', 'family_accessories', 'specialized'])
+      .isIn([
+        'driving_comfort', 'insurance_assistance', 'time_services', 'delivery_pickup', 'family_accessories', 'specialized',
+        'poistenie', 'poistenie_asistencia_rozsierene', 'doplnkove_sluzby', 'rozsirene_poistenie', 'extended_insurance'
+      ])
       .withMessage('Invalid service category'),
     
     body('pricing.type')
