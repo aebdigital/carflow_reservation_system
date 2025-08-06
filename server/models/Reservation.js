@@ -107,6 +107,10 @@ const reservationSchema = new mongoose.Schema({
       },
       code: String
     }],
+    deposit: {
+      type: Number,
+      default: 0
+    },
     totalAmount: {
       type: Number,
       required: true
@@ -180,6 +184,57 @@ const reservationSchema = new mongoose.Schema({
     licenseExpiry: Date,
     relationship: String
   }],
+  
+  // Selected additional services with pricing at time of booking
+  selectedServices: [{
+    service: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'AdditionalService',
+      required: true
+    },
+    name: String, // Store name for historical record
+    category: String, // Store category for grouping
+    quantity: { 
+      type: Number, 
+      default: 1 
+    },
+    unitPrice: { 
+      type: Number, 
+      required: true 
+    }, // Price per unit at time of booking
+    totalPrice: { 
+      type: Number, 
+      required: true 
+    }, // quantity * unitPrice
+    pricingType: {
+      type: String,
+      enum: ['fixed', 'per_day', 'per_km', 'percentage'],
+      default: 'fixed'
+    }
+  }],
+  
+  // Selected insurance options with details at time of booking
+  selectedInsurance: [{
+    insurance: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'Insurance',
+      required: true
+    },
+    name: String, // Store name for historical record
+    type: String, // Store insurance type
+    coverage: String, // Store coverage details
+    price: { 
+      type: Number, 
+      required: true 
+    }, // Price at time of booking
+    deductible: Number, // Deductible amount if applicable
+    limits: {
+      perIncident: Number,
+      perPerson: Number,
+      aggregate: Number
+    }
+  }],
+  
   specialRequests: String,
   terms: {
     mileageLimit: {

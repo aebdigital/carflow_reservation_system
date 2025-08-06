@@ -54,7 +54,9 @@ const getReservations = asyncHandler(async (req, res, next) => {
     // Default population
     query = query.populate('customer', 'firstName lastName email phone')
                  .populate('car', 'brand model year registrationNumber images')
-                 .populate('payment', 'status amount paymentMethod');
+                 .populate('payment', 'status amount paymentMethod')
+                 .populate('selectedServices.service', 'name category pricing')
+                 .populate('selectedInsurance.insurance', 'name type coverage');
   }
 
   // Sort
@@ -113,6 +115,8 @@ const getReservation = asyncHandler(async (req, res, next) => {
     .populate('customer')
     .populate('car')
     .populate('payment')
+    .populate('selectedServices.service', 'name category pricing')
+    .populate('selectedInsurance.insurance', 'name type coverage')
     .populate('createdBy', 'firstName lastName email')
     .populate('lastModifiedBy', 'firstName lastName email')
     .populate('checkIn.staffMember', 'firstName lastName')

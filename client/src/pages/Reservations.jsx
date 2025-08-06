@@ -331,6 +331,8 @@ function Reservations() {
         specialRequests: reservation.specialRequests || '',
         status: reservation.status,
         pricing: reservation.pricing || {},
+        selectedServices: reservation.selectedServices || [],
+        selectedInsurance: reservation.selectedInsurance || [],
         terms: reservation.terms || {},
         checkIn: reservation.checkIn || {},
         checkOut: reservation.checkOut || {},
@@ -1527,6 +1529,12 @@ function Reservations() {
                               </Box>
                             ))
                           )}
+                          {selectedReservation.pricing.deposit && selectedReservation.pricing.deposit > 0 && (
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                              <Typography variant="body2">Záloha:</Typography>
+                              <Typography variant="body2" color="warning.main" fontWeight="medium">{selectedReservation.pricing.deposit?.toFixed(2)}€</Typography>
+                            </Box>
+                          )}
                           <Divider sx={{ my: 1 }} />
                           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                             <Typography variant="body1" fontWeight="bold">{t('totalAmount')}:</Typography>
@@ -1541,6 +1549,88 @@ function Reservations() {
                     </CardContent>
                   </Card>
                 </Grid>
+                
+                {/* Additional Services */}
+                {selectedReservation.selectedServices && selectedReservation.selectedServices.length > 0 && (
+                  <Grid item xs={12} md={6}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom color="primary">
+                          Dodatočné služby
+                        </Typography>
+                        {selectedReservation.selectedServices.map((service, index) => (
+                          <Box key={index} sx={{ mb: 2, p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                              <Typography variant="body2" fontWeight="medium">
+                                {service.name || service.service?.name}
+                              </Typography>
+                              <Typography variant="body2" color="primary" fontWeight="medium">
+                                {service.totalPrice?.toFixed(2)}€
+                              </Typography>
+                            </Box>
+                            {service.category && (
+                              <Chip 
+                                label={service.category} 
+                                size="small" 
+                                variant="outlined" 
+                                sx={{ mb: 1 }}
+                              />
+                            )}
+                            {service.quantity > 1 && (
+                              <Typography variant="caption" color="text.secondary">
+                                {service.quantity}x {service.unitPrice?.toFixed(2)}€ {service.pricingType === 'per_day' ? '/deň' : service.pricingType === 'per_km' ? '/km' : ''}
+                              </Typography>
+                            )}
+                          </Box>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                )}
+                
+                {/* Insurance Options */}
+                {selectedReservation.selectedInsurance && selectedReservation.selectedInsurance.length > 0 && (
+                  <Grid item xs={12} md={6}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom color="primary">
+                          Poistenie
+                        </Typography>
+                        {selectedReservation.selectedInsurance.map((insurance, index) => (
+                          <Box key={index} sx={{ mb: 2, p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                              <Typography variant="body2" fontWeight="medium">
+                                {insurance.name || insurance.insurance?.name}
+                              </Typography>
+                              <Typography variant="body2" color="primary" fontWeight="medium">
+                                {insurance.price?.toFixed(2)}€
+                              </Typography>
+                            </Box>
+                            {insurance.type && (
+                              <Chip 
+                                label={insurance.type} 
+                                size="small" 
+                                color="info" 
+                                variant="outlined" 
+                                sx={{ mb: 1 }}
+                              />
+                            )}
+                            {insurance.coverage && (
+                              <Typography variant="caption" color="text.secondary" display="block">
+                                Pokrytie: {insurance.coverage}
+                              </Typography>
+                            )}
+                            {insurance.deductible && (
+                              <Typography variant="caption" color="text.secondary">
+                                Spoluúčasť: {insurance.deductible}€
+                              </Typography>
+                            )}
+                          </Box>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                )}
 
                 {/* Pickup Location */}
                 <Grid item xs={12} md={6}>
