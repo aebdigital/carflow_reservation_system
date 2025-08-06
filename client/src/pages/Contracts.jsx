@@ -634,14 +634,13 @@ function Contracts() {
                   <TableCell sx={{ fontWeight: 600 }}>Vozidlo</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Dátum vytvorenia</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Suma</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Stav</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Akcie</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {contracts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center">
+                    <TableCell colSpan={6} align="center">
                       <Typography variant="body2" color="text.secondary">
                         Žiadne zmluvy neboli vytvorené
                       </Typography>
@@ -682,22 +681,7 @@ function Contracts() {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        label={getStatusText(contract.status)}
-                          color={getStatusColor(contract.status)}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
-                          <Tooltip title="Zobraziť">
-                            <IconButton 
-                              size="small" 
-                              onClick={() => handleOpenDialog('view', contract)}
-                            >
-                        <ViewIcon fontSize="small" />
-                      </IconButton>
-                          </Tooltip>
                           <Tooltip title="Stiahnuť PDF">
                       <IconButton 
                         size="small" 
@@ -714,15 +698,6 @@ function Contracts() {
                               color="info"
                             >
                               <PrintIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Slovenská zmluva o nájme">
-                            <IconButton 
-                              size="small" 
-                              onClick={() => handleDownloadSlovakAgreement(contract)}
-                              color="secondary"
-                            >
-                              <ContractIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Vymazať">

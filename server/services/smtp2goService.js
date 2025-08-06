@@ -403,8 +403,63 @@ class SMTP2GOService {
     // Set subject to match exact specification
     const subject = '✅ Potvrdenie rezervácie';
     
-    // Send email
-    const emailResult = await this.sendEmail(to, subject, emailData.html);
+    // Generate contract PDF if rawReservation is available
+    let attachments = [];
+    if (rawReservation) {
+      try {
+        console.log('📎 [EMAIL] Generating contract PDF for confirmed reservation:', rawReservation._id);
+        
+        const pdfService = require('./pdfService');
+        const Contract = require('../models/Contract');
+        
+        // Find the contract for this reservation
+        const contract = await Contract.findOne({ 
+          reservation: rawReservation._id 
+        }).populate([
+          {
+            path: 'reservation',
+            populate: [
+              { path: 'customer', select: 'firstName lastName email phone address licenseNumber idNumber' },
+              { path: 'car', select: 'brand model year registrationNumber vin color category' }
+            ]
+          }
+        ]);
+        
+        if (contract && contract.reservation.customer && contract.reservation.car) {
+          // Generate the PDF using the PDF service
+          const pdfBuffer = await pdfService.generateRentalAgreement(
+            contract.reservation,
+            contract.reservation.car,
+            contract.reservation.customer
+          );
+          
+          // Convert PDF buffer to base64 for attachment
+          const pdfBase64 = pdfBuffer.toString('base64');
+          const filename = `zmluva-${contract.contractNumber || reservationData.reservationNumber}.pdf`;
+          
+          attachments.push({
+            filename: filename,
+            content: pdfBase64,
+            type: 'application/pdf'
+          });
+          
+          console.log('✅ [EMAIL] Contract PDF generated and attached:', filename);
+        } else {
+          console.warn('⚠️ [EMAIL] Contract or related data not found for PDF generation');
+        }
+      } catch (pdfError) {
+        console.error('❌ [EMAIL] Failed to generate contract PDF:', pdfError.message);
+        // Continue sending email without attachment
+      }
+    }
+    
+    // Send email with or without attachment
+    let emailResult;
+    if (attachments.length > 0) {
+      emailResult = await this.sendEmailWithAttachment(to, subject, emailData.html, attachments);
+    } else {
+      emailResult = await this.sendEmail(to, subject, emailData.html);
+    }
     
     // Send SMS if phone number available
     try {
