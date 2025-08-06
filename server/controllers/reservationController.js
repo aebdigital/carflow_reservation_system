@@ -46,6 +46,10 @@ const getReservations = asyncHandler(async (req, res, next) => {
         query = query.populate('car', 'brand model year registrationNumber dailyRate images status');
       } else if (field === 'payment') {
         query = query.populate('payment');
+      } else if (field === 'selectedServices.service') {
+        query = query.populate('selectedServices.service', 'name category pricing');
+      } else if (field === 'selectedInsurance.insurance') {
+        query = query.populate('selectedInsurance.insurance', 'name type coverage');
       } else {
         query = query.populate(field);
       }

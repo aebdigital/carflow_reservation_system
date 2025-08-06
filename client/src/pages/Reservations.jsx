@@ -168,7 +168,7 @@ function Reservations() {
     data: reservationsData, 
     isLoading: reservationsLoading, 
     error: reservationsError 
-  } = useGetReservationsQuery({ populate: 'customer,car,payment' })
+  } = useGetReservationsQuery({ populate: 'customer,car,payment,selectedServices.service,selectedInsurance.insurance' })
 
   const { 
     data: carsData, 
@@ -310,6 +310,14 @@ function Reservations() {
   const handleOpenDialog = (mode, reservation = null) => {
     setDialogMode(mode)
     setSelectedReservation(reservation)
+    
+    // Debug: Log reservation data
+    if (reservation) {
+      console.log('🔍 [RESERVATION DEBUG] Full reservation data:', reservation)
+      console.log('🔍 [RESERVATION DEBUG] Pricing data:', reservation.pricing)
+      console.log('🔍 [RESERVATION DEBUG] Selected services:', reservation.selectedServices)
+      console.log('🔍 [RESERVATION DEBUG] Selected insurance:', reservation.selectedInsurance)
+    }
     
     if (mode === 'create') {
       setFormData(initialFormState)
@@ -1529,12 +1537,14 @@ function Reservations() {
                               </Box>
                             ))
                           )}
-                          {selectedReservation.pricing.deposit && selectedReservation.pricing.deposit > 0 && (
+                          {selectedReservation.pricing?.deposit && selectedReservation.pricing.deposit > 0 && (
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                               <Typography variant="body2">Záloha:</Typography>
                               <Typography variant="body2" color="warning.main" fontWeight="medium">{selectedReservation.pricing.deposit?.toFixed(2)}€</Typography>
                             </Box>
                           )}
+                          {/* Debug: Show if deposit exists but is 0 or undefined */}
+                          {console.log('🔍 [DEPOSIT DEBUG] Deposit value:', selectedReservation.pricing?.deposit)}
                           <Divider sx={{ my: 1 }} />
                           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                             <Typography variant="body1" fontWeight="bold">{t('totalAmount')}:</Typography>
@@ -1551,6 +1561,7 @@ function Reservations() {
                 </Grid>
                 
                 {/* Additional Services */}
+                {console.log('🔍 [SERVICES DEBUG] Selected services:', selectedReservation.selectedServices, 'Length:', selectedReservation.selectedServices?.length)}
                 {selectedReservation.selectedServices && selectedReservation.selectedServices.length > 0 && (
                   <Grid item xs={12} md={6}>
                     <Card variant="outlined">
@@ -1588,7 +1599,26 @@ function Reservations() {
                   </Grid>
                 )}
                 
+                {/* Debug Section - Always Show */}
+                <Grid item xs={12}>
+                  <Card variant="outlined" sx={{ bgcolor: 'info.50', border: '1px solid', borderColor: 'info.200' }}>
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom color="info.main">
+                        🔍 Debug Information
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                        Deposit: {JSON.stringify(selectedReservation.pricing?.deposit)}{'\n'}
+                        Services Count: {selectedReservation.selectedServices?.length || 'undefined'}{'\n'}
+                        Insurance Count: {selectedReservation.selectedInsurance?.length || 'undefined'}{'\n'}
+                        Services Data: {JSON.stringify(selectedReservation.selectedServices, null, 2)}{'\n'}
+                        Insurance Data: {JSON.stringify(selectedReservation.selectedInsurance, null, 2)}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                
                 {/* Insurance Options */}
+                {console.log('🔍 [INSURANCE DEBUG] Selected insurance:', selectedReservation.selectedInsurance, 'Length:', selectedReservation.selectedInsurance?.length)}
                 {selectedReservation.selectedInsurance && selectedReservation.selectedInsurance.length > 0 && (
                   <Grid item xs={12} md={6}>
                     <Card variant="outlined">
