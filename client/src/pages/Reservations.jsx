@@ -168,7 +168,7 @@ function Reservations() {
     data: reservationsData, 
     isLoading: reservationsLoading, 
     error: reservationsError 
-  } = useGetReservationsQuery({ populate: 'customer,car,payment,selectedServices.service,selectedInsurance.insurance' })
+  } = useGetReservationsQuery({ populate: 'customer,car,payment,selectedServices.service,selectedServices._id,selectedAdditionalInsurance.insuranceId,selectedExtendedInsurance.insuranceId' })
 
   const { 
     data: carsData, 
@@ -311,8 +311,8 @@ function Reservations() {
     setDialogMode(mode)
     setSelectedReservation(reservation)
     
-    // Debug: Log reservation data
-    if (reservation) {
+    // Debug: Log reservation data (can be removed in production)
+    if (reservation && process.env.NODE_ENV === 'development') {
       console.log('🔍 [RESERVATION DEBUG] Full reservation data:', reservation)
       console.log('🔍 [RESERVATION DEBUG] Pricing data:', reservation.pricing)
       console.log('🔍 [RESERVATION DEBUG] Selected services:', reservation.selectedServices)
@@ -340,7 +340,12 @@ function Reservations() {
         status: reservation.status,
         pricing: reservation.pricing || {},
         selectedServices: reservation.selectedServices || [],
-        selectedInsurance: reservation.selectedInsurance || [],
+        selectedAdditionalInsurance: reservation.selectedAdditionalInsurance || [],
+        selectedExtendedInsurance: reservation.selectedExtendedInsurance || [],
+        servicesTotal: reservation.servicesTotal || 0,
+        discountCode: reservation.discountCode || '',
+        insurancePrices: reservation.insurancePrices || {},
+        extendedInsurancePrices: reservation.extendedInsurancePrices || {},
         terms: reservation.terms || {},
         checkIn: reservation.checkIn || {},
         checkOut: reservation.checkOut || {},
@@ -1537,15 +1542,71 @@ function Reservations() {
                               </Box>
                             ))
                           )}
+                          {/* Discount Information */}
+                          {selectedReservation.pricing?.appliedDiscount && (
+                            <>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                <Typography variant="body2">Pôvodná cena:</Typography>
+                                <Typography variant="body2" sx={{ textDecoration: 'line-through' }}>{selectedReservation.pricing.appliedDiscount.originalAmount?.toFixed(2)}€</Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                <Typography variant="body2" color="success.main">Zľava ({selectedReservation.pricing.appliedDiscount.discountPercentage}%):</Typography>
+                                <Typography variant="body2" color="success.main">-{selectedReservation.pricing.appliedDiscount.discountAmount?.toFixed(2)}€</Typography>
+                              </Box>
+                              {selectedReservation.discountCode && (
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                  <Typography variant="body2">Zľavový kód:</Typography>
+                                  <Typography variant="body2" fontWeight="medium">{selectedReservation.discountCode}</Typography>
+                                </Box>
+                              )}
+                            </>
+                          )}
+                          
+                          {/* Services Total */}
+                          {selectedReservation.servicesTotal && selectedReservation.servicesTotal > 0 && (
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                              <Typography variant="body2">Dodatočné služby:</Typography>
+                              <Typography variant="body2">{selectedReservation.servicesTotal?.toFixed(2)}€</Typography>
+                            </Box>
+                          )}
+
+                          {/* Deposit */}
                           {selectedReservation.pricing?.deposit && selectedReservation.pricing.deposit > 0 && (
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                               <Typography variant="body2">Záloha:</Typography>
                               <Typography variant="body2" color="warning.main" fontWeight="medium">{selectedReservation.pricing.deposit?.toFixed(2)}€</Typography>
                             </Box>
                           )}
-                          {/* Debug: Show if deposit exists but is 0 or undefined */}
-                          {console.log('🔍 [DEPOSIT DEBUG] Deposit value:', selectedReservation.pricing?.deposit)}
+
+                          {/* Extra Options */}
+                          {selectedReservation.pricing?.extraOptions && (
+                            <Box sx={{ mb: 1 }}>
+                              <Typography variant="caption" color="text.secondary" display="block">Extra možnosti:</Typography>
+                              {Object.entries(selectedReservation.pricing.extraOptions).map(([key, value]) => (
+                                value && (
+                                  <Chip 
+                                    key={key}
+                                    label={key.toUpperCase()} 
+                                    size="small" 
+                                    color="info"
+                                    variant="outlined"
+                                    sx={{ mr: 0.5, mt: 0.5 }}
+                                  />
+                                )
+                              ))}
+                            </Box>
+                          )}
+
                           <Divider sx={{ my: 1 }} />
+                          
+                          {/* Show both calculated total and total amount */}
+                          {selectedReservation.pricing?.calculatedTotal && (
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                              <Typography variant="body2">Vypočítaná suma:</Typography>
+                              <Typography variant="body2">{selectedReservation.pricing.calculatedTotal?.toFixed(2)}€</Typography>
+                            </Box>
+                          )}
+                          
                           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                             <Typography variant="body1" fontWeight="bold">{t('totalAmount')}:</Typography>
                             <Typography variant="body1" fontWeight="bold" color="primary">{selectedReservation.pricing.totalAmount?.toFixed(2) || '0.00'}€</Typography>
@@ -1606,34 +1667,47 @@ function Reservations() {
                       <Typography variant="h6" gutterBottom color="info.main">
                         🔍 Debug Information
                       </Typography>
-                      <Typography variant="body2" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap', fontSize: '0.75rem' }}>
+                        {/* Pricing Information */}
                         Deposit: {JSON.stringify(selectedReservation.pricing?.deposit)}{'\n'}
+                        Calculated Total: {JSON.stringify(selectedReservation.pricing?.calculatedTotal)}{'\n'}
+                        Services Total: {JSON.stringify(selectedReservation.servicesTotal)}{'\n'}
+                        Applied Discount: {JSON.stringify(selectedReservation.pricing?.appliedDiscount)}{'\n'}
+                        Discount Code: {JSON.stringify(selectedReservation.discountCode)}{'\n'}
+                        Extra Options: {JSON.stringify(selectedReservation.pricing?.extraOptions)}{'\n'}
+                        {'\n'}
+                        {/* Services Information */}
                         Services Count: {selectedReservation.selectedServices?.length || 'undefined'}{'\n'}
-                        Insurance Count: {selectedReservation.selectedInsurance?.length || 'undefined'}{'\n'}
                         Services Data: {JSON.stringify(selectedReservation.selectedServices, null, 2)}{'\n'}
-                        Insurance Data: {JSON.stringify(selectedReservation.selectedInsurance, null, 2)}
+                        {'\n'}
+                        {/* Insurance Information */}
+                        Additional Insurance Count: {selectedReservation.selectedAdditionalInsurance?.length || 'undefined'}{'\n'}
+                        Extended Insurance Count: {selectedReservation.selectedExtendedInsurance?.length || 'undefined'}{'\n'}
+                        Additional Insurance: {JSON.stringify(selectedReservation.selectedAdditionalInsurance, null, 2)}{'\n'}
+                        Extended Insurance: {JSON.stringify(selectedReservation.selectedExtendedInsurance, null, 2)}{'\n'}
+                        Insurance Prices: {JSON.stringify(selectedReservation.insurancePrices, null, 2)}{'\n'}
+                        Extended Insurance Prices: {JSON.stringify(selectedReservation.extendedInsurancePrices, null, 2)}
                       </Typography>
                     </CardContent>
                   </Card>
                 </Grid>
                 
-                {/* Insurance Options */}
-                {console.log('🔍 [INSURANCE DEBUG] Selected insurance:', selectedReservation.selectedInsurance, 'Length:', selectedReservation.selectedInsurance?.length)}
-                {selectedReservation.selectedInsurance && selectedReservation.selectedInsurance.length > 0 && (
+                {/* Additional/Basic Insurance */}
+                {selectedReservation.selectedAdditionalInsurance && selectedReservation.selectedAdditionalInsurance.length > 0 && (
                   <Grid item xs={12} md={6}>
                     <Card variant="outlined">
                       <CardContent>
                         <Typography variant="h6" gutterBottom color="primary">
-                          Poistenie
+                          Dodatočné poistenie
                         </Typography>
-                        {selectedReservation.selectedInsurance.map((insurance, index) => (
+                        {selectedReservation.selectedAdditionalInsurance.map((insurance, index) => (
                           <Box key={index} sx={{ mb: 2, p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                               <Typography variant="body2" fontWeight="medium">
-                                {insurance.name || insurance.insurance?.name}
+                                {insurance.name || insurance.insuranceId?.name}
                               </Typography>
                               <Typography variant="body2" color="primary" fontWeight="medium">
-                                {insurance.price?.toFixed(2)}€
+                                {insurance.displayPrice || `${insurance.calculatedPrice?.toFixed(2)}€`}
                               </Typography>
                             </Box>
                             {insurance.type && (
@@ -1645,16 +1719,46 @@ function Reservations() {
                                 sx={{ mb: 1 }}
                               />
                             )}
-                            {insurance.coverage && (
-                              <Typography variant="caption" color="text.secondary" display="block">
-                                Pokrytie: {insurance.coverage}
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              Typ: {insurance.pricingType || 'per_day'} • Základná suma: {insurance.baseAmount?.toFixed(2)}€
+                            </Typography>
+                          </Box>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                )}
+
+                {/* Extended Insurance */}
+                {selectedReservation.selectedExtendedInsurance && selectedReservation.selectedExtendedInsurance.length > 0 && (
+                  <Grid item xs={12} md={6}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom color="secondary">
+                          Rozšírené poistenie
+                        </Typography>
+                        {selectedReservation.selectedExtendedInsurance.map((insurance, index) => (
+                          <Box key={index} sx={{ mb: 2, p: 1.5, bgcolor: 'secondary.50', borderRadius: 1, border: '1px solid', borderColor: 'secondary.200' }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                              <Typography variant="body2" fontWeight="medium">
+                                {insurance.name || insurance.insuranceId?.name}
                               </Typography>
-                            )}
-                            {insurance.deductible && (
-                              <Typography variant="caption" color="text.secondary">
-                                Spoluúčasť: {insurance.deductible}€
+                              <Typography variant="body2" color="secondary" fontWeight="medium">
+                                {insurance.displayPrice || `${insurance.calculatedPrice?.toFixed(2)}€`}
                               </Typography>
+                            </Box>
+                            {insurance.type && (
+                              <Chip 
+                                label={insurance.type} 
+                                size="small" 
+                                color="secondary" 
+                                variant="outlined" 
+                                sx={{ mb: 1 }}
+                              />
                             )}
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              Typ: {insurance.pricingType || 'per_day'} • Základná suma: {insurance.baseAmount?.toFixed(2)}€
+                            </Typography>
                           </Box>
                         ))}
                       </CardContent>
