@@ -1622,7 +1622,6 @@ function Reservations() {
                 </Grid>
                 
                 {/* Additional Services */}
-                {console.log('🔍 [SERVICES DEBUG] Selected services:', selectedReservation.selectedServices, 'Length:', selectedReservation.selectedServices?.length)}
                 {selectedReservation.selectedServices && selectedReservation.selectedServices.length > 0 && (
                   <Grid item xs={12} md={6}>
                     <Card variant="outlined">
@@ -1660,37 +1659,6 @@ function Reservations() {
                   </Grid>
                 )}
                 
-                {/* Debug Section - Always Show */}
-                <Grid item xs={12}>
-                  <Card variant="outlined" sx={{ bgcolor: 'info.50', border: '1px solid', borderColor: 'info.200' }}>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom color="info.main">
-                        🔍 Debug Information
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap', fontSize: '0.75rem' }}>
-                        {/* Pricing Information */}
-                        Deposit: {JSON.stringify(selectedReservation.pricing?.deposit)}{'\n'}
-                        Calculated Total: {JSON.stringify(selectedReservation.pricing?.calculatedTotal)}{'\n'}
-                        Services Total: {JSON.stringify(selectedReservation.servicesTotal)}{'\n'}
-                        Applied Discount: {JSON.stringify(selectedReservation.pricing?.appliedDiscount)}{'\n'}
-                        Discount Code: {JSON.stringify(selectedReservation.discountCode)}{'\n'}
-                        Extra Options: {JSON.stringify(selectedReservation.pricing?.extraOptions)}{'\n'}
-                        {'\n'}
-                        {/* Services Information */}
-                        Services Count: {selectedReservation.selectedServices?.length || 'undefined'}{'\n'}
-                        Services Data: {JSON.stringify(selectedReservation.selectedServices, null, 2)}{'\n'}
-                        {'\n'}
-                        {/* Insurance Information */}
-                        Additional Insurance Count: {selectedReservation.selectedAdditionalInsurance?.length || 'undefined'}{'\n'}
-                        Extended Insurance Count: {selectedReservation.selectedExtendedInsurance?.length || 'undefined'}{'\n'}
-                        Additional Insurance: {JSON.stringify(selectedReservation.selectedAdditionalInsurance, null, 2)}{'\n'}
-                        Extended Insurance: {JSON.stringify(selectedReservation.selectedExtendedInsurance, null, 2)}{'\n'}
-                        Insurance Prices: {JSON.stringify(selectedReservation.insurancePrices, null, 2)}{'\n'}
-                        Extended Insurance Prices: {JSON.stringify(selectedReservation.extendedInsurancePrices, null, 2)}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
                 
                 {/* Additional/Basic Insurance */}
                 {selectedReservation.selectedAdditionalInsurance && selectedReservation.selectedAdditionalInsurance.length > 0 && (

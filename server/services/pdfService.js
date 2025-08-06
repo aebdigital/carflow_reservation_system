@@ -126,7 +126,36 @@ class PDFService {
     
     // Calculate pricing - use actual dynamic pricing
     const basePrice = reservation.pricing?.subtotal || 0;
-    const additionalServices = reservation.pricing?.fees?.reduce((sum, fee) => sum + fee.amount, 0) || 0;
+    
+    // Calculate additional services from actual selected services and insurance
+    let additionalServicesTotal = 0;
+    
+    // Add selected services total
+    if (reservation.selectedServices && reservation.selectedServices.length > 0) {
+      additionalServicesTotal += reservation.selectedServices.reduce((sum, service) => {
+        return sum + (service.totalPrice || 0);
+      }, 0);
+    }
+    
+    // Add additional insurance total  
+    if (reservation.selectedAdditionalInsurance && reservation.selectedAdditionalInsurance.length > 0) {
+      additionalServicesTotal += reservation.selectedAdditionalInsurance.reduce((sum, insurance) => {
+        return sum + (insurance.calculatedPrice || 0);
+      }, 0);
+    }
+    
+    // Add extended insurance total
+    if (reservation.selectedExtendedInsurance && reservation.selectedExtendedInsurance.length > 0) {
+      additionalServicesTotal += reservation.selectedExtendedInsurance.reduce((sum, insurance) => {
+        return sum + (insurance.calculatedPrice || 0);
+      }, 0);
+    }
+    
+    // Add any existing fees from pricing
+    if (reservation.pricing?.fees && reservation.pricing.fees.length > 0) {
+      additionalServicesTotal += reservation.pricing.fees.reduce((sum, fee) => sum + (fee.amount || 0), 0);
+    }
+    
     const totalPrice = reservation.pricing?.totalAmount || 0;
     
     // Calculate actual daily rate from total pricing (more accurate than stored dailyRate)
@@ -136,7 +165,7 @@ class PDFService {
     console.log('💰 [PDF PRICING] Base price:', basePrice);
     console.log('💰 [PDF PRICING] Stored daily rate:', reservation.pricing?.dailyRate);
     console.log('💰 [PDF PRICING] Calculated daily rate:', actualDailyRate);
-    console.log('💰 [PDF PRICING] Additional services:', additionalServices);
+    console.log('💰 [PDF PRICING] Additional services total:', additionalServicesTotal);
     console.log('💰 [PDF PRICING] Total price:', totalPrice);
     
     // Customer address formatting for Slovak format
@@ -181,7 +210,7 @@ class PDFService {
       'denna_sadzba': `${actualDailyRate.toFixed(2)} €`,
       'pocet_dni': days.toString(),
       'cena_bez_depozitu': `${basePrice.toFixed(2)} €`,
-      'sluzby_priplatky': `${additionalServices.toFixed(2)} €`,
+      'sluzby_priplatky': `${additionalServicesTotal.toFixed(2)} €`,
       'spolu_cena': `${totalPrice.toFixed(2)} €`,
       
       // Additional data
