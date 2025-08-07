@@ -2924,9 +2924,24 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
       qrCodesKeys: reservation.qrCodes ? Object.keys(reservation.qrCodes) : []
     });
     
-    // Check if reservation has QR codes
-    if (!reservation.qrCodes || (!reservation.qrCodes.payBySquareRental && !reservation.qrCodes.payBySquare)) {
-      console.log('❌ [QR API] No QR codes available, returning hasQRCodes: false');
+    // Check if reservation has QR codes or can generate them from payment info
+    const hasValidQRCodes = reservation.qrCodes && (
+      (reservation.qrCodes.payBySquareRental && reservation.qrCodes.payBySquareRental !== null) ||
+      (reservation.qrCodes.payBySquare && reservation.qrCodes.payBySquare !== null)
+    );
+    
+    const hasPaymentInfo = reservation.qrCodes && reservation.qrCodes.bankAccount && reservation.qrCodes.variableSymbol && reservation.qrCodes.amount > 0;
+    
+    console.log('🔍 [QR API] QR validation:', {
+      hasValidQRCodes,
+      hasPaymentInfo,
+      bankAccount: reservation.qrCodes?.bankAccount,
+      amount: reservation.qrCodes?.amount,
+      variableSymbol: reservation.qrCodes?.variableSymbol
+    });
+    
+    if (!hasValidQRCodes && !hasPaymentInfo) {
+      console.log('❌ [QR API] No valid QR codes or payment info available, returning hasQRCodes: false');
       return res.status(200).json({
         success: true,
         message: 'QR codes not available for this reservation',
@@ -2942,8 +2957,80 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
       });
     }
 
+    // If QR codes are null but payment metadata exists, generate fallback QR codes
+    if (!hasValidQRCodes && hasPaymentInfo) {
+      console.log('🔧 [QR API] Attempting to generate fallback QR codes from payment metadata');
+      
+      try {
+        const bySquareService = require('../services/bySquareService');
+        
+        const paymentData = {
+          amount: reservation.qrCodes.amount,
+          currency: 'EUR',
+          bankAccount: reservation.qrCodes.bankAccount,
+          variableSymbol: reservation.qrCodes.variableSymbol,
+          constantSymbol: reservation.qrCodes.constantSymbol || '0308',
+          beneficiaryName: reservation.qrCodes.beneficiaryName || 'Car Rental Service',
+          paymentNote: reservation.qrCodes.paymentNote || `Rental payment for reservation ${reservation.reservationNumber}`
+        };
+
+        console.log('🔧 [QR API] Generating fallback QR with data:', {
+          amount: paymentData.amount,
+          bankAccount: paymentData.bankAccount,
+          variableSymbol: paymentData.variableSymbol
+        });
+        
+        const qrResult = await bySquareService.generatePayBySquareQR(paymentData);
+        
+        if (qrResult && qrResult.code) {
+          // Store the generated QR back to the reservation for future use
+          reservation.qrCodes.payBySquare = qrResult.code;
+          await reservation.save();
+          
+          console.log('✅ [QR API] Generated and saved fallback QR code');
+        } else {
+          console.log('❌ [QR API] Failed to generate fallback QR code, service returned:', qrResult);
+        }
+      } catch (fallbackError) {
+        console.error('❌ [QR API] Error generating fallback QR:', fallbackError.message);
+        // Continue with existing logic - we'll still show payment details even if QR generation fails
+      }
+    }
+
+    // Recheck QR codes after potential fallback generation
+    const finalHasValidQRCodes = reservation.qrCodes && (
+      (reservation.qrCodes.payBySquareRental && reservation.qrCodes.payBySquareRental !== null) ||
+      (reservation.qrCodes.payBySquare && reservation.qrCodes.payBySquare !== null)
+    );
+
+    if (!finalHasValidQRCodes) {
+      console.log('❌ [QR API] Still no valid QR codes after fallback attempt');
+      return res.status(200).json({
+        success: true,
+        message: 'QR codes could not be generated for this reservation',
+        data: {
+          hasQRCodes: false,
+          reservation: {
+            id: reservation._id,
+            reservationNumber: reservation.reservationNumber,
+            status: reservation.status,
+            amount: reservation.pricing?.totalAmount || 0
+          },
+          // Still include payment details for manual processing
+          paymentDetails: hasPaymentInfo ? {
+            amount: reservation.qrCodes.amount,
+            bankAccount: reservation.qrCodes.bankAccount,
+            variableSymbol: reservation.qrCodes.variableSymbol,
+            constantSymbol: reservation.qrCodes.constantSymbol,
+            beneficiaryName: reservation.qrCodes.beneficiaryName,
+            paymentNote: reservation.qrCodes.paymentNote
+          } : null
+        }
+      });
+    }
+
     // Generate QR code image URLs for display
-    console.log('✅ [QR API] QR codes found, generating image URLs');
+    console.log('✅ [QR API] QR codes available, generating image URLs');
     const bySquareService = require('../services/bySquareService');
     
     const qrImageUrls = {

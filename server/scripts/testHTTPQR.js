@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const https = require('https');
+const http = require('http');
 require('dotenv').config();
 
 // Import models to find a reservation
@@ -41,7 +41,7 @@ async function testHTTPQR() {
       rejectUnauthorized: false
     };
 
-    const req = https.request(options, (res) => {
+    const req = http.request(options, (res) => {
       console.log('📤 Response status:', res.statusCode);
       console.log('📤 Response headers:', res.headers);
       
