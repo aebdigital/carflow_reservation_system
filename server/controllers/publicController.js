@@ -3186,11 +3186,10 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
               reservation._id.toString().slice(-8);
             const variableSymbol = reservationDigits.slice(-10).padStart(10, '0');
             
-            // Update reservation with QR codes
+            // Update reservation with QR codes - use new separate structure
             reservation.qrCodes = {
-              payBySquare: qrResult.qrCodes.payBySquare,
-              qrPlatbaCz: qrResult.qrCodes.qrPlatbaCz,
-              invoiceBySquare: qrResult.qrCodes.invoiceBySquare,
+              payBySquareRental: qrResult.qrCodes.payBySquareRental,
+              payBySquareDeposit: qrResult.qrCodes.payBySquareDeposit,
               generatedAt: new Date(),
               lastUpdated: new Date(),
               isActive: true,

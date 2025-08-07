@@ -81,11 +81,11 @@ router.post('/test-qr', async (req, res) => {
         success: true,
         message: 'QR codes generated successfully!',
         data: {
-          hasPayBySquare: !!result.qrCodes.payBySquare,
-          hasQrPlatbaCz: !!result.qrCodes.qrPlatbaCz,
+          hasPayBySquareRental: !!result.qrCodes.payBySquareRental,
+          hasPayBySquareDeposit: !!result.qrCodes.payBySquareDeposit,
           qrCodes: {
-            payBySquare: result.qrCodes.payBySquare ? 'Generated ✅' : 'Missing ❌',
-            qrPlatbaCz: result.qrCodes.qrPlatbaCz ? 'Generated ✅' : 'Missing ❌'
+            payBySquareRental: result.qrCodes.payBySquareRental ? 'Generated ✅' : 'Missing ❌',
+            payBySquareDeposit: result.qrCodes.payBySquareDeposit ? 'Generated ✅' : 'Missing ❌'
           },
           packageConsumption: result.packageConsumption
         }
@@ -159,11 +159,10 @@ router.post('/regenerate-qr/:reservationId', async (req, res) => {
         reservation._id.toString().slice(-8);
       const variableSymbol = reservationDigits.slice(-10).padStart(10, '0');
       
-      // Update reservation with QR codes
+      // Update reservation with QR codes - use new separate structure
       reservation.qrCodes = {
-        payBySquare: qrResult.qrCodes.payBySquare,
-        qrPlatbaCz: qrResult.qrCodes.qrPlatbaCz,
-        invoiceBySquare: qrResult.qrCodes.invoiceBySquare,
+        payBySquareRental: qrResult.qrCodes.payBySquareRental,
+        payBySquareDeposit: qrResult.qrCodes.payBySquareDeposit,
         generatedAt: new Date(),
         lastUpdated: new Date(),
         isActive: true,
@@ -188,8 +187,8 @@ router.post('/regenerate-qr/:reservationId', async (req, res) => {
           reservationNumber: reservation.reservationNumber,
           totalAmount: totalAmount,
           variableSymbol: variableSymbol,
-          hasPayBySquare: !!qrResult.qrCodes.payBySquare,
-          hasQrPlatbaCz: !!qrResult.qrCodes.qrPlatbaCz
+          hasPayBySquareRental: !!qrResult.qrCodes.payBySquareRental,
+          hasPayBySquareDeposit: !!qrResult.qrCodes.payBySquareDeposit
         }
       });
     } else {
