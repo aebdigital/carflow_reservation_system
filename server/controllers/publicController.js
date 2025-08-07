@@ -2915,11 +2915,13 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
     }
 
     console.log('🔍 [QR API] Reservation found:', reservation.reservationNumber);
+    console.log('🔍 [QR API] QR codes raw object:', JSON.stringify(reservation.qrCodes, null, 2));
     console.log('🔍 [QR API] QR codes available:', {
       hasQRCodes: !!reservation.qrCodes,
       payBySquare: !!reservation.qrCodes?.payBySquare,
       payBySquareRental: !!reservation.qrCodes?.payBySquareRental,
-      payBySquareDeposit: !!reservation.qrCodes?.payBySquareDeposit
+      payBySquareDeposit: !!reservation.qrCodes?.payBySquareDeposit,
+      qrCodesKeys: reservation.qrCodes ? Object.keys(reservation.qrCodes) : []
     });
     
     // Check if reservation has QR codes
