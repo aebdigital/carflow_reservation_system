@@ -382,6 +382,7 @@ class SMTP2GOService {
   // Customer confirmation email when admin confirms reservation
   async sendCustomerReservationConfirmed(to, reservationData, rawReservation = null) {
     const emailTemplateService = require('./emailTemplateService');
+    const bySquareService = require('./bySquareService');
     
     // Prepare template variables from actual backend data structure
     const templateVariables = {
@@ -396,6 +397,53 @@ class SMTP2GOService {
       link_view: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}`,
       link_cancel: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}/cancel`
     };
+    
+    // Add QR code data if available
+    if (rawReservation?.qrCodes) {
+      console.log('📱 [EMAIL] Adding QR codes to confirmed email template');
+      
+      const qrCodes = rawReservation.qrCodes;
+      
+      // Calculate amounts for display
+      const rentalAmount = rawReservation.pricing?.totalAmount || 0;
+      const depositAmount = rawReservation.pricing?.deposit || 0;
+      
+      // Generate QR code images URLs
+      const rentalQRCode = qrCodes.payBySquareRental || qrCodes.payBySquare;
+      const depositQRCode = qrCodes.payBySquareDeposit;
+      
+      if (rentalQRCode) {
+        templateVariables.qr_section_display = 'display: block;';
+        templateVariables.rental_amount = rentalAmount.toFixed(2);
+        templateVariables.qr_rental_image = bySquareService.generateQRImageUrl(rentalQRCode, 'png', 300);
+        
+        // Generate rental variable symbol (base + 1)
+        const baseVariableSymbol = qrCodes.variableSymbol || rawReservation.reservationNumber?.replace(/[^0-9]/g, '')?.slice(-9)?.padStart(9, '0') || '000000000';
+        templateVariables.variable_symbol_rental = baseVariableSymbol.slice(0, -1) + '1';
+        templateVariables.bank_account = qrCodes.bankAccount || 'SK6807200000000000000000';
+        
+        console.log('✅ [EMAIL] Added rental QR code data with VS:', templateVariables.variable_symbol_rental);
+      }
+      
+      if (depositQRCode && depositAmount > 0) {
+        templateVariables.qr_deposit_display = 'display: block;';
+        templateVariables.deposit_amount = depositAmount.toFixed(2);
+        templateVariables.qr_deposit_image = bySquareService.generateQRImageUrl(depositQRCode, 'png', 300);
+        
+        // Generate deposit variable symbol (base + 2)
+        const baseVariableSymbol = qrCodes.variableSymbol || rawReservation.reservationNumber?.replace(/[^0-9]/g, '')?.slice(-9)?.padStart(9, '0') || '000000000';
+        templateVariables.variable_symbol_deposit = baseVariableSymbol.slice(0, -1) + '2';
+        
+        console.log('✅ [EMAIL] Added deposit QR code data with VS:', templateVariables.variable_symbol_deposit);
+      } else {
+        templateVariables.qr_deposit_display = 'display: none;';
+        console.log('ℹ️ [EMAIL] No deposit QR code - hiding deposit section');
+      }
+    } else {
+      // Hide QR section if no QR codes available
+      templateVariables.qr_section_display = 'display: none;';
+      console.log('ℹ️ [EMAIL] No QR codes available - hiding payment section');
+    }
 
     // Get processed email template
     const emailData = await emailTemplateService.getEmailTemplate('reservation-confirmed', templateVariables);

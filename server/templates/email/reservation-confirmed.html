@@ -166,6 +166,51 @@
                 <a href="{{link_cancel}}" class="button button-danger">❌ Zrušiť rezerváciu</a>
             </div>
             
+            <!-- Payment QR Codes Section -->
+            <div class="payment-section" style="{{qr_section_display}}">
+                <h3 style="text-align: center; color: #4CAF50; margin: 30px 0 20px 0;">💳 Platobné QR kódy</h3>
+                
+                <!-- Rental Payment QR -->
+                <div class="qr-container">
+                    <div class="qr-header">
+                        <h4 style="color: #2196F3; margin: 0;">🚗 Platba za prenájom</h4>
+                        <p style="margin: 5px 0; font-weight: bold; color: #1976D2;">{{rental_amount}}€</p>
+                    </div>
+                    <div class="qr-code" style="text-align: center; margin: 15px 0;">
+                        <img src="{{qr_rental_image}}" alt="QR kód pre platbu prenájmu" style="width: 200px; height: 200px; border: 2px solid #ddd; border-radius: 8px;">
+                    </div>
+                    <div class="payment-details">
+                        <p style="font-size: 13px; color: #666; text-align: center; margin: 10px 0;">
+                            <strong>VS:</strong> {{variable_symbol_rental}} | <strong>IBAN:</strong> {{bank_account}}
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Deposit Payment QR -->
+                <div class="qr-container" style="margin-top: 25px; {{qr_deposit_display}}">
+                    <div class="qr-header">
+                        <h4 style="color: #FF9800; margin: 0;">🛡️ Platba kaucie</h4>
+                        <p style="margin: 5px 0; font-weight: bold; color: #F57C00;">{{deposit_amount}}€</p>
+                    </div>
+                    <div class="qr-code" style="text-align: center; margin: 15px 0;">
+                        <img src="{{qr_deposit_image}}" alt="QR kód pre platbu kaucie" style="width: 200px; height: 200px; border: 2px solid #ddd; border-radius: 8px;">
+                    </div>
+                    <div class="payment-details">
+                        <p style="font-size: 13px; color: #666; text-align: center; margin: 10px 0;">
+                            <strong>VS:</strong> {{variable_symbol_deposit}} | <strong>IBAN:</strong> {{bank_account}}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="payment-info" style="background-color: #fff3e0; padding: 15px; border-radius: 8px; border-left: 4px solid #FF9800; margin: 20px 0; font-size: 14px;">
+                    <p style="margin: 5px 0;"><strong>📱 Ako platiť QR kódom:</strong></p>
+                    <p style="margin: 5px 0;">1. Otvorte mobilnú bankovú aplikáciu</p>
+                    <p style="margin: 5px 0;">2. Naskenujte QR kód fotoaparátom</p>
+                    <p style="margin: 5px 0;">3. Skontrolujte údaje a potvrďte platbu</p>
+                    <p style="margin: 8px 0 5px 0; color: #E65100;"><strong>⚠️ Platbu vykonajte najneskôr do dátumu prevzatia vozidla.</strong></p>
+                </div>
+            </div>
+            
             <div class="info-section">
                 <div class="info-item">
                     <strong>ℹ️</strong> Pred prevzatím vozidla predložte platný OP a vodičský preukaz.
