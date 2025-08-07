@@ -803,16 +803,43 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
     const emailService = require('../services/emailService');
     const emailHelpers = require('../utils/emailHelpers');
     
+    console.log('📧 [EMAIL DEBUG] Starting confirmation email process...');
+    console.log('📧 [EMAIL DEBUG] Email service configured:', !!emailService.isConfigured);
+    console.log('📧 [EMAIL DEBUG] Customer exists:', !!reservation.customer);
+    console.log('📧 [EMAIL DEBUG] Customer email:', reservation.customer?.email);
+    console.log('📧 [EMAIL DEBUG] Reservation QR codes exist:', !!reservation.qrCodes);
+    console.log('📧 [EMAIL DEBUG] QR codes content:', {
+      hasQrCodes: !!reservation.qrCodes,
+      qrCodesKeys: reservation.qrCodes ? Object.keys(reservation.qrCodes) : [],
+      payBySquareRental: !!reservation.qrCodes?.payBySquareRental,
+      payBySquareDeposit: !!reservation.qrCodes?.payBySquareDeposit,
+      payBySquare: !!reservation.qrCodes?.payBySquare
+    });
+    
     if (emailService.isConfigured && reservation.customer && reservation.customer.email) {
       // Prepare reservation data using existing helper
       const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
+      console.log('📧 [EMAIL DEBUG] Email data prepared:', {
+        hasEmailData: !!emailData,
+        carBrand: emailData?.car_brand,
+        carModel: emailData?.car_model,
+        customerName: `${emailData?.first_name} ${emailData?.last_name}`
+      });
       
       // Send confirmation email using new template, pass both emailData and raw reservation
+      console.log('📧 [EMAIL DEBUG] Calling sendCustomerReservationConfirmed...');
       await emailService.sendCustomerReservationConfirmed(reservation.customer.email, emailData, reservation);
       console.log('✅ [EMAIL] Confirmation notification sent to customer:', reservation.customer.email);
+    } else {
+      console.log('❌ [EMAIL DEBUG] Email not sent due to missing requirements:', {
+        emailConfigured: !!emailService.isConfigured,
+        hasCustomer: !!reservation.customer,
+        hasEmail: !!reservation.customer?.email
+      });
     }
   } catch (emailError) {
     console.error('❌ [EMAIL] Failed to send confirmation notification:', emailError.message);
+    console.error('❌ [EMAIL] Full error:', emailError);
     // Don't fail the confirmation if email fails
   }
 

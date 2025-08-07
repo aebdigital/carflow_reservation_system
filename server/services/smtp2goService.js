@@ -381,6 +381,14 @@ class SMTP2GOService {
 
   // Customer confirmation email when admin confirms reservation
   async sendCustomerReservationConfirmed(to, reservationData, rawReservation = null) {
+    console.log('📧 [SMTP2GO DEBUG] sendCustomerReservationConfirmed called with:', {
+      to: to,
+      hasReservationData: !!reservationData,
+      hasRawReservation: !!rawReservation,
+      rawReservationId: rawReservation?._id,
+      rawReservationQrCodes: !!rawReservation?.qrCodes
+    });
+    
     const emailTemplateService = require('./emailTemplateService');
     const bySquareService = require('./bySquareService');
     
@@ -482,8 +490,24 @@ class SMTP2GOService {
       templateVariables.qr_section_display = 'display: none;';
     }
 
+    // Log all template variables for debugging
+    console.log('📧 [EMAIL DEBUG] Final template variables:', {
+      qr_section_display: templateVariables.qr_section_display,
+      qr_rental_image: templateVariables.qr_rental_image ? 'SET' : 'NOT SET',
+      qr_deposit_image: templateVariables.qr_deposit_image ? 'SET' : 'NOT SET',
+      qr_deposit_display: templateVariables.qr_deposit_display,
+      rental_amount: templateVariables.rental_amount,
+      deposit_amount: templateVariables.deposit_amount,
+      payment_label: templateVariables.payment_label,
+      variable_symbol_rental: templateVariables.variable_symbol_rental,
+      variable_symbol_deposit: templateVariables.variable_symbol_deposit,
+      bank_account: templateVariables.bank_account
+    });
+
     // Get processed email template
+    console.log('📧 [EMAIL DEBUG] Getting email template with variables...');
     const emailData = await emailTemplateService.getEmailTemplate('reservation-confirmed', templateVariables);
+    console.log('📧 [EMAIL DEBUG] Email template processed successfully');
     
     // Set subject to match exact specification
     const subject = '✅ Potvrdenie rezervácie';
