@@ -2959,40 +2959,94 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
 
     // If QR codes are null but payment metadata exists, generate fallback QR codes
     if (!hasValidQRCodes && hasPaymentInfo) {
-      console.log('🔧 [QR API] Attempting to generate fallback QR codes from payment metadata');
+      console.log('🔧 [QR API] Attempting to generate TWO separate fallback QR codes from payment metadata');
       
       try {
         const bySquareService = require('../services/bySquareService');
         
-        const paymentData = {
-          amount: reservation.qrCodes.amount,
-          currency: 'EUR',
-          bankAccount: reservation.qrCodes.bankAccount,
-          variableSymbol: reservation.qrCodes.variableSymbol,
-          constantSymbol: reservation.qrCodes.constantSymbol || '0308',
-          beneficiaryName: reservation.qrCodes.beneficiaryName || 'Car Rental Service',
-          paymentNote: reservation.qrCodes.paymentNote || `Rental payment for reservation ${reservation.reservationNumber}`
-        };
-
-        console.log('🔧 [QR API] Generating fallback QR with data:', {
-          amount: paymentData.amount,
-          bankAccount: paymentData.bankAccount,
-          variableSymbol: paymentData.variableSymbol
-        });
+        // Use the proper generateReservationQR method to get both rental and deposit QR codes
+        console.log('🔧 [QR API] Using generateReservationQR method for proper PayBySquare API generation');
         
-        const qrResult = await bySquareService.generatePayBySquareQR(paymentData);
+        const qrResult = await bySquareService.generateReservationQR(
+          reservation,
+          reservation.car,
+          reservation.customer
+        );
         
-        if (qrResult && qrResult.code) {
-          // Store the generated QR back to the reservation for future use
-          reservation.qrCodes.payBySquare = qrResult.code;
-          await reservation.save();
+        if (qrResult && qrResult.success && qrResult.qrCodes) {
+          console.log('✅ [QR API] Successfully generated both QR codes via PayBySquare API');
           
-          console.log('✅ [QR API] Generated and saved fallback QR code');
+          // Store both generated QR codes
+          if (qrResult.qrCodes.payBySquareRental) {
+            reservation.qrCodes.payBySquareRental = qrResult.qrCodes.payBySquareRental;
+            console.log('✅ [QR API] Saved rental QR code');
+          }
+          
+          if (qrResult.qrCodes.payBySquareDeposit) {
+            reservation.qrCodes.payBySquareDeposit = qrResult.qrCodes.payBySquareDeposit;
+            console.log('✅ [QR API] Saved deposit QR code');
+          }
+          
+          // Also store in legacy format for compatibility
+          if (qrResult.qrCodes.payBySquareRental) {
+            reservation.qrCodes.payBySquare = qrResult.qrCodes.payBySquareRental;
+            console.log('✅ [QR API] Saved legacy payBySquare for compatibility');
+          }
+          
+          await reservation.save();
+          console.log('✅ [QR API] All fallback QR codes generated and saved successfully');
+          
         } else {
-          console.log('❌ [QR API] Failed to generate fallback QR code, service returned:', qrResult);
+          console.log('❌ [QR API] PayBySquare API generation failed, falling back to simple QR generation');
+          
+          // Fallback to simple QR generation if PayBySquare API fails
+          const totalAmount = reservation.qrCodes.amount;
+          const depositAmount = reservation.car?.pricing?.deposit || 0;
+          const rentalAmount = totalAmount - depositAmount;
+          
+          if (rentalAmount > 0) {
+            const rentalPaymentData = {
+              amount: rentalAmount,
+              currency: 'EUR',
+              bankAccount: reservation.qrCodes.bankAccount,
+              variableSymbol: reservation.qrCodes.variableSymbol + '1', // Add '1' for rental
+              constantSymbol: reservation.qrCodes.constantSymbol || '0308',
+              beneficiaryName: reservation.qrCodes.beneficiaryName || 'Car Rental Service',
+              paymentNote: `Rental: ${reservation.reservationNumber}`
+            };
+            
+            const rentalQR = await bySquareService.generatePayBySquareQR(rentalPaymentData);
+            if (rentalQR && rentalQR.code) {
+              reservation.qrCodes.payBySquareRental = rentalQR.code;
+              reservation.qrCodes.payBySquare = rentalQR.code; // Legacy compatibility
+              console.log('✅ [QR API] Generated rental QR via fallback method');
+            }
+          }
+          
+          if (depositAmount > 0) {
+            const depositPaymentData = {
+              amount: depositAmount,
+              currency: 'EUR',
+              bankAccount: reservation.qrCodes.bankAccount,
+              variableSymbol: reservation.qrCodes.variableSymbol + '2', // Add '2' for deposit
+              constantSymbol: reservation.qrCodes.constantSymbol || '0308',
+              beneficiaryName: reservation.qrCodes.beneficiaryName || 'Car Rental Service',
+              paymentNote: `Deposit: ${reservation.reservationNumber}`
+            };
+            
+            const depositQR = await bySquareService.generatePayBySquareQR(depositPaymentData);
+            if (depositQR && depositQR.code) {
+              reservation.qrCodes.payBySquareDeposit = depositQR.code;
+              console.log('✅ [QR API] Generated deposit QR via fallback method');
+            }
+          }
+          
+          await reservation.save();
+          console.log('✅ [QR API] Fallback QR codes saved');
         }
+        
       } catch (fallbackError) {
-        console.error('❌ [QR API] Error generating fallback QR:', fallbackError.message);
+        console.error('❌ [QR API] Error generating fallback QR codes:', fallbackError.message);
         // Continue with existing logic - we'll still show payment details even if QR generation fails
       }
     }
@@ -3000,6 +3054,7 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
     // Recheck QR codes after potential fallback generation
     const finalHasValidQRCodes = reservation.qrCodes && (
       (reservation.qrCodes.payBySquareRental && reservation.qrCodes.payBySquareRental !== null) ||
+      (reservation.qrCodes.payBySquareDeposit && reservation.qrCodes.payBySquareDeposit !== null) ||
       (reservation.qrCodes.payBySquare && reservation.qrCodes.payBySquare !== null)
     );
 
