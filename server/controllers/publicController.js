@@ -2896,13 +2896,14 @@ const subscribeToNewsletterSimple = asyncHandler(async (req, res, next) => {
 // @access  Public
 const getReservationQR = asyncHandler(async (req, res, next) => {
   const reservationId = req.params.id;
+  const forceRegenerate = req.query.regenerate === 'true'; // Optional query param to force regeneration
   
   if (!reservationId) {
     return next(new AppError('Reservation ID is required', 400));
   }
 
   try {
-    console.log('🔍 [QR API] Getting QR codes for reservation:', reservationId);
+    console.log('🔍 [QR API] Getting QR codes for reservation:', reservationId, forceRegenerate ? '(forcing regeneration)' : '');
     
     // Find reservation with QR codes
     const reservation = await Reservation.findById(reservationId)
@@ -2924,27 +2925,23 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
       qrCodesKeys: reservation.qrCodes ? Object.keys(reservation.qrCodes) : []
     });
     
-    // Check if reservation has QR codes or can generate them from payment info
-    const hasValidQRCodes = reservation.qrCodes && (
-      (reservation.qrCodes.payBySquareRental && reservation.qrCodes.payBySquareRental !== null) ||
-      (reservation.qrCodes.payBySquare && reservation.qrCodes.payBySquare !== null)
-    );
+    // Always generate fresh QR codes on demand for consistent dual QR display
+    console.log('🔄 [QR API] Generating fresh QR codes on demand (no caching)');
     
     const hasPaymentInfo = reservation.qrCodes && reservation.qrCodes.bankAccount && reservation.qrCodes.variableSymbol && reservation.qrCodes.amount > 0;
     
-    console.log('🔍 [QR API] QR validation:', {
-      hasValidQRCodes,
+    console.log('🔍 [QR API] Payment info available:', {
       hasPaymentInfo,
       bankAccount: reservation.qrCodes?.bankAccount,
       amount: reservation.qrCodes?.amount,
       variableSymbol: reservation.qrCodes?.variableSymbol
     });
     
-    if (!hasValidQRCodes && !hasPaymentInfo) {
-      console.log('❌ [QR API] No valid QR codes or payment info available, returning hasQRCodes: false');
+    if (!hasPaymentInfo) {
+      console.log('❌ [QR API] No payment info available, cannot generate QR codes');
       return res.status(200).json({
         success: true,
-        message: 'QR codes not available for this reservation',
+        message: 'QR codes cannot be generated - missing payment information',
         data: {
           hasQRCodes: false,
           reservation: {
@@ -2957,8 +2954,8 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
       });
     }
 
-    // If QR codes are null but payment metadata exists, generate QR codes using PayBySquare API only
-    if (!hasValidQRCodes && hasPaymentInfo) {
+    // Always generate QR codes fresh using PayBySquare API
+    if (hasPaymentInfo) {
       console.log('🔧 [QR API] Attempting to generate QR codes using PayBySquare API');
       
       try {
@@ -3005,7 +3002,7 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
       }
     }
 
-    // Recheck QR codes after potential fallback generation
+    // Check if QR generation was successful
     const finalHasValidQRCodes = reservation.qrCodes && (
       (reservation.qrCodes.payBySquareRental && reservation.qrCodes.payBySquareRental !== null) ||
       (reservation.qrCodes.payBySquareDeposit && reservation.qrCodes.payBySquareDeposit !== null) ||
@@ -3013,7 +3010,7 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
     );
 
     if (!finalHasValidQRCodes) {
-      console.log('❌ [QR API] Still no valid QR codes after fallback attempt');
+      console.log('❌ [QR API] QR code generation failed');
       return res.status(200).json({
         success: true,
         message: 'QR codes could not be generated for this reservation',

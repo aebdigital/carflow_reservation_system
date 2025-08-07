@@ -32,11 +32,11 @@ The system was inconsistently generating QR codes due to multiple code paths:
 When admin clicks QR icon in reservation subpage:
 
 1. **Frontend**: `QRCodeDisplay.jsx` opens dialog
-2. **API Call**: `GET /api/public/reservations/:id/qr`
+2. **API Call**: `GET /api/public/reservations/:id/qr?regenerate=true` 
 3. **Backend Logic**:
-   - Checks for existing `payBySquareRental` and `payBySquareDeposit`
-   - If missing, generates both using `bySquareService`
-   - **Always stores both QR codes separately**
+   - **Always generates fresh QR codes** (no caching/retrieval)
+   - Generates both `payBySquareRental` and `payBySquareDeposit` using `bySquareService`
+   - **Stores both QR codes separately**
 4. **Frontend Display**: Shows both QR codes side by side:
    - 🇸🇰 **Nájomné** (Rental fee QR)
    - 🇸🇰 **Depozit** (Deposit QR)
@@ -100,7 +100,9 @@ The script will:
 ## Expected Result 🎉
 
 **100% consistent dual QR code generation:**
-- Every QR request now generates both rental and deposit QR codes
+- **Every QR request generates FRESH QR codes** (no caching/retrieval)
+- **Always generates both rental and deposit QR codes**
 - Frontend always displays both QR codes side by side
 - No more inconsistent single QR vs dual QR behavior
 - Legacy reservations can be migrated to new format
+- **Guaranteed dual QR generation on every admin button click**

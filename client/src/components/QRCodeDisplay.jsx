@@ -39,7 +39,7 @@ const QRCodeDisplay = ({ reservationId, onClose, open = false }) => {
       const token = localStorage.getItem('token');
       const baseApiUrl = (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, '');
       
-      const response = await fetch(`${baseApiUrl}/public/reservations/${reservationId}/qr`, {
+      const response = await fetch(`${baseApiUrl}/public/reservations/${reservationId}/qr?regenerate=true`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
