@@ -422,7 +422,13 @@ class SMTP2GOService {
       
       // Calculate amounts for display
       const rentalAmount = rawReservation.pricing?.totalAmount || 0;
-      const depositAmount = rawReservation.car?.pricing?.deposit || rawReservation.pricing?.deposit || 0;
+      let depositAmount = rawReservation.car?.pricing?.deposit || rawReservation.pricing?.deposit || 0;
+      
+      // TEMPORARY: If no deposit configured, use default for testing (must match bySquareService)
+      if (depositAmount === 0) {
+        depositAmount = 200; // Default test deposit amount
+        console.log('⚠️ [EMAIL] No deposit configured, using default test amount: 200€');
+      }
       
       // Handle different QR code formats
       const hasNewFormat = !!(qrCodes.payBySquareRental || qrCodes.payBySquareDeposit);

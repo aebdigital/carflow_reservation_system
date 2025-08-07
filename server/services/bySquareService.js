@@ -46,7 +46,14 @@ class BySquareService {
       
       // Generate QR code for deposit amount only (if exists)
       let depositQR = null;
-      const depositAmount = car.pricing?.deposit || car.deposit || 0;
+      let depositAmount = car.pricing?.deposit || car.deposit || 0;
+      
+      // TEMPORARY: If no deposit configured, use a default amount for testing
+      if (depositAmount === 0) {
+        depositAmount = 200; // Default test deposit amount
+        console.log('⚠️ [BYSQUARE] No deposit configured on car, using default test amount: 200€');
+      }
+      
       console.log('🔍 [BYSQUARE] Deposit amount check:', {
         carPricingDeposit: car.pricing?.deposit,
         carDeposit: car.deposit,
@@ -56,7 +63,16 @@ class BySquareService {
       
       if (depositAmount > 0) {
         console.log('🔄 [BYSQUARE] Generating deposit QR code...');
-        depositQR = await this.generateDepositQR(reservation, car, customer);
+        // Create a temporary car object with the deposit amount for QR generation
+        const carWithDeposit = {
+          ...car,
+          pricing: {
+            ...car.pricing,
+            deposit: depositAmount
+          },
+          deposit: depositAmount
+        };
+        depositQR = await this.generateDepositQR(reservation, carWithDeposit, customer);
         console.log('✅ [BYSQUARE] Deposit QR code generated');
       } else {
         console.log('ℹ️ [BYSQUARE] No deposit amount found, skipping deposit QR generation');
