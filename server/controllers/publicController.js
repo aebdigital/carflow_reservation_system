@@ -2902,6 +2902,8 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
   }
 
   try {
+    console.log('🔍 [QR API] Getting QR codes for reservation:', reservationId);
+    
     // Find reservation with QR codes
     const reservation = await Reservation.findById(reservationId)
       .select('qrCodes pricing status customer car startDate endDate reservationNumber')
@@ -2912,8 +2914,17 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
       return next(new AppError('Reservation not found', 404));
     }
 
+    console.log('🔍 [QR API] Reservation found:', reservation.reservationNumber);
+    console.log('🔍 [QR API] QR codes available:', {
+      hasQRCodes: !!reservation.qrCodes,
+      payBySquare: !!reservation.qrCodes?.payBySquare,
+      payBySquareRental: !!reservation.qrCodes?.payBySquareRental,
+      payBySquareDeposit: !!reservation.qrCodes?.payBySquareDeposit
+    });
+    
     // Check if reservation has QR codes
     if (!reservation.qrCodes || (!reservation.qrCodes.payBySquareRental && !reservation.qrCodes.payBySquare)) {
+      console.log('❌ [QR API] No QR codes available, returning hasQRCodes: false');
       return res.status(200).json({
         success: true,
         message: 'QR codes not available for this reservation',
@@ -2930,6 +2941,7 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
     }
 
     // Generate QR code image URLs for display
+    console.log('✅ [QR API] QR codes found, generating image URLs');
     const bySquareService = require('../services/bySquareService');
     
     const qrImageUrls = {
@@ -2960,7 +2972,7 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
           } : null,
           startDate: reservation.startDate,
           endDate: reservation.endDate,
-          amount: reservation.qrCodes.amount || reservation.pricing?.totalAmount || (reservation.pricing?.dailyRate * reservation.pricing?.totalDays) || 0,
+          amount: (reservation.qrCodes.amount && reservation.qrCodes.amount > 0) ? reservation.qrCodes.amount : (reservation.pricing?.totalAmount || (reservation.pricing?.dailyRate * reservation.pricing?.totalDays) || 0),
           car: reservation.car ? {
             ...reservation.car.toObject(),
             pricing: {
@@ -3150,7 +3162,7 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
           } : null,
           startDate: reservation.startDate,
           endDate: reservation.endDate,
-          amount: reservation.qrCodes.amount || reservation.pricing?.totalAmount || (reservation.pricing?.dailyRate * reservation.pricing?.totalDays) || 0,
+          amount: (reservation.qrCodes.amount && reservation.qrCodes.amount > 0) ? reservation.qrCodes.amount : (reservation.pricing?.totalAmount || (reservation.pricing?.dailyRate * reservation.pricing?.totalDays) || 0),
           car: reservation.car ? {
             ...reservation.car.toObject(),
             pricing: {
