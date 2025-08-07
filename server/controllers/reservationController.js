@@ -726,7 +726,12 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
         if (qrResult.success && qrResult.qrCodes) {
           // Calculate total amount including deposit
           const rentalAmount = reservation.pricing?.totalAmount || 0;
-          const depositAmount = reservation.car.pricing?.deposit || 0;
+          const depositAmount = reservation.car.pricing?.deposit || reservation.car.deposit || 0;
+          console.log('🔍 [QR CONFIRM] Deposit amount calculation:', {
+            carPricingDeposit: reservation.car.pricing?.deposit,
+            carDeposit: reservation.car.deposit,
+            finalDepositAmount: depositAmount
+          });
           const totalAmount = rentalAmount + depositAmount;
           
           // Generate variable symbol from reservation number and ID

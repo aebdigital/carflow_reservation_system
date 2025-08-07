@@ -46,8 +46,20 @@ class BySquareService {
       
       // Generate QR code for deposit amount only (if exists)
       let depositQR = null;
-      if (car.pricing?.deposit && car.pricing.deposit > 0) {
+      const depositAmount = car.pricing?.deposit || car.deposit || 0;
+      console.log('🔍 [BYSQUARE] Deposit amount check:', {
+        carPricingDeposit: car.pricing?.deposit,
+        carDeposit: car.deposit,
+        finalDepositAmount: depositAmount,
+        willGenerateDepositQR: depositAmount > 0
+      });
+      
+      if (depositAmount > 0) {
+        console.log('🔄 [BYSQUARE] Generating deposit QR code...');
         depositQR = await this.generateDepositQR(reservation, car, customer);
+        console.log('✅ [BYSQUARE] Deposit QR code generated');
+      } else {
+        console.log('ℹ️ [BYSQUARE] No deposit amount found, skipping deposit QR generation');
       }
       
       console.log('✅ [BYSQUARE] Both Slovak QR codes generated successfully');
@@ -218,8 +230,13 @@ class BySquareService {
     const issueDate = new Date(reservation.createdAt || Date.now());
     const dueDate = new Date(reservation.startDate);
     
-    // Deposit amount only
-    const depositAmount = car.pricing?.deposit || 0;
+    // Deposit amount only - check multiple possible locations
+    const depositAmount = car.pricing?.deposit || car.deposit || 0;
+    console.log('🔍 [BYSQUARE] Deposit amount for QR generation:', {
+      carPricingDeposit: car.pricing?.deposit,
+      carDeposit: car.deposit,
+      finalDepositAmount: depositAmount
+    });
     
     // Generate variable symbol from reservation number and ID + D for deposit
     const reservationDigits = reservation.reservationNumber ? 
