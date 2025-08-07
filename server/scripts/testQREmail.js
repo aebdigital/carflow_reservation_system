@@ -4,6 +4,8 @@ require('dotenv').config();
 // Import services and models
 const smtp2goService = require('../services/smtp2goService');
 const Reservation = require('../models/Reservation');
+const User = require('../models/User');
+const Car = require('../models/Car');
 
 async function testQREmail() {
   try {
@@ -11,9 +13,12 @@ async function testQREmail() {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('📦 Connected to MongoDB');
 
-    // Find the latest reservation with QR codes
+    // Find the latest reservation with QR codes (legacy or new format)
     const reservation = await Reservation.findOne({
-      'qrCodes.payBySquareRental': { $exists: true }
+      $or: [
+        { 'qrCodes.payBySquareRental': { $exists: true } },
+        { 'qrCodes.payBySquare': { $exists: true } }
+      ]
     })
     .populate([
       { path: 'customer', select: 'firstName lastName email phone' },
@@ -28,6 +33,7 @@ async function testQREmail() {
 
     console.log('🎯 Found reservation:', reservation.reservationNumber);
     console.log('📱 QR codes available:', {
+      legacy: !!reservation.qrCodes.payBySquare,
       rental: !!reservation.qrCodes.payBySquareRental,
       deposit: !!reservation.qrCodes.payBySquareDeposit
     });

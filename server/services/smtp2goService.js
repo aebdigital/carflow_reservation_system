@@ -408,36 +408,66 @@ class SMTP2GOService {
       const rentalAmount = rawReservation.pricing?.totalAmount || 0;
       const depositAmount = rawReservation.pricing?.deposit || 0;
       
-      // Generate QR code images URLs
-      const rentalQRCode = qrCodes.payBySquareRental || qrCodes.payBySquare;
-      const depositQRCode = qrCodes.payBySquareDeposit;
+      // Handle different QR code formats
+      const hasNewFormat = !!(qrCodes.payBySquareRental || qrCodes.payBySquareDeposit);
+      const hasLegacyFormat = !!(qrCodes.payBySquare && !hasNewFormat);
       
-      if (rentalQRCode) {
-        templateVariables.qr_section_display = 'display: block;';
-        templateVariables.rental_amount = rentalAmount.toFixed(2);
-        templateVariables.qr_rental_image = bySquareService.generateQRImageUrl(rentalQRCode, 'png', 300);
+      if (hasNewFormat) {
+        console.log('📱 [EMAIL] Using new separate QR format');
         
-        // Generate rental variable symbol (base + 1)
-        const baseVariableSymbol = qrCodes.variableSymbol || rawReservation.reservationNumber?.replace(/[^0-9]/g, '')?.slice(-9)?.padStart(9, '0') || '000000000';
-        templateVariables.variable_symbol_rental = baseVariableSymbol.slice(0, -1) + '1';
-        templateVariables.bank_account = qrCodes.bankAccount || 'SK6807200000000000000000';
+        // New format: separate QR codes for rental and deposit
+        const rentalQRCode = qrCodes.payBySquareRental;
+        const depositQRCode = qrCodes.payBySquareDeposit;
         
-        console.log('✅ [EMAIL] Added rental QR code data with VS:', templateVariables.variable_symbol_rental);
-      }
-      
-      if (depositQRCode && depositAmount > 0) {
-        templateVariables.qr_deposit_display = 'display: block;';
-        templateVariables.deposit_amount = depositAmount.toFixed(2);
-        templateVariables.qr_deposit_image = bySquareService.generateQRImageUrl(depositQRCode, 'png', 300);
+        if (rentalQRCode) {
+          templateVariables.qr_section_display = 'display: block;';
+          templateVariables.rental_amount = rentalAmount.toFixed(2);
+          templateVariables.qr_rental_image = bySquareService.generateQRImageUrl(rentalQRCode, 'png', 300);
+          templateVariables.payment_label = 'Platba za prenájom';
+          
+          const baseVariableSymbol = qrCodes.variableSymbol || rawReservation.reservationNumber?.replace(/[^0-9]/g, '')?.slice(-9)?.padStart(9, '0') || '000000000';
+          templateVariables.variable_symbol_rental = baseVariableSymbol.slice(0, -1) + '1';
+          templateVariables.bank_account = qrCodes.bankAccount || 'SK6807200000000000000000';
+          
+          console.log('✅ [EMAIL] Added rental QR code data');
+        }
         
-        // Generate deposit variable symbol (base + 2)
-        const baseVariableSymbol = qrCodes.variableSymbol || rawReservation.reservationNumber?.replace(/[^0-9]/g, '')?.slice(-9)?.padStart(9, '0') || '000000000';
-        templateVariables.variable_symbol_deposit = baseVariableSymbol.slice(0, -1) + '2';
+        if (depositQRCode && depositAmount > 0) {
+          templateVariables.qr_deposit_display = 'display: block;';
+          templateVariables.deposit_amount = depositAmount.toFixed(2);
+          templateVariables.qr_deposit_image = bySquareService.generateQRImageUrl(depositQRCode, 'png', 300);
+          
+          const baseVariableSymbol = qrCodes.variableSymbol || rawReservation.reservationNumber?.replace(/[^0-9]/g, '')?.slice(-9)?.padStart(9, '0') || '000000000';
+          templateVariables.variable_symbol_deposit = baseVariableSymbol.slice(0, -1) + '2';
+          
+          console.log('✅ [EMAIL] Added deposit QR code data');
+        } else {
+          templateVariables.qr_deposit_display = 'display: none;';
+        }
         
-        console.log('✅ [EMAIL] Added deposit QR code data with VS:', templateVariables.variable_symbol_deposit);
+      } else if (hasLegacyFormat) {
+        console.log('📱 [EMAIL] Using legacy combined QR format');
+        
+        // Legacy format: one QR code for total amount (rental + deposit)
+        const legacyQRCode = qrCodes.payBySquare;
+        const totalAmount = (rentalAmount + depositAmount);
+        
+        if (legacyQRCode) {
+          templateVariables.qr_section_display = 'display: block;';
+          templateVariables.rental_amount = totalAmount.toFixed(2);
+          templateVariables.qr_rental_image = bySquareService.generateQRImageUrl(legacyQRCode, 'png', 300);
+          templateVariables.payment_label = 'Celková platba (prenájom + kaucia)';
+          templateVariables.variable_symbol_rental = qrCodes.variableSymbol || '0000000000';
+          templateVariables.bank_account = qrCodes.bankAccount || 'SK6807200000000000000000';
+          
+          // Hide deposit section for legacy format
+          templateVariables.qr_deposit_display = 'display: none;';
+          
+          console.log('✅ [EMAIL] Added legacy combined QR code data');
+        }
       } else {
-        templateVariables.qr_deposit_display = 'display: none;';
-        console.log('ℹ️ [EMAIL] No deposit QR code - hiding deposit section');
+        templateVariables.qr_section_display = 'display: none;';
+        console.log('ℹ️ [EMAIL] No QR codes found');
       }
     } else {
       // Hide QR section if no QR codes available
