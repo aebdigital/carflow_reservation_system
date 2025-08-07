@@ -735,21 +735,33 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
             reservation._id.toString().slice(-8);
           const variableSymbol = reservationDigits.slice(-10).padStart(10, '0');
           
-          // Update reservation with QR codes
-          reservation.qrCodes = {
-            payBySquareRental: qrResult.qrCodes.payBySquareRental,
-            payBySquareDeposit: qrResult.qrCodes.payBySquareDeposit,
-            generatedAt: new Date(),
-            lastUpdated: new Date(),
-            isActive: true,
-            bankAccount: 'SK6807200000000000000000',
-            variableSymbol: variableSymbol,
-            constantSymbol: '0308',
-            specificSymbol: '',
-            amount: totalAmount,
-            beneficiaryName: 'CarFlow Rental',
-            paymentNote: `Car rental + deposit: ${reservation.car.brand} ${reservation.car.model}`
-          };
+          // Update reservation with QR codes - preserve existing structure if it exists
+          if (!reservation.qrCodes) {
+            reservation.qrCodes = {};
+          }
+          
+          // Add the generated QR codes
+          reservation.qrCodes.payBySquareRental = qrResult.qrCodes.payBySquareRental;
+          reservation.qrCodes.payBySquareDeposit = qrResult.qrCodes.payBySquareDeposit;
+          
+          // Add/update metadata
+          reservation.qrCodes.generatedAt = reservation.qrCodes.generatedAt || new Date();
+          reservation.qrCodes.lastUpdated = new Date();
+          reservation.qrCodes.isActive = true;
+          reservation.qrCodes.bankAccount = reservation.qrCodes.bankAccount || 'SK6807200000000000000000';
+          reservation.qrCodes.variableSymbol = reservation.qrCodes.variableSymbol || variableSymbol;
+          reservation.qrCodes.constantSymbol = reservation.qrCodes.constantSymbol || '0308';
+          reservation.qrCodes.specificSymbol = reservation.qrCodes.specificSymbol || '';
+          reservation.qrCodes.amount = reservation.qrCodes.amount || totalAmount;
+          reservation.qrCodes.beneficiaryName = reservation.qrCodes.beneficiaryName || 'CarFlow Rental';
+          reservation.qrCodes.paymentNote = reservation.qrCodes.paymentNote || `Car rental + deposit: ${reservation.car.brand} ${reservation.car.model}`;
+          
+          console.log('🔍 [QR DEBUG] QR codes after update:', {
+            payBySquareRental: !!reservation.qrCodes.payBySquareRental,
+            payBySquareDeposit: !!reservation.qrCodes.payBySquareDeposit,
+            hasRentalQR: reservation.qrCodes.payBySquareRental ? 'YES' : 'NO',
+            hasDepositQR: reservation.qrCodes.payBySquareDeposit ? 'YES' : 'NO'
+          });
           
           await reservation.save();
           console.log('✅ [QR] QR codes generated and saved for confirmed reservation');
