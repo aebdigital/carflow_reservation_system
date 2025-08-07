@@ -399,6 +399,14 @@ class SMTP2GOService {
     };
     
     // Add QR code data if available
+    console.log('🔍 [EMAIL] Checking QR codes for confirmed email:', {
+      hasQrCodes: !!rawReservation?.qrCodes,
+      qrCodesKeys: rawReservation?.qrCodes ? Object.keys(rawReservation.qrCodes) : [],
+      payBySquareRental: !!rawReservation?.qrCodes?.payBySquareRental,
+      payBySquareDeposit: !!rawReservation?.qrCodes?.payBySquareDeposit,
+      payBySquare: !!rawReservation?.qrCodes?.payBySquare
+    });
+    
     if (rawReservation?.qrCodes) {
       console.log('📱 [EMAIL] Adding QR codes to confirmed email template');
       
@@ -406,7 +414,7 @@ class SMTP2GOService {
       
       // Calculate amounts for display
       const rentalAmount = rawReservation.pricing?.totalAmount || 0;
-      const depositAmount = rawReservation.pricing?.deposit || 0;
+      const depositAmount = rawReservation.car?.pricing?.deposit || rawReservation.pricing?.deposit || 0;
       
       // Handle different QR code formats
       const hasNewFormat = !!(qrCodes.payBySquareRental || qrCodes.payBySquareDeposit);
@@ -467,12 +475,11 @@ class SMTP2GOService {
         }
       } else {
         templateVariables.qr_section_display = 'display: none;';
-        console.log('ℹ️ [EMAIL] No QR codes found');
+        console.log('ℹ️ [EMAIL] No valid QR codes found for email template');
       }
     } else {
-      // Hide QR section if no QR codes available
+      console.log('❌ [EMAIL] No QR codes object found in reservation');
       templateVariables.qr_section_display = 'display: none;';
-      console.log('ℹ️ [EMAIL] No QR codes available - hiding payment section');
     }
 
     // Get processed email template

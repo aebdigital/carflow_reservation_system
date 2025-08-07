@@ -702,6 +702,71 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
 
   await reservation.save();
 
+  // 🆕 Generate QR codes for confirmed reservation if not already present
+  try {
+    console.log('🔄 [QR] Ensuring QR codes exist for confirmed reservation...');
+    
+    const hasValidQRCodes = reservation.qrCodes && (
+      (reservation.qrCodes.payBySquareRental && reservation.qrCodes.payBySquareRental !== null) ||
+      (reservation.qrCodes.payBySquareDeposit && reservation.qrCodes.payBySquareDeposit !== null)
+    );
+    
+    if (!hasValidQRCodes) {
+      console.log('🔄 [QR] No valid QR codes found, generating fresh QR codes for confirmation email...');
+      
+      const bySquareService = require('../services/bySquareService');
+      
+      if (bySquareService.isConfigured()) {
+        const qrResult = await bySquareService.generateReservationQR(
+          reservation,
+          reservation.car,
+          reservation.customer
+        );
+        
+        if (qrResult.success && qrResult.qrCodes) {
+          // Calculate total amount including deposit
+          const rentalAmount = reservation.pricing?.totalAmount || 0;
+          const depositAmount = reservation.car.pricing?.deposit || 0;
+          const totalAmount = rentalAmount + depositAmount;
+          
+          // Generate variable symbol from reservation number and ID
+          const reservationDigits = reservation.reservationNumber ? 
+            reservation.reservationNumber.replace(/[^0-9]/g, '') : 
+            reservation._id.toString().slice(-8);
+          const variableSymbol = reservationDigits.slice(-10).padStart(10, '0');
+          
+          // Update reservation with QR codes
+          reservation.qrCodes = {
+            payBySquareRental: qrResult.qrCodes.payBySquareRental,
+            payBySquareDeposit: qrResult.qrCodes.payBySquareDeposit,
+            generatedAt: new Date(),
+            lastUpdated: new Date(),
+            isActive: true,
+            bankAccount: 'SK6807200000000000000000',
+            variableSymbol: variableSymbol,
+            constantSymbol: '0308',
+            specificSymbol: '',
+            amount: totalAmount,
+            beneficiaryName: 'CarFlow Rental',
+            paymentNote: `Car rental + deposit: ${reservation.car.brand} ${reservation.car.model}`
+          };
+          
+          await reservation.save();
+          console.log('✅ [QR] QR codes generated and saved for confirmed reservation');
+        } else {
+          console.warn('⚠️ [QR] Failed to generate QR codes for confirmation:', qrResult.error);
+        }
+      } else {
+        console.log('ℹ️ [QR] bySquare not configured, skipping QR generation');
+      }
+    } else {
+      console.log('✅ [QR] Valid QR codes already exist for confirmed reservation');
+    }
+  } catch (qrError) {
+    console.error('❌ [QR] Error generating QR codes for confirmation:', qrError.message);
+    // Don't fail the confirmation if QR generation fails
+  }
+
   // 🔖 Automatically create contract when reservation is confirmed
   try {
     const Contract = require('../models/Contract');
