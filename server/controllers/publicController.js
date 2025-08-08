@@ -2449,6 +2449,88 @@ const getPublicCar = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Get car pricing (public - no authentication)
+// @route   GET /api/public/cars/:id/pricing
+// @access  Public
+const getPublicCarPricing = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { days } = req.query; // Optional: get calculated price for specific duration
+  
+  try {
+    const car = await Car.findOne({
+      _id: id,
+      isActive: true,
+      status: 'active'
+    }).select('pricing dailyRate brand model year');
+    
+    if (!car) {
+      return next(new AppError('Car not found', 404));
+    }
+    
+    // Build comprehensive pricing response
+    const pricingData = {
+      carId: car._id,
+      carInfo: {
+        brand: car.brand,
+        model: car.model,
+        year: car.year
+      },
+      pricing: {
+        dailyRate: car.pricing?.dailyRate || car.dailyRate || 0,
+        deposit: car.pricing?.deposit || 0,
+        rates: {
+          '1day': car.pricing?.rates?.['1day'] || null,
+          '2-3days': car.pricing?.rates?.['2-3days'] || null,
+          '4-10days': car.pricing?.rates?.['4-10days'] || null,
+          '11-17days': car.pricing?.rates?.['11-17days'] || null,
+          '18-24days': car.pricing?.rates?.['18-24days'] || null,
+          '25-29days': car.pricing?.rates?.['25-29days'] || null,
+          '30plus': car.pricing?.rates?.['30plus'] || 'dohoda - volať/písať mail'
+        },
+        weeklyRate: car.pricing?.weeklyRate || null,
+        monthlyRate: car.pricing?.monthlyRate || null
+      }
+    };
+    
+    // If days parameter is provided, calculate the total price for that duration
+    if (days && !isNaN(days) && parseInt(days) > 0) {
+      const durationDays = parseInt(days);
+      try {
+        const calculatedPrice = car.calculateRate(durationDays);
+        pricingData.calculation = {
+          days: durationDays,
+          totalPrice: calculatedPrice,
+          dailyRate: calculatedPrice / durationDays,
+          appliedRate: getAppliedRateDescription(durationDays, car.pricing?.rates || {})
+        };
+      } catch (error) {
+        console.error('❌ Error calculating price for days:', error);
+        // Don't fail the request, just omit calculation
+      }
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: pricingData
+    });
+  } catch (error) {
+    console.error('❌ Error getting public car pricing:', error);
+    return next(new AppError('Error retrieving car pricing', 500));
+  }
+});
+
+// Helper function to describe which rate was applied
+const getAppliedRateDescription = (days, rates) => {
+  if (days === 1 && rates['1day']) return '1 day rate';
+  if (days >= 2 && days <= 3 && rates['2-3days']) return '2-3 days rate';
+  if (days >= 4 && days <= 10 && rates['4-10days']) return '4-10 days rate';
+  if (days >= 11 && days <= 17 && rates['11-17days']) return '11-17 days rate';
+  if (days >= 18 && days <= 24 && rates['18-24days']) return '18-24 days rate';
+  if (days >= 25 && days <= 29 && rates['25-29days']) return '25-29 days rate';
+  if (days >= 30) return '30+ days rate (contact for pricing)';
+  return 'Daily rate (fallback)';
+};
+
 // @desc    Get car booking calendar for a specific user/tenant (public)
 // @route   GET /api/public/users/:email/cars/:carId/calendar
 // @access  Public
@@ -4238,6 +4320,7 @@ module.exports = {
   getCarExtendedInsuranceByUser,
   getCarSpecificationsByUser,
   getCarPricingByUser,
+  getPublicCarPricing,
   getCarBrandsByUser,
   getCarsByBrandByUser,
   getCarModelsByBrandByUser,
