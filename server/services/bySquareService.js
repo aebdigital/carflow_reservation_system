@@ -46,17 +46,20 @@ class BySquareService {
       
       // Generate QR code for deposit amount only (if exists)
       let depositQR = null;
-      let depositAmount = car.pricing?.deposit || car.deposit || 0;
       
-      // TEMPORARY: If no deposit configured, use a default amount for testing
+      // Check all possible deposit sources (consistent with frontend and email logic)
+      let depositAmount = car.pricing?.deposit || car.deposit || reservation.pricing?.deposit || 0;
+      
+      // TEMPORARY: If no deposit configured anywhere, use a default amount for testing
       if (depositAmount === 0) {
         depositAmount = 200; // Default test deposit amount
-        console.log('⚠️ [BYSQUARE] No deposit configured on car, using default test amount: 200€');
+        console.log('⚠️ [BYSQUARE] No deposit configured anywhere, using default test amount: 200€');
       }
       
       console.log('🔍 [BYSQUARE] Deposit amount check:', {
         carPricingDeposit: car.pricing?.deposit,
         carDeposit: car.deposit,
+        reservationPricingDeposit: reservation.pricing?.deposit,
         finalDepositAmount: depositAmount,
         willGenerateDepositQR: depositAmount > 0
       });
@@ -246,11 +249,12 @@ class BySquareService {
     const issueDate = new Date(reservation.createdAt || Date.now());
     const dueDate = new Date(reservation.startDate);
     
-    // Deposit amount only - check multiple possible locations
-    const depositAmount = car.pricing?.deposit || car.deposit || 0;
+    // Deposit amount only - check all possible locations (consistent with generateReservationQR)
+    const depositAmount = car.pricing?.deposit || car.deposit || reservation.pricing?.deposit || 0;
     console.log('🔍 [BYSQUARE] Deposit amount for QR generation:', {
       carPricingDeposit: car.pricing?.deposit,
       carDeposit: car.deposit,
+      reservationPricingDeposit: reservation.pricing?.deposit,
       finalDepositAmount: depositAmount
     });
     
