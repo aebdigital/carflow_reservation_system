@@ -2531,6 +2531,164 @@ const getAppliedRateDescription = (days, rates) => {
   return 'Daily rate (fallback)';
 };
 
+// @desc    Get car categories (public - no authentication)
+// @route   GET /api/public/cars/categories
+// @access  Public
+const getPublicCarCategories = asyncHandler(async (req, res, next) => {
+  try {
+    // Define all available car categories with Slovak translations and descriptions
+    const categories = [
+      {
+        value: 'economy',
+        label: 'Ekonomická',
+        labelEn: 'Economy',
+        description: 'Úsporné a spoľahlivé mestské auto vhodné na každodenné jazdenie aj krátke výlety s dôrazom na jednoduchosť a pohodlie.',
+        icon: 'directions_car',
+        color: '#4caf50'
+      },
+      {
+        value: 'compact',
+        label: 'Kompaktná',
+        labelEn: 'Compact',
+        description: 'Komfortné vozidlo s dostatkom priestoru a výbavy pre rodinné výlety, služobné cesty aj bežné každodenné používanie.',
+        icon: 'directions_car',
+        color: '#2196f3'
+      },
+      {
+        value: 'midsize',
+        label: 'Stredná',
+        labelEn: 'Midsize',
+        description: 'Komfortné vozidlo s dostatkom priestoru a výbavy pre rodinné výlety, služobné cesty aj bežné každodenné používanie.',
+        icon: 'directions_car',
+        color: '#ff9800'
+      },
+      {
+        value: 'fullsize',
+        label: 'Veľká',
+        labelEn: 'Full-size',
+        description: 'Elegantné a výkonné vozidlo s nadštandardnou výbavou vhodné na dlhé trasy, diaľnice a náročnejších zákazníkov.',
+        icon: 'directions_car',
+        color: '#9c27b0'
+      },
+      {
+        value: 'luxury',
+        label: 'Luxusná',
+        labelEn: 'Luxury',
+        description: 'Elegantné a výkonné vozidlo s nadštandardnou výbavou vhodné na dlhé trasy, diaľnice a náročnejších zákazníkov.',
+        icon: 'star',
+        color: '#795548'
+      },
+      {
+        value: 'suv',
+        label: 'SUV',
+        labelEn: 'SUV',
+        description: 'Elegantné a výkonné vozidlo s nadštandardnou výbavou vhodné na dlhé trasy, diaľnice a náročnejších zákazníkov.',
+        icon: 'terrain',
+        color: '#607d8b'
+      },
+      {
+        value: 'minivan',
+        label: 'Minivan',
+        labelEn: 'Minivan',
+        description: 'Priestranné vozidlo ideálne na prepravu väčšej skupiny ľudí, rodinné výlety, firemné transfery alebo letiskové odvozy.',
+        icon: 'airport_shuttle',
+        color: '#3f51b5'
+      },
+      {
+        value: 'convertible',
+        label: 'Kabriolet',
+        labelEn: 'Convertible',
+        description: 'Športové vozidlo s otvárateľnou strechou pre zážitkovú jazdu a špecialné príležitosti.',
+        icon: 'wb_sunny',
+        color: '#ffeb3b'
+      },
+      {
+        value: 'sports',
+        label: 'Športové',
+        labelEn: 'Sports',
+        description: 'Dynamické vozidlá pre zážitkovú jazdu, nadštandardný výkon a atraktívny vzhľad. Ideálne pre náročných motoristov.',
+        icon: 'speed',
+        color: '#f44336'
+      },
+      {
+        value: 'utility',
+        label: 'Úžitkové',
+        labelEn: 'Utility',
+        description: 'Výkonné dodávky určené na prepravu nákladu, zariadenia alebo sťahovanie, s veľkým nakladacím priestorom a 3 miestami na sedenie.',
+        icon: 'local_shipping',
+        color: '#9e9e9e'
+      },
+      {
+        value: 'caravan',
+        label: 'Obytné',
+        labelEn: 'Caravan',
+        description: 'Plne vybavené obytné vozidlá vhodné na dovolenku, výlety v prírode alebo dlhšie cesty po Európe s maximálnym komfortom.',
+        icon: 'rv_hookup',
+        color: '#8bc34a'
+      },
+      {
+        value: 'motorcycle',
+        label: 'Motorka',
+        labelEn: 'Motorcycle',
+        description: 'Výkonné a spoľahlivé motorky pre dobrodružných jazdcov, vhodné na krátke aj dlhé trasy – ideálne na víkendové úniky z mesta.',
+        icon: 'two_wheeler',
+        color: '#ff5722'
+      },
+      {
+        value: 'electric',
+        label: 'Elektrické',
+        labelEn: 'Electric',
+        description: 'Tiché, ekologické a moderné autá s okamžitým nástupom výkonu. Ideálne pre jazdu v meste aj medzimestské presuny.',
+        icon: 'electric_car',
+        color: '#4caf50'
+      }
+    ];
+
+    // Optional: Filter to only return categories that have active cars
+    const { activeOnly } = req.query;
+    
+    if (activeOnly === 'true') {
+      // Get distinct categories from active cars
+      const Car = require('../models/Car');
+      const activeCategories = await Car.distinct('category', {
+        status: 'active',
+        isActive: true
+      });
+      
+      // Filter categories to only include those with active cars
+      const filteredCategories = categories.filter(cat => 
+        activeCategories.includes(cat.value)
+      );
+      
+      // Add count of cars in each category
+      for (const category of filteredCategories) {
+        const count = await Car.countDocuments({
+          category: category.value,
+          status: 'active',
+          isActive: true
+        });
+        category.carCount = count;
+      }
+      
+      res.status(200).json({
+        success: true,
+        count: filteredCategories.length,
+        data: filteredCategories.sort((a, b) => (b.carCount || 0) - (a.carCount || 0))
+      });
+    } else {
+      // Return all categories
+      res.status(200).json({
+        success: true,
+        count: categories.length,
+        data: categories
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error getting car categories:', error);
+    return next(new AppError('Error retrieving car categories', 500));
+  }
+});
+
 // @desc    Get car booking calendar for a specific user/tenant (public)
 // @route   GET /api/public/users/:email/cars/:carId/calendar
 // @access  Public
@@ -4321,6 +4479,7 @@ module.exports = {
   getCarSpecificationsByUser,
   getCarPricingByUser,
   getPublicCarPricing,
+  getPublicCarCategories,
   getCarBrandsByUser,
   getCarsByBrandByUser,
   getCarModelsByBrandByUser,
