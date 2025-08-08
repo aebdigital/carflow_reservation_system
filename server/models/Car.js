@@ -188,6 +188,7 @@ const carSchema = new mongoose.Schema({
       '4-10days': Number,
       '11-17days': Number,
       '18-24days': Number,
+      '25-29days': Number,
       '30plus': String // "dohoda - volať/písať mail"
     },
     weeklyRate: Number,
@@ -596,6 +597,7 @@ carSchema.methods.calculateRate = function(days) {
   if (days >= 4 && days <= 10 && rates['4-10days']) return rates['4-10days'] * days;
   if (days >= 11 && days <= 17 && rates['11-17days']) return rates['11-17days'] * days;
   if (days >= 18 && days <= 24 && rates['18-24days']) return rates['18-24days'] * days;
+  if (days >= 25 && days <= 29 && rates['25-29days']) return rates['25-29days'] * days;
   
   // Fallback to pricing rates or legacy fields
   const dailyRate = this.pricing?.dailyRate || this.dailyRate || 0;
