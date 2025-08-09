@@ -1630,7 +1630,7 @@ function Reservations() {
                           Dodatočné služby
                         </Typography>
                         {selectedReservation.selectedServices.map((service, index) => (
-                          <Box key={index} sx={{ mb: 2, p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
+                          <Box key={service._id || index} sx={{ mb: 2, p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                               <Typography variant="body2" fontWeight="medium">
                                 {service.name || service.service?.name}
@@ -1639,19 +1639,53 @@ function Reservations() {
                                 {service.totalPrice?.toFixed(2)}€
                               </Typography>
                             </Box>
+                            
+                            {/* Service Description */}
+                            {service.description && (
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                                {service.description}
+                              </Typography>
+                            )}
+                            
+                            {/* Category Chip */}
                             {service.category && (
                               <Chip 
                                 label={service.category} 
                                 size="small" 
                                 variant="outlined" 
+                                sx={{ mb: 1, mr: 1 }}
+                              />
+                            )}
+                            
+                            {/* Pricing Type Chip */}
+                            {service.pricing?.type && (
+                              <Chip 
+                                label={service.pricing.type === 'per_day' ? 'Za deň' : 
+                                       service.pricing.type === 'per_km' ? 'Za km' : 
+                                       service.pricing.type === 'percentage' ? 'Percento' : 'Pevná cena'} 
+                                size="small" 
+                                color="info"
+                                variant="filled" 
                                 sx={{ mb: 1 }}
                               />
                             )}
-                            {service.quantity > 1 && (
-                              <Typography variant="caption" color="text.secondary">
-                                {service.quantity}x {service.unitPrice?.toFixed(2)}€ {service.pricingType === 'per_day' ? '/deň' : service.pricingType === 'per_km' ? '/km' : ''}
-                              </Typography>
-                            )}
+                            
+                            {/* Quantity and Unit Price Details */}
+                            <Box sx={{ mt: 1 }}>
+                              {service.quantity && service.quantity > 1 && (
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                  Množstvo: {service.quantity}x
+                                </Typography>
+                              )}
+                              {service.pricing?.amount && (
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                  Jednotková cena: {service.pricing.amount.toFixed(2)}€ 
+                                  {service.pricing.type === 'per_day' ? ' /deň' : 
+                                   service.pricing.type === 'per_km' ? ' /km' : 
+                                   service.pricing.type === 'percentage' ? '%' : ''}
+                                </Typography>
+                              )}
+                            </Box>
                           </Box>
                         ))}
                       </CardContent>
@@ -1669,7 +1703,7 @@ function Reservations() {
                           Dodatočné poistenie
                         </Typography>
                         {selectedReservation.selectedAdditionalInsurance.map((insurance, index) => (
-                          <Box key={index} sx={{ mb: 2, p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
+                          <Box key={insurance._id || index} sx={{ mb: 2, p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                               <Typography variant="body2" fontWeight="medium">
                                 {insurance.name || insurance.insuranceId?.name}
@@ -1678,18 +1712,48 @@ function Reservations() {
                                 {insurance.displayPrice || `${insurance.calculatedPrice?.toFixed(2)}€`}
                               </Typography>
                             </Box>
+                            
+                            {/* Insurance Description */}
+                            {insurance.description && (
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                                {insurance.description}
+                              </Typography>
+                            )}
+                            
+                            {/* Insurance Type Chip */}
                             {insurance.type && (
                               <Chip 
                                 label={insurance.type} 
                                 size="small" 
                                 color="info" 
                                 variant="outlined" 
-                                sx={{ mb: 1 }}
+                                sx={{ mb: 1, mr: 1 }}
                               />
                             )}
-                            <Typography variant="caption" color="text.secondary" display="block">
-                              Typ: {insurance.pricingType || 'per_day'} • Základná suma: {insurance.baseAmount?.toFixed(2)}€
-                            </Typography>
+                            
+                            {/* Pricing Type Chip */}
+                            <Chip 
+                              label={insurance.pricingType === 'per_day' ? 'Za deň' : 'Pevná cena'} 
+                              size="small" 
+                              color="primary"
+                              variant="filled" 
+                              sx={{ mb: 1 }}
+                            />
+                            
+                            {/* Insurance Details */}
+                            <Box sx={{ mt: 1 }}>
+                              {insurance.selectedQuantity && (
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                  Množstvo: {insurance.selectedQuantity}x
+                                </Typography>
+                              )}
+                              {insurance.price && (
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                  Základná cena: {insurance.price.toFixed(2)}€ 
+                                  {insurance.pricingType === 'per_day' ? ' /deň' : ''}
+                                </Typography>
+                              )}
+                            </Box>
                           </Box>
                         ))}
                       </CardContent>
@@ -1706,7 +1770,7 @@ function Reservations() {
                           Rozšírené poistenie
                         </Typography>
                         {selectedReservation.selectedExtendedInsurance.map((insurance, index) => (
-                          <Box key={index} sx={{ mb: 2, p: 1.5, bgcolor: 'secondary.50', borderRadius: 1, border: '1px solid', borderColor: 'secondary.200' }}>
+                          <Box key={insurance._id || index} sx={{ mb: 2, p: 1.5, bgcolor: 'secondary.50', borderRadius: 1, border: '1px solid', borderColor: 'secondary.200' }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                               <Typography variant="body2" fontWeight="medium">
                                 {insurance.name || insurance.insuranceId?.name}
@@ -1715,18 +1779,48 @@ function Reservations() {
                                 {insurance.displayPrice || `${insurance.calculatedPrice?.toFixed(2)}€`}
                               </Typography>
                             </Box>
+                            
+                            {/* Insurance Description */}
+                            {insurance.description && (
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                                {insurance.description}
+                              </Typography>
+                            )}
+                            
+                            {/* Insurance Type Chip */}
                             {insurance.type && (
                               <Chip 
                                 label={insurance.type} 
                                 size="small" 
                                 color="secondary" 
                                 variant="outlined" 
-                                sx={{ mb: 1 }}
+                                sx={{ mb: 1, mr: 1 }}
                               />
                             )}
-                            <Typography variant="caption" color="text.secondary" display="block">
-                              Typ: {insurance.pricingType || 'per_day'} • Základná suma: {insurance.baseAmount?.toFixed(2)}€
-                            </Typography>
+                            
+                            {/* Pricing Type Chip */}
+                            <Chip 
+                              label={insurance.pricingType === 'per_day' ? 'Za deň' : 'Pevná cena'} 
+                              size="small" 
+                              color="secondary"
+                              variant="filled" 
+                              sx={{ mb: 1 }}
+                            />
+                            
+                            {/* Extended Insurance Details */}
+                            <Box sx={{ mt: 1 }}>
+                              {insurance.selectedQuantity && (
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                  Množstvo: {insurance.selectedQuantity}x
+                                </Typography>
+                              )}
+                              {insurance.price && (
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                  Základná cena: {insurance.price.toFixed(2)}€ 
+                                  {insurance.pricingType === 'per_day' ? ' /deň' : ''}
+                                </Typography>
+                              )}
+                            </Box>
                           </Box>
                         ))}
                       </CardContent>
