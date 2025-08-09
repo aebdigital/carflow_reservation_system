@@ -91,10 +91,10 @@ Both QR codes will use your configured bank account and company details.
 
 If environment variables are not set, the system uses these defaults:
 
-- **Bank Account**: `SK6807200000000000000000` (placeholder IBAN)
-- **Bank BIC**: `TATRSKBX` (Tatra Banka)
+- **Bank Account**: `SK0483300000002202227202` (Rival Slovakia s.r.o.)
+- **Bank BIC**: `FIOZSKBAXXX` (Fio Banka)
 - **Constant Symbol**: `0308` (car rental services)
-- **Company Name**: `CarFlow Rental`
+- **Company Name**: `Rival Slovakia s.r.o.`
 - **Company Tax ID**: `12345678`
 - **Company VAT ID**: `SK12345678`
 

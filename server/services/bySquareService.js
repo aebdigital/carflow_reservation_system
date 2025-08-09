@@ -10,13 +10,13 @@ class BySquareService {
     this.serviceUserId = process.env.BYSQUARE_SERVICE_USER_ID || '';
     
     // Configurable bank details
-    this.bankAccount = process.env.BYSQUARE_BANK_ACCOUNT || 'SK6807200000000000000000';
-    this.bankBIC = process.env.BYSQUARE_BANK_BIC || 'TATRSKBX';
+    this.bankAccount = process.env.BYSQUARE_BANK_ACCOUNT || 'SK0483300000002202227202';
+    this.bankBIC = process.env.BYSQUARE_BANK_BIC || 'FIOZSKBAXXX';
     this.constantSymbol = process.env.BYSQUARE_CONSTANT_SYMBOL || '0308';
-    this.beneficiaryName = process.env.BYSQUARE_BENEFICIARY_NAME || 'CarFlow Rental';
+    this.beneficiaryName = process.env.BYSQUARE_BENEFICIARY_NAME || 'Rival Slovakia s.r.o.';
     
     // Company details for invoices
-    this.companyName = process.env.BYSQUARE_COMPANY_NAME || 'CarFlow Rental';
+    this.companyName = process.env.BYSQUARE_COMPANY_NAME || 'Rival Slovakia s.r.o.';
     this.companyTaxID = process.env.BYSQUARE_COMPANY_TAX_ID || '12345678';
     this.companyVATID = process.env.BYSQUARE_COMPANY_VAT_ID || 'SK12345678';
     this.companyAddress = {
@@ -26,7 +26,7 @@ class BySquareService {
       postalZone: process.env.BYSQUARE_COMPANY_ZIP || '81108',
       country: process.env.BYSQUARE_COMPANY_COUNTRY || 'SVK'
     };
-    this.companyEmail = process.env.BYSQUARE_COMPANY_EMAIL || 'info@carflow.sk';
+    this.companyEmail = process.env.BYSQUARE_COMPANY_EMAIL || 'info@rivalslovakia.sk';
   }
 
   /**
