@@ -8,6 +8,25 @@ class BySquareService {
     this.password = process.env.BYSQUARE_PASSWORD || '';
     this.serviceId = process.env.BYSQUARE_SERVICE_ID || '';
     this.serviceUserId = process.env.BYSQUARE_SERVICE_USER_ID || '';
+    
+    // Configurable bank details
+    this.bankAccount = process.env.BYSQUARE_BANK_ACCOUNT || 'SK6807200000000000000000';
+    this.bankBIC = process.env.BYSQUARE_BANK_BIC || 'TATRSKBX';
+    this.constantSymbol = process.env.BYSQUARE_CONSTANT_SYMBOL || '0308';
+    this.beneficiaryName = process.env.BYSQUARE_BENEFICIARY_NAME || 'CarFlow Rental';
+    
+    // Company details for invoices
+    this.companyName = process.env.BYSQUARE_COMPANY_NAME || 'CarFlow Rental';
+    this.companyTaxID = process.env.BYSQUARE_COMPANY_TAX_ID || '12345678';
+    this.companyVATID = process.env.BYSQUARE_COMPANY_VAT_ID || 'SK12345678';
+    this.companyAddress = {
+      streetName: process.env.BYSQUARE_COMPANY_STREET || 'Main Street',
+      buildingNumber: process.env.BYSQUARE_COMPANY_BUILDING || '123',
+      cityName: process.env.BYSQUARE_COMPANY_CITY || 'Bratislava',
+      postalZone: process.env.BYSQUARE_COMPANY_ZIP || '81108',
+      country: process.env.BYSQUARE_COMPANY_COUNTRY || 'SVK'
+    };
+    this.companyEmail = process.env.BYSQUARE_COMPANY_EMAIL || 'info@carflow.sk';
   }
 
   /**
@@ -185,19 +204,13 @@ class BySquareService {
       
       // Supplier (Car Rental Company)
       supplier: {
-        partyName: 'CarFlow Rental',
-        companyTaxID: '12345678',
-        companyVATID: 'SK12345678',
-        address: {
-          streetName: 'Main Street',
-          buildingNumber: '123',
-          cityName: 'Bratislava',
-          postalZone: '81108',
-          country: 'SVK'
-        },
+        partyName: this.companyName,
+        companyTaxID: this.companyTaxID,
+        companyVATID: this.companyVATID,
+        address: this.companyAddress,
         contact: {
-          name: 'CarFlow Support',
-          email: 'info@carflow.sk'
+          name: this.companyName + ' Support',
+          email: this.companyEmail
         }
       },
       
@@ -219,11 +232,11 @@ class BySquareService {
       currencyCode: 'EUR',
       
       // Payment details for QR
-      bankAccount: 'SK6807200000000000000000',
+      bankAccount: this.bankAccount,
       variableSymbol: variableSymbol,
-      constantSymbol: '0308',
+      constantSymbol: this.constantSymbol,
       specificSymbol: '',
-      beneficiaryName: 'CarFlow Rental',
+      beneficiaryName: this.beneficiaryName,
       paymentNote: `Car rental: ${car.brand} ${car.model} (${reservation.startDate.toISOString().split('T')[0]} - ${reservation.endDate.toISOString().split('T')[0]})`,
       
       // Invoice items - rental only
@@ -273,19 +286,13 @@ class BySquareService {
       
       // Supplier (Car Rental Company)
       supplier: {
-        partyName: 'CarFlow Rental',
-        companyTaxID: '12345678',
-        companyVATID: 'SK12345678',
-        address: {
-          streetName: 'Main Street',
-          buildingNumber: '123',
-          cityName: 'Bratislava',
-          postalZone: '81108',
-          country: 'SVK'
-        },
+        partyName: this.companyName,
+        companyTaxID: this.companyTaxID,
+        companyVATID: this.companyVATID,
+        address: this.companyAddress,
         contact: {
-          name: 'CarFlow Support',
-          email: 'info@carflow.sk'
+          name: this.companyName + ' Support',
+          email: this.companyEmail
         }
       },
       
@@ -307,11 +314,11 @@ class BySquareService {
       currencyCode: 'EUR',
       
       // Payment details for QR
-      bankAccount: 'SK6807200000000000000000',
+      bankAccount: this.bankAccount,
       variableSymbol: variableSymbol,
-      constantSymbol: '0308',
+      constantSymbol: this.constantSymbol,
       specificSymbol: '',
-      beneficiaryName: 'CarFlow Rental',
+      beneficiaryName: this.beneficiaryName,
       paymentNote: `Security deposit: ${car.brand} ${car.model} (${reservation.startDate.toISOString().split('T')[0]} - ${reservation.endDate.toISOString().split('T')[0]})`,
       
       // Invoice items - deposit only
@@ -391,11 +398,11 @@ class BySquareService {
       currencyCode: 'EUR',
       
       // Payment details for QR
-      bankAccount: 'SK6807200000000000000000', // Valid Slovak IBAN format
+      bankAccount: this.bankAccount, // Configurable Slovak IBAN format
       variableSymbol: variableSymbol,
-      constantSymbol: '0308', // Car rental services
+      constantSymbol: this.constantSymbol, // Car rental services
       specificSymbol: '',
-      beneficiaryName: 'CarFlow Rental',
+      beneficiaryName: this.beneficiaryName,
       paymentNote: `Car rental + deposit: ${car.brand} ${car.model} (${reservation.startDate.toISOString().split('T')[0]} - ${reservation.endDate.toISOString().split('T')[0]})`,
       
       // Invoice items
@@ -571,7 +578,7 @@ class BySquareService {
               BankAccounts: {
                 BankAccount: {
                   IBAN: invoiceData.bankAccount,
-                  BIC: 'TATRSKBX'
+                  BIC: this.bankBIC
                 }
               },
               VariableSymbol: invoiceData.variableSymbol,
