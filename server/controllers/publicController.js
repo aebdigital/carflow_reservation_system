@@ -2689,6 +2689,190 @@ const getPublicCarCategories = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Get car filter options (public - no authentication)
+// @route   GET /api/public/cars/filter-options
+// @access  Public
+const getPublicCarFilterOptions = asyncHandler(async (req, res, next) => {
+  try {
+    // Define filter options with Slovak translations
+    const filterOptions = {
+      fuelType: [
+        {
+          value: 'gasoline',
+          label: 'Benzín',
+          labelEn: 'Gasoline',
+          icon: 'local_gas_station',
+          color: '#ff9800'
+        },
+        {
+          value: 'diesel',
+          label: 'Diesel',
+          labelEn: 'Diesel',
+          icon: 'local_gas_station',
+          color: '#795548'
+        },
+        {
+          value: 'hybrid',
+          label: 'Hybrid',
+          labelEn: 'Hybrid',
+          icon: 'eco',
+          color: '#4caf50'
+        },
+        {
+          value: 'electric',
+          label: 'Elektrický',
+          labelEn: 'Electric',
+          icon: 'electric_car',
+          color: '#2196f3'
+        },
+        {
+          value: 'lpg',
+          label: 'LPG',
+          labelEn: 'LPG',
+          icon: 'local_gas_station',
+          color: '#9c27b0'
+        }
+      ],
+      transmission: [
+        {
+          value: 'manual',
+          label: 'Manuálna',
+          labelEn: 'Manual',
+          icon: 'settings',
+          color: '#607d8b'
+        },
+        {
+          value: 'automatic',
+          label: 'Automatická',
+          labelEn: 'Automatic',
+          icon: 'settings_backup_restore',
+          color: '#3f51b5'
+        },
+        {
+          value: 'cvt',
+          label: 'CVT',
+          labelEn: 'CVT',
+          icon: 'tune',
+          color: '#9e9e9e'
+        }
+      ],
+      seats: [
+        {
+          value: 2,
+          label: '2 miesta',
+          labelEn: '2 seats',
+          icon: 'person',
+          color: '#ff5722'
+        },
+        {
+          value: 4,
+          label: '4 miesta',
+          labelEn: '4 seats', 
+          icon: 'people',
+          color: '#2196f3'
+        },
+        {
+          value: 5,
+          label: '5 miest',
+          labelEn: '5 seats',
+          icon: 'people',
+          color: '#4caf50'
+        },
+        {
+          value: 7,
+          label: '7 miest',
+          labelEn: '7 seats',
+          icon: 'group',
+          color: '#ff9800'
+        },
+        {
+          value: 9,
+          label: '9 miest',
+          labelEn: '9 seats',
+          icon: 'groups',
+          color: '#9c27b0'
+        }
+      ]
+    };
+
+    // Optional: Filter to only return options that have active cars
+    const { activeOnly } = req.query;
+    
+    if (activeOnly === 'true') {
+      const Car = require('../models/Car');
+      
+      // Get distinct values from active cars
+      const [activeFuelTypes, activeTransmissions, activeSeats] = await Promise.all([
+        Car.distinct('fuelType', { status: 'active', isActive: true }),
+        Car.distinct('transmission', { status: 'active', isActive: true }),
+        Car.distinct('seats', { status: 'active', isActive: true })
+      ]);
+      
+      // Filter options to only include those with active cars and add counts
+      const filteredOptions = {
+        fuelType: [],
+        transmission: [],
+        seats: []
+      };
+      
+      // Process fuel types
+      for (const fuelType of filterOptions.fuelType) {
+        if (activeFuelTypes.includes(fuelType.value)) {
+          const count = await Car.countDocuments({
+            fuelType: fuelType.value,
+            status: 'active',
+            isActive: true
+          });
+          filteredOptions.fuelType.push({ ...fuelType, carCount: count });
+        }
+      }
+      
+      // Process transmissions
+      for (const transmission of filterOptions.transmission) {
+        if (activeTransmissions.includes(transmission.value)) {
+          const count = await Car.countDocuments({
+            transmission: transmission.value,
+            status: 'active',
+            isActive: true
+          });
+          filteredOptions.transmission.push({ ...transmission, carCount: count });
+        }
+      }
+      
+      // Process seats
+      for (const seatOption of filterOptions.seats) {
+        if (activeSeats.includes(seatOption.value)) {
+          const count = await Car.countDocuments({
+            seats: seatOption.value,
+            status: 'active',
+            isActive: true
+          });
+          filteredOptions.seats.push({ ...seatOption, carCount: count });
+        }
+      }
+      
+      // Sort by car count (descending)
+      filteredOptions.fuelType.sort((a, b) => (b.carCount || 0) - (a.carCount || 0));
+      filteredOptions.transmission.sort((a, b) => (b.carCount || 0) - (a.carCount || 0));
+      filteredOptions.seats.sort((a, b) => (b.carCount || 0) - (a.carCount || 0));
+      
+      res.status(200).json({
+        success: true,
+        data: filteredOptions
+      });
+    } else {
+      // Return all filter options
+      res.status(200).json({
+        success: true,
+        data: filterOptions
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error getting car filter options:', error);
+    return next(new AppError('Error retrieving car filter options', 500));
+  }
+});
+
 // @desc    Get car booking calendar for a specific user/tenant (public)
 // @route   GET /api/public/users/:email/cars/:carId/calendar
 // @access  Public
@@ -4480,6 +4664,7 @@ module.exports = {
   getCarPricingByUser,
   getPublicCarPricing,
   getPublicCarCategories,
+  getPublicCarFilterOptions,
   getCarBrandsByUser,
   getCarsByBrandByUser,
   getCarModelsByBrandByUser,

@@ -22,6 +22,7 @@ const {
   getPublicCar,
   getPublicCarPricing,
   getPublicCarCategories,
+  getPublicCarFilterOptions,
   getCarCalendarByUser,
   getReservedDatesByUser,
   getPublicCarCalendar,
@@ -72,6 +73,7 @@ const router = express.Router();
 // Public car browsing endpoints (no authentication required)
 router.get('/cars', getPublicCars); // Get all cars (public)
 router.get('/cars/categories', getPublicCarCategories); // Get car categories (public)
+router.get('/cars/filter-options', getPublicCarFilterOptions); // Get car filter options (public)
 router.get('/cars/:id', getPublicCar); // Get single car (public)
 router.get('/cars/:id/pricing', getPublicCarPricing); // Get car pricing (public)
 router.get('/cars/:id/calendar', getPublicCarCalendar); // Get car calendar (public)
