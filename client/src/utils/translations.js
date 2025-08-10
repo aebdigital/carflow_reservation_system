@@ -33,7 +33,7 @@ const translations = {
     // Dashboard
     totalCars: 'Celkový počet áut',
     activeReservations: 'Aktívne rezervácie',
-    totalCustomers: 'Celkový počet zákazníkov',
+    totalCustomers: 'Počet zákazníkov',
     monthlyRevenue: 'Mesačné tržby',
     recentReservations: 'Nedávne rezervácie',
     viewAll: 'Zobraziť všetko',
