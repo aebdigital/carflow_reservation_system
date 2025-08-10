@@ -1389,7 +1389,7 @@ function Reservations() {
                 />
               </Box>
 
-              <Grid container spacing={3}>
+              <Grid container spacing={3} sx={{ pr: 2 }}>
                 {/* Customer Information */}
                 <Grid item xs={12} md={6}>
                   <Card variant="outlined">
@@ -2101,7 +2101,7 @@ function Reservations() {
                         )}
                         {selectedReservation.rating.date && (
                           <Typography variant="caption" color="text.secondary">
-                            Rated on: {new Date(selectedReservation.rating.date).toLocaleDateString()}
+                            Hodnotené dňa: {new Date(selectedReservation.rating.date).toLocaleDateString()}
                           </Typography>
                         )}
                       </CardContent>
@@ -2115,28 +2115,28 @@ function Reservations() {
                     <Card variant="outlined">
                       <CardContent>
                         <Typography variant="h6" gutterBottom color="primary">
-                          Notifications Sent
+                          Odoslané notifikácie
                         </Typography>
                         <Grid container spacing={2}>
                           <Grid item xs={12} md={6}>
                             <Typography variant="body2" gutterBottom>
-                              <strong>Email Notifications:</strong>
+                              <strong>Email notifikácie:</strong>
                             </Typography>
                             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
                               <Chip 
-                                label="Confirmation" 
+                                label="Potvrdenie" 
                                 size="small" 
                                 color={selectedReservation.notifications.emailSent?.confirmation ? "success" : "default"}
                                 variant={selectedReservation.notifications.emailSent?.confirmation ? "filled" : "outlined"}
                               />
                               <Chip 
-                                label="Reminder" 
+                                label="Pripomienka" 
                                 size="small" 
                                 color={selectedReservation.notifications.emailSent?.reminder ? "success" : "default"}
                                 variant={selectedReservation.notifications.emailSent?.reminder ? "filled" : "outlined"}
                               />
                               <Chip 
-                                label="Completion" 
+                                label="Dokončenie" 
                                 size="small" 
                                 color={selectedReservation.notifications.emailSent?.completion ? "success" : "default"}
                                 variant={selectedReservation.notifications.emailSent?.completion ? "filled" : "outlined"}
@@ -2145,17 +2145,17 @@ function Reservations() {
                           </Grid>
                           <Grid item xs={12} md={6}>
                             <Typography variant="body2" gutterBottom>
-                              <strong>SMS Notifications:</strong>
+                              <strong>SMS notifikácie:</strong>
                             </Typography>
                             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                               <Chip 
-                                label="Confirmation" 
+                                label="Potvrdenie" 
                                 size="small" 
                                 color={selectedReservation.notifications.smsSent?.confirmation ? "success" : "default"}
                                 variant={selectedReservation.notifications.smsSent?.confirmation ? "filled" : "outlined"}
                               />
                               <Chip 
-                                label="Reminder" 
+                                label="Pripomienka" 
                                 size="small" 
                                 color={selectedReservation.notifications.smsSent?.reminder ? "success" : "default"}
                                 variant={selectedReservation.notifications.smsSent?.reminder ? "filled" : "outlined"}
