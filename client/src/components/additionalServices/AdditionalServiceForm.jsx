@@ -24,7 +24,8 @@ import {
   Avatar,
   Alert,
   Slider,
-  Divider
+  Divider,
+  Icon
 } from '@mui/material';
 import {
   PhotoCamera as PhotoIcon,
@@ -33,8 +34,7 @@ import {
   Palette as PaletteIcon,
   Settings as SettingsIcon,
   Schedule as ScheduleIcon,
-  TrendingUp as TrendingUpIcon,
-  Icon
+  TrendingUp as TrendingUpIcon
 } from '@mui/icons-material';
 import { HexColorPicker } from 'react-colorful';
 
