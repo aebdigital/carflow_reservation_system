@@ -111,16 +111,16 @@ function Dashboard() {
     const customers = usersData?.data || []
 
     // Use stats from dedicated endpoints for accurate metrics
-    const carStatsData = carStats?.data || {}
+    const carStatsData = carStats?.data?.overview || {}
     const reservationStatsData = reservationStats?.data || {}
-    const paymentStatsData = paymentStats?.data || {}
+    const paymentStatsData = paymentStats?.data?.overview || {}
 
     // Filter reservations for display purposes
     const confirmedReservations = reservations.filter(res => res.status === 'confirmed')
     const activeReservations = reservations.filter(res => ['confirmed', 'ongoing'].includes(res.status))
     
     // Calculate monthly revenue from payment stats (more accurate)
-    const monthlyRevenue = paymentStatsData.totalRevenue || paymentStatsData.monthlyRevenue || 0
+    const monthlyRevenue = paymentStatsData.totalAmount || 0
 
     // Calculate monthly chart data (all 12 months with 0 fallback)
     const currentYear = new Date().getFullYear()
@@ -128,13 +128,14 @@ function Dashboard() {
     
     // Use payment stats monthly data if available, otherwise calculate from reservations
     let monthlyRevenueData
-    if (paymentStatsData.monthlyData && Array.isArray(paymentStatsData.monthlyData)) {
+    const paymentMonthlyData = paymentStats?.data?.monthlyData
+    if (paymentMonthlyData && Array.isArray(paymentMonthlyData)) {
       // Use the payment stats monthly data (more accurate)
       monthlyRevenueData = monthNames.map((month, index) => {
-        const monthData = paymentStatsData.monthlyData.find(d => d._id === index + 1)
+        const monthData = paymentMonthlyData.find(d => d._id === index + 1)
         return {
           month,
-          revenue: monthData?.totalRevenue || 0
+          revenue: monthData?.totalAmount || 0
         }
       })
     } else {

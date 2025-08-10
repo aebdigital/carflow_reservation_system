@@ -2153,6 +2153,12 @@ const getCarsByLocation = asyncHandler(async (req, res, next) => {
 // @access  Private/Admin
 const getCarStats = asyncHandler(async (req, res, next) => {
   const stats = await Car.aggregate([
+    // Add tenant filter to match only current tenant's cars
+    {
+      $match: {
+        tenantId: req.user.tenantId
+      }
+    },
     {
       $group: {
         _id: null,
@@ -2172,18 +2178,24 @@ const getCarStats = asyncHandler(async (req, res, next) => {
             $cond: [{ $eq: ['$status', 'out-of-service'] }, 1, 0]
           }
         },
-        averageDailyRate: { $avg: '$dailyRate' },
+        averageDailyRate: { $avg: '$pricing.dailyRate' },
         totalRevenue: { $sum: '$totalRevenue' }
       }
     }
   ]);
 
   const categoryStats = await Car.aggregate([
+    // Add tenant filter
+    {
+      $match: {
+        tenantId: req.user.tenantId
+      }
+    },
     {
       $group: {
         _id: '$category',
         count: { $sum: 1 },
-        averageRate: { $avg: '$dailyRate' }
+        averageRate: { $avg: '$pricing.dailyRate' }
       }
     },
     {
@@ -2192,6 +2204,12 @@ const getCarStats = asyncHandler(async (req, res, next) => {
   ]);
 
   const locationStats = await Car.aggregate([
+    // Add tenant filter
+    {
+      $match: {
+        tenantId: req.user.tenantId
+      }
+    },
     {
       $group: {
         _id: '$location.name',
