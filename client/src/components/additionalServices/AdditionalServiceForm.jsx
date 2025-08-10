@@ -33,7 +33,8 @@ import {
   Palette as PaletteIcon,
   Settings as SettingsIcon,
   Schedule as ScheduleIcon,
-  TrendingUp as TrendingUpIcon
+  TrendingUp as TrendingUpIcon,
+  Icon
 } from '@mui/icons-material';
 import { HexColorPicker } from 'react-colorful';
 
@@ -183,7 +184,7 @@ function AdditionalServiceForm({
               <MenuItem key={iconOption.value} value={iconOption.value}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   {iconOption.icon ? (
-                    <span className="material-icons">{iconOption.icon}</span>
+                    <Icon>{iconOption.icon}</Icon>
                   ) : (
                     <Box sx={{ width: 24, height: 24 }} />
                   )}
