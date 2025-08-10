@@ -82,7 +82,7 @@ function AdditionalServiceForm({
     { value: 'family_restroom', label: 'Rodina', icon: 'family_restroom' },
     { value: 'settings', label: 'Nastavenia', icon: 'settings' },
     { value: 'navigation', label: 'Navigácia', icon: 'navigation' },
-    { value: 'baby_changing_station', label: 'Prebaľovák', icon: 'baby_changing_station' },
+    { value: 'baby_changing_station', label: 'Detská stanica', icon: 'baby_changing_station' },
     { value: 'ac_unit', label: 'Klimatizácia', icon: 'ac_unit' },
     { value: 'wifi', label: 'WiFi', icon: 'wifi' },
     { value: 'bluetooth', label: 'Bluetooth', icon: 'bluetooth' },
