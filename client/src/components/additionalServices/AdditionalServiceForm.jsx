@@ -74,19 +74,19 @@ function AdditionalServiceForm({
 
   const iconOptions = [
     { value: '', label: 'Žiadna', icon: null },
-    { value: 'extension', label: 'Extension', icon: 'extension' },
-    { value: 'directions_car', label: 'Car', icon: 'directions_car' },
-    { value: 'security', label: 'Security', icon: 'security' },
-    { value: 'schedule', label: 'Schedule', icon: 'schedule' },
-    { value: 'local_shipping', label: 'Shipping', icon: 'local_shipping' },
-    { value: 'family_restroom', label: 'Family', icon: 'family_restroom' },
-    { value: 'settings', label: 'Settings', icon: 'settings' },
-    { value: 'navigation', label: 'Navigation', icon: 'navigation' },
-    { value: 'baby_changing_station', label: 'Baby Station', icon: 'baby_changing_station' },
-    { value: 'ac_unit', label: 'AC Unit', icon: 'ac_unit' },
+    { value: 'extension', label: 'Rozšírenie', icon: 'extension' },
+    { value: 'directions_car', label: 'Auto', icon: 'directions_car' },
+    { value: 'security', label: 'Bezpečnosť', icon: 'security' },
+    { value: 'schedule', label: 'Harmonogram', icon: 'schedule' },
+    { value: 'local_shipping', label: 'Preprava', icon: 'local_shipping' },
+    { value: 'family_restroom', label: 'Rodina', icon: 'family_restroom' },
+    { value: 'settings', label: 'Nastavenia', icon: 'settings' },
+    { value: 'navigation', label: 'Navigácia', icon: 'navigation' },
+    { value: 'baby_changing_station', label: 'Prebaľovák', icon: 'baby_changing_station' },
+    { value: 'ac_unit', label: 'Klimatizácia', icon: 'ac_unit' },
     { value: 'wifi', label: 'WiFi', icon: 'wifi' },
     { value: 'bluetooth', label: 'Bluetooth', icon: 'bluetooth' },
-    { value: 'electric_car', label: 'Electric Car', icon: 'electric_car' }
+    { value: 'electric_car', label: 'Elektromobil', icon: 'electric_car' }
   ];
 
   const months = [
