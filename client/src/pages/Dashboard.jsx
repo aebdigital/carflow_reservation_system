@@ -31,7 +31,10 @@ import { t } from '../utils/translations'
 import { 
   useGetReservationsQuery, 
   useGetCarsQuery, 
-  useGetUsersQuery 
+  useGetUsersQuery,
+  useGetCarStatsQuery,
+  useGetReservationStatsQuery,
+  useGetPaymentStatsQuery
 } from '../store/store'
 
 
@@ -66,7 +69,7 @@ const getStatusText = (status) => {
 }
 
 function Dashboard() {
-  // API hooks to get real data
+  // API hooks to get real data and statistics
   const { 
     data: reservationsData, 
     isLoading: reservationsLoading, 
@@ -85,46 +88,77 @@ function Dashboard() {
     error: usersError 
   } = useGetUsersQuery({ role: 'customer' })
 
+  // Stats API hooks for accurate dashboard metrics
+  const { 
+    data: carStats, 
+    isLoading: carStatsLoading 
+  } = useGetCarStatsQuery()
+  
+  const { 
+    data: reservationStats, 
+    isLoading: reservationStatsLoading 
+  } = useGetReservationStatsQuery()
+  
+  const { 
+    data: paymentStats, 
+    isLoading: paymentStatsLoading 
+  } = useGetPaymentStatsQuery()
+
   // Process real data
   const dashboardData = useMemo(() => {
     const reservations = reservationsData?.data || []
     const cars = carsData?.data || []
     const customers = usersData?.data || []
 
-    // Filter confirmed reservations only
+    // Use stats from dedicated endpoints for accurate metrics
+    const carStatsData = carStats?.data || {}
+    const reservationStatsData = reservationStats?.data || {}
+    const paymentStatsData = paymentStats?.data || {}
+
+    // Filter reservations for display purposes
     const confirmedReservations = reservations.filter(res => res.status === 'confirmed')
     const activeReservations = reservations.filter(res => ['confirmed', 'ongoing'].includes(res.status))
     
-    // Calculate total revenue from confirmed reservations
-    const monthlyRevenue = confirmedReservations.reduce((sum, res) => {
-      const amount = res.pricing?.totalAmount || 0
-      return sum + amount
-    }, 0)
+    // Calculate monthly revenue from payment stats (more accurate)
+    const monthlyRevenue = paymentStatsData.totalRevenue || paymentStatsData.monthlyRevenue || 0
 
     // Calculate monthly chart data (all 12 months with 0 fallback)
     const currentYear = new Date().getFullYear()
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Máj', 'Jún', 'Júl', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
     
-    // Group reservations by month
-    const monthlyRevenueData = Array.from({ length: 12 }, (_, index) => {
-      const monthRevenue = confirmedReservations
-        .filter(res => {
-          const resDate = new Date(res.createdAt)
-          return resDate.getFullYear() === currentYear && resDate.getMonth() === index
-        })
-        .reduce((sum, res) => sum + (res.pricing?.totalAmount || 0), 0)
-      
-      return {
-        month: monthNames[index],
-        revenue: monthRevenue
-      }
-    })
+    // Use payment stats monthly data if available, otherwise calculate from reservations
+    let monthlyRevenueData
+    if (paymentStatsData.monthlyData && Array.isArray(paymentStatsData.monthlyData)) {
+      // Use the payment stats monthly data (more accurate)
+      monthlyRevenueData = monthNames.map((month, index) => {
+        const monthData = paymentStatsData.monthlyData.find(d => d._id === index + 1)
+        return {
+          month,
+          revenue: monthData?.totalRevenue || 0
+        }
+      })
+    } else {
+      // Fallback to manual calculation from reservations (use startDate instead of createdAt for accuracy)
+      monthlyRevenueData = Array.from({ length: 12 }, (_, index) => {
+        const monthRevenue = confirmedReservations
+          .filter(res => {
+            const resDate = new Date(res.startDate) // Use startDate instead of createdAt
+            return resDate.getFullYear() === currentYear && resDate.getMonth() === index
+          })
+          .reduce((sum, res) => sum + (res.pricing?.totalAmount || 0), 0)
+        
+        return {
+          month: monthNames[index],
+          revenue: monthRevenue
+        }
+      })
+    }
 
-    // Calculate fleet stats
-    const availableCars = cars.filter(car => car.status === 'active').length
-    const carsInMaintenance = cars.filter(car => car.status === 'unavailable').length
-    const carsOutOfService = cars.filter(car => car.status === 'archived').length
-    const bookedCars = activeReservations.length
+    // Use accurate fleet stats from car stats endpoint
+    const availableCars = carStatsData.availableCars || cars.filter(car => car.status === 'active').length
+    const carsInMaintenance = carStatsData.maintenanceCars || cars.filter(car => car.status === 'maintenance').length
+    const carsOutOfService = carStatsData.outOfServiceCars || cars.filter(car => car.status === 'out-of-service').length
+    const bookedCars = reservationStatsData.ongoingReservations || activeReservations.length
 
     // Recent reservations (confirmed only, last 5)
     const recentReservations = confirmedReservations
@@ -134,7 +168,7 @@ function Dashboard() {
     return {
       stats: {
         monthlyRevenue,
-        activeReservations: confirmedReservations.length,
+        activeReservations: reservationStatsData.confirmedReservations || confirmedReservations.length,
         availableCars,
         totalCustomers: customers.length
       },
@@ -147,7 +181,7 @@ function Dashboard() {
       monthlyRevenueData,
       recentReservations
     }
-  }, [reservationsData, carsData, usersData])
+  }, [reservationsData, carsData, usersData, carStats, reservationStats, paymentStats])
 
   // Stats cards configuration
   const statsData = [
@@ -182,7 +216,7 @@ function Dashboard() {
   ]
 
   // Loading state
-  if (reservationsLoading || carsLoading || usersLoading) {
+  if (reservationsLoading || carsLoading || usersLoading || carStatsLoading || reservationStatsLoading || paymentStatsLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
         <CircularProgress />
