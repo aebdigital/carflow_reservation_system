@@ -196,56 +196,64 @@ function AdditionalServiceForm({
 
         <Grid item xs={12} md={6}>
           <Box sx={{ position: 'relative' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              Farba
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Button
-                variant="outlined"
-                onClick={() => setShowColorPicker(!showColorPicker)}
-                sx={{ 
-                  minWidth: '100px',
-                  backgroundColor: formData.color,
-                  color: formData.color === '#ffffff' ? '#000' : '#fff',
-                  '&:hover': {
-                    backgroundColor: formData.color,
-                    opacity: 0.8
-                  }
-                }}
-                disabled={dialogMode === 'view'}
-              >
-                {formData.color}
-              </Button>
-              {showColorPicker && (
-                <Box sx={{ 
-                  position: 'absolute', 
-                  top: '100%',
-                  left: 0,
-                  zIndex: 1000, 
-                  mt: 1,
-                  boxShadow: 3,
-                  borderRadius: 1,
-                  backgroundColor: 'white',
-                  p: 1
-                }}>
-                  <Box
+            <TextField
+              fullWidth
+              label="Farba"
+              value={formData.color}
+              disabled={dialogMode === 'view'}
+              InputProps={{
+                readOnly: true,
+                endAdornment: (
+                  <Button
+                    variant="outlined"
+                    onClick={() => setShowColorPicker(!showColorPicker)}
                     sx={{ 
-                      position: 'fixed', 
-                      top: 0, 
-                      right: 0, 
-                      bottom: 0, 
-                      left: 0,
-                      zIndex: 999
+                      minWidth: '100px',
+                      backgroundColor: formData.color,
+                      color: formData.color === '#ffffff' ? '#000' : '#fff',
+                      border: 'none',
+                      '&:hover': {
+                        backgroundColor: formData.color,
+                        opacity: 0.8,
+                        border: 'none'
+                      }
                     }}
-                    onClick={() => setShowColorPicker(false)}
-                  />
-                  <HexColorPicker 
-                    color={formData.color} 
-                    onChange={(color) => handleChange('color', color)}
-                  />
-                </Box>
-              )}
-            </Box>
+                    disabled={dialogMode === 'view'}
+                  >
+                    {formData.color}
+                  </Button>
+                )
+              }}
+            />
+            {showColorPicker && (
+              <Box sx={{ 
+                position: 'absolute', 
+                top: '100%',
+                left: 0,
+                zIndex: 1000, 
+                mt: 1,
+                boxShadow: 3,
+                borderRadius: 1,
+                backgroundColor: 'white',
+                p: 1
+              }}>
+                <Box
+                  sx={{ 
+                    position: 'fixed', 
+                    top: 0, 
+                    right: 0, 
+                    bottom: 0, 
+                    left: 0,
+                    zIndex: 999
+                  }}
+                  onClick={() => setShowColorPicker(false)}
+                />
+                <HexColorPicker 
+                  color={formData.color} 
+                  onChange={(color) => handleChange('color', color)}
+                />
+              </Box>
+            )}
           </Box>
         </Grid>
 
