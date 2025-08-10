@@ -717,8 +717,11 @@ const getPaymentStats = asyncHandler(async (req, res, next) => {
   ]);
 
   // Calculate overall stats from aggregated data
+  // Revenue includes:
+  // - 'succeeded': Fully processed payments
+  // - 'pending': Confirmed bookings waiting for payment (expected revenue)
   const totalRevenue = statusStats
-    .filter(stat => stat._id === 'succeeded')
+    .filter(stat => ['succeeded', 'pending'].includes(stat._id))
     .reduce((sum, stat) => sum + stat.totalAmount, 0);
   const totalTransactions = statusStats.reduce((sum, stat) => sum + stat.count, 0);
   const averageAmount = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
