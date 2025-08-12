@@ -132,22 +132,33 @@ class PDFService {
     
     // Add selected services total
     if (reservation.selectedServices && reservation.selectedServices.length > 0) {
+      console.log(`📋 [PDF] Processing ${reservation.selectedServices.length} additional services:`);
       additionalServicesTotal += reservation.selectedServices.reduce((sum, service) => {
-        return sum + (service.totalPrice || 0);
+        const price = service.totalPrice || service.price || service.amount || 0;
+        console.log(`💰 [PDF] Service ${service.name || 'Unknown'}: ${price}€`);
+        return sum + price;
       }, 0);
     }
     
     // Add additional insurance total  
     if (reservation.selectedAdditionalInsurance && reservation.selectedAdditionalInsurance.length > 0) {
+      console.log(`🛡️ [PDF] Processing ${reservation.selectedAdditionalInsurance.length} additional insurance options:`);
       additionalServicesTotal += reservation.selectedAdditionalInsurance.reduce((sum, insurance) => {
-        return sum + (insurance.calculatedPrice || 0);
+        // Try different price fields for insurance
+        const price = insurance.calculatedPrice || insurance.totalPrice || insurance.price || insurance.amount || 0;
+        console.log(`💰 [PDF] Additional insurance ${insurance.name || 'Unknown'}: ${price}€`);
+        return sum + price;
       }, 0);
     }
     
     // Add extended insurance total
     if (reservation.selectedExtendedInsurance && reservation.selectedExtendedInsurance.length > 0) {
+      console.log(`🛡️ [PDF] Processing ${reservation.selectedExtendedInsurance.length} extended insurance options:`);
       additionalServicesTotal += reservation.selectedExtendedInsurance.reduce((sum, insurance) => {
-        return sum + (insurance.calculatedPrice || 0);
+        // Try different price fields for insurance
+        const price = insurance.calculatedPrice || insurance.totalPrice || insurance.price || insurance.amount || 0;
+        console.log(`💰 [PDF] Extended insurance ${insurance.name || 'Unknown'}: ${price}€`);
+        return sum + price;
       }, 0);
     }
     

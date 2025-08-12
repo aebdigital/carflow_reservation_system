@@ -2547,6 +2547,185 @@ function Reservations() {
                 </Grid>
               )}
 
+              {/* Additional Services Display (for edit mode) */}
+              {dialogMode === 'edit' && selectedReservation && selectedReservation.selectedServices && selectedReservation.selectedServices.length > 0 && (
+                <Grid item xs={12}>
+                  <Card variant="outlined" sx={{ p: 2, mb: 2 }}>
+                    <Typography variant="h6" gutterBottom color="primary">
+                      Dodatočné služby v rezervácii
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      Tieto služby sú súčasťou tejto rezervácie a nie je možné ich upravovať tu.
+                    </Typography>
+                    {selectedReservation.selectedServices.map((service, index) => (
+                      <Box key={service._id || index} sx={{ mb: 2, p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                          <Typography variant="body2" fontWeight="medium">
+                            {service.name || service.service?.name}
+                          </Typography>
+                          <Typography variant="body2" color="primary" fontWeight="medium">
+                            {service.totalPrice?.toFixed(2)}€
+                          </Typography>
+                        </Box>
+                        
+                        {/* Service Description */}
+                        {service.description && (
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                            {service.description}
+                          </Typography>
+                        )}
+                        
+                        {/* Category and Pricing Chips */}
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                          {service.category && (
+                            <Chip 
+                              label={service.category} 
+                              size="small" 
+                              variant="outlined" 
+                            />
+                          )}
+                          {service.pricing?.type && (
+                            <Chip 
+                              label={service.pricing.type === 'per_day' ? 'Za deň' : 
+                                     service.pricing.type === 'per_km' ? 'Za km' : 
+                                     service.pricing.type === 'percentage' ? 'Percento' : 'Pevná cena'} 
+                              size="small" 
+                              color="info"
+                              variant="filled" 
+                            />
+                          )}
+                        </Box>
+                        
+                        {/* Quantity and Unit Price Details */}
+                        {(service.quantity > 1 || service.pricing?.amount) && (
+                          <Box sx={{ mt: 1 }}>
+                            {service.quantity && service.quantity > 1 && (
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                Množstvo: {service.quantity}x
+                              </Typography>
+                            )}
+                            {service.pricing?.amount && (
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                Jednotková cena: {service.pricing.amount.toFixed(2)}€ 
+                                {service.pricing.type === 'per_day' ? ' /deň' : 
+                                 service.pricing.type === 'per_km' ? ' /km' : 
+                                 service.pricing.type === 'percentage' ? '%' : ''}
+                              </Typography>
+                            )}
+                          </Box>
+                        )}
+                      </Box>
+                    ))}
+                  </Card>
+                </Grid>
+              )}
+
+              {/* Insurance Display for Edit Mode */}
+              {dialogMode === 'edit' && selectedReservation && (
+                (selectedReservation.selectedAdditionalInsurance?.length > 0 || selectedReservation.selectedExtendedInsurance?.length > 0) && (
+                  <Grid item xs={12}>
+                    <Card variant="outlined" sx={{ p: 2, mb: 2 }}>
+                      <Typography variant="h6" gutterBottom color="primary">
+                        Poistenie v rezervácii
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        Toto poistenie je súčasťou tejto rezervácie a nie je možné ho upravovať tu.
+                      </Typography>
+                      
+                      <Grid container spacing={2}>
+                        {/* Additional/Basic Insurance */}
+                        {selectedReservation.selectedAdditionalInsurance && selectedReservation.selectedAdditionalInsurance.length > 0 && (
+                          <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle2" gutterBottom color="primary">
+                              Dodatočné poistenie
+                            </Typography>
+                            {selectedReservation.selectedAdditionalInsurance.map((insurance, index) => (
+                              <Box key={insurance._id || index} sx={{ mb: 2, p: 1.5, bgcolor: 'primary.50', borderRadius: 1, border: '1px solid', borderColor: 'primary.200' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                  <Typography variant="body2" fontWeight="medium">
+                                    {insurance.name || insurance.insuranceId?.name}
+                                  </Typography>
+                                  <Typography variant="body2" color="primary" fontWeight="medium">
+                                    {insurance.displayPrice || `${insurance.calculatedPrice?.toFixed(2)}€`}
+                                  </Typography>
+                                </Box>
+                                
+                                {insurance.description && (
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                                    {insurance.description}
+                                  </Typography>
+                                )}
+                                
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                  {insurance.type && (
+                                    <Chip 
+                                      label={insurance.type} 
+                                      size="small" 
+                                      color="primary" 
+                                      variant="outlined" 
+                                    />
+                                  )}
+                                  <Chip 
+                                    label={insurance.pricingType === 'per_day' ? 'Za deň' : 'Pevná cena'} 
+                                    size="small" 
+                                    color="primary"
+                                    variant="filled" 
+                                  />
+                                </Box>
+                              </Box>
+                            ))}
+                          </Grid>
+                        )}
+
+                        {/* Extended Insurance */}
+                        {selectedReservation.selectedExtendedInsurance && selectedReservation.selectedExtendedInsurance.length > 0 && (
+                          <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle2" gutterBottom color="secondary">
+                              Rozšírené poistenie
+                            </Typography>
+                            {selectedReservation.selectedExtendedInsurance.map((insurance, index) => (
+                              <Box key={insurance._id || index} sx={{ mb: 2, p: 1.5, bgcolor: 'secondary.50', borderRadius: 1, border: '1px solid', borderColor: 'secondary.200' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                  <Typography variant="body2" fontWeight="medium">
+                                    {insurance.name || insurance.insuranceId?.name}
+                                  </Typography>
+                                  <Typography variant="body2" color="secondary" fontWeight="medium">
+                                    {insurance.displayPrice || `${insurance.calculatedPrice?.toFixed(2)}€`}
+                                  </Typography>
+                                </Box>
+                                
+                                {insurance.description && (
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                                    {insurance.description}
+                                  </Typography>
+                                )}
+                                
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                  {insurance.type && (
+                                    <Chip 
+                                      label={insurance.type} 
+                                      size="small" 
+                                      color="secondary" 
+                                      variant="outlined" 
+                                    />
+                                  )}
+                                  <Chip 
+                                    label={insurance.pricingType === 'per_day' ? 'Za deň' : 'Pevná cena'} 
+                                    size="small" 
+                                    color="secondary"
+                                    variant="filled" 
+                                  />
+                                </Box>
+                              </Box>
+                            ))}
+                          </Grid>
+                        )}
+                      </Grid>
+                    </Card>
+                  </Grid>
+                )
+              )}
+
               {/* Special Requests */}
               <Grid item xs={12}>
                 <TextField
