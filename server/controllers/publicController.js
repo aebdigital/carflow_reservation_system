@@ -504,6 +504,15 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     pricing: frontendPricing
   } = req.body;
 
+  // 🔍 DEBUG: Log incoming services and insurance data structure for createReservationByUser
+  console.log('🔍 [PUBLIC API createReservationByUser] Incoming services and insurance data:');
+  console.log('📦 selectedServices:', JSON.stringify(selectedServices, null, 2));
+  console.log('📦 selectedAdditionalInsurance:', JSON.stringify(selectedAdditionalInsurance, null, 2));
+  console.log('📦 selectedExtendedInsurance:', JSON.stringify(selectedExtendedInsurance, null, 2));
+  console.log('📦 servicesTotal:', servicesTotal);
+  console.log('📦 insurancePrices:', JSON.stringify(insurancePrices, null, 2));
+  console.log('📦 extendedInsurancePrices:', JSON.stringify(extendedInsurancePrices, null, 2));
+
   // 🔧 FIX: Don't fallback to admin email - require customer email in request body
   // Accept both 'customerEmail' and 'email' for backwards compatibility
   const finalCustomerEmail = customerEmail || email;
@@ -1155,6 +1164,15 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     // 🔧 NEW: Frontend pricing override support
     pricing: frontendPricing
   } = req.body;
+
+  // 🔍 DEBUG: Log incoming services and insurance data structure for createPublicReservation
+  console.log('🔍 [PUBLIC API createPublicReservation] Incoming services and insurance data:');
+  console.log('📦 selectedServices:', JSON.stringify(selectedServices, null, 2));
+  console.log('📦 selectedAdditionalInsurance:', JSON.stringify(selectedAdditionalInsurance, null, 2));
+  console.log('📦 selectedExtendedInsurance:', JSON.stringify(selectedExtendedInsurance, null, 2));
+  console.log('📦 servicesTotal:', servicesTotal);
+  console.log('📦 insurancePrices:', JSON.stringify(insurancePrices, null, 2));
+  console.log('📦 extendedInsurancePrices:', JSON.stringify(extendedInsurancePrices, null, 2));
 
   // Validate required fields
   if (!firstName || !lastName || !email || !phone || !licenseNumber || !carId || !startDate || !endDate) {
