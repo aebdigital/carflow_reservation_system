@@ -168,7 +168,7 @@ function Reservations() {
     data: reservationsData, 
     isLoading: reservationsLoading, 
     error: reservationsError 
-  } = useGetReservationsQuery({ populate: 'customer,car,payment,selectedServices.service,selectedServices._id,selectedAdditionalInsurance.insuranceId,selectedExtendedInsurance.insuranceId' })
+  } = useGetReservationsQuery({ populate: 'customer,car,payment,selectedServices.service,selectedServices._id,selectedAdditionalInsurance.insuranceId,selectedExtendedInsurance.insuranceId,createdBy,lastModifiedBy,checkIn.staffMember,checkOut.staffMember' })
 
   const { 
     data: carsData, 
@@ -316,7 +316,22 @@ function Reservations() {
       console.log('🔍 [RESERVATION DEBUG] Full reservation data:', reservation)
       console.log('🔍 [RESERVATION DEBUG] Pricing data:', reservation.pricing)
       console.log('🔍 [RESERVATION DEBUG] Selected services:', reservation.selectedServices)
-      console.log('🔍 [RESERVATION DEBUG] Selected insurance:', reservation.selectedInsurance)
+      console.log('🔍 [RESERVATION DEBUG] Selected services count:', reservation.selectedServices?.length || 0)
+      console.log('🔍 [RESERVATION DEBUG] Additional insurance:', reservation.selectedAdditionalInsurance)
+      console.log('🔍 [RESERVATION DEBUG] Additional insurance count:', reservation.selectedAdditionalInsurance?.length || 0)
+      console.log('🔍 [RESERVATION DEBUG] Extended insurance:', reservation.selectedExtendedInsurance)
+      console.log('🔍 [RESERVATION DEBUG] Extended insurance count:', reservation.selectedExtendedInsurance?.length || 0)
+      console.log('🔍 [RESERVATION DEBUG] Services total:', reservation.servicesTotal)
+      console.log('🔍 [RESERVATION DEBUG] Insurance prices:', reservation.insurancePrices)
+      console.log('🔍 [RESERVATION DEBUG] Extended insurance prices:', reservation.extendedInsurancePrices)
+      console.log('🔍 [RESERVATION DEBUG] QR Codes:', reservation.qrCodes)
+      console.log('🔍 [RESERVATION DEBUG] Payment status:', reservation.paymentStatus)
+      console.log('🔍 [RESERVATION DEBUG] Additional drivers:', reservation.additionalDrivers)
+      console.log('🔍 [RESERVATION DEBUG] Check-in data:', reservation.checkIn)
+      console.log('🔍 [RESERVATION DEBUG] Check-out data:', reservation.checkOut)
+      console.log('🔍 [RESERVATION DEBUG] Notifications:', reservation.notifications)
+      console.log('🔍 [RESERVATION DEBUG] Terms:', reservation.terms)
+      console.log('🔍 [RESERVATION DEBUG] Rating:', reservation.rating)
     }
     
     if (mode === 'create') {
