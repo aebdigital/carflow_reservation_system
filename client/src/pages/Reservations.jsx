@@ -2547,6 +2547,31 @@ function Reservations() {
                 </Grid>
               )}
 
+              {/* Debug: Show what reservation data is available */}
+              {dialogMode === 'edit' && selectedReservation && (
+                <Grid item xs={12}>
+                  <Card variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'info.50' }}>
+                    <Typography variant="h6" gutterBottom color="info.main">
+                      🔍 Debug: Reservation Data
+                    </Typography>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      <strong>Selected Services:</strong> {selectedReservation.selectedServices ? selectedReservation.selectedServices.length : 0} items
+                    </Typography>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      <strong>Additional Insurance:</strong> {selectedReservation.selectedAdditionalInsurance ? selectedReservation.selectedAdditionalInsurance.length : 0} items
+                    </Typography>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      <strong>Extended Insurance:</strong> {selectedReservation.selectedExtendedInsurance ? selectedReservation.selectedExtendedInsurance.length : 0} items
+                    </Typography>
+                    {selectedReservation.selectedServices && selectedReservation.selectedServices.length > 0 && (
+                      <Typography variant="caption" color="text.secondary">
+                        Services: {selectedReservation.selectedServices.map(s => s.name || 'Unknown').join(', ')}
+                      </Typography>
+                    )}
+                  </Card>
+                </Grid>
+              )}
+
               {/* Additional Services Display (for edit mode) */}
               {dialogMode === 'edit' && selectedReservation && selectedReservation.selectedServices && selectedReservation.selectedServices.length > 0 && (
                 <Grid item xs={12}>
