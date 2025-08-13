@@ -513,6 +513,34 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
   console.log('📦 insurancePrices:', JSON.stringify(insurancePrices, null, 2));
   console.log('📦 extendedInsurancePrices:', JSON.stringify(extendedInsurancePrices, null, 2));
 
+  // ✅ VALIDATION: Validate services and insurance data integrity
+  if (selectedServices && Array.isArray(selectedServices)) {
+    for (const service of selectedServices) {
+      if (!service.name || !service.totalPrice) {
+        console.warn('⚠️ [VALIDATION] Invalid service object missing name or totalPrice:', service);
+      }
+      if (typeof service.totalPrice !== 'number' || service.totalPrice < 0) {
+        console.warn('⚠️ [VALIDATION] Invalid service totalPrice:', service.totalPrice);
+      }
+    }
+  }
+
+  if (selectedAdditionalInsurance && Array.isArray(selectedAdditionalInsurance)) {
+    for (const insurance of selectedAdditionalInsurance) {
+      if (!insurance.name || (insurance.calculatedPrice === undefined && insurance.price === undefined)) {
+        console.warn('⚠️ [VALIDATION] Invalid additional insurance missing name or price:', insurance);
+      }
+    }
+  }
+
+  if (selectedExtendedInsurance && Array.isArray(selectedExtendedInsurance)) {
+    for (const insurance of selectedExtendedInsurance) {
+      if (!insurance.name || (insurance.calculatedPrice === undefined && insurance.price === undefined)) {
+        console.warn('⚠️ [VALIDATION] Invalid extended insurance missing name or price:', insurance);
+      }
+    }
+  }
+
   // 🔧 FIX: Don't fallback to admin email - require customer email in request body
   // Accept both 'customerEmail' and 'email' for backwards compatibility
   const finalCustomerEmail = customerEmail || email;
@@ -1173,6 +1201,34 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
   console.log('📦 servicesTotal:', servicesTotal);
   console.log('📦 insurancePrices:', JSON.stringify(insurancePrices, null, 2));
   console.log('📦 extendedInsurancePrices:', JSON.stringify(extendedInsurancePrices, null, 2));
+
+  // ✅ VALIDATION: Validate services and insurance data integrity
+  if (selectedServices && Array.isArray(selectedServices)) {
+    for (const service of selectedServices) {
+      if (!service.name || !service.totalPrice) {
+        console.warn('⚠️ [VALIDATION] Invalid service object missing name or totalPrice:', service);
+      }
+      if (typeof service.totalPrice !== 'number' || service.totalPrice < 0) {
+        console.warn('⚠️ [VALIDATION] Invalid service totalPrice:', service.totalPrice);
+      }
+    }
+  }
+
+  if (selectedAdditionalInsurance && Array.isArray(selectedAdditionalInsurance)) {
+    for (const insurance of selectedAdditionalInsurance) {
+      if (!insurance.name || (insurance.calculatedPrice === undefined && insurance.price === undefined)) {
+        console.warn('⚠️ [VALIDATION] Invalid additional insurance missing name or price:', insurance);
+      }
+    }
+  }
+
+  if (selectedExtendedInsurance && Array.isArray(selectedExtendedInsurance)) {
+    for (const insurance of selectedExtendedInsurance) {
+      if (!insurance.name || (insurance.calculatedPrice === undefined && insurance.price === undefined)) {
+        console.warn('⚠️ [VALIDATION] Invalid extended insurance missing name or price:', insurance);
+      }
+    }
+  }
 
   // Validate required fields
   if (!firstName || !lastName || !email || !phone || !licenseNumber || !carId || !startDate || !endDate) {
