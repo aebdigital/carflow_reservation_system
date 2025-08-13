@@ -2738,6 +2738,281 @@ function Reservations() {
                   disabled={dialogMode === 'view'}
                 />
               </Grid>
+
+              {/* COMPLETE RESERVATION DATA DEBUG/DISPLAY SECTION FOR EDIT MODE */}
+              {dialogMode === 'edit' && selectedReservation && (
+                <Grid item xs={12}>
+                  <Card variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
+                    <Typography variant="h6" gutterBottom color="primary">
+                      📊 Kompletné údaje rezervácie (MongoDB)
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                      Všetky údaje uložené v databáze pre túto rezerváciu:
+                    </Typography>
+                    
+                    <Grid container spacing={3}>
+                      {/* Basic Info */}
+                      <Grid item xs={12} md={6}>
+                        <Card variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom>
+                            Základné informácie
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Typography variant="body2"><strong>ID:</strong> {selectedReservation._id}</Typography>
+                            <Typography variant="body2"><strong>Číslo rezervácie:</strong> {selectedReservation.reservationNumber}</Typography>
+                            <Typography variant="body2"><strong>Stav:</strong> {selectedReservation.status}</Typography>
+                            <Typography variant="body2"><strong>Tenant ID:</strong> {selectedReservation.tenantId}</Typography>
+                            <Typography variant="body2"><strong>Vytvorené:</strong> {new Date(selectedReservation.createdAt).toLocaleString('sk-SK')}</Typography>
+                            <Typography variant="body2"><strong>Posledne upravené:</strong> {new Date(selectedReservation.updatedAt).toLocaleString('sk-SK')}</Typography>
+                          </Box>
+                        </Card>
+                      </Grid>
+
+                      {/* Pricing Details */}
+                      <Grid item xs={12} md={6}>
+                        <Card variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom>
+                            Cenové údaje
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Typography variant="body2"><strong>Denná sadzba:</strong> {selectedReservation.pricing?.dailyRate}€</Typography>
+                            <Typography variant="body2"><strong>Počet dní:</strong> {selectedReservation.pricing?.totalDays}</Typography>
+                            <Typography variant="body2"><strong>Subtotal:</strong> {selectedReservation.pricing?.subtotal}€</Typography>
+                            <Typography variant="body2"><strong>Dane:</strong> {selectedReservation.pricing?.taxes || 0}€</Typography>
+                            <Typography variant="body2"><strong>Depozit:</strong> {selectedReservation.pricing?.deposit || 0}€</Typography>
+                            <Typography variant="body2"><strong>Služby celkom:</strong> {selectedReservation.servicesTotal || 0}€</Typography>
+                            <Typography variant="body2"><strong>Kalkulovaná suma:</strong> {selectedReservation.pricing?.calculatedTotal || 'N/A'}€</Typography>
+                            <Typography variant="body2"><strong>Finálna suma:</strong> {selectedReservation.pricing?.totalAmount}€</Typography>
+                          </Box>
+                        </Card>
+                      </Grid>
+
+                      {/* Additional Services */}
+                      <Grid item xs={12} md={4}>
+                        <Card variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom>
+                            Dodatočné služby ({selectedReservation.selectedServices?.length || 0})
+                          </Typography>
+                          {selectedReservation.selectedServices?.length > 0 ? (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, maxHeight: 200, overflow: 'auto' }}>
+                              {selectedReservation.selectedServices.map((service, index) => (
+                                <Box key={index} sx={{ p: 1, bgcolor: 'primary.50', borderRadius: 1 }}>
+                                  <Typography variant="caption" display="block"><strong>Názov:</strong> {service.name}</Typography>
+                                  <Typography variant="caption" display="block"><strong>Kategória:</strong> {service.category}</Typography>
+                                  <Typography variant="caption" display="block"><strong>Množstvo:</strong> {service.quantity}</Typography>
+                                  <Typography variant="caption" display="block"><strong>Jednotková cena:</strong> {service.unitPrice}€</Typography>
+                                  <Typography variant="caption" display="block"><strong>Celková cena:</strong> {service.totalPrice}€</Typography>
+                                  <Typography variant="caption" display="block"><strong>Typ:</strong> {service.pricingType}</Typography>
+                                </Box>
+                              ))}
+                            </Box>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">Žiadne dodatočné služby</Typography>
+                          )}
+                        </Card>
+                      </Grid>
+
+                      {/* Additional Insurance */}
+                      <Grid item xs={12} md={4}>
+                        <Card variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom>
+                            Dodatočné poistenie ({selectedReservation.selectedAdditionalInsurance?.length || 0})
+                          </Typography>
+                          {selectedReservation.selectedAdditionalInsurance?.length > 0 ? (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, maxHeight: 200, overflow: 'auto' }}>
+                              {selectedReservation.selectedAdditionalInsurance.map((insurance, index) => (
+                                <Box key={index} sx={{ p: 1, bgcolor: 'warning.50', borderRadius: 1 }}>
+                                  <Typography variant="caption" display="block"><strong>Názov:</strong> {insurance.name}</Typography>
+                                  <Typography variant="caption" display="block"><strong>Typ:</strong> {insurance.type}</Typography>
+                                  <Typography variant="caption" display="block"><strong>Kalkulovaná cena:</strong> {insurance.calculatedPrice}€</Typography>
+                                  <Typography variant="caption" display="block"><strong>Zobrazená cena:</strong> {insurance.displayPrice}</Typography>
+                                  <Typography variant="caption" display="block"><strong>Základná suma:</strong> {insurance.baseAmount}€</Typography>
+                                </Box>
+                              ))}
+                            </Box>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">Žiadne dodatočné poistenie</Typography>
+                          )}
+                        </Card>
+                      </Grid>
+
+                      {/* Extended Insurance */}
+                      <Grid item xs={12} md={4}>
+                        <Card variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom>
+                            Rozšírené poistenie ({selectedReservation.selectedExtendedInsurance?.length || 0})
+                          </Typography>
+                          {selectedReservation.selectedExtendedInsurance?.length > 0 ? (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, maxHeight: 200, overflow: 'auto' }}>
+                              {selectedReservation.selectedExtendedInsurance.map((insurance, index) => (
+                                <Box key={index} sx={{ p: 1, bgcolor: 'success.50', borderRadius: 1 }}>
+                                  <Typography variant="caption" display="block"><strong>Názov:</strong> {insurance.name}</Typography>
+                                  <Typography variant="caption" display="block"><strong>Typ:</strong> {insurance.type}</Typography>
+                                  <Typography variant="caption" display="block"><strong>Kalkulovaná cena:</strong> {insurance.calculatedPrice}€</Typography>
+                                  <Typography variant="caption" display="block"><strong>Zobrazená cena:</strong> {insurance.displayPrice}</Typography>
+                                  <Typography variant="caption" display="block"><strong>Základná suma:</strong> {insurance.baseAmount}€</Typography>
+                                </Box>
+                              ))}
+                            </Box>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">Žiadne rozšírené poistenie</Typography>
+                          )}
+                        </Card>
+                      </Grid>
+
+                      {/* QR Payment Codes */}
+                      <Grid item xs={12} md={6}>
+                        <Card variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom>
+                            QR Platobné kódy
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Typography variant="body2"><strong>PayBySquare:</strong> {selectedReservation.qrCodes?.payBySquare ? '✅ Vygenerovaný' : '❌ Nevygenerovaný'}</Typography>
+                            <Typography variant="body2"><strong>QR Platba CZ:</strong> {selectedReservation.qrCodes?.qrPlatbaCz ? '✅ Vygenerovaný' : '❌ Nevygenerovaný'}</Typography>
+                            <Typography variant="body2"><strong>Faktúra QR:</strong> {selectedReservation.qrCodes?.invoiceBySquare ? '✅ Vygenerovaný' : '❌ Nevygenerovaný'}</Typography>
+                            <Typography variant="body2"><strong>Aktívny:</strong> {selectedReservation.qrCodes?.isActive ? '✅ Áno' : '❌ Nie'}</Typography>
+                            <Typography variant="body2"><strong>Vygenerované:</strong> {selectedReservation.qrCodes?.generatedAt ? new Date(selectedReservation.qrCodes.generatedAt).toLocaleString('sk-SK') : 'Nikdy'}</Typography>
+                            <Typography variant="body2"><strong>Variabilný symbol:</strong> {selectedReservation.qrCodes?.variableSymbol || 'N/A'}</Typography>
+                            <Typography variant="body2"><strong>Suma:</strong> {selectedReservation.qrCodes?.amount || 0}€</Typography>
+                          </Box>
+                        </Card>
+                      </Grid>
+
+                      {/* Payment & Invoice Data */}
+                      <Grid item xs={12} md={6}>
+                        <Card variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom>
+                            Platba a faktúra
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Typography variant="body2"><strong>Platba ID:</strong> {selectedReservation.payment || 'N/A'}</Typography>
+                            <Typography variant="body2"><strong>Zľavový kód:</strong> {selectedReservation.discountCode || 'Žiadny'}</Typography>
+                            <Typography variant="body2"><strong>Platba potvrdená:</strong> {selectedReservation.paymentStatus?.confirmedAt ? new Date(selectedReservation.paymentStatus.confirmedAt).toLocaleString('sk-SK') : 'Nepotvrdená'}</Typography>
+                            <Typography variant="body2"><strong>Kros faktúra ID:</strong> {selectedReservation.krosInvoiceId || 'N/A'}</Typography>
+                            <Typography variant="body2"><strong>Kros faktúra stav:</strong> {selectedReservation.krosInvoiceStatus || 'pending'}</Typography>
+                            <Typography variant="body2"><strong>Kros vytvorené:</strong> {selectedReservation.krosInvoiceCreatedAt ? new Date(selectedReservation.krosInvoiceCreatedAt).toLocaleString('sk-SK') : 'N/A'}</Typography>
+                          </Box>
+                        </Card>
+                      </Grid>
+
+                      {/* Additional Drivers */}
+                      <Grid item xs={12} md={6}>
+                        <Card variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom>
+                            Dodatočné vodiči ({selectedReservation.additionalDrivers?.length || 0})
+                          </Typography>
+                          {selectedReservation.additionalDrivers?.length > 0 ? (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, maxHeight: 150, overflow: 'auto' }}>
+                              {selectedReservation.additionalDrivers.map((driver, index) => (
+                                <Box key={index} sx={{ p: 1, bgcolor: 'info.50', borderRadius: 1 }}>
+                                  <Typography variant="caption" display="block"><strong>Meno:</strong> {driver.firstName} {driver.lastName}</Typography>
+                                  <Typography variant="caption" display="block"><strong>Vodičský preukaz:</strong> {driver.licenseNumber}</Typography>
+                                  <Typography variant="caption" display="block"><strong>Platnosť do:</strong> {driver.licenseExpiry ? new Date(driver.licenseExpiry).toLocaleDateString('sk-SK') : 'N/A'}</Typography>
+                                  <Typography variant="caption" display="block"><strong>Vzťah:</strong> {driver.relationship}</Typography>
+                                </Box>
+                              ))}
+                            </Box>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">Žiadni dodatočnú vodiči</Typography>
+                          )}
+                        </Card>
+                      </Grid>
+
+                      {/* Check-in/Check-out Info */}
+                      <Grid item xs={12} md={6}>
+                        <Card variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom>
+                            Check-in / Check-out
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Typography variant="body2"><strong>Check-in dátum:</strong> {selectedReservation.checkIn?.date ? new Date(selectedReservation.checkIn.date).toLocaleString('sk-SK') : 'Nevykonal sa'}</Typography>
+                            <Typography variant="body2"><strong>Check-in najazdené:</strong> {selectedReservation.checkIn?.mileage || 'N/A'} km</Typography>
+                            <Typography variant="body2"><strong>Check-in palivo:</strong> {selectedReservation.checkIn?.fuelLevel || 'N/A'}</Typography>
+                            <Typography variant="body2"><strong>Check-out dátum:</strong> {selectedReservation.checkOut?.date ? new Date(selectedReservation.checkOut.date).toLocaleString('sk-SK') : 'Nevykonal sa'}</Typography>
+                            <Typography variant="body2"><strong>Check-out najazdené:</strong> {selectedReservation.checkOut?.mileage || 'N/A'} km</Typography>
+                            <Typography variant="body2"><strong>Check-out palivo:</strong> {selectedReservation.checkOut?.fuelLevel || 'N/A'}</Typography>
+                            <Typography variant="body2"><strong>Dodatočné poplatky:</strong> {selectedReservation.checkOut?.additionalCharges?.length || 0}</Typography>
+                          </Box>
+                        </Card>
+                      </Grid>
+
+                      {/* Notifications & Tracking */}
+                      <Grid item xs={12} md={6}>
+                        <Card variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom>
+                            Notifikácie a sledovanie
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Typography variant="body2"><strong>Email potvrdenie:</strong> {selectedReservation.notifications?.emailSent?.confirmation ? '✅ Odoslané' : '❌ Neodoslané'}</Typography>
+                            <Typography variant="body2"><strong>Email pripomienka:</strong> {selectedReservation.notifications?.emailSent?.reminder ? '✅ Odoslané' : '❌ Neodoslané'}</Typography>
+                            <Typography variant="body2"><strong>SMS potvrdenie:</strong> {selectedReservation.notifications?.smsSent?.confirmation ? '✅ Odoslané' : '❌ Neodoslané'}</Typography>
+                            <Typography variant="body2"><strong>24h pripomienka odoslaná:</strong> {selectedReservation.reminder24h?.sent ? `✅ ${new Date(selectedReservation.reminder24h.sentAt).toLocaleString('sk-SK')}` : '❌ Neodoslané'}</Typography>
+                            <Typography variant="body2"><strong>Žiadosť o recenziu:</strong> {selectedReservation.reviewRequest?.sent ? `✅ ${new Date(selectedReservation.reviewRequest.sentAt).toLocaleString('sk-SK')}` : '❌ Neodoslané'}</Typography>
+                          </Box>
+                        </Card>
+                      </Grid>
+
+                      {/* Terms & Conditions */}
+                      <Grid item xs={12} md={6}>
+                        <Card variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom>
+                            Podmienky prenájmu
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Typography variant="body2"><strong>Limit kilometrov:</strong> {selectedReservation.terms?.mileageLimit === -1 ? 'Neobmedzené' : `${selectedReservation.terms?.mileageLimit || 'N/A'} km`}</Typography>
+                            <Typography variant="body2"><strong>Palivo politika:</strong> {selectedReservation.terms?.fuelPolicy || 'full-to-full'}</Typography>
+                            <Typography variant="body2"><strong>Storno politika:</strong> {selectedReservation.terms?.cancellationPolicy || 'N/A'}</Typography>
+                            <Typography variant="body2"><strong>Poplatok za neskoré vrátenie:</strong> {selectedReservation.terms?.lateReturnFee || 0}€</Typography>
+                          </Box>
+                        </Card>
+                      </Grid>
+
+                      {/* Rating & Notes */}
+                      <Grid item xs={12}>
+                        <Card variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom>
+                            Hodnotenie a poznámky
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Typography variant="body2"><strong>Hodnotenie:</strong> {selectedReservation.rating?.score ? `${selectedReservation.rating.score}/5 ⭐` : 'Nehodnotené'}</Typography>
+                            <Typography variant="body2"><strong>Komentár hodnotenia:</strong> {selectedReservation.rating?.comment || 'Žiadny komentár'}</Typography>
+                            <Typography variant="body2"><strong>Dátum hodnotenia:</strong> {selectedReservation.rating?.date ? new Date(selectedReservation.rating.date).toLocaleString('sk-SK') : 'N/A'}</Typography>
+                            <Typography variant="body2"><strong>Poznámky:</strong> {selectedReservation.notes || 'Žiadne poznámky'}</Typography>
+                            <Typography variant="body2"><strong>Špeciálne požiadavky:</strong> {selectedReservation.specialRequests || 'Žiadne špeciálne požiadavky'}</Typography>
+                          </Box>
+                        </Card>
+                      </Grid>
+
+                      {/* RAW RESERVATION DATA (Development Debug) */}
+                      {process.env.NODE_ENV === 'development' && (
+                        <Grid item xs={12}>
+                          <Card variant="outlined" sx={{ p: 2, bgcolor: 'warning.50', border: '2px dashed orange' }}>
+                            <Typography variant="subtitle1" fontWeight="bold" color="warning.main" gutterBottom>
+                              🐛 RAW MongoDB Data (Development Only)
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                              Kompletné raw dáta z MongoDB pre debug:
+                            </Typography>
+                            <Box sx={{ 
+                              maxHeight: 400, 
+                              overflow: 'auto', 
+                              bgcolor: 'grey.100', 
+                              p: 2, 
+                              borderRadius: 1, 
+                              fontFamily: 'monospace',
+                              fontSize: '0.75rem',
+                              whiteSpace: 'pre-wrap'
+                            }}>
+                              {JSON.stringify(selectedReservation, null, 2)}
+                            </Box>
+                          </Card>
+                        </Grid>
+                      )}
+
+                    </Grid>
+                  </Card>
+                </Grid>
+              )}
             </Grid>
           )}
         </DialogContent>
