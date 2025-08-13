@@ -490,6 +490,16 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     notes,
     discountCode, // Add discount code support
     
+    // ✅ ADDITIONAL SERVICES AND INSURANCE FIELDS (PUBLIC API)
+    selectedServices,
+    servicesTotal,
+    selectedAdditionalInsurance,
+    selectedExtendedInsurance,
+    insurancePrices,
+    extendedInsurancePrices,
+    calculatedTotal,
+    extraOptions,
+    
     // 🔧 NEW: Frontend pricing override support
     pricing: frontendPricing
   } = req.body;
@@ -754,6 +764,35 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       console.log('📊 [PRICING DEBUG] Backend calculated pricing (no taxes):', JSON.stringify(finalPricing, null, 2));
     }
 
+    // ✅ ENHANCE: Add services and insurance costs to backend calculation for createReservationByUser
+    if (finalPricing.source === 'backend') {
+      const additionalServicesTotal = (servicesTotal || 0);
+      let insuranceTotal = 0;
+      
+      // Calculate insurance totals if provided
+      if (selectedAdditionalInsurance && selectedAdditionalInsurance.length > 0) {
+        insuranceTotal += selectedAdditionalInsurance.reduce((sum, insurance) => {
+          return sum + (insurance.calculatedPrice || insurance.totalPrice || insurance.price || insurance.amount || 0);
+        }, 0);
+      }
+      
+      if (selectedExtendedInsurance && selectedExtendedInsurance.length > 0) {
+        insuranceTotal += selectedExtendedInsurance.reduce((sum, insurance) => {
+          return sum + (insurance.calculatedPrice || insurance.totalPrice || insurance.price || insurance.amount || 0);
+        }, 0);
+      }
+      
+      console.log('💰 [PUBLIC API createReservationByUser] Services & Insurance calculation:', {
+        additionalServicesTotal,
+        insuranceTotal,
+        originalTotal: finalPricing.totalAmount,
+        enhancedTotal: finalPricing.totalAmount + additionalServicesTotal + insuranceTotal
+      });
+      
+      // Add services and insurance to final pricing
+      finalPricing.totalAmount = finalPricing.totalAmount + additionalServicesTotal + insuranceTotal;
+    }
+
     let appliedDiscountCodes = [];
 
     // Handle discount code if provided
@@ -854,6 +893,13 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       additionalDrivers: additionalDrivers || [],
       specialRequests: specialRequests || '',
       notes: notes || '',
+      // ✅ ADDITIONAL SERVICES AND INSURANCE DATA (PUBLIC API)
+      selectedServices: selectedServices || [],
+      servicesTotal: servicesTotal || 0,
+      selectedAdditionalInsurance: selectedAdditionalInsurance || [],
+      selectedExtendedInsurance: selectedExtendedInsurance || [],
+      insurancePrices: insurancePrices || {},
+      extendedInsurancePrices: extendedInsurancePrices || {},
       terms: {
         mileageLimit: -1,
         fuelPolicy: 'full-to-full',
@@ -1095,6 +1141,16 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     additionalDrivers,
     specialRequests,
     notes,
+    
+    // ✅ ADDITIONAL SERVICES AND INSURANCE FIELDS (PUBLIC API)
+    selectedServices,
+    servicesTotal,
+    selectedAdditionalInsurance,
+    selectedExtendedInsurance,
+    insurancePrices,
+    extendedInsurancePrices,
+    calculatedTotal,
+    extraOptions,
     
     // 🔧 NEW: Frontend pricing override support
     pricing: frontendPricing
@@ -1389,6 +1445,35 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       console.log('📊 [PRICING DEBUG] Backend calculated pricing (no taxes):', JSON.stringify(finalPricing, null, 2));
     }
 
+    // ✅ ENHANCE: Add services and insurance costs to backend calculation for createPublicReservation
+    if (finalPricing.source === 'backend') {
+      const additionalServicesTotal = (servicesTotal || 0);
+      let insuranceTotal = 0;
+      
+      // Calculate insurance totals if provided
+      if (selectedAdditionalInsurance && selectedAdditionalInsurance.length > 0) {
+        insuranceTotal += selectedAdditionalInsurance.reduce((sum, insurance) => {
+          return sum + (insurance.calculatedPrice || insurance.totalPrice || insurance.price || insurance.amount || 0);
+        }, 0);
+      }
+      
+      if (selectedExtendedInsurance && selectedExtendedInsurance.length > 0) {
+        insuranceTotal += selectedExtendedInsurance.reduce((sum, insurance) => {
+          return sum + (insurance.calculatedPrice || insurance.totalPrice || insurance.price || insurance.amount || 0);
+        }, 0);
+      }
+      
+      console.log('💰 [PUBLIC API createPublicReservation] Services & Insurance calculation:', {
+        additionalServicesTotal,
+        insuranceTotal,
+        originalTotal: finalPricing.totalAmount,
+        enhancedTotal: finalPricing.totalAmount + additionalServicesTotal + insuranceTotal
+      });
+      
+      // Add services and insurance to final pricing
+      finalPricing.totalAmount = finalPricing.totalAmount + additionalServicesTotal + insuranceTotal;
+    }
+
     // Default pickup/dropoff locations if not provided - get from settings
     let defaultPickupFromSettings = {
       name: 'Banska Bystrica',
@@ -1431,6 +1516,13 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       additionalDrivers: additionalDrivers || [],
       specialRequests: specialRequests || '',
       notes: notes || '',
+      // ✅ ADDITIONAL SERVICES AND INSURANCE DATA (PUBLIC API)
+      selectedServices: selectedServices || [],
+      servicesTotal: servicesTotal || 0,
+      selectedAdditionalInsurance: selectedAdditionalInsurance || [],
+      selectedExtendedInsurance: selectedExtendedInsurance || [],
+      insurancePrices: insurancePrices || {},
+      extendedInsurancePrices: extendedInsurancePrices || {},
       terms: {
         mileageLimit: -1, // Unlimited
         fuelPolicy: 'full-to-full',
