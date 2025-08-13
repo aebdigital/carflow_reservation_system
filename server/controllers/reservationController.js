@@ -160,7 +160,16 @@ const createReservation = asyncHandler(async (req, res, next) => {
     dropoffLocation,
     additionalDrivers,
     specialRequests,
-    discountCode
+    discountCode,
+    // ✅ ADDITIONAL SERVICES AND INSURANCE FIELDS
+    selectedServices,
+    servicesTotal,
+    selectedAdditionalInsurance,
+    selectedExtendedInsurance,
+    insurancePrices,
+    extendedInsurancePrices,
+    calculatedTotal,
+    extraOptions
   } = req.body;
 
   // Validate car exists and is available (tenant-scoped)
@@ -289,6 +298,30 @@ const createReservation = asyncHandler(async (req, res, next) => {
   const subtotal = carDoc.calculateRate(days);
   const taxes = 0; // 🔧 REMOVED TAX CALCULATION - No taxes added in admin
   
+  // Add services and insurance costs
+  const additionalServicesTotal = (servicesTotal || 0);
+  let insuranceTotal = 0;
+  
+  // Calculate insurance totals if provided
+  if (selectedAdditionalInsurance && selectedAdditionalInsurance.length > 0) {
+    insuranceTotal += selectedAdditionalInsurance.reduce((sum, insurance) => {
+      return sum + (insurance.calculatedPrice || insurance.totalPrice || insurance.price || insurance.amount || 0);
+    }, 0);
+  }
+  
+  if (selectedExtendedInsurance && selectedExtendedInsurance.length > 0) {
+    insuranceTotal += selectedExtendedInsurance.reduce((sum, insurance) => {
+      return sum + (insurance.calculatedPrice || insurance.totalPrice || insurance.price || insurance.amount || 0);
+    }, 0);
+  }
+  
+  console.log('💰 [RESERVATION] Pricing breakdown:', {
+    subtotal,
+    additionalServicesTotal,
+    insuranceTotal,
+    calculatedTotal: calculatedTotal || (subtotal + additionalServicesTotal + insuranceTotal)
+  });
+  
   // Initialize pricing object
   let pricing = {
     dailyRate,
@@ -296,7 +329,8 @@ const createReservation = asyncHandler(async (req, res, next) => {
     subtotal,
     taxes,
     discounts: [],
-    totalAmount: subtotal + taxes // Just subtotal since taxes = 0
+    // Use provided calculatedTotal or calculate from components
+    totalAmount: calculatedTotal || (subtotal + taxes + additionalServicesTotal + insuranceTotal)
   };
 
   let appliedDiscountCodes = [];
@@ -352,8 +386,8 @@ const createReservation = asyncHandler(async (req, res, next) => {
       discountAmount: discountAmount
     });
 
-    // Recalculate total amount
-    pricing.totalAmount = subtotal + taxes - discountAmount;
+    // Recalculate total amount including services and insurance
+    pricing.totalAmount = (calculatedTotal || (subtotal + taxes + additionalServicesTotal + insuranceTotal)) - discountAmount;
   }
 
   const reservationData = {
@@ -367,6 +401,13 @@ const createReservation = asyncHandler(async (req, res, next) => {
     appliedDiscountCodes,
     additionalDrivers,
     specialRequests,
+    // ✅ ADDITIONAL SERVICES AND INSURANCE DATA
+    selectedServices: selectedServices || [],
+    servicesTotal: servicesTotal || 0,
+    selectedAdditionalInsurance: selectedAdditionalInsurance || [],
+    selectedExtendedInsurance: selectedExtendedInsurance || [],
+    insurancePrices: insurancePrices || {},
+    extendedInsurancePrices: extendedInsurancePrices || {},
     tenantId: req.user.tenantId,
     createdBy: req.user._id
   };
