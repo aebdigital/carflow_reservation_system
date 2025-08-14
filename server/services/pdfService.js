@@ -167,17 +167,21 @@ class PDFService {
       additionalServicesTotal += reservation.pricing.fees.reduce((sum, fee) => sum + (fee.amount || 0), 0);
     }
     
-    const totalPrice = reservation.pricing?.totalAmount || 0;
+    // Ensure total price calculation is consistent
+    // Either use the stored totalAmount or calculate base + services + insurance
+    const totalPrice = reservation.pricing?.totalAmount || (basePrice + additionalServicesTotal);
     
     // Calculate actual daily rate from total pricing (more accurate than stored dailyRate)
     const actualDailyRate = days > 0 ? (basePrice / days) : (reservation.pricing?.dailyRate || 0);
     
     console.log('💰 [PDF PRICING] Days:', days);
-    console.log('💰 [PDF PRICING] Base price:', basePrice);
+    console.log('💰 [PDF PRICING] Base price (subtotal):', basePrice);
     console.log('💰 [PDF PRICING] Stored daily rate:', reservation.pricing?.dailyRate);
     console.log('💰 [PDF PRICING] Calculated daily rate:', actualDailyRate);
     console.log('💰 [PDF PRICING] Additional services total:', additionalServicesTotal);
-    console.log('💰 [PDF PRICING] Total price:', totalPrice);
+    console.log('💰 [PDF PRICING] Stored total amount:', reservation.pricing?.totalAmount);
+    console.log('💰 [PDF PRICING] Final total price:', totalPrice);
+    console.log('💰 [PDF PRICING] Verification: Base + Services =', basePrice + additionalServicesTotal);
     
     // Customer address formatting for Slovak format
     const formatAddress = (address) => {
