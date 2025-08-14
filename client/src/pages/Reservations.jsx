@@ -1658,11 +1658,19 @@ function Reservations() {
                   
                   // Add additional insurance as services
                   if (selectedReservation.selectedAdditionalInsurance && selectedReservation.selectedAdditionalInsurance.length > 0) {
+                    const totalDays = Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24));
+                    
                     selectedReservation.selectedAdditionalInsurance.forEach(insurance => {
+                      // Calculate total price: use calculatedPrice if available, otherwise calculate from baseAmount/price * days
+                      const totalPrice = insurance.calculatedPrice || 
+                                        (insurance.pricingType === 'per_day' ? 
+                                         (insurance.baseAmount || insurance.price || 0) * totalDays : 
+                                         (insurance.baseAmount || insurance.price || 0));
+                      
                       allServices.push({
                         ...insurance,
                         displayName: insurance.name || insurance.insuranceId?.name || 'Poistenie',
-                        displayPrice: insurance.calculatedPrice || insurance.price,
+                        displayPrice: totalPrice,
                         serviceType: 'insurance',
                         categoryLabel: insurance.type || 'poistenie',
                         unitPriceLabel: insurance.price || insurance.baseAmount,
@@ -1674,11 +1682,19 @@ function Reservations() {
                   
                   // Add extended insurance as services
                   if (selectedReservation.selectedExtendedInsurance && selectedReservation.selectedExtendedInsurance.length > 0) {
+                    const totalDays = Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24));
+                    
                     selectedReservation.selectedExtendedInsurance.forEach(insurance => {
+                      // Calculate total price: use calculatedPrice if available, otherwise calculate from baseAmount/price * days
+                      const totalPrice = insurance.calculatedPrice || 
+                                        (insurance.pricingType === 'per_day' ? 
+                                         (insurance.baseAmount || insurance.price || 0) * totalDays : 
+                                         (insurance.baseAmount || insurance.price || 0));
+                      
                       allServices.push({
                         ...insurance,
                         displayName: insurance.name || insurance.insuranceId?.name || 'Rozšírené poistenie',
-                        displayPrice: insurance.calculatedPrice || insurance.price,
+                        displayPrice: totalPrice,
                         serviceType: 'extended_insurance',
                         categoryLabel: insurance.type || 'rozšírené poistenie',
                         unitPriceLabel: insurance.price || insurance.baseAmount,
@@ -2523,11 +2539,19 @@ function Reservations() {
                 
                 // Add additional insurance as services
                 if (selectedReservation.selectedAdditionalInsurance && selectedReservation.selectedAdditionalInsurance.length > 0) {
+                  const totalDays = Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24));
+                  
                   selectedReservation.selectedAdditionalInsurance.forEach(insurance => {
+                    // Calculate total price: use calculatedPrice if available, otherwise calculate from baseAmount/price * days
+                    const totalPrice = insurance.calculatedPrice || 
+                                      (insurance.pricingType === 'per_day' ? 
+                                       (insurance.baseAmount || insurance.price || 0) * totalDays : 
+                                       (insurance.baseAmount || insurance.price || 0));
+                    
                     allServices.push({
                       ...insurance,
                       displayName: insurance.name || insurance.insuranceId?.name || 'Poistenie',
-                      displayPrice: insurance.calculatedPrice || insurance.price,
+                      displayPrice: totalPrice,
                       serviceType: 'insurance',
                       categoryLabel: insurance.type || 'poistenie',
                       unitPriceLabel: insurance.price || insurance.baseAmount,
@@ -2539,11 +2563,19 @@ function Reservations() {
                 
                 // Add extended insurance as services
                 if (selectedReservation.selectedExtendedInsurance && selectedReservation.selectedExtendedInsurance.length > 0) {
+                  const totalDays = Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24));
+                  
                   selectedReservation.selectedExtendedInsurance.forEach(insurance => {
+                    // Calculate total price: use calculatedPrice if available, otherwise calculate from baseAmount/price * days
+                    const totalPrice = insurance.calculatedPrice || 
+                                      (insurance.pricingType === 'per_day' ? 
+                                       (insurance.baseAmount || insurance.price || 0) * totalDays : 
+                                       (insurance.baseAmount || insurance.price || 0));
+                    
                     allServices.push({
                       ...insurance,
                       displayName: insurance.name || insurance.insuranceId?.name || 'Rozšírené poistenie',
-                      displayPrice: insurance.calculatedPrice || insurance.price,
+                      displayPrice: totalPrice,
                       serviceType: 'extended_insurance',
                       categoryLabel: insurance.type || 'rozšírené poistenie',
                       unitPriceLabel: insurance.price || insurance.baseAmount,
