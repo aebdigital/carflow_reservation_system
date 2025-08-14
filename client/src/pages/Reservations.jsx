@@ -2590,83 +2590,86 @@ function Reservations() {
                 
                 return (
                   <Grid item xs={12}>
-                    <Card variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'primary.50', border: '2px solid', borderColor: 'primary.300' }}>
-                      <Typography variant="h5" gutterBottom color="primary">
-                        🛠️ Všetky dodatočné služby ({allServices.length})
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                        Kompletný zoznam všetkých služieb a poistenia vybraných pri tejto rezervácii
-                      </Typography>
-                      
-                      <Grid container spacing={2}>
-                        {allServices.map((service, index) => (
-                          <Grid item xs={12} md={6} lg={4} key={service._id || index}>
-                            <Card variant="outlined" sx={{ 
-                              height: '100%',
-                              bgcolor: service.serviceType === 'service' ? 'grey.50' : 
-                                       service.serviceType === 'insurance' ? 'info.100' : 'warning.100',
-                              border: '2px solid',
-                              borderColor: service.serviceType === 'service' ? 'grey.300' : 
-                                         service.serviceType === 'insurance' ? 'info.300' : 'warning.300'
-                            }}>
-                              <CardContent>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom color="primary">
+                          Dodatočné služby ({allServices.length})
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          Všetky dodatočné služby a poistenie vybrané pri rezervácii
+                        </Typography>
+                        
+                        <Grid container spacing={2}>
+                          {allServices.map((service, index) => (
+                            <Grid item xs={12} md={6} key={service._id || index}>
+                              <Box sx={{ 
+                                p: 2, 
+                                bgcolor: service.serviceType === 'service' ? 'grey.50' : 
+                                         service.serviceType === 'insurance' ? 'info.50' : 'warning.50',
+                                borderRadius: 1,
+                                border: '1px solid',
+                                borderColor: service.serviceType === 'service' ? 'grey.200' : 
+                                           service.serviceType === 'insurance' ? 'info.200' : 'warning.200'
+                              }}>
                                 {/* Service Name and Price */}
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                                  <Typography variant="h6" color="primary" fontWeight="bold">
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                  <Typography variant="body2" fontWeight="medium">
                                     {service.displayName}
                                   </Typography>
-                                  <Typography variant="h6" color="success.main" fontWeight="bold">
+                                  <Typography variant="body2" color="primary" fontWeight="medium">
                                     {service.displayPrice?.toFixed ? service.displayPrice.toFixed(2) : service.displayPrice}€
                                   </Typography>
                                 </Box>
                                 
                                 {/* Service Description */}
                                 {service.description && (
-                                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
                                     {service.description}
                                   </Typography>
                                 )}
                                 
-                                {/* Category and Pricing Chips */}
-                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-                                  <Chip 
-                                    label={service.categoryLabel} 
-                                    size="small" 
-                                    variant="filled" 
-                                    color={service.serviceType === 'service' ? 'default' : 
-                                           service.serviceType === 'insurance' ? 'info' : 'warning'}
-                                  />
-                                  <Chip 
-                                    label={service.pricingTypeLabel === 'per_day' ? 'Za deň' : 
-                                           service.pricingTypeLabel === 'per_km' ? 'Za km' : 
-                                           service.pricingTypeLabel === 'percentage' ? 'Percento' : 'Pevná cena'} 
-                                    size="small" 
-                                    color="success"
-                                    variant="outlined" 
-                                  />
-                                </Box>
+                                {/* Category Chip */}
+                                <Chip 
+                                  label={service.categoryLabel} 
+                                  size="small" 
+                                  variant="outlined" 
+                                  color={service.serviceType === 'service' ? 'default' : 
+                                         service.serviceType === 'insurance' ? 'info' : 'warning'}
+                                  sx={{ mb: 1, mr: 1 }}
+                                />
+                                
+                                {/* Pricing Type Chip */}
+                                <Chip 
+                                  label={service.pricingTypeLabel === 'per_day' ? 'Za deň' : 
+                                         service.pricingTypeLabel === 'per_km' ? 'Za km' : 
+                                         service.pricingTypeLabel === 'percentage' ? 'Percento' : 'Pevná cena'} 
+                                  size="small" 
+                                  color="primary"
+                                  variant="filled" 
+                                  sx={{ mb: 1 }}
+                                />
                                 
                                 {/* Service Details */}
-                                <Box sx={{ mt: 'auto' }}>
+                                <Box sx={{ mt: 1 }}>
                                   {service.quantity && service.quantity > 1 && (
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'medium' }}>
-                                      📦 Množstvo: {service.quantity}x
+                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                      Množstvo: {service.quantity}x
                                     </Typography>
                                   )}
                                   {service.unitPriceLabel && (
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'medium' }}>
-                                      💰 Jednotková cena: {typeof service.unitPriceLabel === 'number' ? service.unitPriceLabel.toFixed(2) : service.unitPriceLabel}€
+                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                      Jednotková cena: {typeof service.unitPriceLabel === 'number' ? service.unitPriceLabel.toFixed(2) : service.unitPriceLabel}€
                                       {service.pricingTypeLabel === 'per_day' ? ' /deň' : 
                                        service.pricingTypeLabel === 'per_km' ? ' /km' : 
                                        service.pricingTypeLabel === 'percentage' ? '%' : ''}
                                     </Typography>
                                   )}
                                 </Box>
-                              </CardContent>
-                            </Card>
-                          </Grid>
-                        ))}
-                      </Grid>
+                              </Box>
+                            </Grid>
+                          ))}
+                        </Grid>
+                      </CardContent>
                     </Card>
                   </Grid>
                 );
