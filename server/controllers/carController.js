@@ -514,6 +514,10 @@ const createCar = asyncHandler(async (req, res, next) => {
               if (!isNaN(numValue)) {
                 obj[finalKey] = numValue;
                 console.log(`🚗 [CAR CREATE] Converted ${field}: "${originalValue}" → ${numValue} (${integerFields.has(field) ? 'int' : 'float'})`);
+              } else {
+                // If conversion resulted in NaN, set to undefined
+                obj[finalKey] = undefined;
+                console.log(`🚗 [CAR CREATE] Removed invalid ${field}: "${originalValue}" (converted to NaN)`);
               }
             }
           }
@@ -665,7 +669,10 @@ const createCar = asyncHandler(async (req, res, next) => {
     // Clean fuel consumption fields
     if (carData.fuelConsumption) {
       ['city', 'highway', 'combined', 'co2Emissions'].forEach(field => {
-        if (carData.fuelConsumption[field] === '' || carData.fuelConsumption[field] === null) {
+        if (carData.fuelConsumption[field] === '' || 
+            carData.fuelConsumption[field] === null || 
+            carData.fuelConsumption[field] === undefined ||
+            (typeof carData.fuelConsumption[field] === 'number' && isNaN(carData.fuelConsumption[field]))) {
           carData.fuelConsumption[field] = undefined;
         }
       });
@@ -1374,6 +1381,10 @@ const updateCar = asyncHandler(async (req, res, next) => {
               if (!isNaN(numValue)) {
                 obj[finalKey] = numValue;
                 console.log(`🚗 [CAR UPDATE] Converted ${field}: "${originalValue}" → ${numValue} (${integerFields.has(field) ? 'int' : 'float'})`);
+              } else {
+                // If conversion resulted in NaN, set to undefined
+                obj[finalKey] = undefined;
+                console.log(`🚗 [CAR UPDATE] Removed invalid ${field}: "${originalValue}" (converted to NaN)`);
               }
             }
           }
@@ -1448,7 +1459,10 @@ const updateCar = asyncHandler(async (req, res, next) => {
     // Clean fuel consumption fields
     if (req.body.fuelConsumption) {
       ['city', 'highway', 'combined', 'co2Emissions'].forEach(field => {
-        if (req.body.fuelConsumption[field] === '' || req.body.fuelConsumption[field] === null) {
+        if (req.body.fuelConsumption[field] === '' || 
+            req.body.fuelConsumption[field] === null || 
+            req.body.fuelConsumption[field] === undefined ||
+            (typeof req.body.fuelConsumption[field] === 'number' && isNaN(req.body.fuelConsumption[field]))) {
           req.body.fuelConsumption[field] = undefined;
         }
       });
