@@ -884,6 +884,12 @@ export const api = createApi({
       }),
     }),
 
+    // Public Pickup Locations endpoint
+    getPickupLocationsByUser: builder.query({
+      query: (userEmail) => `public/users/${userEmail}/pickup-locations`,
+      providesTags: ['PickupLocations'],
+    }),
+
     // Campaign endpoints
     sendMassEmail: builder.mutation({
       query: (campaignData) => ({
@@ -1073,6 +1079,9 @@ export const {
   useGetBlogTagsQuery,
   useLikeBlogMutation,
   useAddBlogCommentMutation,
+
+  // Public Pickup Locations hooks
+  useGetPickupLocationsByUserQuery,
 
   // Campaign hooks
   useSendMassEmailMutation,

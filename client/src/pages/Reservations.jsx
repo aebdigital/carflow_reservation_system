@@ -18,6 +18,7 @@ import {
   TableHead,
   TableRow,
   Paper,
+  Autocomplete,
   Chip,
   Dialog,
   DialogTitle,
@@ -65,6 +66,7 @@ import {
   useGetPaymentsQuery,
   useGenerateReservationSlovakAgreementMutation,
   useCreateUserMutation,
+  useGetPickupLocationsByUserQuery,
 } from '../store/store'
 import { useNavigate } from 'react-router-dom'
 import { t } from '../utils/translations'
@@ -184,6 +186,14 @@ function Reservations() {
     data: paymentsData, 
     isLoading: paymentsLoading 
   } = useGetPaymentsQuery({ populate: 'reservation' })
+
+  // Get pickup locations for current tenant
+  const { 
+    data: pickupLocationsData, 
+    isLoading: pickupLocationsLoading 
+  } = useGetPickupLocationsByUserQuery(auth.user?.email, {
+    skip: !auth.user?.email
+  })
 
   const [createReservation, { isLoading: creating }] = useCreateReservationMutation()
   const [updateReservation, { isLoading: updating }] = useUpdateReservationMutation()
@@ -2289,79 +2299,55 @@ function Reservations() {
                   {t('pickupLocation')}
                 </Typography>
               </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
+              <Grid item xs={12}>
+                <Autocomplete
                   fullWidth
-                  label={t('locationName')}
-                  value={formData.pickupLocation.name}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    pickupLocation: { ...formData.pickupLocation, name: e.target.value }
-                  })}
+                  options={pickupLocationsData?.data?.pickupLocations || []}
+                  getOptionLabel={(option) => option.name || ''}
+                  value={pickupLocationsData?.data?.pickupLocations?.find(
+                    loc => loc.name === formData.pickupLocation.name
+                  ) || null}
+                  onChange={(_, newValue) => {
+                    setFormData({
+                      ...formData,
+                      pickupLocation: {
+                        name: newValue?.name || '',
+                        address: {
+                          street: newValue?.address || '',
+                          city: '',
+                          state: '',
+                          zipCode: '',
+                          country: ''
+                        }
+                      }
+                    })
+                  }}
                   disabled={dialogMode === 'view'}
-                  error={!!formErrors.pickupLocationName}
-                  helperText={formErrors.pickupLocationName}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label={t('street')}
-                  value={formData.pickupLocation.address.street}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    pickupLocation: {
-                      ...formData.pickupLocation,
-                      address: { ...formData.pickupLocation.address, street: e.target.value }
-                    }
-                  })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label={t('city')}
-                  value={formData.pickupLocation.address.city}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    pickupLocation: {
-                      ...formData.pickupLocation,
-                      address: { ...formData.pickupLocation.address, city: e.target.value }
-                    }
-                  })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label={t('state')}
-                  value={formData.pickupLocation.address.state}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    pickupLocation: {
-                      ...formData.pickupLocation,
-                      address: { ...formData.pickupLocation.address, state: e.target.value }
-                    }
-                  })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label={t('country')}
-                  value={formData.pickupLocation.address.country}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    pickupLocation: {
-                      ...formData.pickupLocation,
-                      address: { ...formData.pickupLocation.address, country: e.target.value }
-                    }
-                  })}
-                  disabled={dialogMode === 'view'}
+                  loading={pickupLocationsLoading}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={t('locationName')}
+                      error={!!formErrors.pickupLocationName}
+                      helperText={formErrors.pickupLocationName || 'Vyberte miesto prevzatia zo zoznamu'}
+                      required
+                    />
+                  )}
+                  renderOption={(props, option) => (
+                    <Box component="li" {...props}>
+                      <Box>
+                        <Typography variant="body1">{option.name}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {option.address}
+                        </Typography>
+                        {option.openingHours && (
+                          <Typography variant="caption" color="text.secondary">
+                            Otváracie hodiny: {option.openingHours}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  )}
                 />
               </Grid>
 
@@ -2371,79 +2357,55 @@ function Reservations() {
                   {t('dropoffLocation')}
                 </Typography>
               </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
+              <Grid item xs={12}>
+                <Autocomplete
                   fullWidth
-                  label={t('locationName')}
-                  value={formData.dropoffLocation.name}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    dropoffLocation: { ...formData.dropoffLocation, name: e.target.value }
-                  })}
+                  options={pickupLocationsData?.data?.pickupLocations || []}
+                  getOptionLabel={(option) => option.name || ''}
+                  value={pickupLocationsData?.data?.pickupLocations?.find(
+                    loc => loc.name === formData.dropoffLocation.name
+                  ) || null}
+                  onChange={(_, newValue) => {
+                    setFormData({
+                      ...formData,
+                      dropoffLocation: {
+                        name: newValue?.name || '',
+                        address: {
+                          street: newValue?.address || '',
+                          city: '',
+                          state: '',
+                          zipCode: '',
+                          country: ''
+                        }
+                      }
+                    })
+                  }}
                   disabled={dialogMode === 'view'}
-                  error={!!formErrors.dropoffLocationName}
-                  helperText={formErrors.dropoffLocationName}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label={t('street')}
-                  value={formData.dropoffLocation.address.street}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    dropoffLocation: {
-                      ...formData.dropoffLocation,
-                      address: { ...formData.dropoffLocation.address, street: e.target.value }
-                    }
-                  })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label={t('city')}
-                  value={formData.dropoffLocation.address.city}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    dropoffLocation: {
-                      ...formData.dropoffLocation,
-                      address: { ...formData.dropoffLocation.address, city: e.target.value }
-                    }
-                  })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label={t('state')}
-                  value={formData.dropoffLocation.address.state}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    dropoffLocation: {
-                      ...formData.dropoffLocation,
-                      address: { ...formData.dropoffLocation.address, state: e.target.value }
-                    }
-                  })}
-                  disabled={dialogMode === 'view'}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label={t('country')}
-                  value={formData.dropoffLocation.address.country}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    dropoffLocation: {
-                      ...formData.dropoffLocation,
-                      address: { ...formData.dropoffLocation.address, country: e.target.value }
-                    }
-                  })}
-                  disabled={dialogMode === 'view'}
+                  loading={pickupLocationsLoading}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={t('locationName')}
+                      error={!!formErrors.dropoffLocationName}
+                      helperText={formErrors.dropoffLocationName || 'Vyberte miesto vrátenia zo zoznamu'}
+                      required
+                    />
+                  )}
+                  renderOption={(props, option) => (
+                    <Box component="li" {...props}>
+                      <Box>
+                        <Typography variant="body1">{option.name}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {option.address}
+                        </Typography>
+                        {option.openingHours && (
+                          <Typography variant="caption" color="text.secondary">
+                            Otváracie hodiny: {option.openingHours}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  )}
                 />
               </Grid>
 
