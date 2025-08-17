@@ -1677,7 +1677,7 @@ const EnhancedCarForm = ({
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom>Výbava vozidla</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Označte dostupnú výbavu pre toto vozidlo alebo pridajte vlastnú
+                Vyberte výbavu pre toto vozidlo z globálneho zoznamu. Nová výbava pridaná do ľubovoľného vozidla sa automaticky sprístupní pre všetky ostatné vozidlá.
               </Typography>
               
               {/* Show selected equipment as chips */}
@@ -1781,10 +1781,10 @@ const EnhancedCarForm = ({
               {dialogMode !== 'view' && globalEquipment.length > 0 && (
                 <Box sx={{ mb: 3 }}>
                   <Typography variant="subtitle2" gutterBottom>
-                    Dostupná výbava pre všetky vozidlá ({globalEquipment.length})
+                    🌐 Globálna výbava dostupná pre všetky vozidlá ({globalEquipment.length})
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    Vyberte z už existujúcej výbavy alebo pridajte vlastnú
+                    Kliknite na výbavu pre pridanie/odobratie z tohto vozidla. Výbava je zdieľaná medzi všetkými vozidlami.
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                     {globalEquipment.map((equipment, index) => {
@@ -1854,7 +1854,7 @@ const EnhancedCarForm = ({
               {dialogMode !== 'view' && (
                 <Box sx={{ mb: 3, p: 2, border: '1px dashed', borderColor: 'grey.300', borderRadius: 1 }}>
                   <Typography variant="subtitle2" gutterBottom>
-                    {editingEquipmentIndex !== null ? 'Upraviť výbavu' : 'Pridať vlastnú výbavu'}
+                    {editingEquipmentIndex !== null ? 'Upraviť výbavu' : '➕ Pridať novú výbavu (bude dostupná pre všetky vozidlá)'}
                   </Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
                     <Box sx={{ display: 'flex', gap: 2, alignItems: 'start' }}>
