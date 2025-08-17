@@ -42,7 +42,8 @@ import {
   Camera as CameraIcon,
   Star as StarIcon,
   LocalOffer as TagIcon,
-  DragIndicator as DragIcon
+  DragIndicator as DragIcon,
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
 import DamageModal from './DamageModal';
 import { useGetCarQuery, useGetGlobalEquipmentQuery } from '../../store/store';
@@ -94,7 +95,7 @@ const EnhancedCarForm = ({
   });
 
   // Get global equipment for this tenant
-  const { data: globalEquipment = [], isLoading: isLoadingEquipment } = useGetGlobalEquipmentQuery();
+  const { data: globalEquipment = [], isLoading: isLoadingEquipment, refetch: refetchGlobalEquipment } = useGetGlobalEquipmentQuery();
 
   console.log('🔍 [QUERY] useGetCarQuery status:');
   console.log('🔍 [QUERY] carId:', carId);
@@ -1780,9 +1781,19 @@ const EnhancedCarForm = ({
               {/* Global Equipment Selection */}
               {dialogMode !== 'view' && globalEquipment.length > 0 && (
                 <Box sx={{ mb: 3 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    🌐 Globálna výbava dostupná pre všetky vozidlá ({globalEquipment.length})
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Typography variant="subtitle2">
+                      🌐 Globálna výbava dostupná pre všetky vozidlá ({globalEquipment.length})
+                    </Typography>
+                    <IconButton 
+                      size="small" 
+                      onClick={() => refetchGlobalEquipment()}
+                      disabled={isLoadingEquipment}
+                      title="Obnoviť globálnu výbavu"
+                    >
+                      <RefreshIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                     Kliknite na výbavu pre pridanie/odobratie z tohto vozidla. Výbava je zdieľaná medzi všetkými vozidlami.
                   </Typography>

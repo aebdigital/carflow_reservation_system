@@ -146,23 +146,34 @@ export const api = createApi({
       query: () => 'cars/stats',
     }),
     getGlobalEquipment: builder.query({
-      query: () => {
-        // Get current user's email for tenant-specific equipment
-        return 'auth/me'
-      },
-      transformResponse: async (result, meta, arg) => {
-        // Get user email from the auth/me response
-        const userEmail = result?.data?.email
-        if (!userEmail) {
-          throw new Error('User email not found')
-        }
+      query: () => 'cars?limit=1000', // Get all cars for the current user
+      transformResponse: (result) => {
+        const cars = result?.data || []
         
-        // Make a second request to get the equipment for this user's tenant
-        const equipmentResponse = await fetch(
-          `${import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api'}/public/users/${userEmail}/features`
-        )
-        const equipmentData = await equipmentResponse.json()
-        return equipmentData.data?.equipment || []
+        // Collect all unique equipment across all cars
+        const equipmentMap = new Map()
+        
+        cars.forEach(car => {
+          if (car.equipment && Array.isArray(car.equipment)) {
+            car.equipment.forEach(item => {
+              if (item && item.name) {
+                const key = item.name.toLowerCase().trim()
+                if (!equipmentMap.has(key)) {
+                  equipmentMap.set(key, {
+                    name: item.name,
+                    icon: item.icon,
+                    description: item.description,
+                    category: item.category || 'standard',
+                    isStandard: item.isStandard || false
+                  })
+                }
+              }
+            })
+          }
+        })
+        
+        // Convert map to array
+        return Array.from(equipmentMap.values())
       },
       providesTags: ['Car'], // Invalidate when cars change
     }),
