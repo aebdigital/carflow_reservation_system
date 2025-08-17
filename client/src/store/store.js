@@ -145,6 +145,27 @@ export const api = createApi({
     getCarStats: builder.query({
       query: () => 'cars/stats',
     }),
+    getGlobalEquipment: builder.query({
+      query: () => {
+        // Get current user's email for tenant-specific equipment
+        return 'auth/me'
+      },
+      transformResponse: async (result, meta, arg) => {
+        // Get user email from the auth/me response
+        const userEmail = result?.data?.email
+        if (!userEmail) {
+          throw new Error('User email not found')
+        }
+        
+        // Make a second request to get the equipment for this user's tenant
+        const equipmentResponse = await fetch(
+          `${import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api'}/public/users/${userEmail}/features`
+        )
+        const equipmentData = await equipmentResponse.json()
+        return equipmentData.data?.equipment || []
+      },
+      providesTags: ['Car'], // Invalidate when cars change
+    }),
     
     // Car image management endpoints
     deleteCarImage: builder.mutation({
@@ -973,6 +994,7 @@ export const {
   useUpdateCarMutation,
   useDeleteCarMutation,
   useGetCarStatsQuery,
+  useGetGlobalEquipmentQuery,
   useDeleteCarImageMutation,
   useSetPrimaryCarImageMutation,
   useReorderCarImagesMutation,

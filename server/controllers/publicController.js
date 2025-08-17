@@ -452,14 +452,49 @@ const getAvailableFeaturesByUser = asyncHandler(async (req, res, next) => {
   // Get tenant ID from user email
   const tenantId = await getTenantByUserEmail(email);
   
+  // Get all cars for this tenant
+  const cars = await Car.find({ 
+    tenantId,
+    isActive: true 
+  }).select('features equipment');
+  
+  // Collect all unique features (legacy)
   const features = await Car.distinct('features', { 
     tenantId,
     isActive: true 
   });
   
+  // Collect all unique equipment across all cars
+  const equipmentMap = new Map();
+  
+  cars.forEach(car => {
+    if (car.equipment && Array.isArray(car.equipment)) {
+      car.equipment.forEach(item => {
+        if (item && item.name) {
+          const key = item.name.toLowerCase().trim();
+          if (!equipmentMap.has(key)) {
+            equipmentMap.set(key, {
+              name: item.name,
+              icon: item.icon,
+              description: item.description,
+              category: item.category || 'standard',
+              isStandard: item.isStandard || false
+            });
+          }
+        }
+      });
+    }
+  });
+  
+  // Convert map to array
+  const globalEquipment = Array.from(equipmentMap.values());
+  
   res.status(200).json({
     success: true,
-    data: features
+    data: {
+      features, // Legacy features array
+      equipment: globalEquipment // Global equipment available for all cars
+    }
   });
 });
 

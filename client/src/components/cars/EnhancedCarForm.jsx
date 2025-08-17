@@ -45,7 +45,7 @@ import {
   DragIndicator as DragIcon
 } from '@mui/icons-material';
 import DamageModal from './DamageModal';
-import { useGetCarQuery } from '../../store/store';
+import { useGetCarQuery, useGetGlobalEquipmentQuery } from '../../store/store';
 
 // Enhanced car form with comprehensive features
 const EnhancedCarForm = ({ 
@@ -92,6 +92,9 @@ const EnhancedCarForm = ({
   const { data: carData, isLoading, isError, error } = useGetCarQuery(carId, {
     skip: !carId || dialogMode === 'create'
   });
+
+  // Get global equipment for this tenant
+  const { data: globalEquipment = [], isLoading: isLoadingEquipment } = useGetGlobalEquipmentQuery();
 
   console.log('🔍 [QUERY] useGetCarQuery status:');
   console.log('🔍 [QUERY] carId:', carId);
@@ -1771,6 +1774,79 @@ const EnhancedCarForm = ({
                       </Tooltip>
                     ))}
                   </Box>
+                </Box>
+              )}
+
+              {/* Global Equipment Selection */}
+              {dialogMode !== 'view' && globalEquipment.length > 0 && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Dostupná výbava pre všetky vozidlá ({globalEquipment.length})
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Vyberte z už existujúcej výbavy alebo pridajte vlastnú
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {globalEquipment.map((equipment, index) => {
+                      const isSelected = formData.equipment?.some(item => item.name === equipment.name);
+                      return (
+                        <Tooltip 
+                          key={index}
+                          title={equipment.description ? `${equipment.name}: ${equipment.description}` : equipment.name}
+                          arrow
+                          placement="top"
+                        >
+                          <Chip
+                            label={
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <img 
+                                  src={equipment.icon} 
+                                  alt="" 
+                                  style={{ width: 20, height: 20, objectFit: 'contain' }}
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.nextSibling.style.display = 'inline';
+                                  }}
+                                />
+                                <span style={{ display: 'none', fontSize: '16px' }}>🔧</span>
+                                <Typography variant="body2">
+                                  {equipment.name}
+                                </Typography>
+                              </Box>
+                            }
+                            onClick={() => {
+                              if (isSelected) {
+                                // Remove from selected equipment
+                                const newEquipment = formData.equipment.filter(item => item.name !== equipment.name);
+                                handleChange('equipment', newEquipment);
+                              } else {
+                                // Add to selected equipment
+                                const newEquipment = [...(formData.equipment || []), equipment];
+                                handleChange('equipment', newEquipment);
+                              }
+                            }}
+                            color={isSelected ? "primary" : "default"}
+                            variant={isSelected ? "filled" : "outlined"}
+                            size="medium"
+                            sx={{
+                              cursor: 'pointer',
+                              '&:hover': {
+                                backgroundColor: isSelected ? 'primary.dark' : 'action.hover'
+                              }
+                            }}
+                          />
+                        </Tooltip>
+                      );
+                    })}
+                  </Box>
+                </Box>
+              )}
+
+              {isLoadingEquipment && (
+                <Box sx={{ mb: 3, textAlign: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Načítavam dostupnú výbavu...
+                  </Typography>
                 </Box>
               )}
 
