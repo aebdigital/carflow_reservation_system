@@ -285,7 +285,7 @@ const getCarsByUser = asyncHandler(async (req, res, next) => {
     });
   } else {
     // Default safe fields
-    const publicFields = ['_id', 'brand', 'model', 'year', 'color', 'category', 'fuelType', 'transmission', 'seats', 'doors', 'description', 'pricing', 'location', 'features', 'images', 'equipment', 'badges', 'status'];
+    const publicFields = ['_id', 'brand', 'model', 'year', 'color', 'category', 'fuelType', 'engine', 'transmission', 'seats', 'doors', 'description', 'pricing', 'location', 'features', 'images', 'equipment', 'badges', 'status'];
     responseData = paginatedCars.map(car => {
       const safeData = {};
       publicFields.forEach(field => {
@@ -2549,7 +2549,7 @@ const getPublicCars = asyncHandler(async (req, res, next) => {
     });
   } else {
     // Default safe fields
-    const publicFields = ['_id', 'brand', 'model', 'year', 'color', 'category', 'fuelType', 'transmission', 'seats', 'doors', 'description', 'pricing', 'location', 'features', 'images', 'equipment', 'badges', 'status'];
+    const publicFields = ['_id', 'brand', 'model', 'year', 'color', 'category', 'fuelType', 'engine', 'transmission', 'seats', 'doors', 'description', 'pricing', 'location', 'features', 'images', 'equipment', 'badges', 'status'];
     responseData = paginatedCars.map(car => {
       const safeData = {};
       publicFields.forEach(field => {
