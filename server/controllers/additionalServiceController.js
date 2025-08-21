@@ -36,7 +36,8 @@ const getAdditionalServices = asyncHandler(async (req, res, next) => {
     const sortBy = req.query.sort.split(',').join(' ');
     query = query.sort(sortBy);
   } else {
-    query = query.sort('category sortOrder name');
+    // Sort by sortOrder first, then category and name for consistent drag-and-drop
+    query = query.sort('sortOrder category name');
   }
   
   // Pagination
@@ -587,24 +588,52 @@ const calculateServicePrice = asyncHandler(async (req, res, next) => {
 const updateSortOrder = asyncHandler(async (req, res, next) => {
   const { services } = req.body; // Array of { id, sortOrder }
   
+  console.log('🔧 [SORT ORDER] Received update request:', services);
+  
   if (!Array.isArray(services)) {
     return next(new AppError('Services array is required', 400));
   }
 
-  const updatePromises = services.map(({ id, sortOrder }) =>
-    AdditionalService.findOneAndUpdate(
-      { _id: id, tenantId: req.user.tenantId },
-      { sortOrder, lastModifiedBy: req.user._id },
-      { new: true }
-    )
-  );
+  if (services.length === 0) {
+    return next(new AppError('Services array cannot be empty', 400));
+  }
 
-  const updatedServices = await Promise.all(updatePromises);
+  // Validate that all entries have required fields
+  const invalidServices = services.filter(s => !s.id || s.sortOrder === undefined);
+  if (invalidServices.length > 0) {
+    console.error('🔧 [SORT ORDER] Invalid services:', invalidServices);
+    return next(new AppError('All services must have id and sortOrder', 400));
+  }
 
-  res.status(200).json({
-    success: true,
-    data: updatedServices.filter(service => service !== null)
-  });
+  try {
+    const updatePromises = services.map(({ id, sortOrder }) => {
+      console.log(`🔧 [SORT ORDER] Updating service ${id} to sortOrder ${sortOrder}`);
+      return AdditionalService.findOneAndUpdate(
+        { _id: id, tenantId: req.user.tenantId },
+        { sortOrder: parseInt(sortOrder), lastModifiedBy: req.user._id },
+        { new: true, runValidators: true }
+      );
+    });
+
+    const updatedServices = await Promise.all(updatePromises);
+    const validUpdatedServices = updatedServices.filter(service => service !== null);
+    
+    console.log(`🔧 [SORT ORDER] Successfully updated ${validUpdatedServices.length} services`);
+
+    // Log the final sort orders
+    validUpdatedServices.forEach(service => {
+      console.log(`🔧 [SORT ORDER] Service "${service.name}" now has sortOrder: ${service.sortOrder}`);
+    });
+
+    res.status(200).json({
+      success: true,
+      data: validUpdatedServices,
+      message: `Successfully updated sort order for ${validUpdatedServices.length} services`
+    });
+  } catch (error) {
+    console.error('🔧 [SORT ORDER] Error updating sort order:', error);
+    return next(new AppError('Failed to update sort order', 500));
+  }
 });
 
 module.exports = {

@@ -452,21 +452,52 @@ function AdditionalServices() {
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
 
+    // Create a copy of the current filtered services
     const items = Array.from(filteredServices);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
-    // Update sort order
+    // Update the services state optimistically for immediate UI feedback
+    setServices(currentServices => {
+      const updated = [...currentServices];
+      
+      if (selectedCategory === 'all') {
+        // For "all" view, update the entire list
+        return items;
+      } else {
+        // For category view, merge the reordered items back into the full list
+        const nonCategoryItems = updated.filter(service => service.category !== selectedCategory);
+        const categoryItems = items;
+        
+        // Combine and sort by original order, but with updated category order
+        const combined = [...nonCategoryItems, ...categoryItems];
+        return combined.sort((a, b) => {
+          if (a.category === b.category) {
+            return items.findIndex(item => item._id === a._id) - items.findIndex(item => item._id === b._id);
+          }
+          return a.sortOrder - b.sortOrder;
+        });
+      }
+    });
+
+    // Prepare the sort order updates
     const updatedServices = items.map((item, index) => ({
       id: item._id,
       sortOrder: index
     }));
 
     try {
-      await additionalServicesAPI.updateSortOrder(updatedServices);
+      // Send the update to the backend
+      const result = await additionalServicesAPI.updateSortOrder(updatedServices);
+      console.log('Sort order update result:', result);
+      
+      // Refresh the data to ensure consistency
       await fetchServices();
     } catch (err) {
+      console.error('Sort order update error:', err);
       setError('Chyba pri aktualizácii poradia');
+      // Refresh services to revert optimistic update
+      await fetchServices();
     }
   };
 
