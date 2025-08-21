@@ -1434,7 +1434,7 @@ function Reservations() {
                           </Typography>
                           {selectedReservation.customer.licenseNumber && (
                             <Typography variant="body2" color="text.secondary">
-                              Vodičský preukaz: {selectedReservation.customer.licenseNumber}
+                              Občiansky preukaz: {selectedReservation.customer.licenseNumber}
                             </Typography>
                           )}
                         </>
@@ -1998,7 +1998,7 @@ function Reservations() {
                               {driver.firstName} {driver.lastName}
                             </Typography>
                             <Typography variant="body2" color="text.secondary" gutterBottom>
-                              Vodičský preukaz: {driver.licenseNumber}
+                              Občiansky preukaz: {driver.licenseNumber}
                             </Typography>
                             {driver.licenseExpiry && (
                               <Typography variant="body2" color="text.secondary" gutterBottom>

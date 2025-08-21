@@ -252,7 +252,7 @@ const translations = {
     state: 'Štát',
     zipCode: 'PSČ',
     country: 'Krajina',
-    drivingLicense: 'Vodičský preukaz',
+    drivingLicense: 'Občiansky preukaz',
     licenseNumber: 'Číslo preukazu',
     licenseExpiry: 'Platnosť preukazu',
     emergencyContact: 'Núdzový kontakt',
