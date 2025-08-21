@@ -290,7 +290,7 @@ additionalServiceSchema.statics.getPublicServices = function(tenantId) {
     tenantId, 
     isActive: true, 
     isPublic: true 
-  }).sort({ category: 1, sortOrder: 1, name: 1 });
+  }).sort({ sortOrder: 1, category: 1, name: 1 });
 };
 
 module.exports = mongoose.model('AdditionalService', additionalServiceSchema); 

@@ -398,7 +398,7 @@ const getServicesForVehiclePublic = asyncHandler(async (req, res, next) => {
   const allServices = await AdditionalService.find({ 
     tenantId: tenantId, 
     isActive: true 
-  }).sort('category sortOrder name');
+  }).sort('sortOrder category name');
 
   // Filter services available for this vehicle
   const availableServices = allServices.filter(service => 
@@ -457,7 +457,7 @@ const getServicesForVehicle = asyncHandler(async (req, res, next) => {
   const allServices = await AdditionalService.find({ 
     tenantId: tenantId, 
     isActive: true 
-  }).sort('category sortOrder name');
+  }).sort('sortOrder category name');
 
   // Filter services available for this vehicle
   const availableServices = allServices.filter(service => 
