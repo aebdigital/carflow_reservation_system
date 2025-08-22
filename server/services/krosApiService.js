@@ -167,19 +167,28 @@ class KrosApiService {
     const dueDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 14 days from now
 
     // Format partner (customer) information according to KROS schema
+    const fiscalAddress = {
+      businessName: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
+      contactName: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
+      street: reservation.customer.address || 'Nezadané',
+      city: reservation.customer.city || 'Nezadané', 
+      postCode: reservation.customer.postalCode || '00000',
+      country: reservation.customer.country || 'SK'
+    };
+    
+    // Only add business fields if they have values (omit empty strings)
+    if (reservation.customer.registrationNumber) {
+      fiscalAddress.registrationNumber = reservation.customer.registrationNumber;
+    }
+    if (reservation.customer.taxNumber) {
+      fiscalAddress.taxNumber = reservation.customer.taxNumber;
+    }
+    if (reservation.customer.vatNumber) {
+      fiscalAddress.vatNumber = reservation.customer.vatNumber;
+    }
+    
     const partner = {
-      fiscalAddress: {
-        businessName: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
-        contactName: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
-        street: reservation.customer.address || 'Nezadané',
-        city: reservation.customer.city || 'Nezadané', 
-        postCode: reservation.customer.postalCode || '00000',
-        country: reservation.customer.country || 'SK',
-        // Add potentially required business fields for Slovak invoicing
-        registrationNumber: '', // IČO - may be required even for individuals
-        taxNumber: '', // DIČ - Slovak tax number
-        vatNumber: '' // IČ DPH - VAT number if applicable
-      },
+      fiscalAddress: fiscalAddress,
       email: reservation.customer.email,
       phone: reservation.customer.phone || '',
       // Additional partner fields that might be required
@@ -239,19 +248,11 @@ class KrosApiService {
       vatPayerType: 1, // Required: 1 = VAT Payer
       currency: 'EUR',
       
-      // Required document type and series
-      documentType: 'invoice', // Required field
-      documentSeries: 'CARFLOW', // Document series identifier
-      
       // Partner (customer) information
       partner: partner,
 
       // Invoice items
       items: items,
-
-      // Payment information
-      paymentMethod: 'bank_transfer', // Default payment method
-      bankAccount: process.env.COMPANY_BANK_ACCOUNT || '', // Company bank account
       
       // Additional information
       internalNote: `Rezervácia č. ${reservation.reservationNumber}`,
@@ -259,14 +260,9 @@ class KrosApiService {
       
       // Reference numbers
       externalId: reservation._id.toString(),
-      variableSymbol: reservation.reservationNumber.replace(/[^0-9]/g, ''), // Extract numbers only
 
       // Culture for Slovak formatting
-      culture: 'sk-SK',
-      
-      // Status and workflow
-      status: 'draft', // Start as draft
-      autoSend: false // Don't auto-send the invoice
+      culture: 'sk-SK'
     };
 
     return invoiceData;
