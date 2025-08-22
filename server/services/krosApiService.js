@@ -162,54 +162,69 @@ class KrosApiService {
    * @returns {Object} Formatted invoice data for Kros API
    */
   formatReservationForInvoice(reservation) {
-    // Calculate dates in ISO 8601 format with time
-    const issueDate = new Date().toISOString();
-    const dueDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(); // 14 days from now
+    // Calculate dates in ISO 8601 format
+    const issueDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const dueDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 14 days from now
 
-    // Format partner (customer) information
+    // Format partner (customer) information according to KROS schema
     const partner = {
-      type: 'PERSON',
-      name: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
-      email: reservation.customer.email,
-      phone: reservation.customer.phone || '',
-      address: {
+      fiscalAddress: {
+        businessName: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
+        contactName: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
         street: reservation.customer.address || '',
         city: reservation.customer.city || '',
-        zip: reservation.customer.postalCode || '',
-        countryCode: reservation.customer.country || 'SK'
-      }
+        postCode: reservation.customer.postalCode || '',
+        country: reservation.customer.country || 'SK'
+      },
+      email: reservation.customer.email,
+      phone: reservation.customer.phone || ''
     };
 
-    // Format invoice items (KROS calculates totals automatically)
-    const items = [
-      {
-        text: `Prenájom vozidla ${reservation.car.brand} ${reservation.car.model} (${reservation.car.year})`,
-        quantity: reservation.pricing.totalDays,
-        unit: 'deň',
-        unitPrice: reservation.pricing.pricePerDay,
-        vatRate: 20.0 // Standard VAT rate in Slovakia
-      }
-    ];
+    // Calculate prices with VAT
+    const vatRate = 20.0; // 20% VAT in Slovakia
+    const vatMultiplier = 1 + (vatRate / 100); // 1.2 for 20% VAT
+
+    // Format invoice items according to KROS DocumentItem schema
+    const items = [];
+
+    // Main rental item
+    const rentalUnitPrice = reservation.pricing.pricePerDay;
+    const rentalTotalExclVat = rentalUnitPrice * reservation.pricing.totalDays;
+    const rentalTotalInclVat = rentalTotalExclVat * vatMultiplier;
+
+    items.push({
+      name: `Prenájom vozidla ${reservation.car.brand} ${reservation.car.model} (${reservation.car.year})`,
+      description: `Prenájom vozidla na obdobie ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} - ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
+      amount: reservation.pricing.totalDays,
+      measureUnit: 'deň',
+      vatRate: vatRate,
+      totalPriceInclVat: Math.round(rentalTotalInclVat * 100) / 100 // Round to 2 decimal places
+    });
 
     // Add additional services as separate line items
     if (reservation.additionalServices && reservation.additionalServices.length > 0) {
       reservation.additionalServices.forEach(service => {
+        const serviceQuantity = service.quantity || 1;
+        const serviceTotalExclVat = service.price * serviceQuantity;
+        const serviceTotalInclVat = serviceTotalExclVat * vatMultiplier;
+
         items.push({
-          text: service.name,
-          quantity: service.quantity || 1,
-          unit: 'ks',
-          unitPrice: service.price,
-          vatRate: 20.0
+          name: service.name,
+          description: service.name,
+          amount: serviceQuantity,
+          measureUnit: 'ks',
+          vatRate: vatRate,
+          totalPriceInclVat: Math.round(serviceTotalInclVat * 100) / 100
         });
       });
     }
 
-    // Format the invoice for Kros API with correct schema
+    // Format the invoice for KROS API with correct official schema
     const invoiceData = {
       issueDate: issueDate,
       dueDate: dueDate,
-      paymentType: 'BankTransfer',
-      currencyCode: 'EUR',
+      vatPayerType: 1, // Required: 1 = VAT Payer
+      currency: 'EUR',
       
       // Partner (customer) information
       partner: partner,
@@ -218,18 +233,14 @@ class KrosApiService {
       items: items,
 
       // Additional information
-      note: `Rezervácia č. ${reservation.reservationNumber}\nObdobie: ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} - ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
+      internalNote: `Rezervácia č. ${reservation.reservationNumber}`,
+      printedNote: `Rezervácia č. ${reservation.reservationNumber}\nObdobie: ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} - ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
       
       // Reference numbers
       externalId: reservation._id.toString(),
-      variableSymbol: reservation.reservationNumber,
 
-      // Payment information
-      bankAccount: {
-        iban: process.env.COMPANY_IBAN || '',
-        swift: process.env.COMPANY_SWIFT || '',
-        bankName: process.env.COMPANY_BANK_NAME || ''
-      }
+      // Culture for Slovak formatting
+      culture: 'sk-SK'
     };
 
     return invoiceData;
