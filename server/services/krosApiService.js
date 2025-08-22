@@ -45,11 +45,14 @@ class KrosApiService {
       throw new Error('Kros API not configured. Please set KROS_API_TOKEN');
     }
 
+    // Format reservation data for Kros API (declare outside try-catch for error logging)
+    let invoiceData;
+    
     try {
       console.log('📄 Creating invoice in Kros API for reservation:', reservationData.reservationNumber);
 
-      // Format reservation data for Kros API
-      const invoiceData = this.formatReservationForInvoice(reservationData);
+      invoiceData = this.formatReservationForInvoice(reservationData);
+      console.log('📋 Generated KROS payload:', JSON.stringify(invoiceData, null, 2));
       
       const axiosInstance = this.getAxiosInstance();
       const response = await axiosInstance.post('/invoices', invoiceData);
@@ -69,7 +72,10 @@ class KrosApiService {
       console.error('❌ Error creating invoice in Kros API:', error.message);
       console.error('📋 HTTP Status:', error.response?.status);
       console.error('📋 Error details:', error.response?.data || error);
-      console.error('📋 Sent payload:', JSON.stringify(invoiceData, null, 2));
+      
+      if (invoiceData) {
+        console.error('📋 Sent payload:', JSON.stringify(invoiceData, null, 2));
+      }
       
       // Provide more detailed error message
       const errorMessage = error.response?.data?.message || 
