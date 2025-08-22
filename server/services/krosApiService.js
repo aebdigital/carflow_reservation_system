@@ -171,13 +171,20 @@ class KrosApiService {
       fiscalAddress: {
         businessName: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
         contactName: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
-        street: reservation.customer.address || '',
-        city: reservation.customer.city || '',
-        postCode: reservation.customer.postalCode || '',
-        country: reservation.customer.country || 'SK'
+        street: reservation.customer.address || 'Nezadané',
+        city: reservation.customer.city || 'Nezadané', 
+        postCode: reservation.customer.postalCode || '00000',
+        country: reservation.customer.country || 'SK',
+        // Add potentially required business fields for Slovak invoicing
+        registrationNumber: '', // IČO - may be required even for individuals
+        taxNumber: '', // DIČ - Slovak tax number
+        vatNumber: '' // IČ DPH - VAT number if applicable
       },
       email: reservation.customer.email,
-      phone: reservation.customer.phone || ''
+      phone: reservation.customer.phone || '',
+      // Additional partner fields that might be required
+      partnerType: 1, // 1 = Individual, 2 = Company (assuming individual customers)
+      isVatPayer: false // Assuming individual customers are not VAT payers
     };
 
     // Calculate prices with VAT
@@ -197,8 +204,11 @@ class KrosApiService {
       description: `Prenájom vozidla na obdobie ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} - ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
       amount: reservation.pricing.totalDays,
       measureUnit: 'deň',
+      unitPrice: Math.round(rentalUnitPrice * 100) / 100, // Unit price excl. VAT
       vatRate: vatRate,
-      totalPriceInclVat: Math.round(rentalTotalInclVat * 100) / 100 // Round to 2 decimal places
+      totalPriceInclVat: Math.round(rentalTotalInclVat * 100) / 100, // Total price incl. VAT
+      totalPriceExclVat: Math.round(rentalTotalExclVat * 100) / 100, // Total price excl. VAT
+      vatAmount: Math.round((rentalTotalInclVat - rentalTotalExclVat) * 100) / 100 // VAT amount
     });
 
     // Add additional services as separate line items
@@ -213,8 +223,11 @@ class KrosApiService {
           description: service.name,
           amount: serviceQuantity,
           measureUnit: 'ks',
+          unitPrice: Math.round(service.price * 100) / 100, // Unit price excl. VAT
           vatRate: vatRate,
-          totalPriceInclVat: Math.round(serviceTotalInclVat * 100) / 100
+          totalPriceInclVat: Math.round(serviceTotalInclVat * 100) / 100, // Total price incl. VAT
+          totalPriceExclVat: Math.round(serviceTotalExclVat * 100) / 100, // Total price excl. VAT
+          vatAmount: Math.round((serviceTotalInclVat - serviceTotalExclVat) * 100) / 100 // VAT amount
         });
       });
     }
@@ -226,21 +239,34 @@ class KrosApiService {
       vatPayerType: 1, // Required: 1 = VAT Payer
       currency: 'EUR',
       
+      // Required document type and series
+      documentType: 'invoice', // Required field
+      documentSeries: 'CARFLOW', // Document series identifier
+      
       // Partner (customer) information
       partner: partner,
 
       // Invoice items
       items: items,
 
+      // Payment information
+      paymentMethod: 'bank_transfer', // Default payment method
+      bankAccount: process.env.COMPANY_BANK_ACCOUNT || '', // Company bank account
+      
       // Additional information
       internalNote: `Rezervácia č. ${reservation.reservationNumber}`,
       printedNote: `Rezervácia č. ${reservation.reservationNumber}\nObdobie: ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} - ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
       
       // Reference numbers
       externalId: reservation._id.toString(),
+      variableSymbol: reservation.reservationNumber.replace(/[^0-9]/g, ''), // Extract numbers only
 
       // Culture for Slovak formatting
-      culture: 'sk-SK'
+      culture: 'sk-SK',
+      
+      // Status and workflow
+      status: 'draft', // Start as draft
+      autoSend: false // Don't auto-send the invoice
     };
 
     return invoiceData;
