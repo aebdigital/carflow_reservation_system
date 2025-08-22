@@ -166,58 +166,25 @@ class KrosApiService {
     const issueDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
     const dueDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 14 days from now
 
-    // Format partner (customer) information according to KROS schema
-    const fiscalAddress = {
-      businessName: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
-      contactName: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
-      street: reservation.customer.address || 'Nezadané',
-      city: reservation.customer.city || 'Nezadané', 
-      postCode: reservation.customer.postalCode || '00000',
-      country: reservation.customer.country || 'SK'
-    };
-    
-    // Only add business fields if they have values (omit empty strings)
-    if (reservation.customer.registrationNumber) {
-      fiscalAddress.registrationNumber = reservation.customer.registrationNumber;
-    }
-    if (reservation.customer.taxNumber) {
-      fiscalAddress.taxNumber = reservation.customer.taxNumber;
-    }
-    if (reservation.customer.vatNumber) {
-      fiscalAddress.vatNumber = reservation.customer.vatNumber;
-    }
-    
-    const partner = {
-      fiscalAddress: fiscalAddress,
-      email: reservation.customer.email,
-      phone: reservation.customer.phone || '',
-      // Additional partner fields that might be required
-      partnerType: 1, // 1 = Individual, 2 = Company (assuming individual customers)
-      isVatPayer: false // Assuming individual customers are not VAT payers
-    };
-
     // Calculate prices with VAT
     const vatRate = 20.0; // 20% VAT in Slovakia
-    const vatMultiplier = 1 + (vatRate / 100); // 1.2 for 20% VAT
 
-    // Format invoice items according to KROS DocumentItem schema
+    // Format invoice items according to correct KROS schema
     const items = [];
 
     // Main rental item
     const rentalUnitPrice = reservation.pricing.pricePerDay;
-    const rentalTotalExclVat = rentalUnitPrice * reservation.pricing.totalDays;
-    const rentalTotalInclVat = rentalTotalExclVat * vatMultiplier;
+    const rentalTotalDays = reservation.pricing.totalDays;
+    const rentalTotalExclVat = rentalUnitPrice * rentalTotalDays;
+    const rentalTotalInclVat = rentalTotalExclVat * (1 + vatRate / 100);
 
     items.push({
       name: `Prenájom vozidla ${reservation.car.brand} ${reservation.car.model} (${reservation.car.year})`,
       description: `Prenájom vozidla na obdobie ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} - ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
-      amount: reservation.pricing.totalDays,
+      amount: rentalTotalDays,
       measureUnit: 'deň',
-      unitPrice: Math.round(rentalUnitPrice * 100) / 100, // Unit price excl. VAT
       vatRate: vatRate,
-      totalPriceInclVat: Math.round(rentalTotalInclVat * 100) / 100, // Total price incl. VAT
-      totalPriceExclVat: Math.round(rentalTotalExclVat * 100) / 100, // Total price excl. VAT
-      vatAmount: Math.round((rentalTotalInclVat - rentalTotalExclVat) * 100) / 100 // VAT amount
+      totalPriceInclVat: Math.round(rentalTotalInclVat * 100) / 100
     });
 
     // Add additional services as separate line items
@@ -225,44 +192,107 @@ class KrosApiService {
       reservation.additionalServices.forEach(service => {
         const serviceQuantity = service.quantity || 1;
         const serviceTotalExclVat = service.price * serviceQuantity;
-        const serviceTotalInclVat = serviceTotalExclVat * vatMultiplier;
+        const serviceTotalInclVat = serviceTotalExclVat * (1 + vatRate / 100);
 
         items.push({
           name: service.name,
           description: service.name,
           amount: serviceQuantity,
           measureUnit: 'ks',
-          unitPrice: Math.round(service.price * 100) / 100, // Unit price excl. VAT
           vatRate: vatRate,
-          totalPriceInclVat: Math.round(serviceTotalInclVat * 100) / 100, // Total price incl. VAT
-          totalPriceExclVat: Math.round(serviceTotalExclVat * 100) / 100, // Total price excl. VAT
-          vatAmount: Math.round((serviceTotalInclVat - serviceTotalExclVat) * 100) / 100 // VAT amount
+          totalPriceInclVat: Math.round(serviceTotalInclVat * 100) / 100
         });
       });
     }
 
-    // Format the invoice for KROS API with correct official schema
+    // Format customer address
+    const customerAddress = {
+      businessName: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
+      contactName: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
+      street: reservation.customer.address || 'Nezadané',
+      postCode: reservation.customer.postalCode || '00000',
+      city: reservation.customer.city || 'Nezadané',
+      country: reservation.customer.country || 'SK'
+    };
+
+    // Format partner (customer) information according to correct KROS schema
+    const partner = {
+      address: customerAddress,
+      postalAddress: customerAddress, // Same as address for individuals
+      phoneNumber: reservation.customer.phone || '',
+      email: reservation.customer.email
+    };
+
+    // Only add business IDs if they exist
+    if (reservation.customer.registrationNumber) {
+      partner.registrationId = reservation.customer.registrationNumber;
+    }
+    if (reservation.customer.taxNumber) {
+      partner.taxId = reservation.customer.taxNumber;
+    }
+    if (reservation.customer.vatNumber) {
+      partner.vatId = reservation.customer.vatNumber;
+    }
+
+    // Company information (your rental company)
+    const myCompany = {
+      address: {
+        businessName: process.env.COMPANY_NAME || 'CarFlow Rental',
+        contactName: process.env.COMPANY_CONTACT || 'Admin',
+        street: process.env.COMPANY_ADDRESS || 'Hlavná 1',
+        postCode: process.env.COMPANY_POSTAL_CODE || '81101',
+        city: process.env.COMPANY_CITY || 'Bratislava',
+        country: 'SK'
+      },
+      registrationId: process.env.COMPANY_REGISTRATION_ID || '12345678',
+      taxId: process.env.COMPANY_TAX_ID || '2020123456',
+      vatId: process.env.COMPANY_VAT_ID || 'SK2020123456',
+      phoneNumber: process.env.COMPANY_PHONE || '+421 XXX XXX XXX',
+      email: process.env.COMPANY_EMAIL || 'info@carflow.sk',
+      web: process.env.COMPANY_WEB || 'www.carflow.sk'
+    };
+
+    // Format the invoice for KROS API with correct official schema structure
     const invoiceData = {
-      issueDate: issueDate,
-      dueDate: dueDate,
-      vatPayerType: 1, // Required: 1 = VAT Payer
-      currency: 'EUR',
-      
-      // Partner (customer) information
-      partner: partner,
-
-      // Invoice items
-      items: items,
-      
-      // Additional information
-      internalNote: `Rezervácia č. ${reservation.reservationNumber}`,
-      printedNote: `Rezervácia č. ${reservation.reservationNumber}\nObdobie: ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} - ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
-      
-      // Reference numbers
-      externalId: reservation._id.toString(),
-
-      // Culture for Slovak formatting
-      culture: 'sk-SK'
+      data: {
+        externalId: reservation._id.toString(),
+        partner: partner,
+        myCompany: myCompany,
+        items: items,
+        internalNote: `Rezervácia č. ${reservation.reservationNumber}`,
+        printedNote: `Rezervácia č. ${reservation.reservationNumber}\nObdobie: ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} - ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
+        vatPayerType: 1, // 1 = VAT Payer
+        useParagraph7or7a: false,
+        culture: 'sk-SK',
+        dueDate: dueDate,
+        currency: 'EUR',
+        exchangeRate: 1,
+        issueDate: issueDate,
+        orderNumber: reservation.reservationNumber,
+        paymentType: 'Bankový prevod',
+        variableSymbol: reservation.reservationNumber.replace(/[^0-9]/g, ''),
+        bankAccount: {
+          iban: process.env.COMPANY_IBAN || 'SK6807200002891987426353',
+          accountNumber: '',
+          isForeign: false,
+          swift: process.env.COMPANY_SWIFT || 'CEKOSKBX'
+        },
+        deliveryDate: new Date(reservation.startDate).toISOString().split('T')[0],
+        advancePaymentDeduction: 0,
+        numberingSequence: 'CARFLOW',
+        documentNumber: '',
+        invoiceType: 0,
+        creditedInvoiceNumber: '',
+        mandatoryText: 'Ďakujeme za využitie našich služieb.',
+        mandatoryTextType: 0,
+        ossTaxState: 0,
+        customFields: [
+          {
+            label: 'Rezervácia č.',
+            value: reservation.reservationNumber
+          }
+        ]
+      }
     };
 
     return invoiceData;
