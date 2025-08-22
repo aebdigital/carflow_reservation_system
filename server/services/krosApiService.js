@@ -67,9 +67,17 @@ class KrosApiService {
 
     } catch (error) {
       console.error('❌ Error creating invoice in Kros API:', error.message);
+      console.error('📋 HTTP Status:', error.response?.status);
       console.error('📋 Error details:', error.response?.data || error);
+      console.error('📋 Sent payload:', JSON.stringify(invoiceData, null, 2));
       
-      throw new Error(`Failed to create invoice: ${error.response?.data?.message || error.message}`);
+      // Provide more detailed error message
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.response?.statusText || 
+                          error.message;
+      
+      throw new Error(`Failed to create invoice: ${errorMessage}`);
     }
   }
 
@@ -148,29 +156,31 @@ class KrosApiService {
    * @returns {Object} Formatted invoice data for Kros API
    */
   formatReservationForInvoice(reservation) {
-    // Calculate dates
-    const issueDate = new Date().toISOString().split('T')[0];
-    const dueDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 14 days from now
+    // Calculate dates in ISO 8601 format with time
+    const issueDate = new Date().toISOString();
+    const dueDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(); // 14 days from now
 
-    // Format customer information
-    const customer = {
+    // Format partner (customer) information
+    const partner = {
+      type: 'PERSON',
       name: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
       email: reservation.customer.email,
       phone: reservation.customer.phone || '',
-      address: reservation.customer.address || '',
-      city: reservation.customer.city || '',
-      postalCode: reservation.customer.postalCode || '',
-      country: reservation.customer.country || 'SK'
+      address: {
+        street: reservation.customer.address || '',
+        city: reservation.customer.city || '',
+        zip: reservation.customer.postalCode || '',
+        countryCode: reservation.customer.country || 'SK'
+      }
     };
 
-    // Format invoice items
+    // Format invoice items (KROS calculates totals automatically)
     const items = [
       {
-        description: `Prenájom vozidla ${reservation.car.brand} ${reservation.car.model} (${reservation.car.year})`,
+        text: `Prenájom vozidla ${reservation.car.brand} ${reservation.car.model} (${reservation.car.year})`,
         quantity: reservation.pricing.totalDays,
         unit: 'deň',
         unitPrice: reservation.pricing.pricePerDay,
-        totalPrice: reservation.pricing.subtotal,
         vatRate: 20.0 // Standard VAT rate in Slovakia
       }
     ];
@@ -179,46 +189,34 @@ class KrosApiService {
     if (reservation.additionalServices && reservation.additionalServices.length > 0) {
       reservation.additionalServices.forEach(service => {
         items.push({
-          description: service.name,
+          text: service.name,
           quantity: service.quantity || 1,
           unit: 'ks',
           unitPrice: service.price,
-          totalPrice: service.price * (service.quantity || 1),
           vatRate: 20.0
         });
       });
     }
 
-    // Format the invoice for Kros API
+    // Format the invoice for Kros API with correct schema
     const invoiceData = {
-      documentType: 'Invoice',
       issueDate: issueDate,
       dueDate: dueDate,
-      paymentMethod: 'BankTransfer',
-      currency: 'EUR',
+      paymentType: 'BankTransfer',
+      currencyCode: 'EUR',
       
-      // Customer information
-      customer: {
-        name: customer.name,
-        email: customer.email,
-        phone: customer.phone,
-        address: {
-          street: customer.address,
-          city: customer.city,
-          postalCode: customer.postalCode,
-          country: customer.country
-        }
-      },
+      // Partner (customer) information
+      partner: partner,
 
       // Invoice items
       items: items,
 
       // Additional information
-      notes: `Rezervácia č. ${reservation.reservationNumber}\nObdobie: ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} - ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
+      note: `Rezervácia č. ${reservation.reservationNumber}\nObdobie: ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} - ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
       
       // Reference numbers
       externalId: reservation._id.toString(),
-      orderNumber: reservation.reservationNumber,
+      variableSymbol: reservation.reservationNumber,
 
       // Payment information
       bankAccount: {

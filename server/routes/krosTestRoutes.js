@@ -85,6 +85,84 @@ const testKrosInvoiceCreation = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Demo Kros payload generation (no API call)
+// @route   GET /api/test/kros-demo-payload
+// @access  Public (for testing only)
+const demoKrosPayloadGeneration = asyncHandler(async (req, res, next) => {
+  try {
+    console.log('🧪 Demo: Generating Kros payload without API call');
+
+    // Mock reservation data for testing
+    const mockReservationData = {
+      _id: '507f1f77bcf86cd799439011',
+      reservationNumber: 'DEMO-2024-001',
+      customer: {
+        firstName: 'Ján',
+        lastName: 'Novák',
+        email: 'jan.novak@example.com',
+        phone: '+421900123456',
+        address: 'Hlavná 123',
+        city: 'Bratislava',
+        postalCode: '81101',
+        country: 'SK'
+      },
+      car: {
+        brand: 'BMW',
+        model: 'X3',
+        year: 2022,
+        registrationNumber: 'BA123AB'
+      },
+      startDate: new Date('2024-08-15'),
+      endDate: new Date('2024-08-20'),
+      pricing: {
+        totalDays: 5,
+        pricePerDay: 55,
+        subtotal: 275,
+        totalAmount: 330
+      },
+      additionalServices: [
+        {
+          name: 'GPS navigácia',
+          price: 30,
+          quantity: 1
+        },
+        {
+          name: 'Detské sedadlo',
+          price: 25,
+          quantity: 1
+        }
+      ]
+    };
+
+    // Generate the exact payload that would be sent to KROS
+    const krosPayload = krosApiService.formatReservationForInvoice(mockReservationData);
+
+    res.status(200).json({
+      success: true,
+      message: 'Demo Kros payload generated successfully',
+      description: 'This is exactly what would be sent to POST https://api-economy.kros.sk/api/invoices',
+      mockReservation: mockReservationData,
+      krosPayload: krosPayload,
+      apiEndpoint: 'POST https://api-economy.kros.sk/api/invoices',
+      requiredHeaders: {
+        'Authorization': 'Bearer YOUR_KROS_API_TOKEN',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Demo payload generation failed:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Demo payload generation failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // @desc    Test Kros API connection
 // @route   GET /api/test/kros-connection
 // @access  Public (for testing only)
@@ -249,6 +327,7 @@ const listTestReservations = asyncHandler(async (req, res, next) => {
 
 // Mount all test routes
 router.post('/kros-invoice', testKrosInvoiceCreation);
+router.get('/kros-demo-payload', demoKrosPayloadGeneration);
 router.get('/kros-connection', testKrosConnection);
 router.get('/kros-pdf/:invoiceId', testKrosPdfRetrieval);
 router.post('/kros-pdf-email/:reservationId', testInvoicePdfEmail);
