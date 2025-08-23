@@ -301,19 +301,19 @@ class KrosApiService {
         paymentType: 'Bankový prevod',
         variableSymbol: reservation.reservationNumber.replace(/[^0-9]/g, ''),
         bankAccount: {
-          iban: process.env.COMPANY_IBAN || 'SK6807200002891987426353',
+          iban: process.env.COMPANY_IBAN || 'SK0483300000002202227202',
           accountNumber: '',
           isForeign: false,
-          swift: process.env.COMPANY_SWIFT || 'CEKOSKBX'
+          swift: process.env.COMPANY_SWIFT || 'FIOZSKBAXXX'
         },
         deliveryDate: new Date(reservation.startDate).toISOString().split('T')[0],
         advancePaymentDeduction: 0,
-        numberingSequence: 'CF',
+        numberingSequence: '', // Use empty string for default sequence
         documentNumber: '',
         invoiceType: 0,
         creditedInvoiceNumber: '',
-        mandatoryText: 'Ďakujeme za využitie našich služieb.',
-        mandatoryTextType: 0,
+        // mandatoryText: 'Ďakujeme za využitie našich služieb.', // Remove - only for 0% VAT items
+        // mandatoryTextType: 0,
         ossTaxState: 0,
         customFields: [
           {
