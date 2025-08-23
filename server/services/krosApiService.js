@@ -54,12 +54,23 @@ class KrosApiService {
       invoiceData = this.formatReservationForInvoice(reservationData);
       console.log('📋 Generated KROS payload:', JSON.stringify(invoiceData, null, 2));
       
+      // Log the exact payload size and structure for debugging
+      const payloadString = JSON.stringify(invoiceData);
+      console.log('📊 Payload stats:');
+      console.log('   - Size:', payloadString.length, 'characters');
+      console.log('   - Has data wrapper:', !!invoiceData.data);
+      console.log('   - Partner structure:', !!invoiceData.data?.partner);
+      console.log('   - Items count:', invoiceData.data?.items?.length || 0);
+      
       const axiosInstance = this.getAxiosInstance();
+      console.log('🌐 Making request to:', `${this.baseURL}/invoices`);
+      console.log('🔑 Using token:', this.apiToken ? `${this.apiToken.substring(0, 10)}...` : 'NONE');
+      
       const response = await axiosInstance.post('/invoices', invoiceData);
 
       console.log('✅ Invoice creation request sent to Kros API');
       console.log('📋 Response status:', response.status);
-      console.log('📋 Response data:', response.data);
+      console.log('📋 Response data:', JSON.stringify(response.data, null, 2));
 
       return {
         success: true,
@@ -71,17 +82,35 @@ class KrosApiService {
     } catch (error) {
       console.error('❌ Error creating invoice in Kros API:', error.message);
       console.error('📋 HTTP Status:', error.response?.status);
-      console.error('📋 Error details:', error.response?.data || error);
+      console.error('📋 Response headers:', error.response?.headers);
+      console.error('📋 Full error response:', JSON.stringify(error.response?.data, null, 2));
       
       if (invoiceData) {
-        console.error('📋 Sent payload:', JSON.stringify(invoiceData, null, 2));
+        console.error('📋 Sent payload (first 1000 chars):', JSON.stringify(invoiceData, null, 2).substring(0, 1000));
+        console.error('📋 Payload structure validation:');
+        console.error('   - Has data wrapper:', !!invoiceData.data);
+        console.error('   - Has partner:', !!invoiceData.data?.partner);
+        console.error('   - Has myCompany:', !!invoiceData.data?.myCompany);
+        console.error('   - Has items:', !!invoiceData.data?.items && invoiceData.data.items.length > 0);
+        console.error('   - Has required fields:', !!invoiceData.data?.issueDate && !!invoiceData.data?.dueDate);
       }
       
-      // Provide more detailed error message
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.error || 
-                          error.response?.statusText || 
-                          error.message;
+      // Enhanced error message extraction
+      let errorMessage = 'Unknown error';
+      if (error.response?.data) {
+        if (error.response.data.errors && Array.isArray(error.response.data.errors)) {
+          const errorDetails = error.response.data.errors.map(e => `${e.propertyPath}: ${e.errorMessage}`).join(', ');
+          errorMessage = `Validation errors: ${errorDetails}`;
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.data.error) {
+          errorMessage = error.response.data.error;
+        } else {
+          errorMessage = JSON.stringify(error.response.data);
+        }
+      } else {
+        errorMessage = error.response?.statusText || error.message;
+      }
       
       throw new Error(`Failed to create invoice: ${errorMessage}`);
     }

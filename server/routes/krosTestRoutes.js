@@ -325,9 +325,103 @@ const listTestReservations = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Debug KROS payload structure in detail
+// @route   GET /api/test/kros-debug-payload
+// @access  Public (for testing only)
+const debugKrosPayloadStructure = asyncHandler(async (req, res, next) => {
+  try {
+    console.log('🔍 Debug: Analyzing KROS payload structure in detail');
+
+    // Mock reservation data for testing
+    const mockReservationData = {
+      _id: '507f1f77bcf86cd799439011',
+      reservationNumber: 'DEBUG-2024-001',
+      customer: {
+        firstName: 'Debug',
+        lastName: 'Customer',
+        email: 'debug@example.com',
+        phone: '+421900123456',
+        address: 'Debug Street 123',
+        city: 'Bratislava',
+        postalCode: '81101',
+        country: 'SK'
+      },
+      car: {
+        brand: 'BMW',
+        model: 'X3',
+        year: 2022,
+        registrationNumber: 'BA123AB'
+      },
+      startDate: new Date('2024-08-15'),
+      endDate: new Date('2024-08-20'),
+      pricing: {
+        totalDays: 5,
+        pricePerDay: 55,
+        subtotal: 275,
+        totalAmount: 330
+      },
+      additionalServices: [
+        {
+          name: 'GPS navigácia',
+          price: 30,
+          quantity: 1
+        }
+      ]
+    };
+
+    // Generate the exact payload that would be sent to KROS
+    const krosPayload = krosApiService.formatReservationForInvoice(mockReservationData);
+    
+    // Analyze the structure
+    const analysis = {
+      rootStructure: Object.keys(krosPayload),
+      hasDataWrapper: !!krosPayload.data,
+      dataStructure: krosPayload.data ? Object.keys(krosPayload.data) : [],
+      partnerStructure: krosPayload.data?.partner ? Object.keys(krosPayload.data.partner) : [],
+      myCompanyStructure: krosPayload.data?.myCompany ? Object.keys(krosPayload.data.myCompany) : [],
+      itemsCount: krosPayload.data?.items?.length || 0,
+      firstItemStructure: krosPayload.data?.items?.[0] ? Object.keys(krosPayload.data.items[0]) : [],
+      requiredFields: {
+        issueDate: !!krosPayload.data?.issueDate,
+        dueDate: !!krosPayload.data?.dueDate,
+        vatPayerType: !!krosPayload.data?.vatPayerType,
+        currency: !!krosPayload.data?.currency,
+        culture: !!krosPayload.data?.culture
+      },
+      payloadSize: JSON.stringify(krosPayload).length
+    };
+
+    res.status(200).json({
+      success: true,
+      message: 'KROS payload structure analyzed',
+      mockReservation: mockReservationData,
+      krosPayload: krosPayload,
+      structureAnalysis: analysis,
+      comparisonWithExpected: {
+        expectedRootKeys: ['data'],
+        expectedDataKeys: ['externalId', 'partner', 'myCompany', 'items', 'issueDate', 'dueDate', 'vatPayerType', 'currency', 'culture'],
+        actualRootKeys: Object.keys(krosPayload),
+        actualDataKeys: krosPayload.data ? Object.keys(krosPayload.data) : []
+      },
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Debug payload analysis failed:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Debug payload analysis failed',
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Mount all test routes
 router.post('/kros-invoice', testKrosInvoiceCreation);
 router.get('/kros-demo-payload', demoKrosPayloadGeneration);
+router.get('/kros-debug-payload', debugKrosPayloadStructure);
 router.get('/kros-connection', testKrosConnection);
 router.get('/kros-pdf/:invoiceId', testKrosPdfRetrieval);
 router.post('/kros-pdf-email/:reservationId', testInvoicePdfEmail);
