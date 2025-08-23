@@ -308,7 +308,7 @@ class KrosApiService {
         },
         deliveryDate: new Date(reservation.startDate).toISOString().split('T')[0],
         advancePaymentDeduction: 0,
-        numberingSequence: 'CARFLOW',
+        numberingSequence: 'CF',
         documentNumber: '',
         invoiceType: 0,
         creditedInvoiceNumber: '',
