@@ -300,12 +300,12 @@ class KrosApiService {
         orderNumber: reservation.reservationNumber,
         paymentType: 'Bankový prevod',
         variableSymbol: reservation.reservationNumber.replace(/[^0-9]/g, ''),
-        bankAccount: {
-          iban: process.env.COMPANY_IBAN || 'SK6807200002891987426353',
-          accountNumber: '',
-          isForeign: false,
-          swift: process.env.COMPANY_SWIFT || 'CEKOSKBX'
-        },
+        // bankAccount: {  // Remove invalid IBAN - let KROS use default company bank account
+        //   iban: process.env.COMPANY_IBAN || 'SK6807200002891987426353',
+        //   accountNumber: '',
+        //   isForeign: false,
+        //   swift: process.env.COMPANY_SWIFT || 'CEKOSKBX'
+        // },
         deliveryDate: new Date(reservation.startDate).toISOString().split('T')[0],
         advancePaymentDeduction: 0,
         numberingSequence: '', // Use empty string for default sequence
