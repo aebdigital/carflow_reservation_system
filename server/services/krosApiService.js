@@ -202,10 +202,17 @@ class KrosApiService {
     const items = [];
 
     // Main rental item
-    const rentalUnitPrice = reservation.pricing.pricePerDay;
-    const rentalTotalDays = reservation.pricing.totalDays;
+    const rentalUnitPrice = reservation.pricing.pricePerDay || reservation.pricing.dailyRate || 0;
+    const rentalTotalDays = reservation.pricing.totalDays || 1;
     const rentalTotalExclVat = rentalUnitPrice * rentalTotalDays;
     const rentalTotalInclVat = rentalTotalExclVat * (1 + vatRate / 100);
+    
+    console.log('💰 [KROS] Price calculation:', {
+      rentalUnitPrice,
+      rentalTotalDays,
+      rentalTotalExclVat,
+      rentalTotalInclVat
+    });
 
     items.push({
       name: `Prenájom vozidla ${reservation.car.brand} ${reservation.car.model} (${reservation.car.year})`,
@@ -213,7 +220,7 @@ class KrosApiService {
       amount: rentalTotalDays,
       measureUnit: 'deň',
       vatRate: vatRate,
-      totalPriceInclVat: Math.round(rentalTotalInclVat * 100) / 100
+      totalPriceInclVat: Math.round((rentalTotalInclVat || 0) * 100) / 100
     });
 
     // Add additional services as separate line items
@@ -229,7 +236,7 @@ class KrosApiService {
           amount: serviceQuantity,
           measureUnit: 'ks',
           vatRate: vatRate,
-          totalPriceInclVat: Math.round(serviceTotalInclVat * 100) / 100
+          totalPriceInclVat: Math.round((serviceTotalInclVat || 0) * 100) / 100
         });
       });
     }
@@ -302,9 +309,9 @@ class KrosApiService {
         discountPercent: 0,
         discountTotalPriceInclVat: 0,
         issueDate: issueDate,
-        orderNumber: reservation.reservationNumber,
+        orderNumber: reservation.reservationNumber.slice(0, 20), // Max 20 chars for KROS
         paymentType: 'Bankový prevod',
-        variableSymbol: reservation.reservationNumber.replace(/[^0-9]/g, ''),
+        variableSymbol: null, // Set to null as KROS expects
         // bankAccount: {  // Remove IBAN validation issue - let KROS use company default
         //   iban: process.env.COMPANY_IBAN || 'SK6807200002891987426353',
         //   accountNumber: '',
