@@ -1004,23 +1004,37 @@ const checkOutReservation = asyncHandler(async (req, res, next) => {
     }
   });
 
-  // 📄 Schedule invoice PDF email for 24 hours later when reservation is completed
+  // 📄 Create final invoice in Kros API when checkout is completed (rental only, no deposit)
   try {
-    if (reservation.krosInvoiceId) {
-      console.log('📧 Scheduling invoice PDF email for 24h after completion');
+    const krosApiService = require('../services/krosApiService');
+    
+    if (krosApiService.isReady()) {
+      console.log('📄 Creating final invoice in Kros API for completed reservation:', reservation.reservationNumber);
       
-      // Schedule the invoice email using node-cron (will be sent 24h later)
-      const scheduledTime = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
-      reservation.invoicePdfScheduledAt = scheduledTime;
-      await reservation.save();
+      const finalInvoiceResult = await krosApiService.createFinalInvoice(reservation);
       
-      console.log(`✅ Invoice PDF email scheduled for: ${scheduledTime.toISOString()}`);
+      if (finalInvoiceResult.success) {
+        // Store final Kros invoice ID in reservation 
+        reservation.krosFinalInvoiceId = finalInvoiceResult.invoiceId || null;
+        reservation.krosFinalRequestId = finalInvoiceResult.requestId || null;
+        reservation.krosFinalInvoiceCreatedAt = new Date();
+        reservation.krosFinalInvoiceStatus = finalInvoiceResult.invoiceId ? 'created' : 'processing';
+        await reservation.save();
+        
+        if (finalInvoiceResult.invoiceId) {
+          console.log('✅ Final invoice created successfully in Kros API with ID:', finalInvoiceResult.invoiceId);
+        } else {
+          console.log('🔄 Final invoice submitted to Kros API for async processing. Request ID:', finalInvoiceResult.requestId);
+        }
+      } else {
+        console.warn('⚠️ Failed to create final invoice in Kros API:', finalInvoiceResult.error);
+      }
     } else {
-      console.log('ℹ️ No Kros invoice ID found, skipping PDF email scheduling');
+      console.log('ℹ️ Kros API not configured, skipping final invoice creation');
     }
-  } catch (scheduleError) {
-    console.error('❌ Error scheduling invoice PDF email:', scheduleError.message);
-    // Don't fail the checkout if scheduling fails
+  } catch (finalInvoiceError) {
+    console.error('❌ Error creating final invoice in Kros API:', finalInvoiceError.message);
+    // Don't fail the checkout if invoice creation fails
   }
 
   res.status(200).json({
@@ -1613,112 +1627,46 @@ const confirmPayment = asyncHandler(async (req, res, next) => {
         
         await reservation.save();
         
-        // 📧 Immediately send invoice PDF to customer after creation
+        // 📧 Send simple payment confirmation email (no PDF)
         try {
-          // Only send PDF if we have an immediate invoice ID
-          if (invoiceResult.invoiceId) {
-            console.log('📧 Sending invoice PDF immediately after creation...');
-            
-            // Get the invoice PDF from Kros API
-            const pdfResult = await krosApiService.getInvoicePDF(invoiceResult.invoiceId);
+          console.log('📧 Sending payment confirmation email...');
           
-          if (pdfResult.success && reservation.customer && reservation.customer.email) {
-            const emailService = require('../services/emailService');
+          const emailService = require('../services/emailService');
+          
+          if (emailService.isConfigured && reservation.customer && reservation.customer.email) {
+            // Prepare email data for payment confirmation
+            const customerName = `${reservation.customer.firstName} ${reservation.customer.lastName}`;
+            const carInfo = `${reservation.car.brand} ${reservation.car.model} (${reservation.car.year})`;
+            const startDate = new Date(reservation.startDate).toLocaleDateString('sk-SK');
+            const endDate = new Date(reservation.endDate).toLocaleDateString('sk-SK');
+
+            const emailData = {
+              customerName,
+              reservationNumber: reservation.reservationNumber,
+              carBrand: reservation.car.brand,
+              carModel: reservation.car.model,
+              carYear: reservation.car.year,
+              carInfo,
+              startDate,
+              endDate,
+              totalAmount: reservation.pricing.totalAmount,
+              businessName: process.env.COMPANY_NAME || 'CarFlow Rental',
+              contactEmail: process.env.COMPANY_EMAIL || 'info@carflow.sk',
+              contactPhone: process.env.COMPANY_PHONE || '+421 XXX XXX XXX'
+            };
+
+            // Send simple payment confirmation email without attachment
+            await emailService.sendPaymentReceivedWithoutInvoice(
+              reservation.customer.email,
+              emailData
+            );
             
-            if (emailService.isConfigured) {
-              // Prepare email data for payment received template
-              const customerName = `${reservation.customer.firstName} ${reservation.customer.lastName}`;
-              const carInfo = `${reservation.car.brand} ${reservation.car.model} (${reservation.car.year})`;
-              const startDate = new Date(reservation.startDate).toLocaleDateString('sk-SK');
-              const endDate = new Date(reservation.endDate).toLocaleDateString('sk-SK');
-
-              const emailData = {
-                customerName,
-                reservationNumber: reservation.reservationNumber,
-                carBrand: reservation.car.brand,
-                carModel: reservation.car.model,
-                carYear: reservation.car.year,
-                carInfo,
-                startDate,
-                endDate,
-                totalAmount: reservation.pricing.totalAmount,
-                businessName: process.env.COMPANY_NAME || 'CarFlow Rental',
-                contactEmail: process.env.COMPANY_EMAIL || 'info@carflow.sk',
-                contactPhone: process.env.COMPANY_PHONE || '+421 XXX XXX XXX'
-              };
-
-              // Send payment received email with invoice PDF attachment
-              await emailService.sendPaymentReceivedWithInvoice(
-                reservation.customer.email,
-                emailData,
-                {
-                  filename: pdfResult.filename,
-                  content: pdfResult.data,
-                  contentType: pdfResult.contentType
-                }
-              );
-              
-              // Mark invoice PDF as sent immediately
-              reservation.invoicePdfSentAt = new Date();
-              await reservation.save();
-              
-              console.log('✅ Invoice PDF sent immediately to customer:', reservation.customer.email);
-            } else {
-              console.warn('⚠️ Email service not configured, cannot send invoice PDF');
-            }
-            } else {
-              console.warn('⚠️ Failed to retrieve PDF or missing customer email');
-            }
+            console.log('✅ Payment confirmation email sent to customer:', reservation.customer.email);
           } else {
-            console.log('ℹ️ Invoice is being processed asynchronously by KROS. PDF will be available later.');
-            
-            // 📧 Send payment confirmation email without PDF attachment for async invoices
-            try {
-              console.log('📧 Sending payment confirmation email without invoice PDF (async processing)...');
-              
-              const emailService = require('../services/emailService');
-              
-              if (emailService.isConfigured && reservation.customer && reservation.customer.email) {
-                // Prepare email data for payment confirmation
-                const customerName = `${reservation.customer.firstName} ${reservation.customer.lastName}`;
-                const carInfo = `${reservation.car.brand} ${reservation.car.model} (${reservation.car.year})`;
-                const startDate = new Date(reservation.startDate).toLocaleDateString('sk-SK');
-                const endDate = new Date(reservation.endDate).toLocaleDateString('sk-SK');
-
-                const emailData = {
-                  customerName,
-                  reservationNumber: reservation.reservationNumber,
-                  carBrand: reservation.car.brand,
-                  carModel: reservation.car.model,
-                  carYear: reservation.car.year,
-                  carInfo,
-                  startDate,
-                  endDate,
-                  totalAmount: reservation.pricing.totalAmount,
-                  businessName: process.env.COMPANY_NAME || 'CarFlow Rental',
-                  contactEmail: process.env.COMPANY_EMAIL || 'info@carflow.sk',
-                  contactPhone: process.env.COMPANY_PHONE || '+421 XXX XXX XXX',
-                  isAsync: true, // Flag to indicate async processing
-                  requestId: invoiceResult.requestId
-                };
-
-                // Send payment confirmation email without attachment
-                await emailService.sendPaymentReceivedWithoutInvoice(
-                  reservation.customer.email,
-                  emailData
-                );
-                
-                console.log('✅ Payment confirmation email sent (without PDF) to customer:', reservation.customer.email);
-              } else {
-                console.warn('⚠️ Email service not configured or missing customer email');
-              }
-            } catch (asyncEmailError) {
-              console.error('❌ Error sending async payment confirmation email:', asyncEmailError.message);
-              // Don't fail the payment confirmation if email fails
-            }
+            console.warn('⚠️ Email service not configured or missing customer email');
           }
         } catch (emailError) {
-          console.error('❌ Error sending immediate invoice PDF:', emailError.message);
+          console.error('❌ Error sending payment confirmation email:', emailError.message);
           // Don't fail the payment confirmation if email fails
         }
       } else {

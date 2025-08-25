@@ -411,7 +411,7 @@ const reservationSchema = new mongoose.Schema({
     }
   },
 
-  // Kros API invoice tracking
+  // Kros API invoice tracking (payment confirmation - with deposit)
   krosInvoiceId: {
     type: String,
     index: true
@@ -422,6 +422,21 @@ const reservationSchema = new mongoose.Schema({
   },
   krosInvoiceCreatedAt: Date,
   krosInvoiceStatus: {
+    type: String,
+    enum: ['pending', 'processing', 'created', 'sent', 'paid', 'failed'],
+    default: 'pending'
+  },
+  // Kros API final invoice tracking (checkout completion - rental only)
+  krosFinalInvoiceId: {
+    type: String,
+    index: true
+  },
+  krosFinalRequestId: {
+    type: String,
+    index: true
+  },
+  krosFinalInvoiceCreatedAt: Date,
+  krosFinalInvoiceStatus: {
     type: String,
     enum: ['pending', 'processing', 'created', 'sent', 'paid', 'failed'],
     default: 'pending'

@@ -130,6 +130,66 @@ class KrosApiService {
   }
 
   /**
+   * Create final invoice in Kros API (rental only, no deposit)
+   * @param {Object} reservation - Reservation object
+   * @returns {Object} Invoice creation result
+   */
+  async createFinalInvoice(reservation) {
+    if (!this.isConfigured) {
+      throw new Error('Kros API not configured. Please set KROS_API_TOKEN');
+    }
+
+    try {
+      console.log(`📄 Creating final invoice (no deposit) for reservation: ${reservation.reservationNumber}`);
+
+      // Format reservation data for final invoice (without deposit)
+      const invoiceData = this.formatReservationForFinalInvoice(reservation);
+      
+      console.log('📋 Generated KROS final invoice payload:', JSON.stringify(invoiceData, null, 2));
+      console.log('📊 Final invoice payload stats:');
+      console.log('   - Size:', JSON.stringify(invoiceData).length, 'characters');
+      console.log('   - Has data wrapper:', !!invoiceData.data);
+      console.log('   - Partner structure:', !!invoiceData.data?.partner);
+      console.log('   - Items count:', invoiceData.data?.items?.length || 0);
+
+      const axiosInstance = this.getAxiosInstance();
+      const response = await axiosInstance.post('/invoices', invoiceData);
+
+      console.log('✅ Final invoice creation request sent to Kros API');
+      console.log('📋 Response status:', response.status);
+      console.log('📋 Response data:', JSON.stringify(response.data, null, 2));
+
+      // Handle different KROS response formats
+      const invoiceId = response.data?.id || response.data?.documentId || response.data?.invoiceId;
+      const requestId = response.data?.requestId;
+      
+      console.log('📋 [KROS] Final invoice response analysis:', {
+        status: response.status,
+        hasId: !!invoiceId,
+        hasRequestId: !!requestId,
+        responseKeys: Object.keys(response.data || {})
+      });
+
+      return {
+        success: true,
+        data: response.data,
+        status: response.status,
+        invoiceId: invoiceId || null,
+        requestId: requestId || null,
+        isAsync: response.status === 202 && !invoiceId // KROS async processing
+      };
+
+    } catch (error) {
+      console.error('❌ Error creating final invoice in Kros API:', error.message);
+      console.error('📋 HTTP Status:', error.response?.status);
+      console.error('📋 Response headers:', error.response?.headers);
+      console.error('📋 Full error response:', error.response?.data);
+
+      throw new Error(`Failed to create final invoice: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  /**
    * Get invoice PDF from Kros API
    * @param {string} invoiceId - Invoice ID in Kros system
    * @param {number} reportId - Report type (17 - B&W, 19 - color, 101 - editable)
@@ -366,6 +426,142 @@ class KrosApiService {
     };
 
     return invoiceData;
+  }
+
+  /**
+   * Format reservation data for final invoice (rental only, no deposit)
+   * @param {Object} reservation - Reservation object
+   * @returns {Object} Formatted invoice data for Kros API
+   */
+  formatReservationForFinalInvoice(reservation) {
+    // Calculate dates in ISO 8601 format
+    const issueDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const dueDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 14 days from now
+
+    // Calculate prices with VAT
+    const vatRate = 20.0; // 20% VAT in Slovakia
+
+    // Format invoice items according to correct KROS schema
+    const items = [];
+
+    // Main rental item (NO DEPOSIT - rental only)
+    const rentalUnitPrice = reservation.pricing.pricePerDay || reservation.pricing.dailyRate || 0;
+    const rentalTotalDays = reservation.pricing.totalDays || 1;
+    const rentalTotalExclVat = rentalUnitPrice * rentalTotalDays;
+    const rentalTotalInclVat = rentalTotalExclVat * (1 + vatRate / 100);
+    
+    console.log('💰 [KROS] Final invoice price calculation (rental only):', {
+      rentalUnitPrice,
+      rentalTotalDays,
+      rentalTotalExclVat,
+      rentalTotalInclVat,
+      note: 'NO DEPOSIT INCLUDED'
+    });
+
+    items.push({
+      name: `Prenájom vozidla ${reservation.car.brand} ${reservation.car.model} (${reservation.car.year})`,
+      description: `Finálna faktúra za prenájom vozidla na obdobie ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} - ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
+      amount: rentalTotalDays,
+      measureUnit: 'deň',
+      vatRate: vatRate,
+      totalPriceInclVat: Math.round((rentalTotalInclVat || 0) * 100) / 100
+    });
+
+    // Add additional services as separate line items
+    if (reservation.additionalServices && reservation.additionalServices.length > 0) {
+      reservation.additionalServices.forEach(service => {
+        const serviceQuantity = service.quantity || 1;
+        const serviceTotalExclVat = service.price * serviceQuantity;
+        const serviceTotalInclVat = serviceTotalExclVat * (1 + vatRate / 100);
+
+        items.push({
+          name: service.name,
+          description: service.name,
+          amount: serviceQuantity,
+          measureUnit: 'ks',
+          vatRate: vatRate,
+          totalPriceInclVat: Math.round((serviceTotalInclVat || 0) * 100) / 100
+        });
+      });
+    }
+
+    // Format customer address
+    const customerAddress = {
+      businessName: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
+      contactName: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
+      postCode: reservation.customer.address?.zipCode || '00000',
+      city: reservation.customer.address?.city || 'Nezadané',
+      country: reservation.customer.address?.country || 'SK'
+    };
+
+    // Format company information
+    const myCompany = {
+      address: {
+        businessName: process.env.COMPANY_NAME || 'CarFlow Rental',
+        contactName: process.env.COMPANY_CONTACT_NAME || 'Admin',
+        street: process.env.COMPANY_STREET || 'Hlavná 1',
+        postCode: process.env.COMPANY_POST_CODE || '81101',
+        city: process.env.COMPANY_CITY || 'Bratislava',
+        country: process.env.COMPANY_COUNTRY || 'SK'
+      },
+      registrationId: process.env.COMPANY_REG_ID || '12345678',
+      taxId: process.env.COMPANY_TAX_ID || '2020123456',
+      vatId: process.env.COMPANY_VAT_ID || 'SK2020123456',
+      phoneNumber: process.env.COMPANY_PHONE || '+421907827771',
+      email: process.env.COMPANY_EMAIL || 'rivalslovakia@yahoo.com',
+      web: process.env.COMPANY_WEB || 'www.carflow.sk'
+    };
+
+    return {
+      data: {
+        externalId: reservation._id.toString(),
+        partner: {
+          address: customerAddress,
+          postalAddress: customerAddress,
+          phoneNumber: reservation.customer.phone,
+          email: reservation.customer.email
+        },
+        myCompany: myCompany,
+        items: items,
+        internalNote: `Finálna faktúra č. ${reservation.reservationNumber}`,
+        printedNote: `Finálna faktúra č. ${reservation.reservationNumber}\nObdobie: ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} - ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
+        vatPayerType: 1, // 1 = VAT Payer
+        useParagraph7or7a: false,
+        culture: 'sk-SK',
+        openingText: `Finálna faktúra za prenájom vozidla ${reservation.car.brand} ${reservation.car.model}`,
+        closingText: 'Ďakujeme za využitie našich služieb.',
+        registrationCourtText: 'Firma zapísaná v Obchodnom registri Okresného súdu Bratislava I.',
+        dueDate: dueDate,
+        currency: 'EUR',
+        exchangeRate: 1,
+        discountPercent: 0,
+        discountTotalPriceInclVat: 0,
+        issueDate: issueDate,
+        orderNumber: `FINAL-${reservation.reservationNumber}`.slice(0, 20), // Max 20 chars for KROS
+        paymentType: 'Bankový prevod',
+        variableSymbol: null, // Set to null as KROS expects
+        deliveryDate: new Date(reservation.startDate).toISOString().split('T')[0],
+        advancePaymentDeduction: 0,
+        numberingSequence: 'OF', // Use standard OF sequence as per example
+        documentNumber: '',
+        invoiceType: 0,
+        creditedInvoiceNumber: '',
+        // mandatoryText: 'Ďakujeme za využitie našich služieb.', // Remove - only for 0% VAT items
+        // mandatoryTextType: 0,
+        ossTaxState: 0,
+        customFields: [
+          {
+            label: 'Finálna faktúra č.',
+            value: reservation.reservationNumber
+          }
+        ],
+        accountingDetails: {
+          syntheticAccount: '311',
+          analyticalAccount: '001',
+          descriptionAccounting: 'Prenájom vozidiel - finálna faktúra'
+        }
+      }
+    };
   }
 
   /**
