@@ -416,10 +416,14 @@ const reservationSchema = new mongoose.Schema({
     type: String,
     index: true
   },
+  krosRequestId: {
+    type: String,
+    index: true
+  },
   krosInvoiceCreatedAt: Date,
   krosInvoiceStatus: {
     type: String,
-    enum: ['pending', 'created', 'sent', 'paid', 'failed'],
+    enum: ['pending', 'processing', 'created', 'sent', 'paid', 'failed'],
     default: 'pending'
   },
   invoicePdfScheduledAt: Date,

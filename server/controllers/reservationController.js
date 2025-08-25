@@ -1597,19 +1597,30 @@ const confirmPayment = asyncHandler(async (req, res, next) => {
       const invoiceResult = await krosApiService.createInvoice(reservation);
       
       if (invoiceResult.success) {
-        // Store Kros invoice ID in reservation for future reference
-        reservation.krosInvoiceId = invoiceResult.invoiceId;
-        reservation.krosInvoiceCreatedAt = new Date();
-        await reservation.save();
+        // Handle both sync and async KROS responses
+        if (invoiceResult.invoiceId) {
+          // Immediate invoice ID available
+          reservation.krosInvoiceId = invoiceResult.invoiceId;
+          reservation.krosInvoiceCreatedAt = new Date();
+          console.log('✅ Invoice created successfully in Kros API with ID:', invoiceResult.invoiceId);
+        } else if (invoiceResult.requestId && invoiceResult.isAsync) {
+          // KROS async processing - store request ID for tracking
+          reservation.krosRequestId = invoiceResult.requestId;
+          reservation.krosInvoiceCreatedAt = new Date();
+          reservation.krosInvoiceStatus = 'processing';
+          console.log('🔄 Invoice submitted to Kros API for async processing. Request ID:', invoiceResult.requestId);
+        }
         
-        console.log('✅ Invoice created successfully in Kros API with ID:', invoiceResult.invoiceId);
+        await reservation.save();
         
         // 📧 Immediately send invoice PDF to customer after creation
         try {
-          console.log('📧 Sending invoice PDF immediately after creation...');
-          
-          // Get the invoice PDF from Kros API
-          const pdfResult = await krosApiService.getInvoicePDF(invoiceResult.invoiceId);
+          // Only send PDF if we have an immediate invoice ID
+          if (invoiceResult.invoiceId) {
+            console.log('📧 Sending invoice PDF immediately after creation...');
+            
+            // Get the invoice PDF from Kros API
+            const pdfResult = await krosApiService.getInvoicePDF(invoiceResult.invoiceId);
           
           if (pdfResult.success && reservation.customer && reservation.customer.email) {
             const emailService = require('../services/emailService');
@@ -1655,8 +1666,11 @@ const confirmPayment = asyncHandler(async (req, res, next) => {
             } else {
               console.warn('⚠️ Email service not configured, cannot send invoice PDF');
             }
+            } else {
+              console.warn('⚠️ Failed to retrieve PDF or missing customer email');
+            }
           } else {
-            console.warn('⚠️ Failed to retrieve PDF or missing customer email');
+            console.log('ℹ️ Invoice is being processed asynchronously by KROS. PDF will be available later.');
           }
         } catch (emailError) {
           console.error('❌ Error sending immediate invoice PDF:', emailError.message);

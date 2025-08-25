@@ -72,11 +72,24 @@ class KrosApiService {
       console.log('📋 Response status:', response.status);
       console.log('📋 Response data:', JSON.stringify(response.data, null, 2));
 
+      // Handle different KROS response formats
+      const invoiceId = response.data?.id || response.data?.documentId || response.data?.invoiceId;
+      const requestId = response.data?.requestId;
+      
+      console.log('📋 [KROS] Response analysis:', {
+        status: response.status,
+        hasId: !!invoiceId,
+        hasRequestId: !!requestId,
+        responseKeys: Object.keys(response.data || {})
+      });
+
       return {
         success: true,
         data: response.data,
         status: response.status,
-        invoiceId: response.data?.id || null
+        invoiceId: invoiceId || null,
+        requestId: requestId || null,
+        isAsync: response.status === 202 && !invoiceId // KROS async processing
       };
 
     } catch (error) {
