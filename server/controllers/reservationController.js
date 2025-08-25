@@ -1603,6 +1603,65 @@ const confirmPayment = asyncHandler(async (req, res, next) => {
         await reservation.save();
         
         console.log('✅ Invoice created successfully in Kros API with ID:', invoiceResult.invoiceId);
+        
+        // 📧 Immediately send invoice PDF to customer after creation
+        try {
+          console.log('📧 Sending invoice PDF immediately after creation...');
+          
+          // Get the invoice PDF from Kros API
+          const pdfResult = await krosApiService.getInvoicePDF(invoiceResult.invoiceId);
+          
+          if (pdfResult.success && reservation.customer && reservation.customer.email) {
+            const emailService = require('../services/emailService');
+            
+            if (emailService.isConfigured) {
+              // Prepare email data for payment received template
+              const customerName = `${reservation.customer.firstName} ${reservation.customer.lastName}`;
+              const carInfo = `${reservation.car.brand} ${reservation.car.model} (${reservation.car.year})`;
+              const startDate = new Date(reservation.startDate).toLocaleDateString('sk-SK');
+              const endDate = new Date(reservation.endDate).toLocaleDateString('sk-SK');
+
+              const emailData = {
+                customerName,
+                reservationNumber: reservation.reservationNumber,
+                carBrand: reservation.car.brand,
+                carModel: reservation.car.model,
+                carYear: reservation.car.year,
+                carInfo,
+                startDate,
+                endDate,
+                totalAmount: reservation.pricing.totalAmount,
+                businessName: process.env.COMPANY_NAME || 'CarFlow Rental',
+                contactEmail: process.env.COMPANY_EMAIL || 'info@carflow.sk',
+                contactPhone: process.env.COMPANY_PHONE || '+421 XXX XXX XXX'
+              };
+
+              // Send payment received email with invoice PDF attachment
+              await emailService.sendPaymentReceivedWithInvoice(
+                reservation.customer.email,
+                emailData,
+                {
+                  filename: pdfResult.filename,
+                  content: pdfResult.data,
+                  contentType: pdfResult.contentType
+                }
+              );
+              
+              // Mark invoice PDF as sent immediately
+              reservation.invoicePdfSentAt = new Date();
+              await reservation.save();
+              
+              console.log('✅ Invoice PDF sent immediately to customer:', reservation.customer.email);
+            } else {
+              console.warn('⚠️ Email service not configured, cannot send invoice PDF');
+            }
+          } else {
+            console.warn('⚠️ Failed to retrieve PDF or missing customer email');
+          }
+        } catch (emailError) {
+          console.error('❌ Error sending immediate invoice PDF:', emailError.message);
+          // Don't fail the payment confirmation if email fails
+        }
       } else {
         console.warn('⚠️ Failed to create invoice in Kros API:', invoiceResult.error);
       }

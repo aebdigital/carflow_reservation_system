@@ -418,13 +418,178 @@ const debugKrosPayloadStructure = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Test immediate invoice PDF sending (like payment confirmation)
+// @route   POST /api/test/kros-immediate-pdf/:reservationId
+// @access  Public (for testing only)
+const testImmediateInvoicePdf = asyncHandler(async (req, res, next) => {
+  try {
+    const { reservationId } = req.params;
+    console.log(`🧪 Testing immediate invoice PDF sending for reservation: ${reservationId}`);
+
+    if (!krosApiService.isReady()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Kros API not configured',
+        configured: false
+      });
+    }
+
+    // Find the reservation
+    const reservation = await Reservation.findById(reservationId).populate([
+      { path: 'customer', select: 'firstName lastName email phone' },
+      { path: 'car', select: 'brand model year registrationNumber' }
+    ]);
+
+    if (!reservation) {
+      return res.status(404).json({
+        success: false,
+        message: 'Reservation not found'
+      });
+    }
+
+    if (!reservation.krosInvoiceId) {
+      return res.status(400).json({
+        success: false,
+        message: 'No KROS invoice ID found. Create invoice first.'
+      });
+    }
+
+    // Test the immediate PDF sending flow
+    console.log('📧 Testing immediate PDF sending flow...');
+    
+    // Get the invoice PDF from Kros API
+    const pdfResult = await krosApiService.getInvoicePDF(reservation.krosInvoiceId);
+    
+    if (pdfResult.success && reservation.customer && reservation.customer.email) {
+      const emailService = require('../services/emailService');
+      
+      if (emailService.isConfigured) {
+        // Prepare email data
+        const customerName = `${reservation.customer.firstName} ${reservation.customer.lastName}`;
+        const carInfo = `${reservation.car.brand} ${reservation.car.model} (${reservation.car.year})`;
+        const startDate = new Date(reservation.startDate).toLocaleDateString('sk-SK');
+        const endDate = new Date(reservation.endDate).toLocaleDateString('sk-SK');
+
+        const emailData = {
+          customerName,
+          reservationNumber: reservation.reservationNumber,
+          carBrand: reservation.car.brand,
+          carModel: reservation.car.model,
+          carYear: reservation.car.year,
+          carInfo,
+          startDate,
+          endDate,
+          totalAmount: reservation.pricing.totalAmount,
+          businessName: 'CarFlow Rental (TEST)',
+          contactEmail: 'test@carflow.sk',
+          contactPhone: '+421 XXX XXX XXX'
+        };
+
+        // Send test email
+        const emailResult = await emailService.sendPaymentReceivedWithInvoice(
+          reservation.customer.email,
+          emailData,
+          {
+            filename: pdfResult.filename,
+            content: pdfResult.data,
+            contentType: pdfResult.contentType
+          }
+        );
+        
+        console.log('✅ Test immediate PDF email sent successfully');
+
+        res.status(200).json({
+          success: true,
+          message: 'Immediate invoice PDF test completed successfully',
+          data: {
+            reservationId,
+            invoiceId: reservation.krosInvoiceId,
+            customerEmail: reservation.customer.email,
+            pdfSize: pdfResult.data?.length || 0,
+            emailResult
+          },
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: 'Email service not configured'
+        });
+      }
+    } else {
+      res.status(400).json({
+        success: false,
+        message: 'Failed to retrieve PDF or missing customer email'
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Immediate PDF test failed:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Immediate PDF test failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// @desc    Download PDF directly from KROS API
+// @route   GET /api/test/kros-pdf-download/:invoiceId
+// @access  Public (for testing only)
+const downloadKrosPdf = asyncHandler(async (req, res, next) => {
+  try {
+    const { invoiceId } = req.params;
+    const { reportId } = req.query; // Optional: 17=B&W, 19=color, 101=editable
+    
+    console.log(`📄 Downloading PDF for invoice: ${invoiceId}`);
+
+    if (!krosApiService.isReady()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Kros API not configured',
+        configured: false
+      });
+    }
+
+    const pdfResult = await krosApiService.getInvoicePDF(invoiceId, reportId ? parseInt(reportId) : 19);
+
+    if (pdfResult.success) {
+      // Set headers for PDF download
+      res.setHeader('Content-Type', pdfResult.contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${pdfResult.filename}"`);
+      res.setHeader('Content-Length', pdfResult.data.length);
+      
+      // Send the PDF data
+      res.send(pdfResult.data);
+      console.log(`✅ PDF downloaded successfully: ${pdfResult.filename} (${pdfResult.data.length} bytes)`);
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve PDF from KROS API'
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ PDF download failed:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'PDF download failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Mount all test routes
 router.post('/kros-invoice', testKrosInvoiceCreation);
 router.get('/kros-demo-payload', demoKrosPayloadGeneration);
 router.get('/kros-debug-payload', debugKrosPayloadStructure);
 router.get('/kros-connection', testKrosConnection);
 router.get('/kros-pdf/:invoiceId', testKrosPdfRetrieval);
+router.get('/kros-pdf-download/:invoiceId', downloadKrosPdf);
 router.post('/kros-pdf-email/:reservationId', testInvoicePdfEmail);
+router.post('/kros-immediate-pdf/:reservationId', testImmediateInvoicePdf);
 router.get('/kros-reservations', listTestReservations);
 
 module.exports = router;
