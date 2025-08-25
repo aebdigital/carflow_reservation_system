@@ -214,22 +214,33 @@ class KrosApiService {
     // Format invoice items according to correct KROS schema
     const items = [];
 
-    // Main rental item
+    // Main rental item (including deposit)
     const rentalUnitPrice = reservation.pricing.pricePerDay || reservation.pricing.dailyRate || 0;
     const rentalTotalDays = reservation.pricing.totalDays || 1;
-    const rentalTotalExclVat = rentalUnitPrice * rentalTotalDays;
+    const baseRentalExclVat = rentalUnitPrice * rentalTotalDays;
+    
+    // Get deposit amount from multiple possible sources
+    const depositAmount = reservation.car?.pricing?.deposit || 
+                         reservation.car?.deposit || 
+                         reservation.pricing?.deposit || 
+                         200; // Default deposit if none configured
+    
+    // Total rental + deposit (excluding VAT)
+    const rentalTotalExclVat = baseRentalExclVat + depositAmount;
     const rentalTotalInclVat = rentalTotalExclVat * (1 + vatRate / 100);
     
-    console.log('💰 [KROS] Price calculation:', {
+    console.log('💰 [KROS] Price calculation (with deposit):', {
       rentalUnitPrice,
       rentalTotalDays,
-      rentalTotalExclVat,
+      baseRentalExclVat,
+      depositAmount,
+      rentalTotalExclVat: rentalTotalExclVat,
       rentalTotalInclVat
     });
 
     items.push({
-      name: `Prenájom vozidla ${reservation.car.brand} ${reservation.car.model} (${reservation.car.year})`,
-      description: `Prenájom vozidla na obdobie ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} - ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
+      name: `Prenájom vozidla ${reservation.car.brand} ${reservation.car.model} (${reservation.car.year}) + depozit`,
+      description: `Prenájom vozidla na obdobie ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} - ${new Date(reservation.endDate).toLocaleDateString('sk-SK')} (vrátane depozitu ${depositAmount}€)`,
       amount: rentalTotalDays,
       measureUnit: 'deň',
       vatRate: vatRate,
@@ -313,7 +324,7 @@ class KrosApiService {
         vatPayerType: 1, // 1 = VAT Payer
         useParagraph7or7a: false,
         culture: 'sk-SK',
-        openingText: `Faktúra za prenájom vozidla ${reservation.car.brand} ${reservation.car.model}`,
+        openingText: `Faktúra za prenájom vozidla ${reservation.car.brand} ${reservation.car.model} vrátane depozitu`,
         closingText: 'Ďakujeme za dôveru a tešíme sa na ďalšiu spoluprácu.',
         registrationCourtText: 'Firma zapísaná v Obchodnom registri Okresného súdu Bratislava I.',
         dueDate: dueDate,
