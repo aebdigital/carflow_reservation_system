@@ -255,6 +255,116 @@ class EmailService {
       throw error;
     }
   }
+
+  /**
+   * Send payment received confirmation email without invoice PDF (for async processing)
+   * @param {string} to - Recipient email
+   * @param {Object} emailData - Template data
+   */
+  async sendPaymentReceivedWithoutInvoice(to, emailData) {
+    try {
+      console.log('📧 [EMAIL] Sending payment received email without invoice PDF to:', to);
+      
+      if (!this.isConfigured) {
+        throw new Error('Email service not configured');
+      }
+
+      // Create payment received email HTML (without PDF attachment)
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+          <!-- Header -->
+          <div style="background-color: #1976d2; color: white; padding: 20px; text-align: center;">
+            <h1 style="margin: 0; font-size: 24px;">Platba Potvrdená</h1>
+            <p style="margin: 5px 0 0 0; font-size: 14px;">Vaša rezervácia je úspešne zaplatená</p>
+          </div>
+
+          <!-- Content -->
+          <div style="padding: 30px; background-color: #f8f9fa;">
+            <p style="font-size: 16px; color: #333;">Vážený/-á <strong>${emailData.customerName}</strong>,</p>
+            
+            <p style="color: #666; line-height: 1.6;">
+              Vaša platba bola úspešne spracovaná a rezervácia je potvrdená. Oficiálnu faktúru Vám pošleme v samostatnom emaili.
+            </p>
+
+            <!-- Reservation Details -->
+            <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4caf50;">
+              <h3 style="color: #1976d2; margin: 0 0 15px 0;">Detaily Rezervácie</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr style="border-bottom: 1px solid #eee;">
+                  <td style="padding: 8px 0; font-weight: bold; color: #333;">Číslo rezervácie:</td>
+                  <td style="padding: 8px 0; color: #666;">${emailData.reservationNumber}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eee;">
+                  <td style="padding: 8px 0; font-weight: bold; color: #333;">Vozidlo:</td>
+                  <td style="padding: 8px 0; color: #666;">${emailData.carInfo}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eee;">
+                  <td style="padding: 8px 0; font-weight: bold; color: #333;">Obdobie prenájmu:</td>
+                  <td style="padding: 8px 0; color: #666;">${emailData.startDate} - ${emailData.endDate}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; font-weight: bold; color: #333;">Celková suma:</td>
+                  <td style="padding: 8px 0; color: #4caf50; font-weight: bold; font-size: 18px;">${emailData.totalAmount}€</td>
+                </tr>
+              </table>
+            </div>
+
+            <!-- Payment Status -->
+            <div style="background-color: #e8f5e8; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
+              <p style="margin: 0; color: #2e7d32; font-weight: bold; font-size: 18px;">
+                ✅ PLATBA ÚSPEŠNE SPRACOVANÁ
+              </p>
+            </div>
+
+            <!-- Invoice Processing Notice -->
+            <div style="background-color: #fff3e0; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ff9800;">
+              <h4 style="color: #ef6c00; margin: 0 0 10px 0;">📄 Faktúra</h4>
+              <p style="color: #666; margin: 0; line-height: 1.5;">
+                Vaša faktúra sa práve spracováva. Pošleme Vám ju v samostatnom emaili hneď ako bude pripravená.
+              </p>
+            </div>
+
+            <!-- Next Steps -->
+            <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #1976d2; margin: 0 0 15px 0;">Ďalšie kroky</h3>
+              <ul style="color: #666; line-height: 1.8; padding-left: 20px;">
+                <li>Rezervácia je potvrdená a vozidlo je pre Vás pripravené</li>
+                <li>Faktúru Vám pošleme v samostatnom emaili</li>
+                <li>Pred prevzatím vozidla si pripravte vodičský preukaz a platobný doklad</li>
+                <li>V prípade otázok nás kontaktujte na uvedených kontaktoch</li>
+              </ul>
+            </div>
+
+            <p style="color: #666; line-height: 1.6;">
+              Ďakujeme za Vašu dôveru a tešíme sa na Vás!
+            </p>
+          </div>
+
+          <!-- Footer -->
+          <div style="background-color: #333; color: white; padding: 20px; text-align: center;">
+            <p style="margin: 0 0 10px 0; font-weight: bold;">${emailData.businessName}</p>
+            <p style="margin: 0; font-size: 14px; color: #ccc;">
+              📧 ${emailData.contactEmail} | 📞 ${emailData.contactPhone}
+            </p>
+          </div>
+        </div>
+      `;
+
+      // Send email without attachment using SMTP2GO
+      const result = await smtp2goService.sendEmail(
+        to,
+        'Platba potvrdená - Rezervácia úspešne zaplatená',
+        html
+      );
+
+      console.log('✅ [EMAIL] Payment received email (without PDF) sent successfully');
+      return result;
+
+    } catch (error) {
+      console.error('❌ [EMAIL] Error sending payment received email without PDF:', error.message);
+      throw error;
+    }
+  }
 }
 
 module.exports = new EmailService();

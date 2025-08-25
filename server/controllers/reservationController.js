@@ -1671,6 +1671,51 @@ const confirmPayment = asyncHandler(async (req, res, next) => {
             }
           } else {
             console.log('ℹ️ Invoice is being processed asynchronously by KROS. PDF will be available later.');
+            
+            // 📧 Send payment confirmation email without PDF attachment for async invoices
+            try {
+              console.log('📧 Sending payment confirmation email without invoice PDF (async processing)...');
+              
+              const emailService = require('../services/emailService');
+              
+              if (emailService.isConfigured && reservation.customer && reservation.customer.email) {
+                // Prepare email data for payment confirmation
+                const customerName = `${reservation.customer.firstName} ${reservation.customer.lastName}`;
+                const carInfo = `${reservation.car.brand} ${reservation.car.model} (${reservation.car.year})`;
+                const startDate = new Date(reservation.startDate).toLocaleDateString('sk-SK');
+                const endDate = new Date(reservation.endDate).toLocaleDateString('sk-SK');
+
+                const emailData = {
+                  customerName,
+                  reservationNumber: reservation.reservationNumber,
+                  carBrand: reservation.car.brand,
+                  carModel: reservation.car.model,
+                  carYear: reservation.car.year,
+                  carInfo,
+                  startDate,
+                  endDate,
+                  totalAmount: reservation.pricing.totalAmount,
+                  businessName: process.env.COMPANY_NAME || 'CarFlow Rental',
+                  contactEmail: process.env.COMPANY_EMAIL || 'info@carflow.sk',
+                  contactPhone: process.env.COMPANY_PHONE || '+421 XXX XXX XXX',
+                  isAsync: true, // Flag to indicate async processing
+                  requestId: invoiceResult.requestId
+                };
+
+                // Send payment confirmation email without attachment
+                await emailService.sendPaymentReceivedWithoutInvoice(
+                  reservation.customer.email,
+                  emailData
+                );
+                
+                console.log('✅ Payment confirmation email sent (without PDF) to customer:', reservation.customer.email);
+              } else {
+                console.warn('⚠️ Email service not configured or missing customer email');
+              }
+            } catch (asyncEmailError) {
+              console.error('❌ Error sending async payment confirmation email:', asyncEmailError.message);
+              // Don't fail the payment confirmation if email fails
+            }
           }
         } catch (emailError) {
           console.error('❌ Error sending immediate invoice PDF:', emailError.message);
