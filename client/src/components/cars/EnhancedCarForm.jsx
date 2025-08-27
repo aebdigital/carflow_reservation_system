@@ -441,25 +441,30 @@ const EnhancedCarForm = ({
       return;
     }
     
+    const currentEquipment = formData.equipment || [];
+    
     const equipmentItem = {
       name: name,
       description: formData.customEquipmentDescription || '',
       icon: equipmentIconPreview,
       category: 'custom',
-      iconType: 'file'
+      iconType: 'file',
+      position: editingEquipmentIndex !== null ? currentEquipment[editingEquipmentIndex]?.position : currentEquipment.length
     };
-
-    const currentEquipment = formData.equipment || [];
     
     if (editingEquipmentIndex !== null) {
-      // Update existing equipment
+      // Update existing equipment (keep existing position)
       const newEquipment = [...currentEquipment];
-      newEquipment[editingEquipmentIndex] = equipmentItem;
+      newEquipment[editingEquipmentIndex] = {
+        ...equipmentItem,
+        position: newEquipment[editingEquipmentIndex]?.position || editingEquipmentIndex
+      };
       handleChange('equipment', newEquipment);
       setEditingEquipmentIndex(null);
     } else {
-      // Add new equipment
-      handleChange('equipment', [...currentEquipment, equipmentItem]);
+      // Add new equipment with next position
+      const newEquipment = [...currentEquipment, equipmentItem];
+      handleChange('equipment', newEquipment);
     }
     
     // Reset form
@@ -498,7 +503,13 @@ const EnhancedCarForm = ({
     const [removed] = currentEquipment.splice(source.index, 1);
     currentEquipment.splice(destination.index, 0, removed);
     
-    handleChange('equipment', currentEquipment);
+    // Update positions for all equipment items to maintain order in database
+    const reorderedEquipment = currentEquipment.map((item, index) => ({
+      ...item,
+      position: index
+    }));
+    
+    handleChange('equipment', reorderedEquipment);
   }, [formData.equipment, handleChange]);
 
   // Damage management handlers
@@ -1955,10 +1966,21 @@ const EnhancedCarForm = ({
                               if (isSelected) {
                                 // Remove from selected equipment
                                 const newEquipment = formData.equipment.filter(item => item.name !== equipment.name);
-                                handleChange('equipment', newEquipment);
+                                // Reassign positions to maintain order
+                                const reorderedEquipment = newEquipment.map((item, index) => ({
+                                  ...item,
+                                  position: index
+                                }));
+                                handleChange('equipment', reorderedEquipment);
                               } else {
-                                // Add to selected equipment
-                                const newEquipment = [...(formData.equipment || []), equipment];
+                                // Add to selected equipment with next position
+                                const currentEquipment = formData.equipment || [];
+                                const nextPosition = currentEquipment.length;
+                                const equipmentToAdd = {
+                                  ...equipment,
+                                  position: nextPosition
+                                };
+                                const newEquipment = [...currentEquipment, equipmentToAdd];
                                 handleChange('equipment', newEquipment);
                               }
                             }}

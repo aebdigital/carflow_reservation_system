@@ -230,6 +230,10 @@ const carSchema = new mongoose.Schema({
     isStandard: {
       type: Boolean,
       default: false
+    },
+    position: {
+      type: Number,
+      default: 0 // Position for ordering, 0-based index
     }
   }],
   
@@ -564,6 +568,42 @@ carSchema.methods.getCategoryDescription = function() {
   
   return descriptions[this.category] || this.description;
 };
+
+// Virtual to get equipment sorted by position
+carSchema.virtual('sortedEquipment').get(function() {
+  if (!this.equipment || !Array.isArray(this.equipment)) {
+    return [];
+  }
+  
+  return this.equipment.sort((a, b) => {
+    // Sort by position, with fallback to original order (0) if position not set
+    const posA = typeof a.position === 'number' ? a.position : 0;
+    const posB = typeof b.position === 'number' ? b.position : 0;
+    return posA - posB;
+  });
+});
+
+// Ensure virtuals are included when converting to JSON
+carSchema.set('toJSON', { 
+  virtuals: true,
+  transform: function(doc, ret) {
+    // Replace equipment with sortedEquipment in JSON output
+    ret.equipment = doc.sortedEquipment;
+    delete ret.sortedEquipment;
+    return ret;
+  }
+});
+
+// Ensure virtuals are included when converting to Object
+carSchema.set('toObject', { 
+  virtuals: true,
+  transform: function(doc, ret) {
+    // Replace equipment with sortedEquipment in object output
+    ret.equipment = doc.sortedEquipment;
+    delete ret.sortedEquipment;
+    return ret;
+  }
+});
 
 // Indexes for better performance
 carSchema.index({ tenantId: 1, status: 1 });
