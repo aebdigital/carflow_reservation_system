@@ -2837,7 +2837,7 @@ const getPublicCarCategories = asyncHandler(async (req, res, next) => {
       },
       {
         value: 'electric',
-        label: 'Elektrické',
+        label: 'Elektro',
         labelEn: 'Electric',
         description: 'Tiché, ekologické a moderné autá s okamžitým nástupom výkonu. Ideálne pre jazdu v meste aj medzimestské presuny.',
         icon: 'electric_car',
@@ -2921,7 +2921,7 @@ const getPublicCarFilterOptions = asyncHandler(async (req, res, next) => {
         },
         {
           value: 'electric',
-          label: 'Elektrický',
+          label: 'Elektro',
           labelEn: 'Electric',
           icon: 'electric_car',
           color: '#2196f3'

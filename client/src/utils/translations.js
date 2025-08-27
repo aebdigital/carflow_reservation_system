@@ -89,12 +89,13 @@ const translations = {
     minivan: 'Minivan',
     convertible: 'Kabriolet',
     sports: 'Športové',
+    electric: 'Elektro',
     
     // Fuel Types
     gasoline: 'Benzín',
     diesel: 'Nafta',
     hybrid: 'Hybrid',
-    electric: 'Elektrické',
+    electric: 'Elektro',
     
     // Transmission Types
     manual: 'Manuálna',

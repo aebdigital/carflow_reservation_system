@@ -63,7 +63,7 @@ function AdditionalServiceForm({
     { value: 'utility', label: 'Úžitkové' },
     { value: 'caravan', label: 'Obytné' },
     { value: 'motorcycle', label: 'Motorka' },
-    { value: 'electric', label: 'Elektrické' }
+    { value: 'electric', label: 'Elektro' }
   ];
 
   const pricingTypes = [
