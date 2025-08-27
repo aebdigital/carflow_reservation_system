@@ -34,6 +34,7 @@ import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
+  Close as CloseIcon,
   Warning as WarningIcon,
   CheckCircle as CheckIcon,
   Error as ErrorIcon,
@@ -1695,68 +1696,73 @@ const EnhancedCarForm = ({
                         arrow
                         placement="top"
                       >
-                        <Chip
-                          label={
-                            <Box sx={{ 
-                              display: 'flex', 
-                              flexDirection: 'column',
-                              alignItems: 'flex-start', 
-                              gap: 0.5,
-                              py: 0.5
-                            }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <img 
-                                  src={item.icon} 
-                                  alt="" 
-                                  style={{ width: 24, height: 24, objectFit: 'contain' }}
-                                  onError={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.nextSibling.style.display = 'inline';
-                                  }}
-                                />
-                                <span style={{ display: 'none', fontSize: '20px' }}>🔧</span>
-                                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                                  {item.name}
-                                </Typography>
-                                {item.category === 'custom' && dialogMode !== 'view' && (
-                                  <EditIcon 
-                                    sx={{ 
-                                      fontSize: 16, 
-                                      ml: 0.5, 
-                                      cursor: 'pointer',
-                                      '&:hover': { color: 'primary.main' }
-                                    }} 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleEditEquipment(item, index);
+                        <Box
+                          sx={{
+                            position: 'relative',
+                            display: 'inline-block',
+                            '&:hover .equipment-delete-button': {
+                              opacity: dialogMode !== 'view' ? 1 : 0,
+                              visibility: dialogMode !== 'view' ? 'visible' : 'hidden'
+                            }
+                          }}
+                        >
+                          <Chip
+                            label={
+                              <Box sx={{ 
+                                display: 'flex', 
+                                flexDirection: 'column',
+                                alignItems: 'flex-start', 
+                                gap: 0.5,
+                                py: 0.5
+                              }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <img 
+                                    src={item.icon} 
+                                    alt="" 
+                                    style={{ width: 24, height: 24, objectFit: 'contain' }}
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      e.target.nextSibling.style.display = 'inline';
                                     }}
                                   />
+                                  <span style={{ display: 'none', fontSize: '20px' }}>🔧</span>
+                                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                    {item.name}
+                                  </Typography>
+                                  {item.category === 'custom' && dialogMode !== 'view' && (
+                                    <EditIcon 
+                                      sx={{ 
+                                        fontSize: 16, 
+                                        ml: 0.5, 
+                                        cursor: 'pointer',
+                                        '&:hover': { color: 'primary.main' }
+                                      }} 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditEquipment(item, index);
+                                      }}
+                                    />
+                                  )}
+                                </Box>
+                                {item.description && (
+                                  <Typography 
+                                    variant="caption" 
+                                    sx={{ 
+                                      color: 'text.secondary',
+                                      fontSize: '0.75rem',
+                                      lineHeight: 1.2,
+                                      maxWidth: '200px'
+                                    }}
+                                  >
+                                    {item.description}
+                                  </Typography>
                                 )}
                               </Box>
-                              {item.description && (
-                                <Typography 
-                                  variant="caption" 
-                                  sx={{ 
-                                    color: 'text.secondary',
-                                    fontSize: '0.75rem',
-                                    lineHeight: 1.2,
-                                    maxWidth: '200px'
-                                  }}
-                                >
-                                  {item.description}
-                                </Typography>
-                              )}
-                            </Box>
-                          }
-                          onDelete={dialogMode !== 'view' ? () => {
-                            const newEquipment = formData.equipment.filter((_, i) => i !== index);
-                            handleChange('equipment', newEquipment);
-                          } : undefined}
-                          deleteIcon={<DeleteIcon />}
-                          color="primary"
-                          variant="outlined"
-                          size="medium"
-                          sx={{
+                            }
+                            color="primary"
+                            variant="outlined"
+                            size="medium"
+                            sx={{
                             height: 'auto',
                             minHeight: item.description ? '64px' : '48px',
                             cursor: item.category === 'custom' && dialogMode !== 'view' ? 'pointer' : 'default',
@@ -1772,6 +1778,39 @@ const EnhancedCarForm = ({
                             handleEditEquipment(item, index);
                           } : undefined}
                         />
+                        {/* Hover Delete Button */}
+                        {dialogMode !== 'view' && (
+                          <IconButton
+                            className="equipment-delete-button"
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const newEquipment = formData.equipment.filter((_, i) => i !== index);
+                              handleChange('equipment', newEquipment);
+                            }}
+                            sx={{
+                              position: 'absolute',
+                              top: -8,
+                              right: -8,
+                              width: 24,
+                              height: 24,
+                              backgroundColor: 'error.main',
+                              color: 'white',
+                              opacity: 0,
+                              visibility: 'hidden',
+                              transition: 'all 0.2s ease-in-out',
+                              '&:hover': {
+                                backgroundColor: 'error.dark',
+                                transform: 'scale(1.1)'
+                              },
+                              boxShadow: 1,
+                              border: '2px solid white'
+                            }}
+                          >
+                            <CloseIcon sx={{ fontSize: 14 }} />
+                          </IconButton>
+                        )}
+                        </Box>
                       </Tooltip>
                     ))}
                   </Box>
