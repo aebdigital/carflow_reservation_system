@@ -486,6 +486,21 @@ const EnhancedCarForm = ({
     }
   }, [handleChange]);
 
+  // Equipment reorder handler
+  const handleEquipmentReorder = useCallback((result) => {
+    if (!result.destination) return;
+    
+    const { source, destination } = result;
+    
+    if (source.index === destination.index) return;
+    
+    const currentEquipment = [...(formData.equipment || [])];
+    const [removed] = currentEquipment.splice(source.index, 1);
+    currentEquipment.splice(destination.index, 0, removed);
+    
+    handleChange('equipment', currentEquipment);
+  }, [formData.equipment, handleChange]);
+
   // Damage management handlers
   const handleAddDamage = () => {
     setSelectedDamage(null);
@@ -1685,27 +1700,90 @@ const EnhancedCarForm = ({
               {/* Show selected equipment as chips */}
               {formData.equipment && formData.equipment.length > 0 && (
                 <Box sx={{ mb: 3 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Vybraná výbava ({formData.equipment.length})
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                    {formData.equipment.map((item, index) => (
-                      <Tooltip 
-                        key={index}
-                        title={item.description ? `${item.name}: ${item.description}` : item.name}
-                        arrow
-                        placement="top"
-                      >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Typography variant="subtitle2" gutterBottom sx={{ mb: 0 }}>
+                      Vybraná výbava ({formData.equipment.length})
+                    </Typography>
+                    {dialogMode !== 'view' && (
+                      <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                        - presuňte pre zmenu poradia
+                      </Typography>
+                    )}
+                  </Box>
+                  <DragDropContext onDragEnd={handleEquipmentReorder}>
+                    <Droppable droppableId="selected-equipment" direction="horizontal">
+                      {(provided, snapshot) => (
                         <Box
-                          sx={{
-                            position: 'relative',
-                            display: 'inline-block',
-                            '&:hover .equipment-delete-button': {
-                              opacity: dialogMode !== 'view' ? 1 : 0,
-                              visibility: dialogMode !== 'view' ? 'visible' : 'hidden'
-                            }
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
+                          sx={{ 
+                            display: 'flex', 
+                            flexWrap: 'wrap', 
+                            gap: 1, 
+                            mb: 2,
+                            p: 1,
+                            borderRadius: 1,
+                            backgroundColor: snapshot.isDraggingOver ? 'action.hover' : 'transparent',
+                            transition: 'background-color 0.2s ease',
+                            minHeight: 60
                           }}
                         >
+                          {formData.equipment.map((item, index) => (
+                            <Draggable 
+                              key={`equipment-${item.name}-${index}`} 
+                              draggableId={`equipment-${item.name}-${index}`}
+                              index={index}
+                              isDragDisabled={dialogMode === 'view'}
+                            >
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  style={{
+                                    ...provided.draggableProps.style,
+                                    transform: snapshot.isDragging 
+                                      ? provided.draggableProps.style?.transform 
+                                      : 'none'
+                                  }}
+                                >
+                                  <Tooltip 
+                                    title={item.description ? `${item.name}: ${item.description}` : item.name}
+                                    arrow
+                                    placement="top"
+                                  >
+                                    <Box
+                                      sx={{
+                                        position: 'relative',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        opacity: snapshot.isDragging ? 0.8 : 1,
+                                        transform: snapshot.isDragging ? 'rotate(5deg)' : 'none',
+                                        '&:hover .equipment-delete-button': {
+                                          opacity: dialogMode !== 'view' ? 1 : 0,
+                                          visibility: dialogMode !== 'view' ? 'visible' : 'hidden'
+                                        }
+                                      }}
+                                    >
+                                      {/* Drag Handle */}
+                                      {dialogMode !== 'view' && (
+                                        <Box
+                                          {...provided.dragHandleProps}
+                                          sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            width: 20,
+                                            height: 20,
+                                            cursor: 'grab',
+                                            color: 'text.secondary',
+                                            '&:hover': { color: 'primary.main' },
+                                            '&:active': { cursor: 'grabbing' },
+                                            mr: 0.5
+                                          }}
+                                        >
+                                          <DragIcon sx={{ fontSize: 16 }} />
+                                        </Box>
+                                      )}
                           <Chip
                             label={
                               <Box sx={{ 
@@ -1812,8 +1890,15 @@ const EnhancedCarForm = ({
                         )}
                         </Box>
                       </Tooltip>
-                    ))}
-                  </Box>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </Box>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
                 </Box>
               )}
 
