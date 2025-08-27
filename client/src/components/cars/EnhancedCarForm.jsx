@@ -1706,7 +1706,7 @@ const EnhancedCarForm = ({
                     </Typography>
                     {dialogMode !== 'view' && (
                       <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                        - presuňte pre zmenu poradia
+                        - ťahajte pre zmenu poradia, dvojklik pre úpravu vlastnej výbavy
                       </Typography>
                     )}
                   </Box>
@@ -1728,10 +1728,13 @@ const EnhancedCarForm = ({
                             minHeight: 60
                           }}
                         >
-                          {formData.equipment.map((item, index) => (
+                          {formData.equipment.map((item, index) => {
+                            // Create stable unique key based on item properties
+                            const stableKey = `equipment-${item.name}-${item.category}-${item.description?.slice(0, 10) || 'nodesc'}-${index}`;
+                            return (
                             <Draggable 
-                              key={`equipment-${item.name}-${index}`} 
-                              draggableId={`equipment-${item.name}-${index}`}
+                              key={stableKey} 
+                              draggableId={stableKey}
                               index={index}
                               isDragDisabled={dialogMode === 'view'}
                             >
@@ -1764,27 +1767,8 @@ const EnhancedCarForm = ({
                                         }
                                       }}
                                     >
-                                      {/* Drag Handle */}
-                                      {dialogMode !== 'view' && (
-                                        <Box
-                                          {...provided.dragHandleProps}
-                                          sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            width: 20,
-                                            height: 20,
-                                            cursor: 'grab',
-                                            color: 'text.secondary',
-                                            '&:hover': { color: 'primary.main' },
-                                            '&:active': { cursor: 'grabbing' },
-                                            mr: 0.5
-                                          }}
-                                        >
-                                          <DragIcon sx={{ fontSize: 16 }} />
-                                        </Box>
-                                      )}
                           <Chip
+                            {...provided.dragHandleProps}
                             label={
                               <Box sx={{ 
                                 display: 'flex', 
@@ -1794,6 +1778,18 @@ const EnhancedCarForm = ({
                                 py: 0.5
                               }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  {/* Drag Handle Icon */}
+                                  {dialogMode !== 'view' && (
+                                    <DragIcon 
+                                      sx={{ 
+                                        fontSize: 16, 
+                                        color: 'text.secondary',
+                                        cursor: 'grab',
+                                        '&:hover': { color: 'primary.main' },
+                                        '&:active': { cursor: 'grabbing' }
+                                      }} 
+                                    />
+                                  )}
                                   <img 
                                     src={item.icon} 
                                     alt="" 
@@ -1843,16 +1839,21 @@ const EnhancedCarForm = ({
                             sx={{
                             height: 'auto',
                             minHeight: item.description ? '64px' : '48px',
-                            cursor: item.category === 'custom' && dialogMode !== 'view' ? 'pointer' : 'default',
+                            cursor: dialogMode !== 'view' ? 'grab' : 'default',
                             '& .MuiChip-label': {
                               padding: '8px 12px',
                               whiteSpace: 'normal'
                             },
-                            '&:hover': item.category === 'custom' && dialogMode !== 'view' ? {
-                              backgroundColor: 'primary.50'
+                            '&:hover': dialogMode !== 'view' ? {
+                              backgroundColor: 'primary.50',
+                              transform: 'translateY(-1px)',
+                              boxShadow: 2
+                            } : {},
+                            '&:active': dialogMode !== 'view' ? {
+                              cursor: 'grabbing'
                             } : {}
                           }}
-                          onClick={item.category === 'custom' && dialogMode !== 'view' ? () => {
+                          onDoubleClick={item.category === 'custom' && dialogMode !== 'view' ? () => {
                             handleEditEquipment(item, index);
                           } : undefined}
                         />
@@ -1893,7 +1894,8 @@ const EnhancedCarForm = ({
                                 </div>
                               )}
                             </Draggable>
-                          ))}
+                            );
+                          })}
                           {provided.placeholder}
                         </Box>
                       )}
