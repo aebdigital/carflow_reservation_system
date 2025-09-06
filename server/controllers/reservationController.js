@@ -889,7 +889,7 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
       
       // Send confirmation email using new template, pass both emailData and raw reservation
       console.log('📧 [EMAIL DEBUG] Calling sendCustomerReservationConfirmed...');
-      await emailService.sendCustomerReservationConfirmed(reservation.customer.email, emailData, reservation);
+      await emailService.sendCustomerReservationConfirmed(reservation.customer.email, emailData, reservation, req.user);
       console.log('✅ [EMAIL] Confirmation notification sent to customer:', reservation.customer.email);
     } else {
       console.log('❌ [EMAIL DEBUG] Email not sent due to missing requirements:', {

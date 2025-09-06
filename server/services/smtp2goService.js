@@ -26,7 +26,30 @@ class SMTP2GOService {
     console.log('✅ SMTP2GO service configured successfully');
   }
 
-  async sendEmail(to, subject, html, text = null) {
+  /**
+   * Get tenant-specific email configuration
+   * @param {Object} user - User object with email to determine tenant
+   */
+  getTenantEmailConfig(user = null) {
+    // Check if user is from nitra-car tenant
+    const isNitraCarUser = user && user.email === 'nitra-car@nitra-car.sk';
+    
+    if (isNitraCarUser) {
+      console.log('🔧 [EMAIL] Using NITRACAR email configuration for nitra-car user');
+      return {
+        apiKey: process.env.NITRACAR_SMTP2GO_API_KEY || this.apiKey,
+        emailFrom: process.env.NITRACAR_EMAIL_FROM || process.env.EMAIL_FROM || 'noreply@carflow.sk'
+      };
+    } else {
+      console.log('🔧 [EMAIL] Using default email configuration');
+      return {
+        apiKey: this.apiKey,
+        emailFrom: process.env.EMAIL_FROM || 'noreply@carflow.sk'
+      };
+    }
+  }
+
+  async sendEmail(to, subject, html, text = null, user = null) {
     if (!this.isConfigured) {
       throw new Error('SMTP2GO service not properly configured. Please set SMTP2GO_API_KEY.');
     }
@@ -35,13 +58,15 @@ class SMTP2GOService {
     const toEmails = Array.isArray(to) ? to : [to];
     const cleanedToEmails = toEmails.map(email => typeof email === 'string' ? email.trim() : email);
     
-    // Use the full sender format - SMTP2GO can handle display names
-    const senderEmail = process.env.EMAIL_FROM || 'noreply@carflow.sk';
+    // Get tenant-specific email configuration
+    const emailConfig = this.getTenantEmailConfig(user);
+    const senderEmail = emailConfig.emailFrom;
 
     console.log('🔍 [SMTP2GO DEBUG] Sender email details:', {
       sender: senderEmail,
       EMAIL_FROM: process.env.EMAIL_FROM,
-      API_KEY_SET: !!this.apiKey
+      API_KEY_SET: !!emailConfig.apiKey,
+      USING_NITRACAR_CONFIG: user && user.email === 'nitra-car@nitra-car.sk'
     });
 
     // Clean and sanitize content to avoid JSON issues
@@ -141,7 +166,7 @@ class SMTP2GOService {
         headers: {
           'Content-Type': 'application/json; charset=utf-8',
           'Content-Length': Buffer.byteLength(postData, 'utf8'),
-          'X-Smtp2go-Api-Key': this.apiKey
+          'X-Smtp2go-Api-Key': emailConfig.apiKey
         }
       };
 
@@ -380,7 +405,7 @@ class SMTP2GOService {
   }
 
   // Customer confirmation email when admin confirms reservation
-  async sendCustomerReservationConfirmed(to, reservationData, rawReservation = null) {
+  async sendCustomerReservationConfirmed(to, reservationData, rawReservation = null, user = null) {
     console.log('📧 [SMTP2GO DEBUG] sendCustomerReservationConfirmed called with:', {
       to: to,
       hasReservationData: !!reservationData,
@@ -580,9 +605,9 @@ class SMTP2GOService {
     // Send email with or without attachment
     let emailResult;
     if (attachments.length > 0) {
-      emailResult = await this.sendEmailWithAttachment(to, subject, emailData.html, attachments);
+      emailResult = await this.sendEmailWithAttachment(to, subject, emailData.html, attachments, null, user);
     } else {
-      emailResult = await this.sendEmail(to, subject, emailData.html);
+      emailResult = await this.sendEmail(to, subject, emailData.html, null, user);
     }
     
     // Send SMS if phone number available
@@ -791,7 +816,7 @@ class SMTP2GOService {
         headers: {
           'Content-Type': 'application/json; charset=utf-8',
           'Content-Length': Buffer.byteLength(postData, 'utf8'),
-          'X-Smtp2go-Api-Key': this.apiKey
+          'X-Smtp2go-Api-Key': emailConfig.apiKey
         }
       };
 
@@ -842,7 +867,7 @@ class SMTP2GOService {
   }
 
   // Send email with attachments
-  async sendEmailWithAttachment(to, subject, html, attachments = [], text = null) {
+  async sendEmailWithAttachment(to, subject, html, attachments = [], text = null, user = null) {
     if (!this.isConfigured) {
       throw new Error('SMTP2GO service not properly configured. Please set SMTP2GO_API_KEY.');
     }
@@ -851,8 +876,9 @@ class SMTP2GOService {
     const toEmails = Array.isArray(to) ? to : [to];
     const cleanedToEmails = toEmails.map(email => typeof email === 'string' ? email.trim() : email);
     
-    // Use the full sender format - SMTP2GO can handle display names
-    const senderEmail = process.env.EMAIL_FROM || 'noreply@carflow.sk';
+    // Get tenant-specific email configuration
+    const emailConfig = this.getTenantEmailConfig(user);
+    const senderEmail = emailConfig.emailFrom;
 
     console.log('📎 [SMTP2GO] Sending email with attachments to:', cleanedToEmails);
     console.log('📎 [SMTP2GO] Attachments count:', attachments.length);
@@ -863,7 +889,7 @@ class SMTP2GOService {
     const cleanSubject = this.sanitizeSubject(subject);
 
     const payload = {
-      api_key: this.apiKey,
+      api_key: emailConfig.apiKey,
       to: cleanedToEmails,
       sender: senderEmail,
       subject: cleanSubject,

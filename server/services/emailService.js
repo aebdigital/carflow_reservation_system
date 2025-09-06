@@ -20,13 +20,13 @@ class EmailService {
     }
   }
 
-  async sendEmail(to, subject, html, text = null) {
+  async sendEmail(to, subject, html, text = null, user = null) {
     if (!this.isConfigured) {
       throw new Error('Email service not properly configured. Please set SMTP2GO_API_KEY in your environment variables.');
     }
 
-    // Use SMTP2GO service
-    return await smtp2goService.sendEmail(to, subject, html, text);
+    // Use SMTP2GO service with user context for tenant-specific config
+    return await smtp2goService.sendEmail(to, subject, html, text, user);
   }
 
   // Helper method to strip HTML tags for text version
@@ -70,9 +70,9 @@ class EmailService {
   }
 
   // Customer reservation confirmed (after admin approval)
-  async sendCustomerReservationConfirmed(customerEmail, reservationData, rawReservation = null) {
+  async sendCustomerReservationConfirmed(customerEmail, reservationData, rawReservation = null, user = null) {
     // Use SMTP2GO service which has the correct implementation
-    return await smtp2goService.sendCustomerReservationConfirmed(customerEmail, reservationData, rawReservation);
+    return await smtp2goService.sendCustomerReservationConfirmed(customerEmail, reservationData, rawReservation, user);
   }
 
   // Customer reservation edited notification (after admin edits)
@@ -150,8 +150,9 @@ class EmailService {
    * @param {string} to - Recipient email
    * @param {Object} emailData - Template data
    * @param {Object} pdfAttachment - PDF attachment object
+   * @param {Object} user - User object for tenant-specific email config
    */
-  async sendPaymentReceivedWithInvoice(to, emailData, pdfAttachment) {
+  async sendPaymentReceivedWithInvoice(to, emailData, pdfAttachment, user = null) {
     try {
       console.log('📧 [EMAIL] Sending payment received email with invoice PDF to:', to);
       
@@ -244,7 +245,9 @@ class EmailService {
         to,
         'Platba potvrdená - Faktúra za prenájom vozidla',
         html,
-        attachments
+        attachments,
+        null,
+        user
       );
 
       console.log('✅ [EMAIL] Payment received email with invoice sent successfully');
@@ -260,8 +263,9 @@ class EmailService {
    * Send payment received confirmation email without invoice PDF (for async processing)
    * @param {string} to - Recipient email
    * @param {Object} emailData - Template data
+   * @param {Object} user - User object for tenant-specific email config
    */
-  async sendPaymentReceivedWithoutInvoice(to, emailData) {
+  async sendPaymentReceivedWithoutInvoice(to, emailData, user = null) {
     try {
       console.log('📧 [EMAIL] Sending payment received email without invoice PDF to:', to);
       
@@ -354,7 +358,9 @@ class EmailService {
       const result = await smtp2goService.sendEmail(
         to,
         'Platba potvrdená - Rezervácia úspešne zaplatená',
-        html
+        html,
+        null,
+        user
       );
 
       console.log('✅ [EMAIL] Payment received email (without PDF) sent successfully');
