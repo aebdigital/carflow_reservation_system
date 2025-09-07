@@ -1743,9 +1743,24 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       console.log('📧 [EMAIL] Email provider:', process.env.EMAIL_PROVIDER || 'nodemailer');
       console.log('📧 [EMAIL] SMTP2GO configured:', process.env.SMTP2GO_API_KEY ? 'YES' : 'NO');
       
-      // For general public API, no specific tenant admin - use null
-      // Send email notifications to both admin and customer
-      const emailResult = await sendReservationEmails(populatedReservation, car, customer, null);
+      // 🔧 FIX: Get tenant admin user for email configuration based on car's tenant
+      let tenantAdminUser = null;
+      
+      try {
+        const User = require('../models/User');
+        // Find the admin user for this tenant (car rental company)
+        tenantAdminUser = await User.findOne({ 
+          tenantId: tenantId,
+          role: 'admin'
+        });
+        console.log('📧 [EMAIL] Tenant admin user found for general public API:', tenantAdminUser ? tenantAdminUser.email : 'Not found');
+        console.log('📧 [EMAIL] Tenant ID:', tenantId);
+      } catch (userError) {
+        console.warn('⚠️ [EMAIL] Could not fetch tenant admin user for general public API:', userError.message);
+      }
+      
+      // Send email notifications to both admin and customer with tenant context
+      const emailResult = await sendReservationEmails(populatedReservation, car, customer, tenantAdminUser);
       
       if (emailResult.success) {
         console.log('✅ [EMAIL] Reservation emails sent successfully for new general public reservation');
