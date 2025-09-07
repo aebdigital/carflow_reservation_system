@@ -148,6 +148,7 @@ async function sendReservationEmails(reservation, car, customer, user = null) {
     try {
       const adminEmail = 'peter@aebdig.com';
       console.log('📧 [EMAIL] Sending admin notification to:', adminEmail);
+      console.log('📧 [EMAIL] Admin email user context:', user ? { email: user.email, tenantId: user.tenantId } : 'No user context');
       const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData, user);
       results.push({ type: 'admin', success: true, result: adminResult });
       console.log('✅ [EMAIL] Admin notification sent successfully to:', adminEmail);
@@ -158,8 +159,12 @@ async function sendReservationEmails(reservation, car, customer, user = null) {
     
     // Send confirmation email to customer
     try {
+      // DEBUG: Log all customer data to identify the email issue
       console.log('📧 [EMAIL] Sending customer confirmation to:', customer.email);
-      console.log('📧 [EMAIL] Customer data:', { name: `${customer.firstName} ${customer.lastName}`, email: customer.email });
+      console.log('📧 [EMAIL] Customer data full object:', JSON.stringify(customer, null, 2));
+      console.log('📧 [EMAIL] Customer email user context:', user ? { email: user.email, tenantId: user.tenantId } : 'No user context');
+      console.log('📧 [EMAIL] Actual recipient should be:', customer.email, 'NOT admin email');
+      
       const customerResult = await emailService.sendCustomerReservationConfirmation(customer.email, emailData, user);
       results.push({ type: 'customer_email', success: true, result: customerResult });
       console.log('✅ [EMAIL] Customer confirmation sent successfully to:', customer.email);

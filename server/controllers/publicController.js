@@ -1084,8 +1084,25 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       console.log('📧 [EMAIL] Email provider:', process.env.EMAIL_PROVIDER || 'nodemailer');
       console.log('📧 [EMAIL] SMTP2GO configured:', process.env.SMTP2GO_API_KEY ? 'YES' : 'NO');
       
+      // Get tenant admin user for email configuration
+      const tenantAdminEmail = req.params.email; // nitra-car@nitra-car.sk
+      let tenantAdminUser = null;
+      
+      if (tenantAdminEmail) {
+        try {
+          const User = require('../models/User');
+          tenantAdminUser = await User.findOne({ 
+            email: tenantAdminEmail.toLowerCase(),
+            tenantId: tenantId 
+          });
+          console.log('📧 [EMAIL] Tenant admin user found:', tenantAdminUser ? tenantAdminEmail : 'Not found');
+        } catch (userError) {
+          console.warn('⚠️ [EMAIL] Could not fetch tenant admin user:', userError.message);
+        }
+      }
+      
       // Send email notifications to both admin and customer
-      const emailResult = await sendReservationEmails(populatedReservation, car, customer);
+      const emailResult = await sendReservationEmails(populatedReservation, car, customer, tenantAdminUser);
       
       if (emailResult.success) {
         console.log('✅ [EMAIL] Reservation emails sent successfully for new public reservation');
@@ -1718,8 +1735,9 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       console.log('📧 [EMAIL] Email provider:', process.env.EMAIL_PROVIDER || 'nodemailer');
       console.log('📧 [EMAIL] SMTP2GO configured:', process.env.SMTP2GO_API_KEY ? 'YES' : 'NO');
       
+      // For general public API, no specific tenant admin - use null
       // Send email notifications to both admin and customer
-      const emailResult = await sendReservationEmails(populatedReservation, car, customer);
+      const emailResult = await sendReservationEmails(populatedReservation, car, customer, null);
       
       if (emailResult.success) {
         console.log('✅ [EMAIL] Reservation emails sent successfully for new general public reservation');
