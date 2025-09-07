@@ -126,7 +126,7 @@ async function sendAdminNotificationEmail(reservation, car, customer) {
 /**
  * Send both admin notification and customer confirmation emails for new reservation
  */
-async function sendReservationEmails(reservation, car, customer) {
+async function sendReservationEmails(reservation, car, customer, user = null) {
   try {
     console.log('📧 [EMAIL] Sending reservation emails for reservation:', reservation._id);
     
@@ -148,7 +148,7 @@ async function sendReservationEmails(reservation, car, customer) {
     try {
       const adminEmail = 'peter@aebdig.com';
       console.log('📧 [EMAIL] Sending admin notification to:', adminEmail);
-      const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData);
+      const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData, user);
       results.push({ type: 'admin', success: true, result: adminResult });
       console.log('✅ [EMAIL] Admin notification sent successfully to:', adminEmail);
     } catch (adminError) {
@@ -160,7 +160,7 @@ async function sendReservationEmails(reservation, car, customer) {
     try {
       console.log('📧 [EMAIL] Sending customer confirmation to:', customer.email);
       console.log('📧 [EMAIL] Customer data:', { name: `${customer.firstName} ${customer.lastName}`, email: customer.email });
-      const customerResult = await emailService.sendCustomerReservationConfirmation(customer.email, emailData);
+      const customerResult = await emailService.sendCustomerReservationConfirmation(customer.email, emailData, user);
       results.push({ type: 'customer_email', success: true, result: customerResult });
       console.log('✅ [EMAIL] Customer confirmation sent successfully to:', customer.email);
     } catch (customerError) {

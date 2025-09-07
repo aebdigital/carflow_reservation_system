@@ -372,18 +372,18 @@ class SMTP2GOService {
   }
 
   // UPDATED: Admin notification email with exact user-provided structure
-  async sendAdminReservationNotification(to, reservationData) {
+  async sendAdminReservationNotification(to, reservationData, user = null) {
     const subject = `Nova rezervacia #${reservationData.reservationNumber} - ${reservationData.carInfo}`;
     
     const html = `<html><body><h2>Nova rezervacia</h2><p>Rezervacia: ${reservationData.reservationNumber}</p><p>Auto: ${reservationData.carInfo}</p><p>Zakaznik: ${reservationData.customerName}</p><p>Email: ${reservationData.customerEmail}</p><p>Cena: ${reservationData.totalPrice}€</p></body></html>`;
     
     const text = `Nova rezervacia Rezervacia: ${reservationData.reservationNumber} Auto: ${reservationData.carInfo} Zakaznik: ${reservationData.customerName} Email: ${reservationData.customerEmail} Cena: ${reservationData.totalPrice}€`;
     
-    return this.sendEmail(to, subject, html, text);
+    return this.sendEmail(to, subject, html, text, user);
   }
 
   // Customer confirmation email for new reservation
-  async sendCustomerReservationConfirmation(to, reservationData) {
+  async sendCustomerReservationConfirmation(to, reservationData, user = null) {
     const emailTemplateService = require('./emailTemplateService');
     
     // Prepare template variables from actual backend data structure
@@ -401,7 +401,7 @@ class SMTP2GOService {
     // Override subject to match exact specification
     const subject = '📥 Rezervácia prijatá';
     
-    return this.sendEmail(to, subject, emailData.html);
+    return this.sendEmail(to, subject, emailData.html, null, user);
   }
 
   // Customer confirmation email when admin confirms reservation

@@ -517,7 +517,7 @@ const createReservation = asyncHandler(async (req, res, next) => {
     console.log('📧 [EMAIL] SMTP2GO configured:', process.env.SMTP2GO_API_KEY ? 'YES' : 'NO');
     
     // Send email notifications to both admin and customer
-    const emailResult = await sendReservationEmails(reservation, carDoc, customerDoc);
+    const emailResult = await sendReservationEmails(reservation, carDoc, customerDoc, req.user);
     
     if (emailResult.success) {
       console.log('✅ [EMAIL] Reservation emails sent successfully');
@@ -1658,7 +1658,8 @@ const confirmPayment = asyncHandler(async (req, res, next) => {
             // Send simple payment confirmation email without attachment
             await emailService.sendPaymentReceivedWithoutInvoice(
               reservation.customer.email,
-              emailData
+              emailData,
+              req.user
             );
             
             console.log('✅ Payment confirmation email sent to customer:', reservation.customer.email);
