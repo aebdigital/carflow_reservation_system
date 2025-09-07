@@ -578,11 +578,19 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
 
   // 🔧 FIX: Don't fallback to admin email - require customer email in request body
   // Accept both 'customerEmail' and 'email' for backwards compatibility
-  const finalCustomerEmail = customerEmail || email;
+  // DEBUG: Log customer email determination
+  console.log('📧 [CUSTOMER EMAIL DEBUG] Request customer email:', customerEmail);
+  console.log('📧 [CUSTOMER EMAIL DEBUG] URL parameter email:', email);
+  console.log('📧 [CUSTOMER EMAIL DEBUG] Full request body keys:', Object.keys(req.body));
   
-  if (!finalCustomerEmail) {
-    return next(new AppError('customerEmail (or email) is required in request body', 400));
+  // 🔧 FIX: Only use customerEmail from request body, don't fallback to admin email
+  if (!customerEmail) {
+    return next(new AppError('customerEmail is required in request body - cannot use admin email as customer email', 400));
   }
+  
+  const finalCustomerEmail = customerEmail;
+  
+  console.log('📧 [CUSTOMER EMAIL DEBUG] Final customer email:', finalCustomerEmail);
 
   // 🔧 MAJOR FIX: Get tenant ID from the car being booked, not from email parameter
   if (!carId) {
