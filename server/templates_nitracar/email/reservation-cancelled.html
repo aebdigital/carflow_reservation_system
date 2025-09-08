@@ -1,153 +1,17 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rezervácia zrušená ❌</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #000;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #fff;
-        }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            border: 1px solid rgb(22, 163, 74);
-        }
-        .header {
-            text-align: center;
-            border-bottom: 2px solid #f44336;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
-        .logo {
-            font-size: 28px;
-            font-weight: bold;
-            color: #000;
-        }
-        .emoji-large {
-            font-size: 48px;
-            margin: 20px 0;
-        }
-        .cancel-message {
-            background-color: #f9f9f9;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #000;
-            margin: 20px 0;
-            text-align: center;
-        }
-        .main-message {
-            font-size: 16px;
-            margin: 20px 0;
-            text-align: center;
-        }
-        .car-info {
-            background-color: #f5f5f5;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #666;
-            margin: 20px 0;
-            text-align: center;
-        }
-        .car-name {
-            font-size: 20px;
-            font-weight: bold;
-            color: #666;
-        }
-        .help-section {
-            background-color: rgb(22, 163, 74); color: white;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid rgb(22, 163, 74);
-            margin: 20px 0;
-            text-align: center;
-        }
-        .button {
-            display: inline-block;
-            padding: 15px 30px;
-            background-color: rgb(22, 163, 74);
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            margin: 20px 0;
-            font-weight: bold;
-            text-align: center;
-        }
-        .button-container {
-            text-align: center;
-            margin: 30px 0;
-        }
-        .contact {
-            text-align: center;
-            font-size: 16px;
-            color: #000;
-            font-weight: bold;
-            margin: 20px 0;
-        }
-        .signature {
-            text-align: center;
-            margin: 30px 0;
-            font-weight: bold;
-            font-size: 16px;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-            color: #666;
-            font-size: 14px;
-        }
-        .sad-emoji {
-            font-size: 20px;
-            color: #000;
-        }
-        .renewal-emoji {
-            font-size: 20px;
-            color: rgb(22, 163, 74);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Objednávka zrušená</title>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="emoji-large">❌</div>
-            <div class="logo">RIVAL Autopožičovňa</div>
-        </div>
-        
-        <div class="content">
-            <div class="main-message">
-                <p>Dobrý deň <strong>{{first_name}} {{last_name}}</strong>,</p>
-            </div>
-            
-            <div class="cancel-message">
-                <div class="car-name">{{car_brand}} {{car_model}}</div>
-                <p><strong>Potvrdzujeme, že Vaša rezervácia bola zrušená <span class="sad-emoji">🙁</span></strong></p>
-            </div>
-            
-            <div class="help-section">
-                <p><strong>Radi Vám pomôžeme naplánovať nový termín alebo vybrať iné vozidlo <span class="renewal-emoji">🔄</span></strong></p>
-            </div>
-            
-            <div class="button-container">
-                <a href="{{link_new}}" class="button">👉 Vytvoriť novú rezerváciu</a>
-            </div>
-            
-            <div class="contact">
-                <p>☎️ V prípade otázok volajte +421 907 633 517.</p>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p>© {{current_year}} RIVAL Autopožičovňa. Všetky práva vyhradené.</p>
-        </div>
-    </div>
+<pre>
+Dobrý deň {{first_name}} {{last_name}},
+
+Vaša objednávka bola zrušená.
+
+S pozdravom,
+Autopožičovňa Nitra-Car
+</pre>
 </body>
 </html>
