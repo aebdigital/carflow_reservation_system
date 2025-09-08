@@ -76,27 +76,27 @@ class EmailService {
   }
 
   // Customer reservation edited notification (after admin edits)
-  async sendCustomerReservationEdited(customerEmail, reservationData) {
+  async sendCustomerReservationEdited(customerEmail, reservationData, user = null) {
     // Use SMTP2GO service which has the correct implementation
-    return await smtp2goService.sendCustomerReservationEdited(customerEmail, reservationData);
+    return await smtp2goService.sendCustomerReservationEdited(customerEmail, reservationData, user);
   }
 
   // Customer 24-hour reminder notification
-  async sendCustomerReservationReminder24(customerEmail, reservationData) {
+  async sendCustomerReservationReminder24(customerEmail, reservationData, user = null) {
     // Use SMTP2GO service which has the correct implementation
-    return await smtp2goService.sendCustomerReservationReminder24(customerEmail, reservationData);
+    return await smtp2goService.sendCustomerReservationReminder24(customerEmail, reservationData, user);
   }
 
   // Customer review request (24h after trip ends)
-  async sendCustomerReviewRequest(customerEmail, reservationData) {
+  async sendCustomerReviewRequest(customerEmail, reservationData, user = null) {
     // Use SMTP2GO service which has the correct implementation
-    return await smtp2goService.sendCustomerReviewRequest(customerEmail, reservationData);
+    return await smtp2goService.sendCustomerReviewRequest(customerEmail, reservationData, user);
   }
 
   // Customer cancellation notification
-  async sendCustomerCancellationNotification(customerEmail, cancellationData) {
+  async sendCustomerCancellationNotification(customerEmail, cancellationData, user = null) {
     // Use SMTP2GO service which has the correct implementation
-    return await smtp2goService.sendCustomerCancellationNotification(customerEmail, cancellationData);
+    return await smtp2goService.sendCustomerCancellationNotification(customerEmail, cancellationData, user);
   }
 
   // Send templated email by loading template from templates/email/ folder

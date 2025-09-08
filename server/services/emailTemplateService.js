@@ -3,27 +3,52 @@ const path = require('path');
 
 class EmailTemplateService {
   constructor() {
-    this.templatesPath = path.join(__dirname, '../templates/email');
+    this.defaultTemplatesPath = path.join(__dirname, '../templates/email');
+    this.nitracarTemplatesPath = path.join(__dirname, '../templates_nitracar/email');
     this.templateCache = new Map();
+  }
+
+  /**
+   * Determine which template folder to use based on email sender
+   * @param {string} senderEmail - The sender email address
+   * @returns {string} Template path to use
+   */
+  getTemplatePath(senderEmail = null) {
+    // If sender email is NITRACAR email, use NITRACAR templates
+    const isNitracarEmail = senderEmail && senderEmail === process.env.NITRACAR_EMAIL_FROM;
+    
+    if (isNitracarEmail) {
+      console.log('📧 [TEMPLATE] Using NITRACAR templates for email from:', senderEmail);
+      return this.nitracarTemplatesPath;
+    } else {
+      console.log('📧 [TEMPLATE] Using default templates for email from:', senderEmail || 'default');
+      return this.defaultTemplatesPath;
+    }
   }
 
   /**
    * Load and cache email template
    * @param {string} templateName - Name of the template file (without .html extension)
+   * @param {string} senderEmail - The sender email to determine template folder
    * @returns {Promise<string>} Template HTML content
    */
-  async loadTemplate(templateName) {
+  async loadTemplate(templateName, senderEmail = null) {
     try {
+      // Create cache key that includes the template source
+      const isNitracar = senderEmail === process.env.NITRACAR_EMAIL_FROM;
+      const cacheKey = `${templateName}_${isNitracar ? 'nitracar' : 'default'}`;
+      
       // Check cache first
-      if (this.templateCache.has(templateName)) {
-        return this.templateCache.get(templateName);
+      if (this.templateCache.has(cacheKey)) {
+        return this.templateCache.get(cacheKey);
       }
 
-      const templatePath = path.join(this.templatesPath, `${templateName}.html`);
+      const templatesPath = this.getTemplatePath(senderEmail);
+      const templatePath = path.join(templatesPath, `${templateName}.html`);
       const templateContent = await fs.readFile(templatePath, 'utf8');
       
       // Cache the template for future use
-      this.templateCache.set(templateName, templateContent);
+      this.templateCache.set(cacheKey, templateContent);
       
       return templateContent;
     } catch (error) {
@@ -60,11 +85,12 @@ class EmailTemplateService {
    * Get processed email template ready for sending
    * @param {string} templateName - Template name (without .html)
    * @param {Object} variables - Variables to replace
+   * @param {string} senderEmail - Sender email to determine template folder
    * @returns {Promise<Object>} Email data with subject, html, and headers
    */
-  async getEmailTemplate(templateName, variables = {}) {
+  async getEmailTemplate(templateName, variables = {}, senderEmail = null) {
     try {
-      const template = await this.loadTemplate(templateName);
+      const template = await this.loadTemplate(templateName, senderEmail);
       const processedHtml = this.processTemplate(template, variables);
       
       // Extract subject from variables or use default based on template
@@ -142,11 +168,12 @@ class EmailTemplateService {
    * Validate template variables
    * @param {string} templateName - Template name
    * @param {Object} variables - Variables to validate
+   * @param {string} senderEmail - Sender email to determine template folder
    * @returns {Object} Validation result with missing variables
    */
-  async validateTemplateVariables(templateName, variables = {}) {
+  async validateTemplateVariables(templateName, variables = {}, senderEmail = null) {
     try {
-      const template = await this.loadTemplate(templateName);
+      const template = await this.loadTemplate(templateName, senderEmail);
       const variableRegex = /{{([^}]+)}}/g;
       const requiredVariables = new Set();
       let match;

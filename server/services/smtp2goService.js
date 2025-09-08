@@ -403,6 +403,10 @@ class SMTP2GOService {
   async sendCustomerReservationConfirmation(to, reservationData, user = null) {
     const emailTemplateService = require('./emailTemplateService');
     
+    // Get tenant-specific email configuration to determine template folder
+    const emailConfig = this.getTenantEmailConfig(user);
+    const senderEmail = emailConfig.emailFrom;
+    
     // Prepare template variables from actual backend data structure
     const templateVariables = {
       first_name: reservationData.customerName?.split(' ')[0] || '',
@@ -412,8 +416,8 @@ class SMTP2GOService {
       link_view: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}`
     };
 
-    // Get processed email template
-    const emailData = await emailTemplateService.getEmailTemplate('reservation-confirmation', templateVariables);
+    // Get processed email template with sender-specific template folder
+    const emailData = await emailTemplateService.getEmailTemplate('reservation-confirmation', templateVariables, senderEmail);
     
     // Override subject to match exact specification
     const subject = '📥 Rezervácia prijatá';
@@ -433,6 +437,10 @@ class SMTP2GOService {
     
     const emailTemplateService = require('./emailTemplateService');
     const bySquareService = require('./bySquareService');
+    
+    // Get tenant-specific email configuration to determine template folder
+    const emailConfig = this.getTenantEmailConfig(user);
+    const senderEmail = emailConfig.emailFrom;
     
     // Prepare template variables from actual backend data structure
     const templateVariables = {
@@ -561,9 +569,9 @@ class SMTP2GOService {
       bank_account: templateVariables.bank_account
     });
 
-    // Get processed email template
+    // Get processed email template with sender-specific template folder
     console.log('📧 [EMAIL DEBUG] Getting email template with variables...');
-    const emailData = await emailTemplateService.getEmailTemplate('reservation-confirmed', templateVariables);
+    const emailData = await emailTemplateService.getEmailTemplate('reservation-confirmed', templateVariables, senderEmail);
     console.log('📧 [EMAIL DEBUG] Email template processed successfully');
     
     // Set subject to match exact specification
@@ -649,8 +657,12 @@ class SMTP2GOService {
   }
 
   // Customer notification when admin edits reservation
-  async sendCustomerReservationEdited(to, reservationData) {
+  async sendCustomerReservationEdited(to, reservationData, user = null) {
     const emailTemplateService = require('./emailTemplateService');
+    
+    // Get tenant-specific email configuration to determine template folder
+    const emailConfig = this.getTenantEmailConfig(user);
+    const senderEmail = emailConfig.emailFrom;
     
     // Prepare template variables from actual backend data structure
     const templateVariables = {
@@ -663,14 +675,14 @@ class SMTP2GOService {
       link_view: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}`
     };
 
-    // Get processed email template
-    const emailData = await emailTemplateService.getEmailTemplate('reservation-edited', templateVariables);
+    // Get processed email template with sender-specific template folder
+    const emailData = await emailTemplateService.getEmailTemplate('reservation-edited', templateVariables, senderEmail);
     
     // Set subject to match exact specification
     const subject = '🔄 Zmena rezervácie';
     
     // Send email
-    const emailResult = await this.sendEmail(to, subject, emailData.html);
+    const emailResult = await this.sendEmail(to, subject, emailData.html, null, user);
     
     // Send SMS if phone number available
     try {
@@ -689,8 +701,12 @@ class SMTP2GOService {
   }
 
   // Customer cancellation email when admin cancels reservation
-  async sendCustomerCancellationNotification(to, cancellationData) {
+  async sendCustomerCancellationNotification(to, cancellationData, user = null) {
     const emailTemplateService = require('./emailTemplateService');
+    
+    // Get tenant-specific email configuration to determine template folder
+    const emailConfig = this.getTenantEmailConfig(user);
+    const senderEmail = emailConfig.emailFrom;
     
     // Prepare template variables from actual backend data structure
     const templateVariables = {
@@ -701,14 +717,14 @@ class SMTP2GOService {
       link_new: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/booking`
     };
 
-    // Get processed email template
-    const emailData = await emailTemplateService.getEmailTemplate('reservation-cancelled', templateVariables);
+    // Get processed email template with sender-specific template folder
+    const emailData = await emailTemplateService.getEmailTemplate('reservation-cancelled', templateVariables, senderEmail);
     
     // Set subject to match exact specification
     const subject = '❌ Rezervácia zrušená';
     
     // Send email
-    const emailResult = await this.sendEmail(to, subject, emailData.html);
+    const emailResult = await this.sendEmail(to, subject, emailData.html, null, user);
     
     // Send SMS if phone number available
     try {
@@ -726,8 +742,12 @@ class SMTP2GOService {
   }
 
   // Customer 24-hour reminder email
-  async sendCustomerReservationReminder24(to, reservationData) {
+  async sendCustomerReservationReminder24(to, reservationData, user = null) {
     const emailTemplateService = require('./emailTemplateService');
+    
+    // Get tenant-specific email configuration to determine template folder
+    const emailConfig = this.getTenantEmailConfig(user);
+    const senderEmail = emailConfig.emailFrom;
     
     // Get pickup location from settings
     const pickupLocation = await this.getPickupLocation(reservationData.tenantId);
@@ -743,14 +763,14 @@ class SMTP2GOService {
       pickup_location: pickupLocation
     };
 
-    // Get processed email template
-    const emailData = await emailTemplateService.getEmailTemplate('reservation-reminder24', templateVariables);
+    // Get processed email template with sender-specific template folder
+    const emailData = await emailTemplateService.getEmailTemplate('reservation-reminder24', templateVariables, senderEmail);
     
     // Set subject to match exact specification
     const subject = '⏰ Pripomienka: Rezervácia zajtra';
     
     // Send email
-    const emailResult = await this.sendEmail(to, subject, emailData.html);
+    const emailResult = await this.sendEmail(to, subject, emailData.html, null, user);
     
     // Send SMS if phone number available
     try {
@@ -768,8 +788,12 @@ class SMTP2GOService {
   }
 
   // Customer review request email (24h after trip ends)
-  async sendCustomerReviewRequest(to, reservationData) {
+  async sendCustomerReviewRequest(to, reservationData, user = null) {
     const emailTemplateService = require('./emailTemplateService');
+    
+    // Get tenant-specific email configuration to determine template folder
+    const emailConfig = this.getTenantEmailConfig(user);
+    const senderEmail = emailConfig.emailFrom;
     
     // Prepare template variables from actual backend data structure
     const templateVariables = {
@@ -781,14 +805,14 @@ class SMTP2GOService {
       feedback_form_link: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/feedback?reservation=${reservationData.reservationNumber}`
     };
 
-    // Get processed email template
-    const emailData = await emailTemplateService.getEmailTemplate('leave-review', templateVariables);
+    // Get processed email template with sender-specific template folder
+    const emailData = await emailTemplateService.getEmailTemplate('leave-review', templateVariables, senderEmail);
     
     // Set subject to match exact specification
     const subject = '⭐ Ako sa Vám páčila jazda?';
     
     // Send email
-    const emailResult = await this.sendEmail(to, subject, emailData.html);
+    const emailResult = await this.sendEmail(to, subject, emailData.html, null, user);
     
     // Send SMS if phone number available
     try {
