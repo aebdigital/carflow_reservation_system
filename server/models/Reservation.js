@@ -16,6 +16,29 @@ const reservationSchema = new mongoose.Schema({
     ref: 'User',
     required: [true, 'Customer is required']
   },
+  // Company information for business customers
+  firma: {
+    isCompany: {
+      type: Boolean,
+      default: false
+    },
+    companyName: {
+      type: String,
+      default: null
+    },
+    ico: {
+      type: String, // IČO - Identification number of organization
+      default: null
+    },
+    dic: {
+      type: String, // DIČ - Tax identification number
+      default: null
+    },
+    icDph: {
+      type: String, // IČ DPH - VAT registration number
+      default: null
+    }
+  },
   car: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Car',

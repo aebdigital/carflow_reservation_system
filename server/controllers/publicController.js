@@ -514,6 +514,13 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     licenseNumber,
     licenseExpiry,
     
+    // Company/Firma details
+    isCompany,
+    companyName,
+    ico,
+    dic,
+    icDph,
+    
     // Reservation details
     carId,
     startDate,
@@ -970,6 +977,14 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       status: 'pending', // 🔧 ADMIN APPROVAL: Set to pending, requires admin confirmation
       pricing: finalPricing, // Use calculated or frontend pricing
       appliedDiscountCodes,
+      // Company/Firma information
+      firma: {
+        isCompany: Boolean(isCompany),
+        companyName: isCompany ? (companyName || null) : null,
+        ico: isCompany ? (ico || null) : null,
+        dic: isCompany ? (dic || null) : null,
+        icDph: isCompany ? (icDph || null) : null
+      },
       additionalDrivers: additionalDrivers || [],
       specialRequests: specialRequests || '',
       notes: notes || '',
@@ -1228,6 +1243,13 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     address,
     licenseNumber,
     licenseExpiry,
+    
+    // Company/Firma details
+    isCompany,
+    companyName,
+    ico,
+    dic,
+    icDph,
     
     // Reservation details
     carId,
@@ -1647,6 +1669,14 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       dropoffLocation: defaultDropoff,
       status: 'pending', // 🔧 ADMIN APPROVAL: Set to pending, requires admin confirmation
       pricing: finalPricing, // Use calculated or frontend pricing
+      // Company/Firma information
+      firma: {
+        isCompany: Boolean(isCompany),
+        companyName: isCompany ? (companyName || null) : null,
+        ico: isCompany ? (ico || null) : null,
+        dic: isCompany ? (dic || null) : null,
+        icDph: isCompany ? (icDph || null) : null
+      },
       additionalDrivers: additionalDrivers || [],
       specialRequests: specialRequests || '',
       notes: notes || '',

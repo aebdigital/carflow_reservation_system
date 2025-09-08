@@ -755,6 +755,26 @@ function Reservations() {
                             <Typography variant="caption" color="text.secondary">
                               {reservation.customer.email}
                             </Typography>
+                            {/* Company information display */}
+                            {reservation.firma?.isCompany && (
+                              <Box sx={{ mt: 0.5 }}>
+                                <Chip 
+                                  label="Firma" 
+                                  size="small" 
+                                  color="primary" 
+                                  variant="outlined"
+                                  sx={{ mr: 0.5, fontSize: '0.7rem', height: 18 }}
+                                />
+                                <Typography variant="caption" color="primary" sx={{ fontWeight: 'medium' }}>
+                                  {reservation.firma.companyName}
+                                </Typography>
+                                {reservation.firma.ico && (
+                                  <Typography variant="caption" color="text.secondary" display="block">
+                                    IČO: {reservation.firma.ico}
+                                  </Typography>
+                                )}
+                              </Box>
+                            )}
                           </Box>
                         ) : (
                           'N/A'
@@ -1003,6 +1023,26 @@ function Reservations() {
                             <Typography variant="caption" color="text.secondary">
                               {reservation.customer.email}
                             </Typography>
+                            {/* Company information display */}
+                            {reservation.firma?.isCompany && (
+                              <Box sx={{ mt: 0.5 }}>
+                                <Chip 
+                                  label="Firma" 
+                                  size="small" 
+                                  color="primary" 
+                                  variant="outlined"
+                                  sx={{ mr: 0.5, fontSize: '0.7rem', height: 18 }}
+                                />
+                                <Typography variant="caption" color="primary" sx={{ fontWeight: 'medium' }}>
+                                  {reservation.firma.companyName}
+                                </Typography>
+                                {reservation.firma.ico && (
+                                  <Typography variant="caption" color="text.secondary" display="block">
+                                    IČO: {reservation.firma.ico}
+                                  </Typography>
+                                )}
+                              </Box>
+                            )}
                           </Box>
                         ) : (
                           'N/A'
@@ -1138,6 +1178,26 @@ function Reservations() {
                             <Typography variant="caption" color="text.secondary">
                               {reservation.customer.email}
                             </Typography>
+                            {/* Company information display */}
+                            {reservation.firma?.isCompany && (
+                              <Box sx={{ mt: 0.5 }}>
+                                <Chip 
+                                  label="Firma" 
+                                  size="small" 
+                                  color="primary" 
+                                  variant="outlined"
+                                  sx={{ mr: 0.5, fontSize: '0.7rem', height: 18 }}
+                                />
+                                <Typography variant="caption" color="primary" sx={{ fontWeight: 'medium' }}>
+                                  {reservation.firma.companyName}
+                                </Typography>
+                                {reservation.firma.ico && (
+                                  <Typography variant="caption" color="text.secondary" display="block">
+                                    IČO: {reservation.firma.ico}
+                                  </Typography>
+                                )}
+                              </Box>
+                            )}
                           </Box>
                         ) : (
                           'N/A'
@@ -1290,6 +1350,26 @@ function Reservations() {
                             <Typography variant="caption" color="text.secondary">
                               {reservation.customer.email}
                             </Typography>
+                            {/* Company information display */}
+                            {reservation.firma?.isCompany && (
+                              <Box sx={{ mt: 0.5 }}>
+                                <Chip 
+                                  label="Firma" 
+                                  size="small" 
+                                  color="primary" 
+                                  variant="outlined"
+                                  sx={{ mr: 0.5, fontSize: '0.7rem', height: 18 }}
+                                />
+                                <Typography variant="caption" color="primary" sx={{ fontWeight: 'medium' }}>
+                                  {reservation.firma.companyName}
+                                </Typography>
+                                {reservation.firma.ico && (
+                                  <Typography variant="caption" color="text.secondary" display="block">
+                                    IČO: {reservation.firma.ico}
+                                  </Typography>
+                                )}
+                              </Box>
+                            )}
                           </Box>
                         ) : (
                           'N/A'
@@ -1436,6 +1516,33 @@ function Reservations() {
                             <Typography variant="body2" color="text.secondary">
                               Občiansky preukaz: {selectedReservation.customer.licenseNumber}
                             </Typography>
+                          )}
+                          
+                          {/* Company Information */}
+                          {selectedReservation.firma?.isCompany && (
+                            <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                              <Typography variant="subtitle2" color="primary" gutterBottom>
+                                Firemné údaje
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Názov firmy: {selectedReservation.firma.companyName}
+                              </Typography>
+                              {selectedReservation.firma.ico && (
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                  IČO: {selectedReservation.firma.ico}
+                                </Typography>
+                              )}
+                              {selectedReservation.firma.dic && (
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                  DIČ: {selectedReservation.firma.dic}
+                                </Typography>
+                              )}
+                              {selectedReservation.firma.icDph && (
+                                <Typography variant="body2" color="text.secondary">
+                                  IČ DPH: {selectedReservation.firma.icDph}
+                                </Typography>
+                              )}
+                            </Box>
                           )}
                         </>
                       ) : (
