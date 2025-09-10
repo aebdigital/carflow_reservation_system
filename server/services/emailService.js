@@ -81,10 +81,16 @@ class EmailService {
     return await smtp2goService.sendCustomerReservationEdited(customerEmail, reservationData, user);
   }
 
-  // Customer 24-hour reminder notification
+  // Customer 24-hour reminder notification (before pickup)
   async sendCustomerReservationReminder24(customerEmail, reservationData, user = null) {
     // Use SMTP2GO service which has the correct implementation
     return await smtp2goService.sendCustomerReservationReminder24(customerEmail, reservationData, user);
+  }
+
+  // Customer 24-hour return reminder notification (before return date)
+  async sendCustomerReturnReminder24(customerEmail, reservationData, user = null) {
+    // Use SMTP2GO service which has the correct implementation
+    return await smtp2goService.sendCustomerReturnReminder24(customerEmail, reservationData, user);
   }
 
   // Customer review request (24h after trip ends)

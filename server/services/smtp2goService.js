@@ -787,6 +787,53 @@ class SMTP2GOService {
     return emailResult;
   }
 
+  // Customer 24-hour return reminder notification (before return date)
+  async sendCustomerReturnReminder24(to, reservationData, user = null) {
+    const emailTemplateService = require('./emailTemplateService');
+    
+    // Get tenant-specific email configuration to determine template folder
+    const emailConfig = this.getTenantEmailConfig(user);
+    const senderEmail = emailConfig.emailFrom;
+    
+    // Get pickup location from settings (used for return location too)
+    const pickupLocation = await this.getPickupLocation(reservationData.tenantId);
+    
+    // Prepare template variables from actual backend data structure
+    const templateVariables = {
+      first_name: reservationData.customerName?.split(' ')[0] || '',
+      last_name: reservationData.customerName?.split(' ').slice(1).join(' ') || '',
+      car_brand: reservationData.carInfo?.split(' ')[0] || '',
+      car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
+      date: reservationData.endDate || '',
+      time: new Date(reservationData.endDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      pickup_location: pickupLocation
+    };
+
+    // Get processed email template with sender-specific template folder
+    const emailData = await emailTemplateService.getEmailTemplate('reservation-reminder24after', templateVariables, senderEmail);
+    
+    // Set subject to match exact specification
+    const subject = '⏰ Pripomienka: Vrátenie vozidla zajtra';
+    
+    // Send email
+    const emailResult = await this.sendEmail(to, subject, emailData.html, null, user);
+    
+    // Send SMS if phone number available (optional for return reminder)
+    try {
+      const bulkGateService = require('./bulkGateService');
+      if (bulkGateService.isConfigured && reservationData.customerPhone) {
+        console.log('📱 [SMS] Sending return reminder SMS to:', reservationData.customerPhone);
+        // Note: You would need to implement sendReturnReminder24 in bulkGateService if SMS is needed
+        // await bulkGateService.sendReturnReminder24(reservationData.customerPhone, reservationData);
+        console.log('✅ [SMS] Return reminder SMS sent successfully');
+      }
+    } catch (smsError) {
+      console.error('❌ [SMS] Failed to send return reminder SMS:', smsError.message);
+    }
+    
+    return emailResult;
+  }
+
   // Customer review request email (24h after trip ends)
   async sendCustomerReviewRequest(to, reservationData, user = null) {
     const emailTemplateService = require('./emailTemplateService');

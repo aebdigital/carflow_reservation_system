@@ -332,8 +332,17 @@ const reservationSchema = new mongoose.Schema({
     }
   },
 
-  // 24-hour reminder tracking
+  // 24-hour reminder tracking (before pickup)
   reminder24h: {
+    sent: {
+      type: Boolean,
+      default: false
+    },
+    sentAt: Date
+  },
+
+  // 24-hour return reminder tracking (before return date)
+  returnReminder24h: {
     sent: {
       type: Boolean,
       default: false

@@ -53,6 +53,7 @@ class ReminderScheduler {
       console.log('🔍 [REMINDER] Checking for reminders and review requests...');
 
       await this.checkPreTripReminders();
+      await this.checkReturnReminders();
       await this.checkPostTripReviewRequests();
 
     } catch (error) {
@@ -95,6 +96,45 @@ class ReminderScheduler {
       }
     } catch (error) {
       console.error('❌ [REMINDER] Error checking pre-trip reminders:', error.message);
+    }
+  }
+
+  /**
+   * Check for reservations that need 24-hour return reminders
+   */
+  async checkReturnReminders() {
+    try {
+      // Calculate time window: 24-25 hours from now
+      const now = new Date();
+      const reminderStart = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+      const reminderEnd = new Date(now.getTime() + 25 * 60 * 60 * 1000);   // 25 hours from now
+
+      // Find confirmed reservations ending in 24-25 hours that haven't been reminded yet
+      const reservations = await Reservation.find({
+        status: 'confirmed',
+        endDate: {
+          $gte: reminderStart,
+          $lte: reminderEnd
+        },
+        // Only send reminder once - check if we haven't sent it yet
+        'returnReminder24h.sent': { $ne: true }
+      }).populate([
+        { path: 'customer', select: 'firstName lastName email phone' },
+        { path: 'car', select: 'brand model year registrationNumber pricing' },
+        { path: 'createdBy', select: 'email tenantId' }
+      ]);
+
+      console.log(`📧 [RETURN REMINDER] Found ${reservations.length} reservations needing 24h return reminders`);
+
+      for (const reservation of reservations) {
+        await this.sendReturnReminderEmail(reservation);
+      }
+
+      if (reservations.length > 0) {
+        console.log(`✅ [RETURN REMINDER] Processed ${reservations.length} return reminder emails`);
+      }
+    } catch (error) {
+      console.error('❌ [RETURN REMINDER] Error checking return reminders:', error.message);
     }
   }
 
@@ -168,6 +208,44 @@ class ReminderScheduler {
 
     } catch (error) {
       console.error('❌ [REMINDER] Failed to send reminder for reservation:', reservation.reservationNumber, error.message);
+    }
+  }
+
+  /**
+   * Send 24-hour return reminder email for a specific reservation
+   */
+  async sendReturnReminderEmail(reservation) {
+    try {
+      if (!reservation.customer || !reservation.customer.email) {
+        console.log('⚠️ [RETURN REMINDER] Skipping return reminder - no customer email for reservation:', reservation.reservationNumber);
+        return;
+      }
+
+      if (!emailService.isConfigured) {
+        console.log('⚠️ [RETURN REMINDER] Email service not configured - skipping return reminder');
+        return;
+      }
+
+      // Prepare email data using existing helper
+      const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
+      
+      // Get the admin/tenant user for tenant-specific email templates
+      const adminUser = reservation.createdBy || null;
+      
+      // Send 24-hour return reminder email
+      await emailService.sendCustomerReturnReminder24(reservation.customer.email, emailData, adminUser);
+
+      // Mark return reminder as sent
+      reservation.returnReminder24h = {
+        sent: true,
+        sentAt: new Date()
+      };
+      await reservation.save();
+
+      console.log('✅ [RETURN REMINDER] 24h return reminder sent to:', reservation.customer.email, 'for reservation:', reservation.reservationNumber);
+
+    } catch (error) {
+      console.error('❌ [RETURN REMINDER] Failed to send return reminder for reservation:', reservation.reservationNumber, error.message);
     }
   }
 
