@@ -165,7 +165,7 @@ async function sendReservationEmails(reservation, car, customer, user = null) {
       console.log('📧 [EMAIL] Customer email user context:', user ? { email: user.email, tenantId: user.tenantId } : 'No user context');
       console.log('📧 [EMAIL] Actual recipient should be:', customer.email, 'NOT admin email');
       
-      const customerResult = await emailService.sendCustomerReservationConfirmation(customer.email, emailData, user);
+      const customerResult = await emailService.sendCustomerReservationConfirmation(customer.email, emailData, user, reservation);
       results.push({ type: 'customer_email', success: true, result: customerResult });
       console.log('✅ [EMAIL] Customer confirmation sent successfully to:', customer.email);
     } catch (customerError) {

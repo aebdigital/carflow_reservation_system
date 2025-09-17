@@ -56,13 +56,13 @@ const userSchema = new mongoose.Schema({
   },
   licenseNumber: {
     type: String,
-    required: function() { return this.role === 'customer'; },
+    required: false, // Made optional to support public API customers without license
     unique: true,
     sparse: true
   },
   licenseExpiry: {
     type: Date,
-    required: function() { return this.role === 'customer'; }
+    required: false // Made optional to support public API customers without license
   },
   idNumber: {
     type: String, // Číslo OP (ID card number)

@@ -400,8 +400,17 @@ class SMTP2GOService {
   }
 
   // Customer confirmation email for new reservation
-  async sendCustomerReservationConfirmation(to, reservationData, user = null) {
+  async sendCustomerReservationConfirmation(to, reservationData, user = null, rawReservation = null) {
+    console.log('📧 [SMTP2GO DEBUG] sendCustomerReservationConfirmation called with:', {
+      to: to,
+      hasReservationData: !!reservationData,
+      hasRawReservation: !!rawReservation,
+      rawReservationId: rawReservation?._id,
+      rawReservationQrCodes: !!rawReservation?.qrCodes
+    });
+    
     const emailTemplateService = require('./emailTemplateService');
+    const bySquareService = require('./bySquareService');
     
     // Get tenant-specific email configuration to determine template folder
     const emailConfig = this.getTenantEmailConfig(user);
@@ -413,8 +422,117 @@ class SMTP2GOService {
       last_name: reservationData.customerName?.split(' ').slice(1).join(' ') || '',
       car_brand: reservationData.carInfo?.split(' ')[0] || '',
       car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
-      link_view: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}`
+      link_view: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}`,
+      current_year: new Date().getFullYear()
     };
+
+    // Add QR code data if available (same logic as confirmed email)
+    console.log('🔍 [EMAIL] Checking QR codes for confirmation email:', {
+      hasQrCodes: !!rawReservation?.qrCodes,
+      qrCodesKeys: rawReservation?.qrCodes ? Object.keys(rawReservation.qrCodes) : [],
+      payBySquareRental: !!rawReservation?.qrCodes?.payBySquareRental,
+      payBySquareDeposit: !!rawReservation?.qrCodes?.payBySquareDeposit,
+      payBySquare: !!rawReservation?.qrCodes?.payBySquare
+    });
+    
+    if (rawReservation?.qrCodes) {
+      console.log('📱 [EMAIL] Adding QR codes to confirmation email template');
+      
+      const qrCodes = rawReservation.qrCodes;
+      
+      // Calculate amounts for display
+      const rentalAmount = rawReservation.pricing?.totalAmount || 0;
+      
+      // Check all possible deposit sources (consistent with bySquareService)
+      let depositAmount = rawReservation.car?.pricing?.deposit || rawReservation.car?.deposit || rawReservation.pricing?.deposit || 0;
+      
+      // TEMPORARY: If no deposit configured anywhere, use default for testing (must match bySquareService)
+      if (depositAmount === 0) {
+        depositAmount = 200; // Default test deposit amount
+        console.log('⚠️ [EMAIL] No deposit configured anywhere, using default test amount: 200€');
+      }
+      
+      // Handle different QR code formats
+      const hasNewFormat = !!(qrCodes.payBySquareRental || qrCodes.payBySquareDeposit);
+      const hasLegacyFormat = !!(qrCodes.payBySquare && !hasNewFormat);
+      
+      if (hasNewFormat) {
+        console.log('📱 [EMAIL] Using new separate QR format');
+        
+        // New format: separate QR codes for rental and deposit
+        const rentalQRCode = qrCodes.payBySquareRental;
+        const depositQRCode = qrCodes.payBySquareDeposit;
+        
+        if (rentalQRCode) {
+          templateVariables.qr_section_display = 'block';
+          templateVariables.qr_rental_display = 'block';
+          templateVariables.rental_amount = rentalAmount.toFixed(2);
+          templateVariables.qr_rental_url = bySquareService.generateQRImageUrl(rentalQRCode, 'png', 300);
+          
+          const baseVariableSymbol = qrCodes.variableSymbol || rawReservation.reservationNumber?.replace(/[^0-9]/g, '')?.slice(-9)?.padStart(9, '0') || '000000000';
+          templateVariables.variable_symbol = baseVariableSymbol.slice(0, -1) + '1';
+          templateVariables.bank_account = qrCodes.bankAccount || 'SK6807200000000000000000';
+          templateVariables.total_amount = (rentalAmount + depositAmount).toFixed(2);
+          
+          console.log('✅ [EMAIL] Added rental QR code data');
+        }
+        
+        if (depositQRCode && depositAmount > 0) {
+          templateVariables.qr_deposit_display = 'block';
+          templateVariables.deposit_amount = depositAmount.toFixed(2);
+          templateVariables.qr_deposit_url = bySquareService.generateQRImageUrl(depositQRCode, 'png', 300);
+          
+          console.log('✅ [EMAIL] Added deposit QR code data');
+        } else {
+          templateVariables.qr_deposit_display = 'none';
+        }
+        
+      } else if (hasLegacyFormat) {
+        console.log('📱 [EMAIL] Using legacy combined QR format');
+        
+        // Legacy format: one QR code for total amount (rental + deposit)
+        const legacyQRCode = qrCodes.payBySquare;
+        const totalAmount = (rentalAmount + depositAmount);
+        
+        if (legacyQRCode) {
+          templateVariables.qr_section_display = 'block';
+          templateVariables.qr_rental_display = 'block';
+          templateVariables.rental_amount = totalAmount.toFixed(2);
+          templateVariables.qr_rental_url = bySquareService.generateQRImageUrl(legacyQRCode, 'png', 300);
+          templateVariables.variable_symbol = qrCodes.variableSymbol || '0000000000';
+          templateVariables.bank_account = qrCodes.bankAccount || 'SK6807200000000000000000';
+          templateVariables.total_amount = totalAmount.toFixed(2);
+          
+          // Hide deposit section for legacy format
+          templateVariables.qr_deposit_display = 'none';
+          
+          console.log('✅ [EMAIL] Added legacy combined QR code data');
+        }
+      } else {
+        templateVariables.qr_section_display = 'none';
+        console.log('ℹ️ [EMAIL] No valid QR codes found for email template');
+      }
+    } else {
+      console.log('❌ [EMAIL] No QR codes object found in reservation');
+      templateVariables.qr_section_display = 'none';
+    }
+
+    // Set default values if QR codes are not available
+    if (!templateVariables.qr_section_display || templateVariables.qr_section_display === 'none') {
+      templateVariables.qr_section_display = 'none';
+      templateVariables.qr_rental_display = 'none';
+      templateVariables.qr_deposit_display = 'none';
+    }
+
+    // Log template variables for debugging
+    console.log('📧 [EMAIL DEBUG] Final confirmation template variables:', {
+      qr_section_display: templateVariables.qr_section_display,
+      qr_rental_url: templateVariables.qr_rental_url ? 'SET' : 'NOT SET',
+      qr_deposit_url: templateVariables.qr_deposit_url ? 'SET' : 'NOT SET',
+      qr_deposit_display: templateVariables.qr_deposit_display,
+      rental_amount: templateVariables.rental_amount,
+      deposit_amount: templateVariables.deposit_amount
+    });
 
     // Get processed email template with sender-specific template folder
     const emailData = await emailTemplateService.getEmailTemplate('reservation-confirmation', templateVariables, senderEmail);

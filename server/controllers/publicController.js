@@ -629,8 +629,8 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
   console.log('🔧 [TENANT FIX] Customer email:', finalCustomerEmail);
 
   // Validate required fields
-  if (!firstName || !lastName || !finalCustomerEmail || !phone || !licenseNumber || !carId || !startDate || !endDate) {
-    return next(new AppError('Missing required fields: firstName, lastName, email, phone, licenseNumber, carId, startDate, endDate', 400));
+  if (!firstName || !lastName || !finalCustomerEmail || !phone || !carId || !startDate || !endDate) {
+    return next(new AppError('Missing required fields: firstName, lastName, email, phone, carId, startDate, endDate', 400));
   }
 
   // Validate dates
@@ -1313,8 +1313,8 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
   }
 
   // Validate required fields
-  if (!firstName || !lastName || !email || !phone || !licenseNumber || !carId || !startDate || !endDate) {
-    return next(new AppError('Missing required fields: firstName, lastName, email, phone, licenseNumber, carId, startDate, endDate', 400));
+  if (!firstName || !lastName || !email || !phone || !carId || !startDate || !endDate) {
+    return next(new AppError('Missing required fields: firstName, lastName, email, phone, carId, startDate, endDate', 400));
   }
 
   // 🔧 FIX: Get tenant ID from the car being booked
@@ -1418,8 +1418,8 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
         });
         
         // Customer exists in different tenant, create a new one for this tenant
-        // Use a unique license number to avoid conflicts
-        const uniqueLicenseNumber = `${licenseNumber}-${tenantId.toString().slice(-4)}`;
+        // Use a unique license number to avoid conflicts (only if license number provided)
+        const uniqueLicenseNumber = licenseNumber ? `${licenseNumber}-${tenantId.toString().slice(-4)}` : undefined;
         
         console.log('🔄 [PUBLIC CUSTOMER DEBUG] Creating cross-tenant customer with unique license:', uniqueLicenseNumber);
         

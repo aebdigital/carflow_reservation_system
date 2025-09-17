@@ -64,9 +64,9 @@ class EmailService {
   }
 
   // Customer reservation confirmation
-  async sendCustomerReservationConfirmation(customerEmail, reservationData, user = null) {
+  async sendCustomerReservationConfirmation(customerEmail, reservationData, user = null, rawReservation = null) {
     // Use SMTP2GO service which has the correct implementation
-    return await smtp2goService.sendCustomerReservationConfirmation(customerEmail, reservationData, user);
+    return await smtp2goService.sendCustomerReservationConfirmation(customerEmail, reservationData, user, rawReservation);
   }
 
   // Customer reservation confirmed (after admin approval)
