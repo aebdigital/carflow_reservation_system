@@ -480,11 +480,27 @@ function AdditionalServices() {
       }
     });
 
-    // Prepare the sort order updates
-    const updatedServices = items.map((item, index) => ({
-      id: item._id,
-      sortOrder: index
-    }));
+    // Prepare the sort order updates with global ordering
+    let updatedServices;
+    
+    if (selectedCategory === 'all') {
+      // For "all" view, simply assign sequential sort orders
+      updatedServices = items.map((item, index) => ({
+        id: item._id,
+        sortOrder: index
+      }));
+    } else {
+      // For category view, we need to maintain global sort order
+      // Get the minimum and maximum sortOrder from the current category items
+      const categoryServices = services.filter(s => s.category === selectedCategory);
+      const minSortOrder = Math.min(...categoryServices.map(s => s.sortOrder));
+      
+      // Assign new sort orders starting from the minimum, maintaining relative order within category
+      updatedServices = items.map((item, index) => ({
+        id: item._id,
+        sortOrder: minSortOrder + index
+      }));
+    }
 
     try {
       // Send the update to the backend
@@ -695,7 +711,7 @@ function AdditionalServices() {
       <Box sx={{ mb: 3 }}>
         <Tabs
           value={selectedCategory}
-          onChange={(e, value) => setSelectedCategory(value)}
+          onChange={(_, value) => setSelectedCategory(value)}
           variant="scrollable"
           scrollButtons="auto"
         >
