@@ -452,10 +452,18 @@ function AdditionalServices() {
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
 
-    // Create a copy of the current filtered services
-    const items = Array.from(filteredServices);
+    // Create a deep copy of the current filtered services to avoid mutations
+    const items = filteredServices.map(service => ({ ...service }));
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
+
+    // Validate that all items have valid _id fields
+    const hasValidIds = items.every(item => item._id && typeof item._id === 'string' && item._id.length === 24);
+    if (!hasValidIds) {
+      console.error('🔧 [FRONTEND] Some items have invalid _id fields:', items.map(item => ({ name: item.name, _id: item._id })));
+      setError('Chyba: Niektoré služby nemajú platné ID');
+      return;
+    }
 
     // Update the services state optimistically for immediate UI feedback
     setServices(currentServices => {
@@ -512,10 +520,19 @@ function AdditionalServices() {
       }));
     }
 
+    // Debug the items to see what _id looks like
+    console.log('🔧 [FRONTEND] Items being processed:', items.map(item => ({ 
+      name: item.name, 
+      _id: item._id, 
+      _idType: typeof item._id 
+    })));
+
     // Validate the payload before sending
     const isValidPayload = updatedServices.every(service => 
       service.id && 
       typeof service.id === 'string' && 
+      service.id.length === 24 &&  // MongoDB ObjectId is 24 characters
+      /^[0-9a-fA-F]{24}$/.test(service.id) && // Hexadecimal check
       typeof service.sortOrder === 'number' && 
       !isNaN(service.sortOrder) &&
       service.sortOrder >= 0
