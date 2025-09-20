@@ -268,7 +268,11 @@ function AdditionalServiceForm({
                 {(imagePreview || formData.image?.url) && (
                   <Avatar
                     src={imagePreview || formData.image?.url}
-                    sx={{ width: 100, height: 100 }}
+                    sx={{ 
+                      width: 100, 
+                      height: 100, 
+                      backgroundColor: 'transparent' 
+                    }}
                     variant="rounded"
                   />
                 )}

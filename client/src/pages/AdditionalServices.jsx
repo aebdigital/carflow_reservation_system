@@ -608,7 +608,7 @@ function AdditionalServices() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: '#f5f5f5',
+                backgroundColor: 'transparent',
                 borderRadius: 1
               }}>
                 <CardMedia
