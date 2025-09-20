@@ -125,6 +125,19 @@ router.route('/')
     createAdditionalService
   );
 
+// Special routes - MUST come before /:id route to avoid conflicts
+router.get('/category/:category', getServicesByCategory);
+router.get('/vehicle/:vehicleId', getServicesForVehicle);
+router.post('/:id/calculate-price', calculateServicePrice);
+router.put('/sort-order', authorize('admin', 'staff'), updateSortOrder);
+
+// Test endpoint to verify routing works
+router.put('/sort-order-test', authorize('admin', 'staff'), (req, res) => {
+  console.log('🔧 [TEST] Test endpoint hit successfully');
+  res.json({ success: true, message: 'Test endpoint working' });
+});
+
+// /:id routes MUST come after specific routes like /sort-order
 router.route('/:id')
   .get(getAdditionalService)
   .put(
@@ -139,17 +152,5 @@ router.route('/:id')
     authorize('admin'),
     deleteAdditionalService
   );
-
-// Special routes
-router.get('/category/:category', getServicesByCategory);
-router.get('/vehicle/:vehicleId', getServicesForVehicle);
-router.post('/:id/calculate-price', calculateServicePrice);
-// Test endpoint to verify routing works
-router.put('/sort-order-test', authorize('admin', 'staff'), (req, res) => {
-  console.log('🔧 [TEST] Test endpoint hit successfully');
-  res.json({ success: true, message: 'Test endpoint working' });
-});
-
-router.put('/sort-order', authorize('admin', 'staff'), updateSortOrder); // Temporarily bypass validation
 
 module.exports = router; 
