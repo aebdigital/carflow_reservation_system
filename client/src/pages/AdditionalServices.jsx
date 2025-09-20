@@ -547,6 +547,7 @@ function AdditionalServices() {
     try {
       // Send the update to the backend
       console.log('🔧 [FRONTEND] Sending sortOrder update:', updatedServices);
+      console.log('🔧 [FRONTEND] Full payload structure:', JSON.stringify({ services: updatedServices }, null, 2));
       const result = await additionalServicesAPI.updateSortOrder(updatedServices);
       console.log('🔧 [FRONTEND] Sort order update result:', result);
       

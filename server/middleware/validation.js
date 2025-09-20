@@ -219,7 +219,26 @@ const serviceValidation = {
       .withMessage('Services array is required and must not be empty'),
     
     body('services.*.id')
-      .isMongoId()
+      .custom((value, { req, path }) => {
+        console.log(`🔧 [VALIDATION] Checking ID at ${path}:`, value, typeof value);
+        
+        // Check if it's a string
+        if (typeof value !== 'string') {
+          throw new Error(`ID must be a string, got ${typeof value}`);
+        }
+        
+        // Check if it's 24 characters
+        if (value.length !== 24) {
+          throw new Error(`ID must be 24 characters long, got ${value.length}`);
+        }
+        
+        // Check if it's hexadecimal
+        if (!/^[0-9a-fA-F]{24}$/.test(value)) {
+          throw new Error('ID must be a valid hexadecimal string');
+        }
+        
+        return true;
+      })
       .withMessage('Each service must have a valid MongoDB ID'),
     
     body('services.*.sortOrder')
