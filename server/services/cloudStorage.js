@@ -231,63 +231,109 @@ class CloudStorageService {
   async processAndUploadSizes(fileBuffer, folderPath, baseFileName) {
     const name = path.parse(baseFileName).name;
     const ext = path.parse(baseFileName).ext;
+    const isPNG = ext.toLowerCase() === '.png';
 
     const promises = [];
 
+    // Determine output format and content type based on input
+    const outputFormat = isPNG ? 'png' : 'jpeg';
+    const contentType = isPNG ? 'image/png' : 'image/jpeg';
+    const outputExt = isPNG ? '.png' : '.jpg';
+
     // Thumbnail
-    const thumbnailBuffer = await sharp(fileBuffer)
-      .resize(this.imageSettings.sizes.thumbnail.width, this.imageSettings.sizes.thumbnail.height, {
-        fit: 'cover',
-        position: 'center'
-      })
-      .jpeg({ quality: this.imageSettings.quality })
-      .toBuffer();
+    let thumbnailBuffer;
+    if (isPNG) {
+      thumbnailBuffer = await sharp(fileBuffer)
+        .resize(this.imageSettings.sizes.thumbnail.width, this.imageSettings.sizes.thumbnail.height, {
+          fit: 'cover',
+          position: 'center'
+        })
+        .png({ quality: this.imageSettings.quality, compressionLevel: 6 })
+        .toBuffer();
+    } else {
+      thumbnailBuffer = await sharp(fileBuffer)
+        .resize(this.imageSettings.sizes.thumbnail.width, this.imageSettings.sizes.thumbnail.height, {
+          fit: 'cover',
+          position: 'center'
+        })
+        .jpeg({ quality: this.imageSettings.quality })
+        .toBuffer();
+    }
     
     promises.push(this.uploadToGCS(
       thumbnailBuffer, 
-      `${folderPath}/${name}_thumbnail${ext}`,
-      'image/jpeg'
+      `${folderPath}/${name}_thumbnail${outputExt}`,
+      contentType
     ));
 
     // Medium
-    const mediumBuffer = await sharp(fileBuffer)
-      .resize(this.imageSettings.sizes.medium.width, this.imageSettings.sizes.medium.height, {
-        fit: 'inside',
-        withoutEnlargement: true
-      })
-      .jpeg({ quality: this.imageSettings.quality })
-      .toBuffer();
+    let mediumBuffer;
+    if (isPNG) {
+      mediumBuffer = await sharp(fileBuffer)
+        .resize(this.imageSettings.sizes.medium.width, this.imageSettings.sizes.medium.height, {
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .png({ quality: this.imageSettings.quality, compressionLevel: 6 })
+        .toBuffer();
+    } else {
+      mediumBuffer = await sharp(fileBuffer)
+        .resize(this.imageSettings.sizes.medium.width, this.imageSettings.sizes.medium.height, {
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .jpeg({ quality: this.imageSettings.quality })
+        .toBuffer();
+    }
     
     promises.push(this.uploadToGCS(
       mediumBuffer, 
-      `${folderPath}/${name}_medium${ext}`,
-      'image/jpeg'
+      `${folderPath}/${name}_medium${outputExt}`,
+      contentType
     ));
 
     // Large
-    const largeBuffer = await sharp(fileBuffer)
-      .resize(this.imageSettings.sizes.large.width, this.imageSettings.sizes.large.height, {
-        fit: 'inside',
-        withoutEnlargement: true
-      })
-      .jpeg({ quality: this.imageSettings.quality })
-      .toBuffer();
+    let largeBuffer;
+    if (isPNG) {
+      largeBuffer = await sharp(fileBuffer)
+        .resize(this.imageSettings.sizes.large.width, this.imageSettings.sizes.large.height, {
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .png({ quality: this.imageSettings.quality, compressionLevel: 6 })
+        .toBuffer();
+    } else {
+      largeBuffer = await sharp(fileBuffer)
+        .resize(this.imageSettings.sizes.large.width, this.imageSettings.sizes.large.height, {
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .jpeg({ quality: this.imageSettings.quality })
+        .toBuffer();
+    }
     
     promises.push(this.uploadToGCS(
       largeBuffer, 
-      `${folderPath}/${name}_large${ext}`,
-      'image/jpeg'
+      `${folderPath}/${name}_large${outputExt}`,
+      contentType
     ));
 
-    // Original (compressed)
-    const originalBuffer = await sharp(fileBuffer)
-      .jpeg({ quality: this.imageSettings.quality })
-      .toBuffer();
+    // Original (compressed but format preserved)
+    let originalBuffer;
+    if (isPNG) {
+      originalBuffer = await sharp(fileBuffer)
+        .png({ quality: this.imageSettings.quality, compressionLevel: 6 })
+        .toBuffer();
+    } else {
+      originalBuffer = await sharp(fileBuffer)
+        .jpeg({ quality: this.imageSettings.quality })
+        .toBuffer();
+    }
     
     promises.push(this.uploadToGCS(
       originalBuffer, 
-      `${folderPath}/${baseFileName}`,
-      'image/jpeg'
+      `${folderPath}/${name}${outputExt}`,
+      contentType
     ));
 
     return promises;
@@ -623,6 +669,7 @@ class CloudStorageService {
   async processAndUploadBannerSizes(fileBuffer, folderPath, baseFileName) {
     const name = path.parse(baseFileName).name;
     const ext = path.parse(baseFileName).ext;
+    const isPNG = ext.toLowerCase() === '.png';
 
     const promises = [];
 
@@ -634,60 +681,104 @@ class CloudStorageService {
       quality: 95 // Higher quality for banners (vs 85 for regular images)
     };
 
+    // Determine output format and content type based on input
+    const contentType = isPNG ? 'image/png' : 'image/jpeg';
+    const outputExt = isPNG ? '.png' : '.jpg';
+
     // Thumbnail
-    const thumbnailBuffer = await sharp(fileBuffer)
-      .resize(bannerSizes.thumbnail.width, bannerSizes.thumbnail.height, {
-        fit: 'cover',
-        position: 'center'
-      })
-      .jpeg({ quality: bannerSizes.quality })
-      .toBuffer();
+    let thumbnailBuffer;
+    if (isPNG) {
+      thumbnailBuffer = await sharp(fileBuffer)
+        .resize(bannerSizes.thumbnail.width, bannerSizes.thumbnail.height, {
+          fit: 'cover',
+          position: 'center'
+        })
+        .png({ quality: bannerSizes.quality, compressionLevel: 6 })
+        .toBuffer();
+    } else {
+      thumbnailBuffer = await sharp(fileBuffer)
+        .resize(bannerSizes.thumbnail.width, bannerSizes.thumbnail.height, {
+          fit: 'cover',
+          position: 'center'
+        })
+        .jpeg({ quality: bannerSizes.quality })
+        .toBuffer();
+    }
     
     promises.push(this.uploadToGCS(
       thumbnailBuffer, 
-      `${folderPath}/${name}_thumbnail${ext}`,
-      'image/jpeg'
+      `${folderPath}/${name}_thumbnail${outputExt}`,
+      contentType
     ));
 
     // Medium (higher resolution than standard)
-    const mediumBuffer = await sharp(fileBuffer)
-      .resize(bannerSizes.medium.width, bannerSizes.medium.height, {
-        fit: 'inside',
-        withoutEnlargement: true
-      })
-      .jpeg({ quality: bannerSizes.quality })
-      .toBuffer();
+    let mediumBuffer;
+    if (isPNG) {
+      mediumBuffer = await sharp(fileBuffer)
+        .resize(bannerSizes.medium.width, bannerSizes.medium.height, {
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .png({ quality: bannerSizes.quality, compressionLevel: 6 })
+        .toBuffer();
+    } else {
+      mediumBuffer = await sharp(fileBuffer)
+        .resize(bannerSizes.medium.width, bannerSizes.medium.height, {
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .jpeg({ quality: bannerSizes.quality })
+        .toBuffer();
+    }
     
     promises.push(this.uploadToGCS(
       mediumBuffer, 
-      `${folderPath}/${name}_medium${ext}`,
-      'image/jpeg'
+      `${folderPath}/${name}_medium${outputExt}`,
+      contentType
     ));
 
     // Large (Full HD)
-    const largeBuffer = await sharp(fileBuffer)
-      .resize(bannerSizes.large.width, bannerSizes.large.height, {
-        fit: 'inside',
-        withoutEnlargement: true
-      })
-      .jpeg({ quality: bannerSizes.quality })
-      .toBuffer();
+    let largeBuffer;
+    if (isPNG) {
+      largeBuffer = await sharp(fileBuffer)
+        .resize(bannerSizes.large.width, bannerSizes.large.height, {
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .png({ quality: bannerSizes.quality, compressionLevel: 6 })
+        .toBuffer();
+    } else {
+      largeBuffer = await sharp(fileBuffer)
+        .resize(bannerSizes.large.width, bannerSizes.large.height, {
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .jpeg({ quality: bannerSizes.quality })
+        .toBuffer();
+    }
     
     promises.push(this.uploadToGCS(
       largeBuffer, 
-      `${folderPath}/${name}_large${ext}`,
-      'image/jpeg'
+      `${folderPath}/${name}_large${outputExt}`,
+      contentType
     ));
 
-    // Original (highest quality compressed)
-    const originalBuffer = await sharp(fileBuffer)
-      .jpeg({ quality: bannerSizes.quality })
-      .toBuffer();
+    // Original (highest quality compressed but format preserved)
+    let originalBuffer;
+    if (isPNG) {
+      originalBuffer = await sharp(fileBuffer)
+        .png({ quality: bannerSizes.quality, compressionLevel: 6 })
+        .toBuffer();
+    } else {
+      originalBuffer = await sharp(fileBuffer)
+        .jpeg({ quality: bannerSizes.quality })
+        .toBuffer();
+    }
     
     promises.push(this.uploadToGCS(
       originalBuffer, 
-      `${folderPath}/${baseFileName}`,
-      'image/jpeg'
+      `${folderPath}/${name}${outputExt}`,
+      contentType
     ));
 
     return promises;
