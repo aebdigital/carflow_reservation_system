@@ -491,21 +491,54 @@ function AdditionalServices() {
       }));
     } else {
       // For category view, we need to maintain global sort order
-      // Get the minimum and maximum sortOrder from the current category items
+      // Get the minimum sortOrder from the current category items
       const categoryServices = services.filter(s => s.category === selectedCategory);
-      const minSortOrder = Math.min(...categoryServices.map(s => s.sortOrder));
+      
+      if (categoryServices.length === 0) {
+        console.error('🔧 [FRONTEND] No services found for category:', selectedCategory);
+        return;
+      }
+      
+      const sortOrders = categoryServices.map(s => typeof s.sortOrder === 'number' ? s.sortOrder : 0);
+      const minSortOrder = Math.min(...sortOrders);
+      
+      // Ensure minSortOrder is valid
+      const baseSortOrder = isNaN(minSortOrder) ? 0 : minSortOrder;
       
       // Assign new sort orders starting from the minimum, maintaining relative order within category
       updatedServices = items.map((item, index) => ({
         id: item._id,
-        sortOrder: minSortOrder + index
+        sortOrder: baseSortOrder + index
       }));
+    }
+
+    // Validate the payload before sending
+    const isValidPayload = updatedServices.every(service => 
+      service.id && 
+      typeof service.id === 'string' && 
+      typeof service.sortOrder === 'number' && 
+      !isNaN(service.sortOrder) &&
+      service.sortOrder >= 0
+    );
+
+    if (!isValidPayload) {
+      console.error('🔧 [FRONTEND] Invalid payload detected:', updatedServices);
+      setError('Chyba pri vytváraní údajov pre aktualizáciu poradia');
+      return;
     }
 
     try {
       // Send the update to the backend
+      console.log('🔧 [FRONTEND] Sending sortOrder update:', updatedServices);
       const result = await additionalServicesAPI.updateSortOrder(updatedServices);
-      console.log('Sort order update result:', result);
+      console.log('🔧 [FRONTEND] Sort order update result:', result);
+      
+      if (!result.success) {
+        console.error('🔧 [FRONTEND] Validation errors:', result.errors);
+        if (result.errors) {
+          result.errors.forEach(err => console.error(`  - ${err.path}: ${err.msg}`));
+        }
+      }
       
       // Refresh the data to ensure consistency
       await fetchServices();

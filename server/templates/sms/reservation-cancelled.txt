@@ -1,2 +1,2 @@
 RIVAL Autopožičovňa: Vaša rezervácia {car_brand} {car_model} bola zrušená. Radi Vám pomôžeme s novým termínom alebo vozidlom.
-📞 +421 907 633 517
+📞 +421 907 633 517yes

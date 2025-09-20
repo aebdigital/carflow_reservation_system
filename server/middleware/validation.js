@@ -211,6 +211,20 @@ const serviceValidation = {
       .optional()
       .isBoolean()
       .withMessage('isPublic must be a boolean')
+  ],
+
+  sortOrder: [
+    body('services')
+      .isArray({ min: 1 })
+      .withMessage('Services array is required and must not be empty'),
+    
+    body('services.*.id')
+      .isMongoId()
+      .withMessage('Each service must have a valid MongoDB ID'),
+    
+    body('services.*.sortOrder')
+      .isInt({ min: 0 })
+      .withMessage('Each service must have a valid sortOrder (non-negative integer)')
   ]
 };
 
