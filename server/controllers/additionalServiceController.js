@@ -6,6 +6,7 @@ const cloudStorage = require('../services/cloudStorage');
 // @route   GET /api/additional-services
 // @access  Private/Admin
 const getAdditionalServices = asyncHandler(async (req, res, next) => {
+  console.log('🔧 [GET SERVICES] Code updated - latest version running');
   // Start with tenant filter
   const baseQuery = { tenantId: req.user.tenantId };
   
@@ -586,6 +587,10 @@ const calculateServicePrice = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/additional-services/sort-order
 // @access  Private/Admin
 const updateSortOrder = asyncHandler(async (req, res, next) => {
+  console.log('🔧 [SORT ORDER] Route hit! Method:', req.method, 'URL:', req.url);
+  console.log('🔧 [SORT ORDER] Raw body:', req.body);
+  console.log('🔧 [SORT ORDER] Content-Type:', req.headers['content-type']);
+  
   const { services } = req.body; // Array of { id, sortOrder }
   
   console.log('🔧 [SORT ORDER] Received update request:', services);
