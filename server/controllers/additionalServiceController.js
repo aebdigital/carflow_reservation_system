@@ -606,6 +606,22 @@ const updateSortOrder = asyncHandler(async (req, res, next) => {
   }
 
   try {
+    // First, verify all services exist and belong to the tenant
+    const serviceIds = services.map(s => s.id);
+    const existingServices = await AdditionalService.find({
+      _id: { $in: serviceIds },
+      tenantId: req.user.tenantId
+    });
+
+    console.log(`🔧 [SORT ORDER] Found ${existingServices.length} existing services out of ${serviceIds.length} requested`);
+    
+    if (existingServices.length !== serviceIds.length) {
+      const foundIds = existingServices.map(s => s._id.toString());
+      const missingIds = serviceIds.filter(id => !foundIds.includes(id));
+      console.error('🔧 [SORT ORDER] Missing services for tenant:', missingIds);
+      return next(new AppError(`Services not found or not accessible: ${missingIds.join(', ')}`, 404));
+    }
+
     const updatePromises = services.map(({ id, sortOrder }) => {
       console.log(`🔧 [SORT ORDER] Updating service ${id} to sortOrder ${sortOrder}`);
       return AdditionalService.findOneAndUpdate(
