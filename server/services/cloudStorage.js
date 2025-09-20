@@ -233,6 +233,9 @@ class CloudStorageService {
     const ext = path.parse(baseFileName).ext;
     const isPNG = ext.toLowerCase() === '.png';
 
+    console.log(`🖼️ [IMAGE PROCESSING] Processing image: ${baseFileName}`);
+    console.log(`🖼️ [IMAGE PROCESSING] Extension: ${ext}, isPNG: ${isPNG}`);
+
     const promises = [];
 
     // Determine output format and content type based on input
@@ -240,17 +243,22 @@ class CloudStorageService {
     const contentType = isPNG ? 'image/png' : 'image/jpeg';
     const outputExt = isPNG ? '.png' : '.jpg';
 
+    console.log(`🖼️ [IMAGE PROCESSING] Output format: ${outputFormat}, contentType: ${contentType}, outputExt: ${outputExt}`);
+
     // Thumbnail
     let thumbnailBuffer;
     if (isPNG) {
+      console.log(`🖼️ [THUMBNAIL] Processing as PNG with transparency preservation`);
       thumbnailBuffer = await sharp(fileBuffer)
         .resize(this.imageSettings.sizes.thumbnail.width, this.imageSettings.sizes.thumbnail.height, {
           fit: 'cover',
-          position: 'center'
+          position: 'center',
+          background: { r: 0, g: 0, b: 0, alpha: 0 } // Transparent background
         })
-        .png({ quality: this.imageSettings.quality, compressionLevel: 6 })
+        .png({ compressionLevel: 6 })
         .toBuffer();
     } else {
+      console.log(`🖼️ [THUMBNAIL] Processing as JPEG`);
       thumbnailBuffer = await sharp(fileBuffer)
         .resize(this.imageSettings.sizes.thumbnail.width, this.imageSettings.sizes.thumbnail.height, {
           fit: 'cover',
@@ -272,9 +280,10 @@ class CloudStorageService {
       mediumBuffer = await sharp(fileBuffer)
         .resize(this.imageSettings.sizes.medium.width, this.imageSettings.sizes.medium.height, {
           fit: 'inside',
-          withoutEnlargement: true
+          withoutEnlargement: true,
+          background: { r: 0, g: 0, b: 0, alpha: 0 } // Transparent background
         })
-        .png({ quality: this.imageSettings.quality, compressionLevel: 6 })
+        .png({ compressionLevel: 6 })
         .toBuffer();
     } else {
       mediumBuffer = await sharp(fileBuffer)
@@ -298,9 +307,10 @@ class CloudStorageService {
       largeBuffer = await sharp(fileBuffer)
         .resize(this.imageSettings.sizes.large.width, this.imageSettings.sizes.large.height, {
           fit: 'inside',
-          withoutEnlargement: true
+          withoutEnlargement: true,
+          background: { r: 0, g: 0, b: 0, alpha: 0 } // Transparent background
         })
-        .png({ quality: this.imageSettings.quality, compressionLevel: 6 })
+        .png({ compressionLevel: 6 })
         .toBuffer();
     } else {
       largeBuffer = await sharp(fileBuffer)
@@ -322,7 +332,7 @@ class CloudStorageService {
     let originalBuffer;
     if (isPNG) {
       originalBuffer = await sharp(fileBuffer)
-        .png({ quality: this.imageSettings.quality, compressionLevel: 6 })
+        .png({ compressionLevel: 6 })
         .toBuffer();
     } else {
       originalBuffer = await sharp(fileBuffer)
@@ -691,9 +701,10 @@ class CloudStorageService {
       thumbnailBuffer = await sharp(fileBuffer)
         .resize(bannerSizes.thumbnail.width, bannerSizes.thumbnail.height, {
           fit: 'cover',
-          position: 'center'
+          position: 'center',
+          background: { r: 0, g: 0, b: 0, alpha: 0 } // Transparent background
         })
-        .png({ quality: bannerSizes.quality, compressionLevel: 6 })
+        .png({ compressionLevel: 6 })
         .toBuffer();
     } else {
       thumbnailBuffer = await sharp(fileBuffer)
@@ -717,9 +728,10 @@ class CloudStorageService {
       mediumBuffer = await sharp(fileBuffer)
         .resize(bannerSizes.medium.width, bannerSizes.medium.height, {
           fit: 'inside',
-          withoutEnlargement: true
+          withoutEnlargement: true,
+          background: { r: 0, g: 0, b: 0, alpha: 0 } // Transparent background
         })
-        .png({ quality: bannerSizes.quality, compressionLevel: 6 })
+        .png({ compressionLevel: 6 })
         .toBuffer();
     } else {
       mediumBuffer = await sharp(fileBuffer)
@@ -743,9 +755,10 @@ class CloudStorageService {
       largeBuffer = await sharp(fileBuffer)
         .resize(bannerSizes.large.width, bannerSizes.large.height, {
           fit: 'inside',
-          withoutEnlargement: true
+          withoutEnlargement: true,
+          background: { r: 0, g: 0, b: 0, alpha: 0 } // Transparent background
         })
-        .png({ quality: bannerSizes.quality, compressionLevel: 6 })
+        .png({ compressionLevel: 6 })
         .toBuffer();
     } else {
       largeBuffer = await sharp(fileBuffer)
@@ -767,7 +780,7 @@ class CloudStorageService {
     let originalBuffer;
     if (isPNG) {
       originalBuffer = await sharp(fileBuffer)
-        .png({ quality: bannerSizes.quality, compressionLevel: 6 })
+        .png({ compressionLevel: 6 })
         .toBuffer();
     } else {
       originalBuffer = await sharp(fileBuffer)
