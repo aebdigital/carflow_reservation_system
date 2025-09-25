@@ -1,85 +1,105 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rezervácia prijatá</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rezervácia prijatá</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f6f6f6;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .header {
+      background-color: #222;
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    .content {
+      padding: 20px;
+      color: #333;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .car-image {
+      text-align: center;
+      margin: 20px 0;
+    }
+    .car-image img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 6px;
+    }
+    .reservation {
+      background-color: #f1f1f1;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .footer {
+      background-color: #222;
+      color: #fff;
+      padding: 20px;
+      font-size: 13px;
+      text-align: center;
+    }
+    .footer a {
+      color: #fff;
+      text-decoration: none;
+      margin: 0 5px;
+    }
+  </style>
 </head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #000; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff;">
-    <div style="background: white; padding: 30px; border-radius: 8px; border: 1px solid rgb(22, 163, 74);">
-        <div style="text-align: center; border-bottom: 2px solid rgb(22, 163, 74); padding-bottom: 20px; margin-bottom: 30px;">
-            <div style="font-size: 48px; margin: 20px 0;">📥</div>
-            <div style="font-size: 28px; font-weight: bold; color: rgb(22, 163, 74);">RIVAL Autopožičovňa</div>
-        </div>
-        
-        <div>
-            <div style="font-size: 16px; margin: 20px 0; text-align: center; color: #000;">
-                <p>Dobrý deň <strong>{{first_name}} {{last_name}}</strong>,</p>
-            </div>
-            
-            <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 4px solid rgb(22, 163, 74); margin: 20px 0; text-align: center;">
-                <div style="font-size: 20px; font-weight: bold; color: rgb(22, 163, 74);">{{car_brand}} {{car_model}}</div>
-            </div>
-            
-            <div style="font-size: 16px; margin: 20px 0; text-align: center; color: #000;">
-                <p>Vašu rezerváciu vozidla <strong>{{car_brand}} {{car_model}}</strong> sme prijali 👍.</p>
-                <p>Po definitívnom schválení Vás budeme ihneď informovať 📲.</p>
-            </div>
-            
-            <!-- QR Codes Section -->
-            <div style="background-color: rgb(22, 163, 74); color: white; padding: 25px; border-radius: 8px; margin: 25px 0; text-align: center; display: {{qr_section_display}};">
-                <div style="font-size: 18px; font-weight: bold; color: white; margin-bottom: 15px;">💳 QR Kódy pre platbu</div>
-                <p>Pre vaše pohodlie sme pripravili QR kódy pre rýchlu platbu:</p>
-                
-                <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; margin: 20px 0;">
-                    <!-- Rental QR Code -->
-                    <div style="background: white; color: #000; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px; max-width: 250px; display: {{qr_rental_display}};">
-                        <div style="font-weight: bold; color: rgb(22, 163, 74); margin-bottom: 10px; font-size: 16px;">🚗 Nájomné</div>
-                        <div style="font-size: 18px; font-weight: bold; color: #000; margin: 8px 0;">{{rental_amount}} €</div>
-                        <div style="margin: 10px 0;">
-                            <img src="{{qr_rental_url}}" alt="QR kód pre nájomné" style="width: 150px; height: 150px; border: 2px solid #ddd; border-radius: 8px;" />
-                        </div>
-                        <div style="font-size: 12px; color: #666; margin-top: 8px; line-height: 1.4;">Naskenujte QR kód slovenskými bankovými aplikáciami pre platbu nájomného</div>
-                    </div>
-                    
-                    <!-- Deposit QR Code -->
-                    <div style="background: white; color: #000; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px; max-width: 250px; display: {{qr_deposit_display}};">
-                        <div style="font-weight: bold; color: rgb(22, 163, 74); margin-bottom: 10px; font-size: 16px;">🛡️ Depozit</div>
-                        <div style="font-size: 18px; font-weight: bold; color: #000; margin: 8px 0;">{{deposit_amount}} €</div>
-                        <div style="margin: 10px 0;">
-                            <img src="{{qr_deposit_url}}" alt="QR kód pre depozit" style="width: 150px; height: 150px; border: 2px solid #ddd; border-radius: 8px;" />
-                        </div>
-                        <div style="font-size: 12px; color: #666; margin-top: 8px; line-height: 1.4;">Naskenujte QR kód slovenskými bankovými aplikáciami pre platbu depozitu</div>
-                    </div>
-                </div>
-                
-                <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 4px solid rgb(22, 163, 74); margin: 20px 0; font-size: 14px; color: #000;">
-                    <div style="margin: 8px 0; color: #000;"><strong>📋 Variabilný symbol:</strong> {{variable_symbol}}</div>
-                    <div style="margin: 8px 0; color: #000;"><strong>🏦 Bankový účet:</strong> {{bank_account}}</div>
-                    <div style="margin: 8px 0; color: #000;"><strong>💰 Celková suma:</strong> {{total_amount}} €</div>
-                    <div style="font-size: 12px; color: #666; margin-top: 15px; line-height: 1.4;">
-                        <strong>ℹ️ Dôležité:</strong> Platbu je potrebné uhradiť pred prevzatím vozidla. 
-                        Depozit bude vrátená po vrátení vozidla v pôvodnom stave.
-                    </div>
-                </div>
-            </div>
-            
-            <div style="text-align: center; font-size: 16px; margin: 30px 0; color: #000;">
-                <p>Ďakujeme za dôveru 🙏,</p>
-            </div>
-            
-            <div style="text-align: center; margin: 30px 0; font-weight: bold; font-size: 16px; color: #000;">
-                <p>RIVAL Autopožičovňa</p>
-            </div>
-            
-            <div style="text-align: center; font-size: 18px; color: rgb(22, 163, 74); font-weight: bold; margin: 20px 0;">
-                <p>☎️ +421 907 633 517</p>
-            </div>
-        </div>
-        
-        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 14px;">
-            <p>© {{current_year}} RIVAL Autopožičovňa. Všetky práva vyhradené.</p>
-        </div>
+<body>
+  <div class="container">
+    <!-- HEADER -->
+    <div class="header">
+      REZERVÁCIA PRIJATÁ
     </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+      <p>Dobrý deň <strong>{{customer_name}}</strong>, ďakujeme za Vašu žiadosť o rezerváciu.</p>
+
+      <div class="reservation">
+        <p><strong>{{car_name}}</strong></p>
+        <div class="car-image">
+          <img src="{{car_image}}" alt="{{car_name}}">
+        </div>
+        <p>Dátum: <strong>{{start_date}}</strong></p>
+        <p>Čas: <strong>{{start_time}}</strong></p>
+        <p>Trvanie: <strong>{{duration}} dní</strong></p>
+        <p>Celková cena: <strong>{{total_price}} €</strong></p>
+      </div>
+
+      <p>Vašu žiadosť o <strong>{{car_name}}</strong> sme prijali.<br>
+      Rezervácia čaká na potvrdenie.</p>
+
+      <p><strong>IHNEĎ PO POTVRDENÍ VÁM PRÍDE SMS AJ EMAIL.</strong></p>
+
+      <p>
+        <a href="{{manage_reservation_url}}">🔗 Spravovať rezerváciu</a>
+      </p>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      <p>{{company_name}}</p>
+      <p>📧 <a href="mailto:{{company_email}}">{{company_email}}</a></p>
+      <p>📞 {{company_phone}}</p>
+    </div>
+  </div>
 </body>
 </html>
