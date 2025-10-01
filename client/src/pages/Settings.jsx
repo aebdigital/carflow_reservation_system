@@ -38,14 +38,18 @@ import {
   LocationOn as LocationIcon,
   Support as SupportIcon,
   Star as StarIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  Payment as PaymentIcon,
+  Visibility as VisibilityIcon,
+  VisibilityOff as VisibilityOffIcon
 } from '@mui/icons-material'
 import {
   useGetSettingsQuery,
   useAddPickupLocationMutation,
   useUpdatePickupLocationMutation,
   useDeletePickupLocationMutation,
-  useSendSupportContactMutation
+  useSendSupportContactMutation,
+  useUpdateSettingsMutation
 } from '../store/store'
 
 function Settings() {
@@ -54,6 +58,7 @@ function Settings() {
   const [updateLocation] = useUpdatePickupLocationMutation()
   const [deleteLocation] = useDeletePickupLocationMutation()
   const [sendSupportContact] = useSendSupportContactMutation()
+  const [updateSettings] = useUpdateSettingsMutation()
 
   // State for location dialog
   const [locationDialog, setLocationDialog] = useState(false)
@@ -76,6 +81,31 @@ function Settings() {
     message: '',
     urgency: 'normal'
   })
+
+  // State for Stripe configuration
+  const [stripeForm, setStripeForm] = useState({
+    stripeEnabled: false,
+    stripeSecretKey: '',
+    stripePublishableKey: '',
+    stripeWebhookSecret: '',
+    testMode: true
+  })
+  const [showSecretKey, setShowSecretKey] = useState(false)
+  const [showWebhookSecret, setShowWebhookSecret] = useState(false)
+  const [stripeFormChanged, setStripeFormChanged] = useState(false)
+
+  // Initialize Stripe form when settings load
+  React.useEffect(() => {
+    if (settings?.data?.payment) {
+      setStripeForm({
+        stripeEnabled: settings.data.payment.stripeEnabled || false,
+        stripeSecretKey: settings.data.payment.stripeSecretKey || '',
+        stripePublishableKey: settings.data.payment.stripePublishableKey || '',
+        stripeWebhookSecret: settings.data.payment.stripeWebhookSecret || '',
+        testMode: settings.data.payment.testMode ?? true
+      })
+    }
+  }, [settings])
 
   // Snackbar state
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
@@ -170,6 +200,35 @@ function Settings() {
     } catch (error) {
       showSnackbar(error?.data?.message || 'Nastala chyba pri odosielaní správy', 'error')
     }
+  }
+
+  const handleStripeFormChange = (field, value) => {
+    setStripeForm(prev => ({ ...prev, [field]: value }))
+    setStripeFormChanged(true)
+  }
+
+  const handleSaveStripeSettings = async () => {
+    try {
+      // Validate required fields if Stripe is enabled
+      if (stripeForm.stripeEnabled && (!stripeForm.stripeSecretKey || !stripeForm.stripePublishableKey)) {
+        showSnackbar('Stripe Secret Key a Publishable Key sú povinné keď je Stripe zapnutý', 'error')
+        return
+      }
+
+      await updateSettings({
+        payment: stripeForm
+      }).unwrap()
+
+      showSnackbar('Stripe nastavenia boli úspešne uložené')
+      setStripeFormChanged(false)
+    } catch (error) {
+      showSnackbar(error?.data?.message || 'Nastala chyba pri ukladaní Stripe nastavení', 'error')
+    }
+  }
+
+  const handleTestStripeConnection = async () => {
+    // This would test the Stripe connection
+    showSnackbar('Test Stripe pripojenia - funkcia bude pridaná neskôr', 'info')
   }
 
   if (isLoading) {
@@ -289,6 +348,177 @@ function Settings() {
                   </TableBody>
                 </Table>
               </TableContainer>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Stripe Payment Configuration */}
+        <Grid item xs={12}>
+          <Card>
+            <CardHeader
+              title={
+                <Box display="flex" alignItems="center" gap={1}>
+                  <PaymentIcon color="primary" />
+                  <Typography variant="h6">Stripe platobná konfigurácia</Typography>
+                </Box>
+              }
+              action={
+                stripeFormChanged && (
+                  <Button
+                    variant="contained"
+                    onClick={handleSaveStripeSettings}
+                    disabled={stripeForm.stripeEnabled && (!stripeForm.stripeSecretKey || !stripeForm.stripePublishableKey)}
+                  >
+                    Uložiť nastavenia
+                  </Button>
+                )
+              }
+            />
+            <CardContent>
+              <Alert severity="info" sx={{ mb: 3 }}>
+                <Typography variant="body2">
+                  Nakonfigurujte vaše Stripe kľúče pre príjem platieb. Každá spoločnosť musí mať svoj vlastný Stripe účet.
+                </Typography>
+              </Alert>
+
+              <Grid container spacing={3}>
+                {/* Enable Stripe */}
+                <Grid item xs={12}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={stripeForm.stripeEnabled}
+                        onChange={(e) => handleStripeFormChange('stripeEnabled', e.target.checked)}
+                      />
+                    }
+                    label="Povoliť Stripe platby"
+                  />
+                </Grid>
+
+                {stripeForm.stripeEnabled && (
+                  <>
+                    {/* Test Mode */}
+                    <Grid item xs={12}>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={stripeForm.testMode}
+                            onChange={(e) => handleStripeFormChange('testMode', e.target.checked)}
+                          />
+                        }
+                        label="Test režim (použiť test kľúče)"
+                      />
+                      {stripeForm.testMode && (
+                        <Typography variant="caption" color="warning.main" display="block">
+                          ⚠️ V test režime nie sú účtované skutočné platby
+                        </Typography>
+                      )}
+                    </Grid>
+
+                    <Grid item xs={12}>
+                      <Divider />
+                    </Grid>
+
+                    {/* Publishable Key */}
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label={`Stripe Publishable Key (${stripeForm.testMode ? 'test' : 'live'})`}
+                        value={stripeForm.stripePublishableKey}
+                        onChange={(e) => handleStripeFormChange('stripePublishableKey', e.target.value)}
+                        placeholder={stripeForm.testMode ? 'pk_test_...' : 'pk_live_...'}
+                        required
+                        helperText="Začína sa s pk_test_ alebo pk_live_"
+                      />
+                    </Grid>
+
+                    {/* Secret Key */}
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label={`Stripe Secret Key (${stripeForm.testMode ? 'test' : 'live'})`}
+                        type={showSecretKey ? 'text' : 'password'}
+                        value={stripeForm.stripeSecretKey}
+                        onChange={(e) => handleStripeFormChange('stripeSecretKey', e.target.value)}
+                        placeholder={stripeForm.testMode ? 'sk_test_...' : 'sk_live_...'}
+                        required
+                        helperText="Začína sa s sk_test_ alebo sk_live_"
+                        InputProps={{
+                          endAdornment: (
+                            <IconButton
+                              onClick={() => setShowSecretKey(!showSecretKey)}
+                              edge="end"
+                            >
+                              {showSecretKey ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                            </IconButton>
+                          ),
+                        }}
+                      />
+                    </Grid>
+
+                    {/* Webhook Secret */}
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Stripe Webhook Secret"
+                        type={showWebhookSecret ? 'text' : 'password'}
+                        value={stripeForm.stripeWebhookSecret}
+                        onChange={(e) => handleStripeFormChange('stripeWebhookSecret', e.target.value)}
+                        placeholder="whsec_..."
+                        helperText="Webhook endpoint secret z vášho Stripe dashboard"
+                        InputProps={{
+                          endAdornment: (
+                            <IconButton
+                              onClick={() => setShowWebhookSecret(!showWebhookSecret)}
+                              edge="end"
+                            >
+                              {showWebhookSecret ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                            </IconButton>
+                          ),
+                        }}
+                      />
+                    </Grid>
+
+                    {/* Instructions */}
+                    <Grid item xs={12}>
+                      <Alert severity="warning">
+                        <Typography variant="body2" sx={{ mb: 1 }}>
+                          <strong>Inštrukcie pre nastavenie Stripe:</strong>
+                        </Typography>
+                        <Typography variant="body2" component="div">
+                          1. Vytvorte si účet na <strong>stripe.com</strong><br/>
+                          2. V Stripe dashboard idite na <strong>Developers → API keys</strong><br/>
+                          3. Skopírujte vaše kľúče (test alebo live podľa režimu)<br/>
+                          4. V <strong>Developers → Webhooks</strong> pridajte endpoint:<br/>
+                          &nbsp;&nbsp;&nbsp;<code>https://yourdomain.com/api/payments/stripe-webhook</code><br/>
+                          5. Vyberte udalosti: <code>checkout.session.completed</code>, <code>checkout.session.expired</code><br/>
+                          6. Skopírujte webhook secret
+                        </Typography>
+                      </Alert>
+                    </Grid>
+
+                    {/* Action Buttons */}
+                    <Grid item xs={12}>
+                      <Box display="flex" gap={2}>
+                        <Button
+                          variant="outlined"
+                          onClick={handleTestStripeConnection}
+                          disabled={!stripeForm.stripeSecretKey}
+                        >
+                          Test pripojenia
+                        </Button>
+                        <Button
+                          variant="contained"
+                          onClick={handleSaveStripeSettings}
+                          disabled={!stripeFormChanged || (stripeForm.stripeEnabled && (!stripeForm.stripeSecretKey || !stripeForm.stripePublishableKey))}
+                        >
+                          Uložiť nastavenia
+                        </Button>
+                      </Box>
+                    </Grid>
+                  </>
+                )}
+              </Grid>
             </CardContent>
           </Card>
         </Grid>

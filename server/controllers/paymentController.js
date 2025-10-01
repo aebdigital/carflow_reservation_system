@@ -1,9 +1,17 @@
 const Payment = require('../models/Payment');
 const Reservation = require('../models/Reservation');
+const Settings = require('../models/Settings');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
+
+// Helper function to get tenant-specific Stripe instance
+const getTenantStripe = async (tenantId) => {
+  const stripeConfig = await Settings.getStripeConfig(tenantId);
+  const stripe = require('stripe')(stripeConfig.secretKey);
+  return { stripe, config: stripeConfig };
+};
 
 // Demo Stripe-like functions
 const createDemoPaymentIntent = (amount, currency = 'USD') => {
@@ -45,6 +53,257 @@ const processDemoPayment = async (paymentIntentId, paymentMethodType = 'card') =
     application_fee_amount: isSuccess ? 150 : 0 // 3% fee
   };
 };
+
+// @desc    Create Stripe checkout session
+// @route   POST /api/payments/create-checkout-session
+// @access  Public (based on email lookup)
+const createCheckoutSession = asyncHandler(async (req, res, next) => {
+  const { email, amount, currency, description, reservationId, successUrl, cancelUrl } = req.body;
+
+  // Validate required fields
+  if (!email || !amount || !successUrl || !cancelUrl) {
+    return next(new AppError('Email, amount, successUrl, and cancelUrl are required', 400));
+  }
+
+  // Find admin user by email to get tenant context
+  const User = require('../models/User');
+  const admin = await User.findOne({ email: email.toLowerCase(), role: 'admin' });
+
+  if (!admin) {
+    return next(new AppError('No admin found with this email', 404));
+  }
+
+  try {
+    // Get tenant-specific Stripe configuration
+    const { stripe, config } = await getTenantStripe(admin.tenantId);
+    const paymentCurrency = currency || config.currency || 'EUR';
+
+    let reservation = null;
+    if (reservationId) {
+      // Validate reservation exists for this tenant
+      reservation = await Reservation.findOne({
+        _id: reservationId,
+        tenantId: admin.tenantId
+      }).populate('customer').populate('car');
+
+      if (!reservation) {
+        return next(new AppError('Reservation not found', 404));
+      }
+    }
+
+    // Create payment record first
+    const payment = await Payment.create({
+      reservation: reservationId || null,
+      customer: reservation?.customer?._id || null,
+      amount: amount,
+      currency: paymentCurrency.toUpperCase(),
+      status: 'pending',
+      paymentMethod: {
+        type: 'card'
+      },
+      description: description || `Payment for ${admin.firstName || admin.email}'s car rental service`,
+      tenantId: admin.tenantId,
+      createdBy: admin._id
+    });
+
+    // Create Stripe checkout session with tenant-specific Stripe instance
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: paymentCurrency.toLowerCase(),
+            product_data: {
+              name: description || 'Car Rental Service',
+              description: reservation ? `Reservation #${reservation.reservationNumber}` : 'Car rental payment',
+            },
+            unit_amount: Math.round(amount * 100), // Stripe expects amount in cents
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}&payment_id=${payment._id}`,
+      cancel_url: `${cancelUrl}?payment_id=${payment._id}`,
+      customer_email: reservation?.customer?.email || null,
+      metadata: {
+        payment_id: payment._id.toString(),
+        tenant_id: admin.tenantId,
+        reservation_id: reservationId || '',
+      },
+    });
+
+    // Update payment with Stripe session ID
+    payment.stripeSessionId = session.id;
+    await payment.save();
+
+    res.status(200).json({
+      success: true,
+      data: {
+        checkout_url: session.url,
+        session_id: session.id,
+        payment_id: payment._id,
+        test_mode: config.testMode
+      }
+    });
+
+  } catch (stripeError) {
+    // If Stripe fails, clean up the payment record if it was created
+    if (payment) {
+      await Payment.findByIdAndDelete(payment._id);
+    }
+    console.error('Stripe Error:', stripeError);
+
+    if (stripeError.message.includes('Stripe not configured')) {
+      return next(new AppError('Payment system not configured for this rental company. Please contact support.', 503));
+    }
+
+    return next(new AppError(`Payment system error: ${stripeError.message}`, 400));
+  }
+});
+
+// @desc    Handle Stripe webhook
+// @route   POST /api/payments/stripe-webhook
+// @access  Public (Stripe webhook)
+const handleStripeWebhook = asyncHandler(async (req, res, next) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
+
+  // First, we need to determine which tenant this webhook belongs to
+  // We'll try to parse the event without verification first to get metadata
+  let rawEvent;
+  try {
+    rawEvent = JSON.parse(req.body.toString());
+  } catch (parseError) {
+    console.error('Failed to parse webhook body:', parseError.message);
+    return res.status(400).send('Invalid JSON');
+  }
+
+  const paymentId = rawEvent.data?.object?.metadata?.payment_id;
+  const tenantId = rawEvent.data?.object?.metadata?.tenant_id;
+
+  if (!paymentId || !tenantId) {
+    console.error('Missing payment_id or tenant_id in webhook metadata');
+    return res.status(400).send('Missing required metadata');
+  }
+
+  try {
+    // Get tenant-specific Stripe configuration
+    const { config } = await getTenantStripe(tenantId);
+    const stripe = require('stripe')(config.secretKey);
+
+    // Now verify the webhook with the correct secret
+    event = stripe.webhooks.constructEvent(req.body, sig, config.webhookSecret);
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // Handle the event
+  switch (event.type) {
+    case 'checkout.session.completed':
+      const session = event.data.object;
+      const sessionPaymentId = session.metadata.payment_id;
+
+      if (sessionPaymentId) {
+        const payment = await Payment.findById(sessionPaymentId);
+        if (payment) {
+          payment.status = 'succeeded';
+          payment.processedAt = new Date();
+          payment.stripePaymentIntentId = session.payment_intent;
+          payment.invoice.issuedAt = new Date();
+          payment.invoice.paidAt = new Date();
+          await payment.save();
+
+          // Update reservation status if exists
+          if (payment.reservation) {
+            const reservation = await Reservation.findById(payment.reservation);
+            if (reservation && reservation.status === 'pending') {
+              reservation.status = 'confirmed';
+              await reservation.save();
+            }
+          }
+        }
+      }
+      break;
+
+    case 'checkout.session.expired':
+    case 'payment_intent.payment_failed':
+      const failedSession = event.data.object;
+      const failedPaymentId = failedSession.metadata?.payment_id;
+
+      if (failedPaymentId) {
+        const payment = await Payment.findById(failedPaymentId);
+        if (payment) {
+          payment.status = 'failed';
+          payment.failureReason = 'Payment failed or session expired';
+          await payment.save();
+        }
+      }
+      break;
+
+    default:
+      console.log(`Unhandled event type ${event.type} for tenant ${tenantId}`);
+  }
+
+  res.json({ received: true });
+});
+
+// @desc    Verify payment status
+// @route   GET /api/payments/verify/:paymentId
+// @access  Public
+const verifyPayment = asyncHandler(async (req, res, next) => {
+  const { paymentId } = req.params;
+  const { session_id } = req.query;
+
+  const payment = await Payment.findById(paymentId)
+    .populate('reservation')
+    .populate('customer', 'firstName lastName email');
+
+  if (!payment) {
+    return next(new AppError('Payment not found', 404));
+  }
+
+  // If session_id is provided, verify with Stripe
+  if (session_id && payment.stripeSessionId === session_id) {
+    try {
+      // Get tenant-specific Stripe configuration
+      const { stripe } = await getTenantStripe(payment.tenantId);
+      const session = await stripe.checkout.sessions.retrieve(session_id);
+
+      // Update payment status based on Stripe session
+      if (session.payment_status === 'paid' && payment.status !== 'succeeded') {
+        payment.status = 'succeeded';
+        payment.processedAt = new Date();
+        payment.stripePaymentIntentId = session.payment_intent;
+        payment.invoice.issuedAt = new Date();
+        payment.invoice.paidAt = new Date();
+        await payment.save();
+
+        // Update reservation status
+        if (payment.reservation) {
+          const reservation = await Reservation.findById(payment.reservation);
+          if (reservation && reservation.status === 'pending') {
+            reservation.status = 'confirmed';
+            await reservation.save();
+          }
+        }
+      }
+    } catch (stripeError) {
+      console.error('Error verifying Stripe session:', stripeError);
+      // Don't fail the request if Stripe verification fails, just log it
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      payment,
+      status: payment.status,
+      is_paid: payment.status === 'succeeded'
+    }
+  });
+});
 
 // @desc    Create payment intent
 // @route   POST /api/payments/create-payment-intent
@@ -741,6 +1000,9 @@ const getPaymentStats = asyncHandler(async (req, res, next) => {
 });
 
 module.exports = {
+  createCheckoutSession,
+  handleStripeWebhook,
+  verifyPayment,
   createPaymentIntent,
   confirmPayment,
   getPayments,

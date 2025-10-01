@@ -1,5 +1,8 @@
 const express = require('express');
 const {
+  createCheckoutSession,
+  handleStripeWebhook,
+  verifyPayment,
   createPaymentIntent,
   confirmPayment,
   getPayments,
@@ -14,7 +17,12 @@ const { protect, requireStaff, addTenantFilter, restrictRivalDomain } = require(
 
 const router = express.Router();
 
-// Apply protection and tenant filtering to all routes
+// Public routes (no authentication required)
+router.post('/create-checkout-session', createCheckoutSession);
+router.post('/stripe-webhook', express.raw({type: 'application/json'}), handleStripeWebhook);
+router.get('/verify/:paymentId', verifyPayment);
+
+// Apply protection and tenant filtering to protected routes
 router.use(protect);
 router.use(restrictRivalDomain);
 router.use(addTenantFilter);

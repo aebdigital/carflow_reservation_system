@@ -91,6 +91,29 @@ const settingsSchema = new mongoose.Schema({
       type: String,
       default: 'EUR'
     }
+  },
+
+  // Payment Settings
+  payment: {
+    stripeEnabled: {
+      type: Boolean,
+      default: false
+    },
+    stripeSecretKey: {
+      type: String,
+      select: false // Don't include in regular queries for security
+    },
+    stripePublishableKey: {
+      type: String
+    },
+    stripeWebhookSecret: {
+      type: String,
+      select: false // Don't include in regular queries for security
+    },
+    testMode: {
+      type: Boolean,
+      default: true
+    }
   }
 }, {
   timestamps: true
@@ -130,6 +153,23 @@ settingsSchema.methods.getDefaultPickupLocation = function() {
 // Method to get all active pickup locations
 settingsSchema.methods.getActivePickupLocations = function() {
   return this.business.pickupLocations.filter(loc => loc.isActive);
+};
+
+// Static method to get Stripe configuration for a tenant
+settingsSchema.statics.getStripeConfig = async function(tenantId) {
+  const settings = await this.findOne({ tenantId }).select('+payment.stripeSecretKey +payment.stripeWebhookSecret');
+
+  if (!settings || !settings.payment.stripeEnabled || !settings.payment.stripeSecretKey) {
+    throw new Error('Stripe not configured for this tenant');
+  }
+
+  return {
+    secretKey: settings.payment.stripeSecretKey,
+    webhookSecret: settings.payment.stripeWebhookSecret,
+    publishableKey: settings.payment.stripePublishableKey,
+    testMode: settings.payment.testMode,
+    currency: settings.system.currency || 'EUR'
+  };
 };
 
 module.exports = mongoose.model('Settings', settingsSchema);

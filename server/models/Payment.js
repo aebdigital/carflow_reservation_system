@@ -52,6 +52,7 @@ const paymentSchema = new mongoose.Schema({
     }
   },
   stripePaymentIntentId: String,
+  stripeSessionId: String,
   stripeChargeId: String,
   stripeFeeAmount: Number,
   transactionFee: {
