@@ -8,12 +8,12 @@ const paymentSchema = new mongoose.Schema({
   reservation: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Reservation',
-    required: [true, 'Reservation is required']
+    required: false // Made optional for frontend-initiated payments
   },
   customer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'Customer is required']
+    required: false // Made optional for frontend-initiated payments
   },
   amount: {
     type: Number,
@@ -62,7 +62,7 @@ const paymentSchema = new mongoose.Schema({
   breakdown: {
     subtotal: {
       type: Number,
-      required: true
+      required: false // Made optional for frontend-initiated payments
     },
     taxes: [{
       name: String,

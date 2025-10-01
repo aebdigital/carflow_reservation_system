@@ -65,7 +65,7 @@ const createCheckoutSession = asyncHandler(async (req, res, next) => {
     hasCancelUrl: !!req.body.cancelUrl
   });
 
-  const { email, amount, currency, description, reservationId, successUrl, cancelUrl } = req.body;
+  const { email, amount, currency, description, reservationId, successUrl, cancelUrl, customerInfo } = req.body;
 
   // Validate required fields
   if (!email || !amount || !successUrl || !cancelUrl) {
@@ -99,6 +99,8 @@ const createCheckoutSession = asyncHandler(async (req, res, next) => {
     const paymentCurrency = currency || config.currency || 'EUR';
 
     let reservation = null;
+    let customer = null;
+
     if (reservationId) {
       // Validate reservation exists for this tenant
       reservation = await Reservation.findOne({
@@ -109,17 +111,36 @@ const createCheckoutSession = asyncHandler(async (req, res, next) => {
       if (!reservation) {
         return next(new AppError('Reservation not found', 404));
       }
+      customer = reservation.customer;
+    } else if (customerInfo && customerInfo.email) {
+      // For frontend payments, try to find or create customer
+      const User = require('../models/User');
+      customer = await User.findOne({
+        email: customerInfo.email.toLowerCase(),
+        tenantId: admin.tenantId,
+        role: 'customer'
+      });
+
+      // If customer doesn't exist and we have enough info, we could create one
+      // For now, we'll just proceed without a customer record
+      console.log('📋 [STRIPE] Customer lookup result:', customer ? 'Found existing' : 'Not found');
     }
 
     // Create payment record first
     payment = await Payment.create({
       reservation: reservationId || null,
-      customer: reservation?.customer?._id || null,
+      customer: customer?._id || null,
       amount: amount,
       currency: paymentCurrency.toUpperCase(),
       status: 'pending',
       paymentMethod: {
         type: 'card'
+      },
+      breakdown: {
+        subtotal: amount, // Use full amount as subtotal for frontend payments
+        taxes: [],
+        fees: [],
+        discounts: []
       },
       description: description || `Payment for ${admin.firstName || admin.email}'s car rental service`,
       tenantId: admin.tenantId,
@@ -145,7 +166,7 @@ const createCheckoutSession = asyncHandler(async (req, res, next) => {
       mode: 'payment',
       success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}&payment_id=${payment._id}`,
       cancel_url: `${cancelUrl}?payment_id=${payment._id}`,
-      customer_email: reservation?.customer?.email || null,
+      customer_email: customerInfo?.email || customer?.email || null,
       metadata: {
         payment_id: payment._id.toString(),
         tenant_id: admin.tenantId,
