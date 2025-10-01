@@ -96,14 +96,16 @@ function Settings() {
 
   // Initialize Stripe form when settings load
   React.useEffect(() => {
-    if (settings?.data?.payment) {
+    if (settings?.data) {
       setStripeForm({
-        stripeEnabled: settings.data.payment.stripeEnabled || false,
-        stripeSecretKey: settings.data.payment.stripeSecretKey || '',
-        stripePublishableKey: settings.data.payment.stripePublishableKey || '',
-        stripeWebhookSecret: settings.data.payment.stripeWebhookSecret || '',
-        testMode: settings.data.payment.testMode ?? true
+        stripeEnabled: settings.data.payment?.stripeEnabled || false,
+        stripeSecretKey: settings.data.payment?.stripeSecretKey || '',
+        stripePublishableKey: settings.data.payment?.stripePublishableKey || '',
+        stripeWebhookSecret: settings.data.payment?.stripeWebhookSecret || '',
+        testMode: settings.data.payment?.testMode ?? true
       })
+      // Reset the changed flag when loading fresh data
+      setStripeFormChanged(false)
     }
   }, [settings])
 
@@ -380,6 +382,20 @@ function Settings() {
                   Nakonfigurujte vaše Stripe kľúče pre príjem platieb. Každá spoločnosť musí mať svoj vlastný Stripe účet.
                 </Typography>
               </Alert>
+
+              {stripeForm.stripeEnabled && (
+                <Alert
+                  severity={stripeForm.stripeSecretKey && stripeForm.stripePublishableKey ? "success" : "warning"}
+                  sx={{ mb: 3 }}
+                >
+                  <Typography variant="body2">
+                    <strong>Stav konfigurácie:</strong><br/>
+                    • Publishable Key: {stripeForm.stripePublishableKey ? '✅ Nakonfigurovaný' : '❌ Chýba'}<br/>
+                    • Secret Key: {stripeForm.stripeSecretKey ? '✅ Nakonfigurovaný' : '❌ Chýba'}<br/>
+                    • Webhook Secret: {stripeForm.stripeWebhookSecret ? '✅ Nakonfigurovaný' : '⚠️ Voliteľný'}
+                  </Typography>
+                </Alert>
+              )}
 
               <Grid container spacing={3}>
                 {/* Enable Stripe */}

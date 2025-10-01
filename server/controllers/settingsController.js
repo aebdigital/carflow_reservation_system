@@ -6,9 +6,30 @@ const Settings = require('../models/Settings');
 const getSettings = async (req, res) => {
   try {
     const tenantId = req.user.tenantId;
-    
-    const settings = await Settings.getForTenant(tenantId);
-    
+
+    // Use findOne with explicit select to include secure fields for admin
+    let settings = await Settings.findOne({ tenantId })
+      .select('+payment.stripeSecretKey +payment.stripeWebhookSecret');
+
+    // If no settings exist, create default ones
+    if (!settings) {
+      settings = await Settings.create({
+        tenantId,
+        business: {
+          pickupLocations: [{
+            name: 'Banska Bystrica - Hlavné',
+            address: 'Banska Bystrica, Slovensko',
+            isDefault: true,
+            isActive: true
+          }]
+        }
+      });
+
+      // Re-fetch with secure fields
+      settings = await Settings.findOne({ tenantId })
+        .select('+payment.stripeSecretKey +payment.stripeWebhookSecret');
+    }
+
     res.status(200).json({
       success: true,
       data: settings
@@ -28,23 +49,47 @@ const getSettings = async (req, res) => {
 const updateSettings = async (req, res) => {
   try {
     const tenantId = req.user.tenantId;
-    
-    const settings = await Settings.findOneAndUpdate(
+
+    // Find existing settings or create if not exists
+    let settings = await Settings.findOne({ tenantId });
+
+    if (!settings) {
+      // Create default settings first
+      settings = await Settings.create({
+        tenantId,
+        business: {
+          pickupLocations: [{
+            name: 'Banska Bystrica - Hlavné',
+            address: 'Banska Bystrica, Slovensko',
+            isDefault: true,
+            isActive: true
+          }]
+        }
+      });
+    }
+
+    // Update settings with the provided data
+    const updatedSettings = await Settings.findOneAndUpdate(
       { tenantId },
       { $set: req.body },
-      { new: true, runValidators: true }
+      {
+        new: true,
+        runValidators: true,
+        // Include secure fields in response for admin
+        select: '+payment.stripeSecretKey +payment.stripeWebhookSecret'
+      }
     );
-    
-    if (!settings) {
+
+    if (!updatedSettings) {
       return res.status(404).json({
         success: false,
         message: 'Settings not found'
       });
     }
-    
+
     res.status(200).json({
       success: true,
-      data: settings
+      data: updatedSettings
     });
   } catch (error) {
     console.error('❌ [SETTINGS] Error updating settings:', error.message);
