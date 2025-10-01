@@ -89,9 +89,20 @@ const sendErrorProd = (err, res) => {
     // Programming or other unknown error: don't leak error details
     logger.error('ERROR:', err);
 
-    res.status(500).json({
+    // Provide more specific error messages for common issues
+    let message = 'Something went wrong!';
+
+    if (err.message && err.message.includes('Stripe not configured')) {
+      message = 'Payment system not configured for this rental company. Please contact support.';
+    } else if (err.message && err.message.includes('No API key provided')) {
+      message = 'Payment system configuration error. Please contact support.';
+    } else if (err.name === 'ValidationError') {
+      message = 'Invalid data provided. Please check your input.';
+    }
+
+    res.status(err.statusCode || 500).json({
       success: false,
-      message: 'Something went wrong!'
+      message: message
     });
   }
 };

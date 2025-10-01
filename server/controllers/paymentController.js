@@ -58,10 +58,18 @@ const processDemoPayment = async (paymentIntentId, paymentMethodType = 'card') =
 // @route   POST /api/payments/create-checkout-session
 // @access  Public (based on email lookup)
 const createCheckoutSession = asyncHandler(async (req, res, next) => {
+  console.log('🔥 [STRIPE] Creating checkout session:', {
+    email: req.body.email,
+    amount: req.body.amount,
+    hasSuccessUrl: !!req.body.successUrl,
+    hasCancelUrl: !!req.body.cancelUrl
+  });
+
   const { email, amount, currency, description, reservationId, successUrl, cancelUrl } = req.body;
 
   // Validate required fields
   if (!email || !amount || !successUrl || !cancelUrl) {
+    console.error('❌ [STRIPE] Missing required fields:', { email: !!email, amount: !!amount, successUrl: !!successUrl, cancelUrl: !!cancelUrl });
     return next(new AppError('Email, amount, successUrl, and cancelUrl are required', 400));
   }
 
@@ -70,12 +78,24 @@ const createCheckoutSession = asyncHandler(async (req, res, next) => {
   const admin = await User.findOne({ email: email.toLowerCase(), role: 'admin' });
 
   if (!admin) {
+    console.error('❌ [STRIPE] No admin found for email:', email);
     return next(new AppError('No admin found with this email', 404));
   }
 
+  console.log('✅ [STRIPE] Found admin:', { adminId: admin._id, tenantId: admin.tenantId });
+
+  let payment = null; // Declare payment variable outside try block
+
   try {
     // Get tenant-specific Stripe configuration
+    console.log('🔍 [STRIPE] Getting tenant Stripe config for:', admin.tenantId);
     const { stripe, config } = await getTenantStripe(admin.tenantId);
+    console.log('✅ [STRIPE] Got Stripe config:', {
+      hasSecretKey: !!config.secretKey,
+      testMode: config.testMode,
+      currency: config.currency
+    });
+
     const paymentCurrency = currency || config.currency || 'EUR';
 
     let reservation = null;
@@ -92,7 +112,7 @@ const createCheckoutSession = asyncHandler(async (req, res, next) => {
     }
 
     // Create payment record first
-    const payment = await Payment.create({
+    payment = await Payment.create({
       reservation: reservationId || null,
       customer: reservation?.customer?._id || null,
       amount: amount,
@@ -148,17 +168,35 @@ const createCheckoutSession = asyncHandler(async (req, res, next) => {
     });
 
   } catch (stripeError) {
-    // If Stripe fails, clean up the payment record if it was created
-    if (payment) {
-      await Payment.findByIdAndDelete(payment._id);
-    }
-    console.error('Stripe Error:', stripeError);
+    console.error('❌ [STRIPE] Error in createCheckoutSession:', {
+      message: stripeError.message,
+      stack: stripeError.stack,
+      name: stripeError.name,
+      code: stripeError.code
+    });
 
-    if (stripeError.message.includes('Stripe not configured')) {
+    // If Stripe fails, clean up the payment record if it was created
+    if (payment && payment._id) {
+      try {
+        await Payment.findByIdAndDelete(payment._id);
+        console.log('🗑️ [STRIPE] Cleaned up payment record:', payment._id);
+      } catch (cleanupError) {
+        console.error('❌ [STRIPE] Failed to cleanup payment:', cleanupError.message);
+      }
+    }
+
+    // Handle specific error types
+    if (stripeError.message && stripeError.message.includes('Stripe not configured')) {
       return next(new AppError('Payment system not configured for this rental company. Please contact support.', 503));
     }
 
-    return next(new AppError(`Payment system error: ${stripeError.message}`, 400));
+    if (stripeError.message && stripeError.message.includes('No API key provided')) {
+      return next(new AppError('Stripe configuration error: Missing API key. Please contact support.', 503));
+    }
+
+    // Return more detailed error message
+    const errorMessage = stripeError.message || 'Unknown Stripe error occurred';
+    return next(new AppError(`Payment system error: ${errorMessage}`, 400));
   }
 });
 
