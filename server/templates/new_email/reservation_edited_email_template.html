@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rezervácia upravená - {{company_name}}</title>
+    <title>Rezervácia upravená - Rival Autopožičovňa</title>
     <style>
         @media only screen and (max-width: 600px) {
             .main-table {
@@ -50,7 +50,7 @@
         <!-- Header -->
         <tr>
             <td style="background-color: #4CAF50; padding: 20px; text-align: center;">
-                <h1 class="main-title" style="color: white; font-size: 48px; font-weight: bold; margin: 0; letter-spacing: 2px;">{{company_name}}</h1>
+                <h1 class="main-title" style="color: white; font-size: 48px; font-weight: bold; margin: 0; letter-spacing: 2px;">rival</h1>
                 <p style="color: white; font-size: 14px; margin: 5px 0 0 0; letter-spacing: 1px;">AUTOPOŽIČOVŇA</p>
             </td>
         </tr>
@@ -66,7 +66,7 @@
         <tr>
             <td style="padding: 0 20px 20px 20px; text-align: center;">
                 <div style="margin: 20px 0;">
-                    <img src="{{car_image}}" alt="{{car_brand}} {{car_model}}" style="max-width: 300px; width: 100%; height: auto;" />
+                    <img src="{car_image}" alt="{car_brand} {car_model}" style="max-width: 300px; width: 100%; height: auto;" />
                 </div>
             </td>
         </tr>
@@ -75,7 +75,7 @@
         <tr>
             <td style="padding: 0 20px 20px 20px; text-align: center;">
                 <p style="color: #666666; font-size: 16px; margin: 0;">
-                    Dobrý deň <strong style="color: #4CAF50;">{{customer_name}}</strong>, Vaša rezervácia bola <strong>upravená</strong>.
+                    Dobrý deň <strong style="color: #4CAF50;">{meno}</strong>, Vaša rezervácia bola <strong>upravená</strong>.
                 </p>
             </td>
         </tr>
@@ -99,7 +99,7 @@
                                                     <div class="detail-icon" style="width: 30px; height: 30px; background-color: #4CAF50; border-radius: 50%; display: inline-block; position: relative; margin-right: 10px;">
                                                         <span style="color: white; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">📅</span>
                                                     </div>
-                                                    <span style="color: #333333; font-size: 16px; font-weight: bold;">{{start_date}}</span>
+                                                    <span style="color: #333333; font-size: 16px; font-weight: bold;">{date}</span>
                                                 </td>
                                             </tr>
                                             <tr>
@@ -107,7 +107,7 @@
                                                     <div class="detail-icon" style="width: 30px; height: 30px; background-color: #4CAF50; border-radius: 50%; display: inline-block; position: relative; margin-right: 10px;">
                                                         <span style="color: white; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">📍</span>
                                                     </div>
-                                                    <span style="color: #333333; font-size: 16px; font-weight: bold;">{{pickup_location}}</span>
+                                                    <span style="color: #333333; font-size: 16px; font-weight: bold;">{place}</span>
                                                 </td>
                                             </tr>
                                             <tr>
@@ -115,7 +115,7 @@
                                                     <div class="detail-icon" style="width: 30px; height: 30px; background-color: #4CAF50; border-radius: 50%; display: inline-block; position: relative; margin-right: 10px;">
                                                         <span style="color: white; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">🕐</span>
                                                     </div>
-                                                    <span style="color: #333333; font-size: 16px; font-weight: bold;">{{start_time}}</span>
+                                                    <span style="color: #333333; font-size: 16px; font-weight: bold;">{time}</span>
                                                 </td>
                                             </tr>
                                         </table>
@@ -140,7 +140,7 @@
                                                     <div class="detail-icon" style="width: 30px; height: 30px; background-color: #ff4444; border-radius: 50%; display: inline-block; position: relative; margin-right: 10px;">
                                                         <span style="color: white; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">📅</span>
                                                     </div>
-                                                    <span style="color: #333333; font-size: 16px; font-weight: bold;">{{start_date}}</span>
+                                                    <span style="color: #333333; font-size: 16px; font-weight: bold;">{date}</span>
                                                 </td>
                                             </tr>
                                             <tr>
@@ -148,7 +148,7 @@
                                                     <div class="detail-icon" style="width: 30px; height: 30px; background-color: #ff4444; border-radius: 50%; display: inline-block; position: relative; margin-right: 10px;">
                                                         <span style="color: white; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">📍</span>
                                                     </div>
-                                                    <span style="color: #333333; font-size: 16px; font-weight: bold;">{{pickup_location}}</span>
+                                                    <span style="color: #333333; font-size: 16px; font-weight: bold;">{place}</span>
                                                 </td>
                                             </tr>
                                             <tr>
@@ -156,7 +156,7 @@
                                                     <div class="detail-icon" style="width: 30px; height: 30px; background-color: #ff4444; border-radius: 50%; display: inline-block; position: relative; margin-right: 10px;">
                                                         <span style="color: white; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">🕐</span>
                                                     </div>
-                                                    <span style="color: #333333; font-size: 16px; font-weight: bold;">{{start_time}}</span>
+                                                    <span style="color: #333333; font-size: 16px; font-weight: bold;">{time}</span>
                                                 </td>
                                             </tr>
                                         </table>
@@ -173,7 +173,7 @@
         <tr>
             <td style="padding: 20px; text-align: center;">
                 <p style="color: #666666; font-size: 16px; margin: 0 0 10px 0;">
-                    Pri prevzatí vozidla bude potrebný <strong>Občiansky</strong> a <strong>Vodičšký</strong> preukaz. Nezabudnite vratný depozit <strong style="color: #ff4444;">{{deposit_amount}}</strong> (ak nebol uhradený dopredu). Ďakujeme
+                    Pri prevzatí vozidla bude potrebný <strong>Občiansky</strong> a <strong>Vodičšký</strong> preukaz. Nezabudnite vratný depozit <strong style="color: #ff4444;">{deposit}</strong> (ak nebol uhradený dopredu). Ďakujeme
                 </p>
             </td>
         </tr>
@@ -181,8 +181,8 @@
         <!-- Footer -->
         <tr>
             <td style="background-color: #4CAF50; padding: 20px; text-align: center;">
-                <p style="color: white; font-size: 18px; font-weight: bold; margin: 0 0 10px 0;">{{company_phone}}</p>
-                <p style="color: white; font-size: 16px; margin: 0 0 15px 0;">{{company_email}}</p>
+                <p style="color: white; font-size: 18px; font-weight: bold; margin: 0 0 10px 0;">+421 907 633 517</p>
+                <p style="color: white; font-size: 16px; margin: 0 0 15px 0;">info@pozicauto.sk</p>
 
                 <table class="footer-social" style="width: 100%; max-width: 400px; margin: 15px auto;">
                     <tr>
@@ -203,7 +203,7 @@
 
                 <hr style="border: 1px solid white; margin: 15px 0;">
 
-                <h3 style="color: white; font-size: 36px; font-weight: bold; margin: 0; letter-spacing: 2px;">{{company_name}}</h3>
+                <h3 style="color: white; font-size: 36px; font-weight: bold; margin: 0; letter-spacing: 2px;">rival</h3>
                 <p style="color: white; font-size: 12px; margin: 5px 0 0 0; letter-spacing: 1px;">AUTOPOŽIČOVŇA</p>
             </td>
         </tr>

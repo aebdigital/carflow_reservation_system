@@ -3,157 +3,210 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pripomienka</title>
+    <title>Zajtra na Vás čaká - {{company_name}}</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #000;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #fff;
-        }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            border: 1px solid rgb(22, 163, 74);
-        }
-        .header {
-            text-align: center;
-            border-bottom: 2px solid rgb(22, 163, 74);
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
-        .logo {
-            font-size: 28px;
-            font-weight: bold;
-            color: rgb(22, 163, 74);
-        }
-        .emoji-large {
-            font-size: 48px;
-            margin: 20px 0;
-        }
-        .content h1 {
-            color: #F57C00;
-            font-size: 24px;
-        }
-        .reminder-box {
-            background-color: #f9f9f9;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid rgb(22, 163, 74);
-            margin: 20px 0;
-            position: relative;
-        }
-        .urgent-banner {
-            background: linear-gradient(45deg, #ff5722, #ff9800);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            text-align: center;
-            margin: 20px 0;
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-            100% { transform: scale(1); }
-        }
-        .countdown {
-            font-size: 24px;
-            font-weight: bold;
-            color: #FF5722;
-            text-align: center;
-            margin: 20px 0;
-        }
-        .action-buttons {
-            text-align: center;
-            margin: 30px 0;
-        }
-        .button {
-            display: inline-block;
-            padding: 12px 24px;
-            margin: 5px 10px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-        .button-primary {
-            background-color: rgb(22, 163, 74);
-            color: white;
-        }
-        .button-secondary {
-            background-color: #f5f5f5;
-            color: #000;
-            border: 2px solid #ddd;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-            color: #666;
-            font-size: 14px;
+        @media only screen and (max-width: 600px) {
+            .main-table {
+                width: 100% !important;
+            }
+            .section-table {
+                width: 100% !important;
+            }
+            .section-left {
+                width: 50% !important;
+                text-align: center !important;
+                padding-bottom: 10px !important;
+            }
+            .section-right {
+                width: 50% !important;
+                text-align: center !important;
+            }
+            .detail-row {
+                display: block !important;
+                text-align: center !important;
+                padding: 8px 0 !important;
+                padding-left: 40% !important;
+            }
+            .detail-icon {
+                margin-right: 5px !important;
+            }
+            .footer-social {
+                max-width: 100% !important;
+            }
+            .footer-social td {
+                width: 50% !important;
+                display: inline-block !important;
+                text-align: center !important;
+                padding: 5px 0 !important;
+            }
+            .main-title {
+                font-size: 56px !important;
+            }
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">{{company_name}}</div>
-            <div class="emoji-large">🔔</div>
-        </div>
-        
-        <div class="content">
-            <h1>Pripomienka k rezervácii 📅</h1>
-            
-            <div class="urgent-banner">
-                ⚡ {{reminder_type}} - {{days_remaining}} dní zostáva! ⚡
-            </div>
-            
-            <p>Vážený/á {{customer_name}}, 👋</p>
-            
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pripomíname Vám nadchádzajúcu rezerváciu! 🚨</p>
-            
-            <div class="countdown">
-                ⏰ {{hours_remaining}}:{{minutes_remaining}}:{{seconds_remaining}}
-            </div>
-            
-            <div class="reminder-box">
-                <h3>📋 Detaily Vašej rezervácie:</h3>
-                <p><strong>🆔 Rezervácia:</strong> #{{reservation_id}}</p>
-                <p><strong>🚗 Vozidlo:</strong> {{car_name}}</p>
-                <p><strong>📅 Začiatok:</strong> {{start_datetime}} ⏰</p>
-                <p><strong>📍 Miesto:</strong> {{pickup_location}} 🗺️</p>
-                <p><strong>💰 Suma:</strong> {{total_amount}} € 💶</p>
-            </div>
-            
-            <p>Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. 📝</p>
-            
-            <div class="reminder-box">
-                <h3>🎯 Čo treba urobiť:</h3>
-                <ul>
-                    <li>✅ Lorem ipsum dolor sit amet</li>
-                    <li>📄 Consectetur adipiscing elit</li>
-                    <li>🆔 Sed do eiusmod tempor incididunt</li>
-                    <li>🔑 Ut labore et dolore magna aliqua</li>
-                </ul>
-            </div>
-            
-            <div class="action-buttons">
-                <a href="{{confirm_url}}" class="button button-primary">Potvrdiť rezerváciu ✅</a>
-                <a href="{{modify_url}}" class="button button-secondary">Zmeniť rezerváciu ✏️</a>
-            </div>
-            
-            <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Tešíme sa na Vás! 😊</p>
-        </div>
-        
-        <div class="footer">
-            <p>📧 {{company_email}} | 📞 {{company_phone}}</p>
-            <p>© {{current_year}} {{company_name}}. Všetky práva vyhradené. 🔒</p>
-        </div>
-    </div>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+    <table class="main-table" style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-collapse: collapse;">
+        <!-- Header -->
+        <tr>
+            <td style="background-color: #4CAF50; padding: 20px; text-align: center;">
+                <h1 class="main-title" style="color: white; font-size: 48px; font-weight: bold; margin: 0; letter-spacing: 2px;">{{company_name}}</h1>
+                <p style="color: white; font-size: 14px; margin: 5px 0 0 0; letter-spacing: 1px;">AUTOPOŽIČOVŇA</p>
+            </td>
+        </tr>
+
+        <!-- Title -->
+        <tr>
+            <td style="padding: 30px 20px 20px 20px; text-align: center;">
+                <h2 style="color: #666666; font-size: 24px; font-weight: bold; margin: 0;">ZAJTRA NA VÁS ČAKÁ</h2>
+            </td>
+        </tr>
+
+        <!-- Car Info -->
+        <tr>
+            <td style="padding: 0 20px 20px 20px; text-align: center;">
+                <div style="margin: 20px 0;">
+                    <img src="{{car_image}}" alt="{{car_brand}} {{car_model}}" style="max-width: 300px; width: 100%; height: auto;" />
+                </div>
+            </td>
+        </tr>
+
+        <!-- Greeting -->
+        <tr>
+            <td style="padding: 0 20px 20px 20px; text-align: center;">
+                <p style="color: #666666; font-size: 16px; margin: 0;">
+                    Dobrý deň <strong style="color: #4CAF50;">{{customer_name}}</strong>, pripomíname, že zajtra máte <strong>naplánovaný</strong> prenájom vozidla.
+                </p>
+            </td>
+        </tr>
+
+        <!-- Reservation Details -->
+        <tr>
+            <td style="padding: 20px;">
+                <table class="section-table" style="width: 100%; border-collapse: collapse; background-color: #f9f9f9;">
+                    <!-- Start Section -->
+                    <tr>
+                        <td style="padding: 15px; border-bottom: 1px solid #e0e0e0;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <tr>
+                                    <td class="section-left" style="width: 30%; text-align: left; vertical-align: middle; padding-right: 20px;">
+                                        <h4 style="color: #4CAF50; font-size: 24px; font-weight: bold; margin: 0;">ZAČIATOK</h4>
+                                    </td>
+                                    <td class="section-right" style="width: 70%; text-align: left;">
+                                        <table style="width: 100%; border-collapse: collapse;">
+                                            <tr>
+                                                <td class="detail-row" style="text-align: left; padding: 5px 0; padding-left: 40%;">
+                                                    <div class="detail-icon" style="width: 30px; height: 30px; background-color: #4CAF50; border-radius: 50%; display: inline-block; position: relative; margin-right: 10px;">
+                                                        <span style="color: white; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">📅</span>
+                                                    </div>
+                                                    <span style="color: #333333; font-size: 16px; font-weight: bold;">{{start_date}}</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="detail-row" style="text-align: left; padding: 5px 0; padding-left: 40%;">
+                                                    <div class="detail-icon" style="width: 30px; height: 30px; background-color: #4CAF50; border-radius: 50%; display: inline-block; position: relative; margin-right: 10px;">
+                                                        <span style="color: white; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">📍</span>
+                                                    </div>
+                                                    <span style="color: #333333; font-size: 16px; font-weight: bold;">{{pickup_location}}</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="detail-row" style="text-align: left; padding: 5px 0; padding-left: 40%;">
+                                                    <div class="detail-icon" style="width: 30px; height: 30px; background-color: #4CAF50; border-radius: 50%; display: inline-block; position: relative; margin-right: 10px;">
+                                                        <span style="color: white; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">🕐</span>
+                                                    </div>
+                                                    <span style="color: #333333; font-size: 16px; font-weight: bold;">{{start_time}}</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- End Section -->
+                    <tr>
+                        <td style="padding: 15px; border-top: 1px solid #e0e0e0;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <tr>
+                                    <td class="section-left" style="width: 30%; text-align: left; vertical-align: middle; padding-right: 20px;">
+                                        <h4 style="color: #ff4444; font-size: 24px; font-weight: bold; margin: 0;">KONIEC</h4>
+                                    </td>
+                                    <td class="section-right" style="width: 70%; text-align: left;">
+                                        <table style="width: 100%; border-collapse: collapse;">
+                                            <tr>
+                                                <td class="detail-row" style="text-align: left; padding: 5px 0; padding-left: 40%;">
+                                                    <div class="detail-icon" style="width: 30px; height: 30px; background-color: #ff4444; border-radius: 50%; display: inline-block; position: relative; margin-right: 10px;">
+                                                        <span style="color: white; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">📅</span>
+                                                    </div>
+                                                    <span style="color: #333333; font-size: 16px; font-weight: bold;">{{start_date}}</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="detail-row" style="text-align: left; padding: 5px 0; padding-left: 40%;">
+                                                    <div class="detail-icon" style="width: 30px; height: 30px; background-color: #ff4444; border-radius: 50%; display: inline-block; position: relative; margin-right: 10px;">
+                                                        <span style="color: white; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">📍</span>
+                                                    </div>
+                                                    <span style="color: #333333; font-size: 16px; font-weight: bold;">{{pickup_location}}</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="detail-row" style="text-align: left; padding: 5px 0; padding-left: 40%;">
+                                                    <div class="detail-icon" style="width: 30px; height: 30px; background-color: #ff4444; border-radius: 50%; display: inline-block; position: relative; margin-right: 10px;">
+                                                        <span style="color: white; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">🕐</span>
+                                                    </div>
+                                                    <span style="color: #333333; font-size: 16px; font-weight: bold;">{{start_time}}</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
+        <!-- Important Information -->
+        <tr>
+            <td style="padding: 20px; text-align: center;">
+                <p style="color: #666666; font-size: 16px; margin: 0 0 10px 0;">
+                    Pri prevzatí vozidla bude potrebný <strong>Občiansky</strong> a <strong>Vodičšký</strong> preukaz. Nezabudnite vratný depozit <strong style="color: #ff4444;">{{deposit_amount}}</strong> (ak nebol uhradený dopredu). Ďakujeme
+                </p>
+            </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+            <td style="background-color: #4CAF50; padding: 20px; text-align: center;">
+                <p style="color: white; font-size: 18px; font-weight: bold; margin: 0 0 10px 0;">{{company_phone}}</p>
+                <p style="color: white; font-size: 16px; margin: 0 0 15px 0;">{{company_email}}</p>
+
+                <table class="footer-social" style="width: 100%; max-width: 400px; margin: 15px auto;">
+                    <tr>
+                        <td style="width: 50%; text-align: center; padding: 0 10px;">
+                            <div style="display: inline-block;">
+                                <img src="instagram_icon.png" alt="Instagram" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 8px;" />
+                                <span style="color: white; font-size: 14px;">INSTAGRAM</span>
+                            </div>
+                        </td>
+                        <td style="width: 50%; text-align: center; padding: 0 10px;">
+                            <div style="display: inline-block;">
+                                <img src="facebook_icon.png" alt="Facebook" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 8px;" />
+                                <span style="color: white; font-size: 14px;">FACEBOOK</span>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+
+                <hr style="border: 1px solid white; margin: 15px 0;">
+
+                <h3 style="color: white; font-size: 36px; font-weight: bold; margin: 0; letter-spacing: 2px;">{{company_name}}</h3>
+                <p style="color: white; font-size: 12px; margin: 5px 0 0 0; letter-spacing: 1px;">AUTOPOŽIČOVŇA</p>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
