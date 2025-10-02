@@ -408,20 +408,29 @@ class SMTP2GOService {
       rawReservationId: rawReservation?._id,
       rawReservationQrCodes: !!rawReservation?.qrCodes
     });
-    
+
     const emailTemplateService = require('./emailTemplateService');
     const bySquareService = require('./bySquareService');
-    
+
     // Get tenant-specific email configuration to determine template folder
     const emailConfig = this.getTenantEmailConfig(user);
     const senderEmail = emailConfig.emailFrom;
-    
+
     // Prepare template variables from actual backend data structure
     const templateVariables = {
-      first_name: reservationData.customerName?.split(' ')[0] || '',
-      last_name: reservationData.customerName?.split(' ').slice(1).join(' ') || '',
+      customer_name: reservationData.customerName || '',
       car_brand: reservationData.carInfo?.split(' ')[0] || '',
       car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
+      car_image: reservationData.carImage || '',
+      start_date: reservationData.startDate || '',
+      end_date: reservationData.endDate || '',
+      start_time: reservationData.startTime || new Date(reservationData.startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      end_time: reservationData.endTime || new Date(reservationData.endDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      pickup_location: reservationData.pickupLocation || 'Miesto vyzdvihnutia',
+      dropoff_location: reservationData.dropoffLocation || reservationData.pickupLocation || 'Miesto vrátenia',
+      company_name: user?.businessName || 'Autopožičovňa',
+      company_email: emailConfig.emailFrom,
+      company_phone: user?.phoneNumber || '+421 XXX XXX XXX',
       link_view: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}`,
       current_year: new Date().getFullYear()
     };
@@ -562,14 +571,20 @@ class SMTP2GOService {
     
     // Prepare template variables from actual backend data structure
     const templateVariables = {
-      first_name: reservationData.customerName?.split(' ')[0] || '',
-      last_name: reservationData.customerName?.split(' ').slice(1).join(' ') || '',
+      customer_name: reservationData.customerName || '',
       car_brand: reservationData.carInfo?.split(' ')[0] || '',
       car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
-      date: reservationData.startDate || '',
-      time: new Date(reservationData.startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
-      pickup_location: 'Banska Bystrica', // Default pickup location
-      car_deposit: `${reservationData.deposit || '500'}€`,
+      car_image: reservationData.carImage || '',
+      start_date: reservationData.startDate || '',
+      end_date: reservationData.endDate || '',
+      start_time: reservationData.startTime || new Date(reservationData.startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      end_time: reservationData.endTime || new Date(reservationData.endDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      pickup_location: reservationData.pickupLocation || 'Miesto vyzdvihnutia',
+      dropoff_location: reservationData.dropoffLocation || reservationData.pickupLocation || 'Miesto vrátenia',
+      deposit_amount: `${reservationData.deposit || '500'}€`,
+      company_name: user?.businessName || 'Autopožičovňa',
+      company_email: emailConfig.emailFrom,
+      company_phone: user?.phoneNumber || '+421 XXX XXX XXX',
       link_view: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}`,
       link_cancel: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}/cancel`
     };
@@ -784,12 +799,19 @@ class SMTP2GOService {
     
     // Prepare template variables from actual backend data structure
     const templateVariables = {
-      first_name: reservationData.customerName?.split(' ')[0] || '',
-      last_name: reservationData.customerName?.split(' ').slice(1).join(' ') || '',
+      customer_name: reservationData.customerName || '',
       car_brand: reservationData.carInfo?.split(' ')[0] || '',
       car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
-      date: reservationData.startDate || '',
-      time: new Date(reservationData.startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      car_image: reservationData.carImage || '',
+      start_date: reservationData.startDate || '',
+      end_date: reservationData.endDate || '',
+      start_time: reservationData.startTime || new Date(reservationData.startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      end_time: reservationData.endTime || new Date(reservationData.endDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      pickup_location: reservationData.pickupLocation || 'Miesto vyzdvihnutia',
+      dropoff_location: reservationData.dropoffLocation || reservationData.pickupLocation || 'Miesto vrátenia',
+      company_name: user?.businessName || 'Autopožičovňa',
+      company_email: emailConfig.emailFrom,
+      company_phone: user?.phoneNumber || '+421 XXX XXX XXX',
       link_view: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}`
     };
 
@@ -828,10 +850,19 @@ class SMTP2GOService {
     
     // Prepare template variables from actual backend data structure
     const templateVariables = {
-      first_name: cancellationData.customerName?.split(' ')[0] || '',
-      last_name: cancellationData.customerName?.split(' ').slice(1).join(' ') || '',
+      customer_name: cancellationData.customerName || '',
       car_brand: cancellationData.carInfo?.split(' ')[0] || '',
       car_model: cancellationData.carInfo?.split(' ').slice(1).join(' ') || cancellationData.carInfo || '',
+      car_image: cancellationData.carImage || '',
+      start_date: cancellationData.startDate || '',
+      end_date: cancellationData.endDate || '',
+      start_time: cancellationData.startTime || new Date(cancellationData.startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      end_time: cancellationData.endTime || new Date(cancellationData.endDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      pickup_location: cancellationData.pickupLocation || 'Miesto vyzdvihnutia',
+      dropoff_location: cancellationData.dropoffLocation || cancellationData.pickupLocation || 'Miesto vrátenia',
+      company_name: user?.businessName || 'Autopožičovňa',
+      company_email: emailConfig.emailFrom,
+      company_phone: user?.phoneNumber || '+421 XXX XXX XXX',
       link_new: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/booking`
     };
 
@@ -872,17 +903,23 @@ class SMTP2GOService {
     
     // Prepare template variables from actual backend data structure
     const templateVariables = {
-      first_name: reservationData.customerName?.split(' ')[0] || '',
-      last_name: reservationData.customerName?.split(' ').slice(1).join(' ') || '',
+      customer_name: reservationData.customerName || '',
       car_brand: reservationData.carInfo?.split(' ')[0] || '',
       car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
-      date: reservationData.startDate || '',
-      time: new Date(reservationData.startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
-      pickup_location: pickupLocation
+      car_image: reservationData.carImage || '',
+      start_date: reservationData.startDate || '',
+      end_date: reservationData.endDate || '',
+      start_time: reservationData.startTime || new Date(reservationData.startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      end_time: reservationData.endTime || new Date(reservationData.endDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      pickup_location: reservationData.pickupLocation || pickupLocation,
+      dropoff_location: reservationData.dropoffLocation || reservationData.pickupLocation || pickupLocation,
+      company_name: user?.businessName || 'Autopožičovňa',
+      company_email: emailConfig.emailFrom,
+      company_phone: user?.phoneNumber || '+421 XXX XXX XXX'
     };
 
     // Get processed email template with sender-specific template folder
-    const emailData = await emailTemplateService.getEmailTemplate('reservation-reminder24', templateVariables, senderEmail);
+    const emailData = await emailTemplateService.getEmailTemplate('reminder-notification', templateVariables, senderEmail);
     
     // Set subject to match exact specification
     const subject = '⏰ Pripomienka: Rezervácia zajtra';
@@ -918,17 +955,23 @@ class SMTP2GOService {
     
     // Prepare template variables from actual backend data structure
     const templateVariables = {
-      first_name: reservationData.customerName?.split(' ')[0] || '',
-      last_name: reservationData.customerName?.split(' ').slice(1).join(' ') || '',
+      customer_name: reservationData.customerName || '',
       car_brand: reservationData.carInfo?.split(' ')[0] || '',
       car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
-      date: reservationData.endDate || '',
-      time: new Date(reservationData.endDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
-      pickup_location: pickupLocation
+      car_image: reservationData.carImage || '',
+      start_date: reservationData.startDate || '',
+      end_date: reservationData.endDate || '',
+      start_time: reservationData.startTime || new Date(reservationData.startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      end_time: reservationData.endTime || new Date(reservationData.endDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      pickup_location: reservationData.pickupLocation || pickupLocation,
+      dropoff_location: reservationData.dropoffLocation || reservationData.pickupLocation || pickupLocation,
+      company_name: user?.businessName || 'Autopožičovňa',
+      company_email: emailConfig.emailFrom,
+      company_phone: user?.phoneNumber || '+421 XXX XXX XXX'
     };
 
     // Get processed email template with sender-specific template folder
-    const emailData = await emailTemplateService.getEmailTemplate('reservation-reminder24after', templateVariables, senderEmail);
+    const emailData = await emailTemplateService.getEmailTemplate('reminder-notification', templateVariables, senderEmail);
     
     // Set subject to match exact specification
     const subject = '⏰ Pripomienka: Vrátenie vozidla zajtra';
@@ -962,10 +1005,19 @@ class SMTP2GOService {
     
     // Prepare template variables from actual backend data structure
     const templateVariables = {
-      first_name: reservationData.customerName?.split(' ')[0] || '',
-      last_name: reservationData.customerName?.split(' ').slice(1).join(' ') || '',
+      customer_name: reservationData.customerName || '',
       car_brand: reservationData.carInfo?.split(' ')[0] || '',
       car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
+      car_image: reservationData.carImage || '',
+      start_date: reservationData.startDate || '',
+      end_date: reservationData.endDate || '',
+      start_time: reservationData.startTime || new Date(reservationData.startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      end_time: reservationData.endTime || new Date(reservationData.endDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }),
+      pickup_location: reservationData.pickupLocation || 'Miesto vyzdvihnutia',
+      dropoff_location: reservationData.dropoffLocation || reservationData.pickupLocation || 'Miesto vrátenia',
+      company_name: user?.businessName || 'Autopožičovňa',
+      company_email: emailConfig.emailFrom,
+      company_phone: user?.phoneNumber || '+421 XXX XXX XXX',
       google_review_link: process.env.GOOGLE_REVIEW_URL || 'https://g.page/r/YOUR_GOOGLE_BUSINESS_ID/review',
       feedback_form_link: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/feedback?reservation=${reservationData.reservationNumber}`
     };
