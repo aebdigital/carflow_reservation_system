@@ -340,6 +340,32 @@ class SMTP2GOService {
       .trim();
   }
 
+  /**
+   * Get car image URL with fallbacks
+   * @param {Object} reservationData - Formatted reservation data
+   * @param {Object} rawReservation - Raw reservation object from MongoDB (optional)
+   * @returns {string} Car image URL or empty string
+   */
+  getCarImageUrl(reservationData, rawReservation = null) {
+    // Try multiple sources for car image
+    const sources = [
+      rawReservation?.car?.images?.[0]?.url,
+      rawReservation?.car?.imageUrl,
+      reservationData?.carImage,
+      reservationData?.car?.images?.[0]?.url,
+      reservationData?.car?.imageUrl
+    ];
+
+    // Return the first non-empty source
+    for (const source of sources) {
+      if (source && typeof source === 'string' && source.trim()) {
+        return source.trim();
+      }
+    }
+
+    return ''; // No image found
+  }
+
   // Pre-built email templates (same as nodemailer service)
   async sendReservationConfirmation(to, reservationData) {
     const subject = `Potvrdenie rezervácie #${reservationData.reservationNumber}`;
@@ -425,7 +451,7 @@ class SMTP2GOService {
       customer_name: reservationData.customerName || '',
       car_brand: reservationData.carInfo?.split(' ')[0] || rawReservation?.car?.brand || '',
       car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || rawReservation?.car?.model || reservationData.carInfo || '',
-      car_image: rawReservation?.car?.images?.[0]?.url || rawReservation?.car?.imageUrl || reservationData.carImage || '',
+      car_image: this.getCarImageUrl(reservationData, rawReservation),
       start_date: startDate ? new Date(startDate).toLocaleDateString('sk-SK') : '',
       end_date: endDate ? new Date(endDate).toLocaleDateString('sk-SK') : '',
       start_time: startDate ? new Date(startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }) : '',
@@ -582,7 +608,7 @@ class SMTP2GOService {
       customer_name: reservationData.customerName || '',
       car_brand: reservationData.carInfo?.split(' ')[0] || rawReservation?.car?.brand || '',
       car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || rawReservation?.car?.model || reservationData.carInfo || '',
-      car_image: rawReservation?.car?.images?.[0]?.url || rawReservation?.car?.imageUrl || reservationData.carImage || '',
+      car_image: this.getCarImageUrl(reservationData, rawReservation),
       start_date: startDate ? new Date(startDate).toLocaleDateString('sk-SK') : '',
       end_date: endDate ? new Date(endDate).toLocaleDateString('sk-SK') : '',
       start_time: startDate ? new Date(startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }) : '',
@@ -800,11 +826,11 @@ class SMTP2GOService {
   // Customer notification when admin edits reservation
   async sendCustomerReservationEdited(to, reservationData, user = null) {
     const emailTemplateService = require('./emailTemplateService');
-    
+
     // Get tenant-specific email configuration to determine template folder
     const emailConfig = this.getTenantEmailConfig(user);
     const senderEmail = emailConfig.emailFrom;
-    
+
     // Prepare template variables from actual backend data structure
     const startDate = reservationData.startDate;
     const endDate = reservationData.endDate;
@@ -813,7 +839,7 @@ class SMTP2GOService {
       customer_name: reservationData.customerName || '',
       car_brand: reservationData.carInfo?.split(' ')[0] || '',
       car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
-      car_image: reservationData.carImage || '',
+      car_image: this.getCarImageUrl(reservationData),
       start_date: startDate ? new Date(startDate).toLocaleDateString('sk-SK') : '',
       end_date: endDate ? new Date(endDate).toLocaleDateString('sk-SK') : '',
       start_time: startDate ? new Date(startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }) : '',
@@ -854,11 +880,11 @@ class SMTP2GOService {
   // Customer cancellation email when admin cancels reservation
   async sendCustomerCancellationNotification(to, cancellationData, user = null) {
     const emailTemplateService = require('./emailTemplateService');
-    
+
     // Get tenant-specific email configuration to determine template folder
     const emailConfig = this.getTenantEmailConfig(user);
     const senderEmail = emailConfig.emailFrom;
-    
+
     // Prepare template variables from actual backend data structure
     const startDate = cancellationData.startDate;
     const endDate = cancellationData.endDate;
@@ -867,7 +893,7 @@ class SMTP2GOService {
       customer_name: cancellationData.customerName || '',
       car_brand: cancellationData.carInfo?.split(' ')[0] || '',
       car_model: cancellationData.carInfo?.split(' ').slice(1).join(' ') || cancellationData.carInfo || '',
-      car_image: cancellationData.carImage || '',
+      car_image: this.getCarImageUrl(cancellationData),
       start_date: startDate ? new Date(startDate).toLocaleDateString('sk-SK') : '',
       end_date: endDate ? new Date(endDate).toLocaleDateString('sk-SK') : '',
       start_time: startDate ? new Date(startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }) : '',
@@ -923,7 +949,7 @@ class SMTP2GOService {
       customer_name: reservationData.customerName || '',
       car_brand: reservationData.carInfo?.split(' ')[0] || '',
       car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
-      car_image: reservationData.carImage || '',
+      car_image: this.getCarImageUrl(reservationData),
       start_date: startDate ? new Date(startDate).toLocaleDateString('sk-SK') : '',
       end_date: endDate ? new Date(endDate).toLocaleDateString('sk-SK') : '',
       start_time: startDate ? new Date(startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }) : '',
@@ -978,7 +1004,7 @@ class SMTP2GOService {
       customer_name: reservationData.customerName || '',
       car_brand: reservationData.carInfo?.split(' ')[0] || '',
       car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
-      car_image: reservationData.carImage || '',
+      car_image: this.getCarImageUrl(reservationData),
       start_date: startDate ? new Date(startDate).toLocaleDateString('sk-SK') : '',
       end_date: endDate ? new Date(endDate).toLocaleDateString('sk-SK') : '',
       start_time: startDate ? new Date(startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }) : '',
@@ -1018,11 +1044,11 @@ class SMTP2GOService {
   // Customer review request email (24h after trip ends)
   async sendCustomerReviewRequest(to, reservationData, user = null) {
     const emailTemplateService = require('./emailTemplateService');
-    
+
     // Get tenant-specific email configuration to determine template folder
     const emailConfig = this.getTenantEmailConfig(user);
     const senderEmail = emailConfig.emailFrom;
-    
+
     // Prepare template variables from actual backend data structure
     const startDate = reservationData.startDate;
     const endDate = reservationData.endDate;
@@ -1031,7 +1057,7 @@ class SMTP2GOService {
       customer_name: reservationData.customerName || '',
       car_brand: reservationData.carInfo?.split(' ')[0] || '',
       car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carInfo || '',
-      car_image: reservationData.carImage || '',
+      car_image: this.getCarImageUrl(reservationData),
       start_date: startDate ? new Date(startDate).toLocaleDateString('sk-SK') : '',
       end_date: endDate ? new Date(endDate).toLocaleDateString('sk-SK') : '',
       start_time: startDate ? new Date(startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }) : '',
