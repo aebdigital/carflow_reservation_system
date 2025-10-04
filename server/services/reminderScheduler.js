@@ -194,8 +194,8 @@ class ReminderScheduler {
       // Prepare email data using existing helper
       const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
       
-      // Send 24-hour reminder email
-      await emailService.sendCustomerReservationReminder24(reservation.customer.email, emailData);
+      // Send 24-hour reminder email, pass raw reservation for car image
+      await emailService.sendCustomerReservationReminder24(reservation.customer.email, emailData, adminUser, reservation);
 
       // Mark reminder as sent
       reservation.reminder24h = {
@@ -232,8 +232,8 @@ class ReminderScheduler {
       // Get the admin/tenant user for tenant-specific email templates
       const adminUser = reservation.createdBy || null;
       
-      // Send 24-hour return reminder email
-      await emailService.sendCustomerReturnReminder24(reservation.customer.email, emailData, adminUser);
+      // Send 24-hour return reminder email, pass raw reservation for car image
+      await emailService.sendCustomerReturnReminder24(reservation.customer.email, emailData, adminUser, reservation);
 
       // Mark return reminder as sent
       reservation.returnReminder24h = {
@@ -267,8 +267,9 @@ class ReminderScheduler {
       // Prepare email data using existing helper
       const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
       
-      // Send review request email
-      await emailService.sendCustomerReviewRequest(reservation.customer.email, emailData);
+      // Send review request email, pass raw reservation for car image
+      const adminUser = reservation.createdBy || null;
+      await emailService.sendCustomerReviewRequest(reservation.customer.email, emailData, adminUser, reservation);
 
       // Mark review request as sent
       reservation.reviewRequest = {

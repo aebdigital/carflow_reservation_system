@@ -637,8 +637,8 @@ const updateReservation = asyncHandler(async (req, res, next) => {
         // Prepare reservation data using existing helper
         const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
         
-        // Send edit notification email using new template
-        await emailService.sendCustomerReservationEdited(reservation.customer.email, emailData);
+        // Send edit notification email using new template, pass both emailData and raw reservation
+        await emailService.sendCustomerReservationEdited(reservation.customer.email, emailData, req.user, reservation);
         console.log('✅ [EMAIL] Reservation edit notification sent to customer:', reservation.customer.email);
       }
     } catch (emailError) {
@@ -707,8 +707,8 @@ const cancelReservation = asyncHandler(async (req, res, next) => {
         reason: reason || null
       };
 
-      // Use the simple Slovak cancellation email template from emailService
-      await emailService.sendCustomerCancellationNotification(reservation.customer.email, cancellationData);
+      // Use the simple Slovak cancellation email template from emailService, pass raw reservation
+      await emailService.sendCustomerCancellationNotification(reservation.customer.email, cancellationData, req.user, reservation);
       console.log('✅ [EMAIL] Slovak cancellation notification sent to customer:', reservation.customer.email);
     }
   } catch (emailError) {

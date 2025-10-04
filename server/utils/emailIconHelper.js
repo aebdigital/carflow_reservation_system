@@ -90,12 +90,13 @@ class EmailIconHelper {
   /**
    * Get social media icons for email templates
    * @param {string} templatesPath - Path to templates (for tenant-specific icons)
-   * @returns {Object} Object with base64 data URIs for social icons
+   * @returns {Object} Object with small data URIs for social icons
    */
   getSocialIcons(templatesPath = null) {
+    // Use small data URIs that work reliably in all email clients
     return {
-      facebook: this.getIconBase64('facebook_icon.png', templatesPath),
-      instagram: this.getIconBase64('instagram_icon.png', templatesPath),
+      facebook: this.getIconBase64('facebook_icon_small.png', templatesPath),
+      instagram: this.getIconBase64('instagram_icon_small.png', templatesPath),
     };
   }
 

@@ -76,33 +76,33 @@ class EmailService {
   }
 
   // Customer reservation edited notification (after admin edits)
-  async sendCustomerReservationEdited(customerEmail, reservationData, user = null) {
+  async sendCustomerReservationEdited(customerEmail, reservationData, user = null, rawReservation = null) {
     // Use SMTP2GO service which has the correct implementation
-    return await smtp2goService.sendCustomerReservationEdited(customerEmail, reservationData, user);
+    return await smtp2goService.sendCustomerReservationEdited(customerEmail, reservationData, user, rawReservation);
   }
 
   // Customer 24-hour reminder notification (before pickup)
-  async sendCustomerReservationReminder24(customerEmail, reservationData, user = null) {
+  async sendCustomerReservationReminder24(customerEmail, reservationData, user = null, rawReservation = null) {
     // Use SMTP2GO service which has the correct implementation
-    return await smtp2goService.sendCustomerReservationReminder24(customerEmail, reservationData, user);
+    return await smtp2goService.sendCustomerReservationReminder24(customerEmail, reservationData, user, rawReservation);
   }
 
   // Customer 24-hour return reminder notification (before return date)
-  async sendCustomerReturnReminder24(customerEmail, reservationData, user = null) {
+  async sendCustomerReturnReminder24(customerEmail, reservationData, user = null, rawReservation = null) {
     // Use SMTP2GO service which has the correct implementation
-    return await smtp2goService.sendCustomerReturnReminder24(customerEmail, reservationData, user);
+    return await smtp2goService.sendCustomerReturnReminder24(customerEmail, reservationData, user, rawReservation);
   }
 
   // Customer review request (24h after trip ends)
-  async sendCustomerReviewRequest(customerEmail, reservationData, user = null) {
+  async sendCustomerReviewRequest(customerEmail, reservationData, user = null, rawReservation = null) {
     // Use SMTP2GO service which has the correct implementation
-    return await smtp2goService.sendCustomerReviewRequest(customerEmail, reservationData, user);
+    return await smtp2goService.sendCustomerReviewRequest(customerEmail, reservationData, user, rawReservation);
   }
 
   // Customer cancellation notification
-  async sendCustomerCancellationNotification(customerEmail, cancellationData, user = null) {
+  async sendCustomerCancellationNotification(customerEmail, cancellationData, user = null, rawReservation = null) {
     // Use SMTP2GO service which has the correct implementation
-    return await smtp2goService.sendCustomerCancellationNotification(customerEmail, cancellationData, user);
+    return await smtp2goService.sendCustomerCancellationNotification(customerEmail, cancellationData, user, rawReservation);
   }
 
   // Send templated email by loading template from templates/email/ folder
