@@ -101,23 +101,67 @@ class EmailIconHelper {
   }
 
   /**
+   * Get icon file paths for CID attachments
+   * @param {string} templatesPath - Path to templates (for tenant-specific icons)
+   * @returns {Object} Object with file paths for icons
+   */
+  getIconFilePaths(templatesPath = null) {
+    const templatePath = templatesPath || this.defaultTemplatesPath;
+
+    return {
+      facebook: path.join(templatePath, 'facebook_icon.png'),
+      instagram: path.join(templatePath, 'instagram_icon.png'),
+    };
+  }
+
+  /**
+   * Get icon attachments for email with CID references
+   * @param {string} senderEmail - Sender email to determine template folder
+   * @returns {Array} Array of attachment objects with CID
+   */
+  getIconAttachments(senderEmail = null) {
+    // Determine template path based on sender email
+    const isNitracarEmail = senderEmail && senderEmail === process.env.NITRACAR_EMAIL_FROM;
+    const templatesPath = isNitracarEmail ? this.nitracarTemplatesPath : this.defaultTemplatesPath;
+
+    const iconPaths = this.getIconFilePaths(templatesPath);
+    const attachments = [];
+
+    // Add Facebook icon if exists
+    if (fs.existsSync(iconPaths.facebook)) {
+      const facebookBuffer = fs.readFileSync(iconPaths.facebook);
+      attachments.push({
+        filename: 'facebook_icon.png',
+        content: facebookBuffer.toString('base64'),
+        type: 'image/png',
+        cid: 'facebook_icon'
+      });
+    }
+
+    // Add Instagram icon if exists
+    if (fs.existsSync(iconPaths.instagram)) {
+      const instagramBuffer = fs.readFileSync(iconPaths.instagram);
+      attachments.push({
+        filename: 'instagram_icon.png',
+        content: instagramBuffer.toString('base64'),
+        type: 'image/png',
+        cid: 'instagram_icon'
+      });
+    }
+
+    return attachments;
+  }
+
+  /**
    * Get template variables with social media icons included
    * @param {Object} variables - Existing template variables
    * @param {string} senderEmail - Sender email to determine template folder
    * @returns {Object} Variables with social icons added
    */
   addSocialIconsToVariables(variables = {}, senderEmail = null) {
-    // Determine template path based on sender email (same logic as EmailTemplateService)
-    const isNitracarEmail = senderEmail && senderEmail === process.env.NITRACAR_EMAIL_FROM;
-    const templatesPath = isNitracarEmail ? this.nitracarTemplatesPath : this.defaultTemplatesPath;
-
-    const socialIcons = this.getSocialIcons(templatesPath);
-
-    return {
-      ...variables,
-      facebook_icon: socialIcons.facebook,
-      instagram_icon: socialIcons.instagram,
-    };
+    // Templates now use CID references, no need to add base64 data
+    // Keep this method for backward compatibility but return variables unchanged
+    return variables;
   }
 
   /**
