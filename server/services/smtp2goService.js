@@ -142,10 +142,16 @@ class SMTP2GOService {
         filename: attachment.filename,
         fileblob: attachment.content,
         mimetype: attachment.type,
-        custom_headers: [{
-          header: 'Content-ID',
-          value: `<${attachment.cid}>`
-        }]
+        custom_headers: [
+          {
+            header: 'Content-ID',
+            value: `<${attachment.cid}>`
+          },
+          {
+            header: 'Content-Disposition',
+            value: 'inline'
+          }
+        ]
       }));
       console.log('📎 [SMTP2GO] Added', iconAttachments.length, 'inline attachments (icons)');
     }
@@ -1239,10 +1245,16 @@ class SMTP2GOService {
         filename: attachment.filename,
         fileblob: attachment.content,
         mimetype: attachment.type,
-        custom_headers: [{
-          header: 'Content-ID',
-          value: `<${attachment.cid}>`
-        }]
+        custom_headers: [
+          {
+            header: 'Content-ID',
+            value: `<${attachment.cid}>`
+          },
+          {
+            header: 'Content-Disposition',
+            value: 'inline'
+          }
+        ]
       }));
       console.log('📎 [SMTP2GO] Added', iconAttachments.length, 'inline attachments (icons)');
     }
