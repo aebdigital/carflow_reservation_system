@@ -607,7 +607,7 @@ class SMTP2GOService {
   }
 
   // Customer confirmation email when admin confirms reservation
-  async sendCustomerReservationConfirmed(to, reservationData, rawReservation = null, user = null) {
+  async sendCustomerReservationConfirmed(to, reservationData, user = null, rawReservation = null) {
     console.log('📧 [SMTP2GO DEBUG] sendCustomerReservationConfirmed called with:', {
       to: to,
       hasReservationData: !!reservationData,
