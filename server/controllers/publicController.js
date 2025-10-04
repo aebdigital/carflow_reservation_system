@@ -5,6 +5,7 @@ const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const bcrypt = require('bcryptjs');
 const { DiscountCode } = require('../models/WebsiteSettings');
 const pdfService = require('../services/pdfService');
+const { processReservationDates } = require('../utils/dateHelpers');
 
 // Helper function to get tenant by user email
 const getTenantByUserEmail = async (email) => {
@@ -633,9 +634,8 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     return next(new AppError('Missing required fields: firstName, lastName, email, phone, carId, startDate, endDate', 400));
   }
 
-  // Validate dates
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  // Validate dates - process to ensure proper time information
+  const { start, end } = processReservationDates(startDate, endDate);
   const now = new Date();
 
   if (start < now) {
@@ -1342,9 +1342,8 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
   console.log('🔧 [TENANT FIX] Car:', `${car.brand} ${car.model} (${car._id})`);
   console.log('🔧 [TENANT FIX] Customer email:', email);
 
-  // Validate dates
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  // Validate dates - process to ensure proper time information
+  const { start, end } = processReservationDates(startDate, endDate);
   const now = new Date();
 
   if (start < now) {

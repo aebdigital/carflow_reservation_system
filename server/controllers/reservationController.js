@@ -6,6 +6,7 @@ const { DiscountCode } = require('../models/WebsiteSettings');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const PDFDocument = require('pdfkit');
 const pdfService = require('../services/pdfService');
+const { processReservationDates } = require('../utils/dateHelpers');
 
 // @desc    Get all reservations (tenant-scoped)
 // @route   GET /api/reservations
@@ -276,8 +277,8 @@ const createReservation = asyncHandler(async (req, res, next) => {
   }
 
   // Check for overlapping reservations (tenant-scoped)
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  // Process dates to ensure proper time information
+  const { start, end } = processReservationDates(startDate, endDate);
   
   const overlappingReservations = await Reservation.find({
     car: car,
@@ -393,8 +394,8 @@ const createReservation = asyncHandler(async (req, res, next) => {
   const reservationData = {
     customer: customerDoc._id,
     car,
-    startDate: start,
-    endDate: end,
+    startDate: start, // Now includes proper time information
+    endDate: end, // Now includes proper time information
     pickupLocation,
     dropoffLocation,
     pricing,
@@ -556,6 +557,17 @@ const updateReservation = asyncHandler(async (req, res, next) => {
   if (req.body.startDate || req.body.endDate) {
     const newStartDate = req.body.startDate ? new Date(req.body.startDate) : reservation.startDate;
     const newEndDate = req.body.endDate ? new Date(req.body.endDate) : reservation.endDate;
+
+    // Ensure time information is preserved for new dates
+    if (req.body.startDate) {
+      const { processReservationDate } = require('../utils/dateHelpers');
+      req.body.startDate = processReservationDate(req.body.startDate, false);
+    }
+
+    if (req.body.endDate) {
+      const { processReservationDate } = require('../utils/dateHelpers');
+      req.body.endDate = processReservationDate(req.body.endDate, true);
+    }
 
     if (newStartDate >= newEndDate) {
       return next(new AppError('Dátum ukončenia musí byť po dátume začatia', 400));

@@ -109,7 +109,20 @@ function Reservations() {
   const [selectedReservationForQR, setSelectedReservationForQR] = useState(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [reservationToDelete, setReservationToDelete] = useState(null)
-  
+
+  // Helper function to format date and time for Slovak locale
+  const formatDateTime = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleString('sk-SK', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   // Customer creation state
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false)
   const [customerFormData, setCustomerFormData] = useState({
@@ -798,10 +811,10 @@ function Reservations() {
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        {new Date(reservation.startDate).toLocaleDateString()}
+                        {formatDateTime(reservation.startDate)}
                       </TableCell>
                       <TableCell>
-                        {new Date(reservation.endDate).toLocaleDateString()}
+                        {formatDateTime(reservation.endDate)}
                       </TableCell>
                       <TableCell>
                         <Chip
@@ -1066,10 +1079,10 @@ function Reservations() {
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        {new Date(reservation.startDate).toLocaleDateString()}
+                        {formatDateTime(reservation.startDate)}
                       </TableCell>
                       <TableCell>
-                        {new Date(reservation.endDate).toLocaleDateString()}
+                        {formatDateTime(reservation.endDate)}
                       </TableCell>
                       <TableCell>
                         <Chip
@@ -1221,10 +1234,10 @@ function Reservations() {
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        {new Date(reservation.startDate).toLocaleDateString()}
+                        {formatDateTime(reservation.startDate)}
                       </TableCell>
                       <TableCell>
-                        {new Date(reservation.endDate).toLocaleDateString()}
+                        {formatDateTime(reservation.endDate)}
                       </TableCell>
                       <TableCell>
                         <Chip
@@ -1393,10 +1406,10 @@ function Reservations() {
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        {new Date(reservation.startDate).toLocaleDateString()}
+                        {formatDateTime(reservation.startDate)}
                       </TableCell>
                       <TableCell>
-                        {new Date(reservation.endDate).toLocaleDateString()}
+                        {formatDateTime(reservation.endDate)}
                       </TableCell>
                       <TableCell>
                         <Chip
@@ -1593,13 +1606,13 @@ function Reservations() {
                         {t('rentalPeriod')}
                       </Typography>
                       <Typography variant="body2" gutterBottom>
-                        <strong>Začiatok prenájmu:</strong> {new Date(selectedReservation.startDate).toLocaleDateString('sk-SK', { 
-                          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                        <strong>Začiatok prenájmu:</strong> {new Date(selectedReservation.startDate).toLocaleString('sk-SK', {
+                          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
                         })}
                       </Typography>
                       <Typography variant="body2" gutterBottom>
-                        <strong>Koniec prenájmu:</strong> {new Date(selectedReservation.endDate).toLocaleDateString('sk-SK', { 
-                          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                        <strong>Koniec prenájmu:</strong> {new Date(selectedReservation.endDate).toLocaleString('sk-SK', {
+                          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
                         })}
                       </Typography>
                       <Typography variant="body2" color="primary" fontWeight="medium">
@@ -2365,8 +2378,8 @@ function Reservations() {
                 <TextField
                   fullWidth
                   label="Začiatok prenájmu"
-                  type="date"
-                  value={formData.startDate ? formData.startDate.toISOString().split('T')[0] : ''}
+                  type="datetime-local"
+                  value={formData.startDate ? formData.startDate.toISOString().slice(0, 16) : ''}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value ? new Date(e.target.value) : null })}
                   disabled={dialogMode === 'view'}
                   error={!!formErrors.startDate}
@@ -2382,12 +2395,12 @@ function Reservations() {
                 <TextField
                   fullWidth
                   label="Koniec prenájmu"
-                  type="date"
-                  value={formData.endDate ? formData.endDate.toISOString().split('T')[0] : ''}
+                  type="datetime-local"
+                  value={formData.endDate ? formData.endDate.toISOString().slice(0, 16) : ''}
                   onChange={(e) => setFormData({ ...formData, endDate: e.target.value ? new Date(e.target.value) : null })}
                   disabled={dialogMode === 'view'}
                   inputProps={{
-                    min: formData.startDate ? formData.startDate.toISOString().split('T')[0] : ''
+                    min: formData.startDate ? formData.startDate.toISOString().slice(0, 16) : ''
                   }}
                   error={!!formErrors.endDate}
                   helperText={formErrors.endDate}
