@@ -1,5 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
+const emailIconHelper = require('../utils/emailIconHelper');
 
 class EmailTemplateService {
   constructor() {
@@ -63,17 +64,20 @@ class EmailTemplateService {
    * @param {Object} variables - Variables to replace in template
    * @returns {string} Processed HTML with variables replaced
    */
-  processTemplate(template, variables = {}) {
+  processTemplate(template, variables = {}, senderEmail = null) {
     let processedTemplate = template;
-    
-    // Add current year by default
+
+    // Add current year and social media icons by default
     const defaultVariables = {
       current_year: new Date().getFullYear(),
       ...variables
     };
 
+    // Add social media icons as base64 data URIs
+    const variablesWithIcons = emailIconHelper.addSocialIconsToVariables(defaultVariables, senderEmail);
+
     // Replace all template variables
-    Object.entries(defaultVariables).forEach(([key, value]) => {
+    Object.entries(variablesWithIcons).forEach(([key, value]) => {
       const regex = new RegExp(`{{${key}}}`, 'g');
       processedTemplate = processedTemplate.replace(regex, value || '');
     });
@@ -91,11 +95,11 @@ class EmailTemplateService {
   async getEmailTemplate(templateName, variables = {}, senderEmail = null) {
     try {
       const template = await this.loadTemplate(templateName, senderEmail);
-      const processedHtml = this.processTemplate(template, variables);
-      
+      const processedHtml = this.processTemplate(template, variables, senderEmail);
+
       // Extract subject from variables or use default based on template
       const subject = this.getSubjectForTemplate(templateName, variables);
-      
+
       return {
         subject,
         html: processedHtml,
