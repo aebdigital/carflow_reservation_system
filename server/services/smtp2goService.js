@@ -886,8 +886,9 @@ class SMTP2GOService {
     const senderEmail = emailConfig.emailFrom;
 
     // Prepare template variables from actual backend data structure
-    const startDate = cancellationData.startDate;
-    const endDate = cancellationData.endDate;
+    // Handle both old emailData format and raw reservation data (same as confirmation email)
+    const startDate = rawReservation?.startDate || cancellationData.startDate;
+    const endDate = rawReservation?.endDate || cancellationData.endDate;
 
     const templateVariables = {
       customer_name: cancellationData.customerName || '',
@@ -898,8 +899,8 @@ class SMTP2GOService {
       end_date: endDate ? new Date(endDate).toLocaleDateString('sk-SK') : '',
       start_time: startDate ? new Date(startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }) : '',
       end_time: endDate ? new Date(endDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' }) : '',
-      pickup_location: cancellationData.pickupLocation || 'Miesto vyzdvihnutia',
-      dropoff_location: cancellationData.dropoffLocation || cancellationData.pickupLocation || 'Miesto vrátenia',
+      pickup_location: rawReservation?.pickupLocation?.name || cancellationData.pickupLocation || 'Miesto vyzdvihnutia',
+      dropoff_location: rawReservation?.dropoffLocation?.name || cancellationData.dropoffLocation || rawReservation?.pickupLocation?.name || cancellationData.pickupLocation || 'Miesto vrátenia',
       company_name: user?.businessName || user?.companyName || 'Autopožičovňa',
       company_email: emailConfig.emailFrom,
       company_phone: user?.phoneNumber || user?.phone || '+421 XXX XXX XXX',
