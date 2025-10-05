@@ -79,10 +79,6 @@ class SMTP2GOService {
     const emailConfig = this.getTenantEmailConfig(user);
     const senderEmail = emailConfig.emailFrom;
 
-    // Get icon attachments for CID references
-    const emailIconHelper = require('../utils/emailIconHelper');
-    const iconAttachments = emailIconHelper.getIconAttachments(senderEmail);
-
     console.log('🔍 [SMTP2GO DEBUG] Sender email details:', {
       sender: senderEmail,
       EMAIL_FROM: process.env.EMAIL_FROM,
@@ -135,26 +131,6 @@ class SMTP2GOService {
       text_body: cleanText,              // ACTUAL text content
       headers: headers                   // UTF-8 and emoji support headers
     };
-
-    // Add inline attachments (icons) if available
-    if (iconAttachments && iconAttachments.length > 0) {
-      emailData.inlines = iconAttachments.map(attachment => ({
-        filename: attachment.filename,
-        fileblob: attachment.content,
-        mimetype: attachment.type,
-        custom_headers: [
-          {
-            header: 'Content-ID',
-            value: `<${attachment.cid}>`
-          },
-          {
-            header: 'Content-Disposition',
-            value: 'inline'
-          }
-        ]
-      }));
-      console.log('📎 [SMTP2GO] Added', iconAttachments.length, 'inline attachments (icons)');
-    }
 
     // Log the payload structure (for debugging only)
     console.log('🔍 [SMTP2GO DEBUG] Payload structure:', JSON.stringify({
@@ -1228,13 +1204,8 @@ class SMTP2GOService {
     const emailConfig = this.getTenantEmailConfig(user);
     const senderEmail = emailConfig.emailFrom;
 
-    // Get icon attachments for CID references
-    const emailIconHelper = require('../utils/emailIconHelper');
-    const iconAttachments = emailIconHelper.getIconAttachments(senderEmail);
-
     console.log('📎 [SMTP2GO] Sending email with attachments to:', cleanedToEmails);
     console.log('📎 [SMTP2GO] Attachments count:', attachments.length);
-    console.log('📎 [SMTP2GO] Icon attachments count:', iconAttachments.length);
 
     // Clean and sanitize content to avoid JSON issues
     const cleanText = text ? this.sanitizeTextForJson(text) : this.sanitizeTextForJson(this.stripHtml(html));
@@ -1255,27 +1226,7 @@ class SMTP2GOService {
       }))
     };
 
-    // Add inline attachments (icons) if available
-    if (iconAttachments && iconAttachments.length > 0) {
-      payload.inlines = iconAttachments.map(attachment => ({
-        filename: attachment.filename,
-        fileblob: attachment.content,
-        mimetype: attachment.type,
-        custom_headers: [
-          {
-            header: 'Content-ID',
-            value: `<${attachment.cid}>`
-          },
-          {
-            header: 'Content-Disposition',
-            value: 'inline'
-          }
-        ]
-      }));
-      console.log('📎 [SMTP2GO] Added', iconAttachments.length, 'inline attachments (icons)');
-    }
-
-    console.log('📎 [SMTP2GO] Payload prepared with', attachments.length, 'attachments and', iconAttachments.length, 'inline icons');
+    console.log('📎 [SMTP2GO] Payload prepared with', attachments.length, 'attachments');
 
     return new Promise((resolve, reject) => {
       const postData = JSON.stringify(payload);
