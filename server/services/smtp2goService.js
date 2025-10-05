@@ -920,7 +920,7 @@ class SMTP2GOService {
       company_name: user?.businessName || user?.companyName || 'Autopožičovňa',
       company_email: emailConfig.emailFrom,
       company_phone: user?.phoneNumber || user?.phone || '+421 XXX XXX XXX',
-      link_new: `https://pozicauto.sk/booking`
+      link_new: `https://pozicauto.sk`
     };
 
     // Get processed email template with sender-specific template folder
