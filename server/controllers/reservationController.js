@@ -728,13 +728,13 @@ const cancelReservation = asyncHandler(async (req, res, next) => {
 // @access  Private
 const confirmReservation = asyncHandler(async (req, res, next) => {
   const { notes } = req.body;
-  
+
   const reservation = await Reservation.findOne({
     _id: req.params.id,
     tenantId: req.user.tenantId
   }).populate([
     { path: 'customer', select: 'firstName lastName email phone' },
-    { path: 'car', select: 'brand model year registrationNumber' }
+    { path: 'car', select: 'brand model year registrationNumber images imageUrl pricing deposit' }
   ]);
 
   if (!reservation) {

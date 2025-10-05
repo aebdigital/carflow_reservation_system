@@ -628,6 +628,16 @@ class SMTP2GOService {
     const startDate = rawReservation?.startDate || reservationData.startDate;
     const endDate = rawReservation?.endDate || reservationData.endDate;
 
+    // Debug logging for car data
+    console.log('🔍 [EMAIL DEBUG] Car data sources:', {
+      'reservationData.carInfo': reservationData.carInfo,
+      'rawReservation.car.brand': rawReservation?.car?.brand,
+      'rawReservation.car.model': rawReservation?.car?.model,
+      'rawReservation.car.images': rawReservation?.car?.images,
+      'rawReservation.car.imageUrl': rawReservation?.car?.imageUrl,
+      'reservationData.carImage': reservationData.carImage
+    });
+
     const templateVariables = {
       customer_name: reservationData.customerName || '',
       car_brand: reservationData.carInfo?.split(' ')[0] || rawReservation?.car?.brand || '',
@@ -646,6 +656,12 @@ class SMTP2GOService {
       link_view: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}`,
       link_cancel: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}/cancel`
     };
+
+    console.log('🔍 [EMAIL DEBUG] Final template variables:', {
+      car_brand: templateVariables.car_brand,
+      car_model: templateVariables.car_model,
+      car_image: templateVariables.car_image
+    });
     
     // Add QR code data if available
     console.log('🔍 [EMAIL] Checking QR codes for confirmed email:', {
