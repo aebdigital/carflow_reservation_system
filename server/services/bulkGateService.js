@@ -262,7 +262,7 @@ class BulkGateService {
    * Send review request SMS
    */
   async sendReviewRequest(phoneNumber, reservationData) {
-    const reviewLink = `${process.env.CLIENT_URL || 'https://pozicauto.sk'}/feedback?reservation=${reservationData.reservationNumber}`;
+    const reviewLink = `https://pozicauto.sk/feedback?reservation=${reservationData.reservationNumber}`;
     
     const variables = {
       car_brand: reservationData.carInfo?.split(' ')[0] || '',
