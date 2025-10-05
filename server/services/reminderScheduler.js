@@ -82,7 +82,7 @@ class ReminderScheduler {
         'reminder24h.sent': { $ne: true }
       }).populate([
         { path: 'customer', select: 'firstName lastName email phone' },
-        { path: 'car', select: 'brand model year registrationNumber pricing' }
+        { path: 'car', select: 'brand model year registrationNumber pricing images imageUrl deposit' }
       ]);
 
       console.log(`📧 [REMINDER] Found ${reservations.length} reservations needing 24h reminders`);
@@ -120,7 +120,7 @@ class ReminderScheduler {
         'returnReminder24h.sent': { $ne: true }
       }).populate([
         { path: 'customer', select: 'firstName lastName email phone' },
-        { path: 'car', select: 'brand model year registrationNumber pricing' },
+        { path: 'car', select: 'brand model year registrationNumber pricing images imageUrl deposit' },
         { path: 'createdBy', select: 'email tenantId' }
       ]);
 
@@ -159,7 +159,7 @@ class ReminderScheduler {
         'reviewRequest.sent': { $ne: true }
       }).populate([
         { path: 'customer', select: 'firstName lastName email phone' },
-        { path: 'car', select: 'brand model year registrationNumber pricing' }
+        { path: 'car', select: 'brand model year registrationNumber pricing images imageUrl deposit' }
       ]);
 
       console.log(`⭐ [REVIEW] Found ${reservations.length} reservations needing review requests`);

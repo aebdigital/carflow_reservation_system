@@ -504,7 +504,7 @@ const createReservation = asyncHandler(async (req, res, next) => {
   // Populate the response
   await reservation.populate([
     { path: 'customer', select: 'firstName lastName email phone' },
-    { path: 'car', select: 'brand model year registrationNumber images' },
+    { path: 'car', select: 'brand model year registrationNumber images imageUrl pricing deposit' },
     { path: 'appliedDiscountCodes.discountCode', select: 'code description discountType discountValue' }
   ]);
 
@@ -608,7 +608,7 @@ const updateReservation = asyncHandler(async (req, res, next) => {
   // Store original values for comparison
   const originalReservation = await Reservation.findById(req.params.id).populate([
     { path: 'customer', select: 'firstName lastName email phone' },
-    { path: 'car', select: 'brand model year registrationNumber images' }
+    { path: 'car', select: 'brand model year registrationNumber images imageUrl pricing deposit' }
   ]);
 
   reservation = await Reservation.findByIdAndUpdate(req.params.id, req.body, {
@@ -616,7 +616,7 @@ const updateReservation = asyncHandler(async (req, res, next) => {
     runValidators: true
   }).populate([
     { path: 'customer', select: 'firstName lastName email phone' },
-    { path: 'car', select: 'brand model year registrationNumber images' },
+    { path: 'car', select: 'brand model year registrationNumber images imageUrl pricing deposit' },
     { path: 'payment' }
   ]);
 

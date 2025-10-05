@@ -44,7 +44,7 @@ class InvoicePdfScheduler {
         status: 'completed'
       }).populate([
         { path: 'customer', select: 'firstName lastName email phone' },
-        { path: 'car', select: 'brand model year registrationNumber' }
+        { path: 'car', select: 'brand model year registrationNumber images imageUrl pricing deposit' }
       ]);
 
       console.log(`📧 Found ${reservations.length} reservations needing invoice PDF emails`);
@@ -213,7 +213,7 @@ class InvoicePdfScheduler {
     try {
       const reservation = await Reservation.findById(reservationId).populate([
         { path: 'customer', select: 'firstName lastName email phone' },
-        { path: 'car', select: 'brand model year registrationNumber' }
+        { path: 'car', select: 'brand model year registrationNumber images imageUrl pricing deposit' }
       ]);
 
       if (!reservation) {
