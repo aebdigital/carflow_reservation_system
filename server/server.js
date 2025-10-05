@@ -40,17 +40,24 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
+// Trust proxy - required for Render deployment
+app.set('trust proxy', 1);
+
 // Rate limiting (more lenient for public endpoints)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200 // increased for public access
+  max: 200, // increased for public access
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use('/api/', limiter);
 
 // More permissive rate limiting for public endpoints
 const publicLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500 // higher limit for public browsing
+  max: 500, // higher limit for public browsing
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // CORS configuration - more permissive for public access
