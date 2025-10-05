@@ -32,7 +32,7 @@ async function testCIDEmail() {
       company_name: 'RIVAL Autopožičovňa',
       company_email: process.env.EMAIL_FROM || 'info@rival.sk',
       company_phone: '+421 907 633 517',
-      link_view: 'https://app.carflow.sk/reservations/TEST123',
+      link_view: 'https://pozicauto.sk/reservations/TEST123',
       current_year: new Date().getFullYear()
     };
 

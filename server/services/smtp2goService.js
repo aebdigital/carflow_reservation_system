@@ -485,7 +485,7 @@ class SMTP2GOService {
       company_name: user?.businessName || user?.companyName || 'Autopožičovňa',
       company_email: emailConfig.emailFrom,
       company_phone: user?.phoneNumber || user?.phone || '+421 XXX XXX XXX',
-      link_view: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}`,
+      link_view: `${process.env.CLIENT_URL || 'https://pozicauto.sk'}/reservations/${reservationData.reservationNumber}`,
       current_year: new Date().getFullYear()
     };
 
@@ -653,8 +653,8 @@ class SMTP2GOService {
       company_name: user?.businessName || user?.companyName || 'Autopožičovňa',
       company_email: emailConfig.emailFrom,
       company_phone: user?.phoneNumber || user?.phone || '+421 XXX XXX XXX',
-      link_view: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}`,
-      link_cancel: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}/cancel`
+      link_view: `${process.env.CLIENT_URL || 'https://pozicauto.sk'}/reservations/${reservationData.reservationNumber}`,
+      link_cancel: `${process.env.CLIENT_URL || 'https://pozicauto.sk'}/reservations/${reservationData.reservationNumber}/cancel`
     };
 
     console.log('🔍 [EMAIL DEBUG] Final template variables:', {
@@ -889,7 +889,7 @@ class SMTP2GOService {
       company_name: user?.businessName || user?.companyName || 'Autopožičovňa',
       company_email: emailConfig.emailFrom,
       company_phone: user?.phoneNumber || user?.phone || '+421 XXX XXX XXX',
-      link_view: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/reservations/${reservationData.reservationNumber}`
+      link_view: `${process.env.CLIENT_URL || 'https://pozicauto.sk'}/reservations/${reservationData.reservationNumber}`
     };
 
     // Get processed email template with sender-specific template folder
@@ -944,7 +944,7 @@ class SMTP2GOService {
       company_name: user?.businessName || user?.companyName || 'Autopožičovňa',
       company_email: emailConfig.emailFrom,
       company_phone: user?.phoneNumber || user?.phone || '+421 XXX XXX XXX',
-      link_new: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/booking`
+      link_new: `${process.env.CLIENT_URL || 'https://pozicauto.sk'}/booking`
     };
 
     // Get processed email template with sender-specific template folder
@@ -1109,7 +1109,7 @@ class SMTP2GOService {
       company_email: emailConfig.emailFrom,
       company_phone: user?.phoneNumber || user?.phone || '+421 XXX XXX XXX',
       google_review_link: process.env.GOOGLE_REVIEW_URL || 'https://g.page/r/YOUR_GOOGLE_BUSINESS_ID/review',
-      feedback_form_link: `${process.env.CLIENT_URL || 'https://app.carflow.sk'}/feedback?reservation=${reservationData.reservationNumber}`
+      feedback_form_link: `${process.env.CLIENT_URL || 'https://pozicauto.sk'}/feedback?reservation=${reservationData.reservationNumber}`
     };
 
     // Get processed email template with sender-specific template folder
