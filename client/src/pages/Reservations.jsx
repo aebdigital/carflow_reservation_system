@@ -736,7 +736,7 @@ function Reservations() {
               Error loading reservations: {reservationsError.message}
             </Alert>
           ) : (
-            <TableContainer>
+            <TableContainer sx={{ overflowX: 'auto' }}>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -875,22 +875,24 @@ function Reservations() {
                                   <PaymentIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
-                              <Tooltip title="Poslať upomienku platby">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => {
-                                    console.log('Payment notification clicked for:', reservation._id);
-                                    handleSendPaymentNotification(reservation);
-                                  }}
-                                  color="warning"
-                                  sx={{ 
-                                    backgroundColor: 'warning.light', 
-                                    '&:hover': { backgroundColor: 'warning.main' } 
-                                  }}
-                                >
-                                  <EmailIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
+                              {auth.user?.email !== 'rival@test.sk' && (
+                                <Tooltip title="Poslať upomienku platby">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => {
+                                      console.log('Payment notification clicked for:', reservation._id);
+                                      handleSendPaymentNotification(reservation);
+                                    }}
+                                    color="warning"
+                                    sx={{
+                                      backgroundColor: 'warning.light',
+                                      '&:hover': { backgroundColor: 'warning.main' }
+                                    }}
+                                  >
+                                    <EmailIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
                             </>
                           )}
                           {reservation.status === 'zaplatene' && (
@@ -1004,7 +1006,7 @@ function Reservations() {
               Error loading reservations: {reservationsError.message}
             </Alert>
           ) : (
-            <TableContainer>
+            <TableContainer sx={{ overflowX: 'auto' }}>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -1159,7 +1161,7 @@ function Reservations() {
               Error loading reservations: {reservationsError.message}
             </Alert>
           ) : (
-            <TableContainer>
+            <TableContainer sx={{ overflowX: 'auto' }}>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -1331,7 +1333,7 @@ function Reservations() {
               Error loading reservations: {reservationsError.message}
             </Alert>
           ) : (
-            <TableContainer>
+            <TableContainer sx={{ overflowX: 'auto' }}>
               <Table>
                 <TableHead>
                   <TableRow>
