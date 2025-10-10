@@ -17,18 +17,22 @@ import {
   Divider,
   Chip,
   Paper,
+  Tooltip,
+  IconButton,
 } from '@mui/material'
 import {
   Save as SaveIcon,
   Preview as PreviewIcon,
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
+  Language as LanguageIcon,
 } from '@mui/icons-material'
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { sk } from 'date-fns/locale'
 import { useUpdateInfoBarMutation, useToggleInfoBarMutation } from '../../store/store'
+import InfoBarEnglishTranslation from '../admin/InfoBarEnglishTranslation'
 
 const colorOptions = [
   { value: 'red', label: 'Červená (Urgent)', color: '#f44336', bgColor: '#d32f2f' },
@@ -60,6 +64,7 @@ export default function InfoBarSettings({ settings }) {
   const [toggleInfoBar, { isLoading: isToggling }] = useToggleInfoBarMutation()
   const [alert, setAlert] = useState(null)
   const [showPreview, setShowPreview] = useState(false)
+  const [translationDialog, setTranslationDialog] = useState(false)
 
   useEffect(() => {
     if (settings?.infoBar) {
@@ -256,7 +261,7 @@ export default function InfoBarSettings({ settings }) {
                   </Grid>
 
                   <Grid item xs={12}>
-                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
                       <Button
                         type="submit"
                         variant="contained"
@@ -283,6 +288,30 @@ export default function InfoBarSettings({ settings }) {
                       >
                         {showPreview ? 'Skryť' : 'Ukázať'} náhľad
                       </Button>
+
+                      <Tooltip title="English Translation">
+                        <IconButton
+                          onClick={() => setTranslationDialog(true)}
+                          color="info"
+                          sx={{ position: 'relative' }}
+                        >
+                          <LanguageIcon />
+                          {settings?.infoBar?.textEn && (
+                            <Box
+                              component="span"
+                              sx={{
+                                position: 'absolute',
+                                top: 4,
+                                right: 4,
+                                width: 8,
+                                height: 8,
+                                bgcolor: 'success.main',
+                                borderRadius: '50%',
+                              }}
+                            />
+                          )}
+                        </IconButton>
+                      </Tooltip>
                     </Box>
                   </Grid>
                 </Grid>
@@ -346,6 +375,12 @@ export default function InfoBarSettings({ settings }) {
           </Card>
         </Grid>
       </Grid>
+
+      <InfoBarEnglishTranslation
+        infoBar={settings?.infoBar}
+        open={translationDialog}
+        onClose={() => setTranslationDialog(false)}
+      />
     </LocalizationProvider>
   )
 } 

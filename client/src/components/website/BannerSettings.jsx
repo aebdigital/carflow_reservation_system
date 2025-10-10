@@ -49,17 +49,19 @@ import {
   CloudUpload as UploadIcon,
   DragIndicator as DragIcon,
   DeleteOutline as RemoveIcon,
-  PhotoLibrary as PhotoLibraryIcon
+  PhotoLibrary as PhotoLibraryIcon,
+  Language as LanguageIcon
 } from '@mui/icons-material'
-import { 
-  useGetBannersQuery, 
-  useCreateBannerMutation, 
-  useUpdateBannerMutation, 
+import {
+  useGetBannersQuery,
+  useCreateBannerMutation,
+  useUpdateBannerMutation,
   useDeleteBannerMutation,
   useAddBannerImagesMutation,
   useRemoveBannerImageMutation,
   useReorderBannerImagesMutation
 } from '../../store/store'
+import BannerImageEnglishTranslation from '../admin/BannerImageEnglishTranslation'
 
 const positionOptions = [
   { value: 'hero-section', label: 'Hero sekcia' },
@@ -68,7 +70,7 @@ const positionOptions = [
 ]
 
 // Drag and Drop Image Component
-const DraggableImage = ({ image, index, onRemove, onDragStart, onDragOver, onDrop, isEditing }) => {
+const DraggableImage = ({ image, index, onRemove, onTranslate, onDragStart, onDragOver, onDrop, isEditing }) => {
   const [isDragOver, setIsDragOver] = useState(false)
 
   const handleDragStart = (e) => {
@@ -144,9 +146,41 @@ const DraggableImage = ({ image, index, onRemove, onDragStart, onDragOver, onDro
               position: 'absolute',
               top: 8,
               right: 8,
-              zIndex: 10
+              zIndex: 10,
+              display: 'flex',
+              gap: 0.5
             }}
           >
+            <Tooltip title="English Translation">
+              <IconButton
+                size="small"
+                onClick={() => onTranslate && onTranslate(image)}
+                sx={{
+                  backgroundColor: 'rgba(25, 118, 210, 0.8)',
+                  color: 'white',
+                  position: 'relative',
+                  '&:hover': {
+                    backgroundColor: 'rgba(25, 118, 210, 1)'
+                  }
+                }}
+              >
+                <LanguageIcon fontSize="small" />
+                {(image.altEn || image.titleEn || image.descriptionEn) && (
+                  <Box
+                    component="span"
+                    sx={{
+                      position: 'absolute',
+                      top: 2,
+                      right: 2,
+                      width: 6,
+                      height: 6,
+                      bgcolor: '#4caf50',
+                      borderRadius: '50%',
+                    }}
+                  />
+                )}
+              </IconButton>
+            </Tooltip>
             <IconButton
               size="small"
               onClick={() => onRemove(image._id)}
@@ -186,6 +220,7 @@ export default function BannerSettings() {
   const [selectedFiles, setSelectedFiles] = useState([])
   const [imagePreviews, setImagePreviews] = useState([])
   const [alert, setAlert] = useState(null)
+  const [translationDialog, setTranslationDialog] = useState({ open: false, image: null, bannerId: null })
   const [formData, setFormData] = useState({
     position: 'hero-section',
     isActive: true,
@@ -305,7 +340,7 @@ export default function BannerSettings() {
 
   const handleRemoveImage = async (imageId) => {
     const imageToRemove = imagePreviews.find(img => img._id === imageId)
-    
+
     if (imageToRemove?.isNew) {
       // Remove from local state for new images
       setImagePreviews(prev => prev.filter(img => img._id !== imageId))
@@ -316,22 +351,30 @@ export default function BannerSettings() {
         setAlert({ type: 'error', message: 'Banner musí mať aspoň jeden obrázok.' })
         return
       }
-      
+
       try {
         await removeBannerImage({ bannerId: selectedBanner.id, imageId }).unwrap()
         setImagePreviews(prev => prev.filter(img => img._id !== imageId))
         setAlert({ type: 'success', message: 'Obrázok bol úspešne odstránený!' })
         refetch()
       } catch (error) {
-        setAlert({ 
-          type: 'error', 
-          message: `Chyba pri odstraňovaní obrázka: ${error.data?.message || error.message}` 
+        setAlert({
+          type: 'error',
+          message: `Chyba pri odstraňovaní obrázka: ${error.data?.message || error.message}`
         })
       }
     } else {
       // Remove from local state for preview
       setImagePreviews(prev => prev.filter(img => img._id !== imageId))
     }
+  }
+
+  const handleTranslateImage = (image) => {
+    if (!selectedBanner) {
+      setAlert({ type: 'error', message: 'Uložte banner pred pridaním prekladov.' })
+      return
+    }
+    setTranslationDialog({ open: true, image, bannerId: selectedBanner.id })
   }
 
   const handleDragAndDrop = useCallback((draggedIndex, targetIndex) => {
@@ -740,6 +783,7 @@ export default function BannerSettings() {
                                   image={image}
                                   index={index}
                                   onRemove={handleRemoveImage}
+                                  onTranslate={handleTranslateImage}
                                   onDragStart={() => {}}
                                   onDragOver={() => {}}
                                   onDrop={handleDragAndDrop}
@@ -824,6 +868,17 @@ export default function BannerSettings() {
               </DialogActions>
             </form>
           </Dialog>
+
+          <BannerImageEnglishTranslation
+            image={translationDialog.image}
+            bannerId={translationDialog.bannerId}
+            open={translationDialog.open}
+            onClose={() => setTranslationDialog({ open: false, image: null, bannerId: null })}
+            onSuccess={() => {
+              refetch()
+              setAlert({ type: 'success', message: 'Preklad bol úspešne uložený!' })
+            }}
+          />
         </Box>
       )
     } 

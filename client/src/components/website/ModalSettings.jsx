@@ -43,19 +43,21 @@ import {
   Delete as DeleteIcon,
   Cancel as CancelIcon,
   Analytics as AnalyticsIcon,
+  Language as LanguageIcon,
 } from '@mui/icons-material'
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { sk } from 'date-fns/locale'
-import { 
+import {
   useGetModalsQuery,
   useCreateModalMutation,
   useUpdateModalMutation,
   useDeleteModalMutation,
-  useToggleModalMutation 
+  useToggleModalMutation
 } from '../../store/store'
 import { store } from '../../store/store'
+import ModalEnglishTranslation from '../admin/ModalEnglishTranslation'
 
 const modalTypeOptions = [
   { value: 'newsletter', label: 'Newsletter' },
@@ -150,6 +152,7 @@ export default function ModalSettings() {
   const [formData, setFormData] = useState(initialFormData)
   const [alert, setAlert] = useState(null)
   const [showPreview, setShowPreview] = useState(false)
+  const [translationDialog, setTranslationDialog] = useState({ open: false, modal: null })
 
   const { data: modalsData, isLoading: modalsLoading, error: modalsError, refetch } = useGetModalsQuery()
   const [createModal, { isLoading: creating }] = useCreateModalMutation()
@@ -649,24 +652,48 @@ export default function ModalSettings() {
                         </TableCell>
                         <TableCell>
                           <Tooltip title="Upraviť">
-                            <IconButton 
-                              size="small" 
+                            <IconButton
+                              size="small"
                               onClick={() => handleOpenDialog('edit', modal)}
                             >
                               <EditIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          <Tooltip title="English Translation">
+                            <IconButton
+                              size="small"
+                              onClick={() => setTranslationDialog({ open: true, modal })}
+                              color="info"
+                              sx={{ position: 'relative' }}
+                            >
+                              <LanguageIcon fontSize="small" />
+                              {modal.titleEn && (
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    position: 'absolute',
+                                    top: 2,
+                                    right: 2,
+                                    width: 6,
+                                    height: 6,
+                                    bgcolor: 'success.main',
+                                    borderRadius: '50%',
+                                  }}
+                                />
+                              )}
+                            </IconButton>
+                          </Tooltip>
                           <Tooltip title={modal.isActive ? 'Deaktivovať' : 'Aktivovať'}>
-                            <IconButton 
-                              size="small" 
+                            <IconButton
+                              size="small"
                               onClick={() => handleToggleActive(modal._id, modal.isActive)}
                             >
                               {modal.isActive ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Náhľad">
-                            <IconButton 
-                              size="small" 
+                            <IconButton
+                              size="small"
                               onClick={() => {
                                 setFormData({
                                   ...modal,
@@ -680,8 +707,8 @@ export default function ModalSettings() {
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Vymazať">
-                            <IconButton 
-                              size="small" 
+                            <IconButton
+                              size="small"
                               color="error"
                               onClick={() => handleDelete(modal._id)}
                             >
@@ -1107,6 +1134,12 @@ export default function ModalSettings() {
 
         {/* Preview Modal */}
       {renderPreviewModal()}
+
+      <ModalEnglishTranslation
+        modal={translationDialog.modal}
+        open={translationDialog.open}
+        onClose={() => setTranslationDialog({ open: false, modal: null })}
+      />
       </Box>
     </LocalizationProvider>
   )
