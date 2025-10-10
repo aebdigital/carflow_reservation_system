@@ -44,11 +44,13 @@ import {
   PhotoCamera as PhotoIcon,
   Euro as EuroIcon,
   Check as CheckIcon,
-  Close as UncheckedIcon
+  Close as UncheckedIcon,
+  Language as LanguageIcon
 } from '@mui/icons-material';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { t } from '../utils/translations';
 import AdditionalServiceForm from '../components/additionalServices/AdditionalServiceForm';
+import ServiceEnglishTranslation from '../components/admin/ServiceEnglishTranslation';
 
 // API endpoints (will be replaced with RTK Query)
 const additionalServicesAPI = {
@@ -115,6 +117,7 @@ function AdditionalServices() {
   const [selectedService, setSelectedService] = useState(null);
   const [dialogMode, setDialogMode] = useState('create');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [translationDialog, setTranslationDialog] = useState({ open: false, service: null });
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -706,16 +709,39 @@ function AdditionalServices() {
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Upraviť">
-                    <IconButton 
-                      size="small" 
+                    <IconButton
+                      size="small"
                       onClick={() => handleOpenDialog('edit', service)}
                     >
                       <EditIcon />
                     </IconButton>
                   </Tooltip>
+                  <Tooltip title="English Translation">
+                    <IconButton
+                      size="small"
+                      onClick={() => setTranslationDialog({ open: true, service })}
+                      color="info"
+                    >
+                      <LanguageIcon />
+                      {service.nameEn && (
+                        <Box
+                          component="span"
+                          sx={{
+                            position: 'absolute',
+                            top: 2,
+                            right: 2,
+                            width: 6,
+                            height: 6,
+                            bgcolor: 'success.main',
+                            borderRadius: '50%',
+                          }}
+                        />
+                      )}
+                    </IconButton>
+                  </Tooltip>
                   <Tooltip title="Vymazať">
-                    <IconButton 
-                      size="small" 
+                    <IconButton
+                      size="small"
                       onClick={() => handleDelete(service._id)}
                       color="error"
                     >
@@ -851,6 +877,13 @@ function AdditionalServices() {
           )}
         </DialogActions>
       </Dialog>
+
+      {/* English Translation Dialog */}
+      <ServiceEnglishTranslation
+        service={translationDialog.service}
+        open={translationDialog.open}
+        onClose={() => setTranslationDialog({ open: false, service: null })}
+      />
     </Box>
   );
 }

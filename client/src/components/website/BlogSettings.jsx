@@ -39,16 +39,18 @@ import {
   Image as ImageIcon,
   ExpandMore as ExpandMoreIcon,
   Schedule as ScheduleIcon,
-  Search as SearchIcon
+  Search as SearchIcon,
+  Language as LanguageIcon
 } from '@mui/icons-material';
-import { 
-  useGetBlogsQuery, 
-  useCreateBlogMutation, 
-  useUpdateBlogMutation, 
+import {
+  useGetBlogsQuery,
+  useCreateBlogMutation,
+  useUpdateBlogMutation,
   useDeleteBlogMutation,
   useToggleBlogStatusMutation,
   useUploadBlogImageMutation
 } from '../../store/store';
+import BlogEnglishTranslation from '../admin/BlogEnglishTranslation';
 
 // Rich text editor component (simplified version)
 const RichTextEditor = ({ value, onChange, placeholder }) => {
@@ -74,6 +76,7 @@ const BlogSettings = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [translationDialog, setTranslationDialog] = useState({ open: false, blog: null });
 
   // Blog form state
   const [blogData, setBlogData] = useState({
@@ -578,24 +581,46 @@ const BlogSettings = () => {
 
 
                       <Stack direction="row" spacing={1}>
-                        <IconButton 
-                          size="small" 
+                        <IconButton
+                          size="small"
                           onClick={() => handleOpenBlogDialog(blog)}
                           color="primary"
                           title="Upraviť"
                         >
                           <EditIcon />
                         </IconButton>
-                        <IconButton 
-                          size="small" 
+                        <IconButton
+                          size="small"
+                          onClick={() => setTranslationDialog({ open: true, blog })}
+                          color="info"
+                          title="English Translation"
+                        >
+                          <LanguageIcon />
+                          {blog.titleEn && (
+                            <Chip
+                              label="EN"
+                              size="small"
+                              color="success"
+                              sx={{
+                                position: 'absolute',
+                                top: -4,
+                                right: -4,
+                                height: 16,
+                                fontSize: 9
+                              }}
+                            />
+                          )}
+                        </IconButton>
+                        <IconButton
+                          size="small"
                           onClick={() => handleToggleStatus(blog._id, blog.status)}
                           color={blog.status === 'published' ? 'warning' : 'success'}
                           title={blog.status === 'published' ? 'Zrušiť publikovanie' : 'Publikovať'}
                         >
                           {blog.status === 'published' ? <UnpublishIcon /> : <PublishIcon />}
                         </IconButton>
-                        <IconButton 
-                          size="small" 
+                        <IconButton
+                          size="small"
                           onClick={() => handleDeleteBlog(blog._id)}
                           color="error"
                           title="Vymazať"
@@ -801,6 +826,13 @@ const BlogSettings = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* English Translation Dialog */}
+      <BlogEnglishTranslation
+        blog={translationDialog.blog}
+        open={translationDialog.open}
+        onClose={() => setTranslationDialog({ open: false, blog: null })}
+      />
     </Box>
   );
 };
