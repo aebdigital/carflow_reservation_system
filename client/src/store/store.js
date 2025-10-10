@@ -988,6 +988,68 @@ export const api = createApi({
         body: contactData,
       }),
     }),
+
+    // ========== ENGLISH TRANSLATION ENDPOINTS ==========
+
+    // Car English Translation
+    updateCarEnglish: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `cars/${id}/english`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Car', id }, 'Car'],
+    }),
+
+    // Additional Service English Translation
+    updateServiceEnglish: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `additional-services/${id}/english`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['Settings'],
+    }),
+
+    // Blog English Translation
+    updateBlogEnglish: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `blogs/${id}/english`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Blog', id }, 'Blog'],
+    }),
+
+    // Info Bar English Translation
+    updateInfoBarEnglish: builder.mutation({
+      query: (body) => ({
+        url: 'website/settings/info-bar/english',
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['WebsiteSettings'],
+    }),
+
+    // Modal English Translation
+    updateModalEnglish: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `website/modals/${id}/english`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['WebsiteSettings'],
+    }),
+
+    // Banner Image English Translation
+    updateBannerImageEnglish: builder.mutation({
+      query: ({ bannerId, imageId, ...body }) => ({
+        url: `banners/${bannerId}/images/${imageId}/english`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: (result, error, { bannerId }) => [{ type: 'Banner', id: bannerId }, 'Banner'],
+    }),
   }),
 })
 
@@ -1134,6 +1196,14 @@ export const {
   
   // User management hooks
   useToggleUserEmailOptOutMutation,
+
+  // English Translation hooks
+  useUpdateCarEnglishMutation,
+  useUpdateServiceEnglishMutation,
+  useUpdateBlogEnglishMutation,
+  useUpdateInfoBarEnglishMutation,
+  useUpdateModalEnglishMutation,
+  useUpdateBannerImageEnglishMutation,
 } = api
 
 export const store = configureStore({

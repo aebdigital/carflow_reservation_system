@@ -35,7 +35,8 @@ import {
   Star as StarIcon,
   Close as CloseIcon,
   Search as SearchIcon,
-  Clear as ClearIcon
+  Clear as ClearIcon,
+  Language as LanguageIcon
 } from '@mui/icons-material'
 import {
   useGetCarsQuery,
@@ -48,6 +49,7 @@ import {
 } from '../store/store'
 import { t } from '../utils/translations'
 import EnhancedCarForm from '../components/cars/EnhancedCarForm'
+import CarEnglishTranslation from '../components/admin/CarEnglishTranslation'
 
 function Cars() {
   const [openDialog, setOpenDialog] = useState(false)
@@ -55,6 +57,7 @@ function Cars() {
   const [dialogMode, setDialogMode] = useState('create') // 'create', 'edit', 'view'
   const [selectedImages, setSelectedImages] = useState([])
   const [imagePreviewUrls, setImagePreviewUrls] = useState([])
+  const [translationDialog, setTranslationDialog] = useState({ open: false, car: null })
 
   // Initial form state - Enhanced for comprehensive car management
   const initialFormState = {
@@ -1231,8 +1234,8 @@ function Cars() {
               >
                 <ViewIcon sx={{ fontSize: '22px' }} />
               </IconButton>
-              <IconButton 
-                size="medium" 
+              <IconButton
+                size="medium"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleOpenDialog('edit', car);
@@ -1242,8 +1245,35 @@ function Cars() {
               >
                 <EditIcon sx={{ fontSize: '22px' }} />
               </IconButton>
-              <IconButton 
-                size="medium" 
+              <Tooltip title="English Translation">
+                <IconButton
+                  size="medium"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTranslationDialog({ open: true, car });
+                  }}
+                  color="info"
+                  sx={{ mr: 0.5, p: 0.6 }}
+                >
+                  <LanguageIcon sx={{ fontSize: '22px' }} />
+                  {car.descriptionEn && (
+                    <Box
+                      component="span"
+                      sx={{
+                        position: 'absolute',
+                        top: 2,
+                        right: 2,
+                        width: 8,
+                        height: 8,
+                        bgcolor: 'success.main',
+                        borderRadius: '50%',
+                      }}
+                    />
+                  )}
+                </IconButton>
+              </Tooltip>
+              <IconButton
+                size="medium"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDelete(car._id);
@@ -1465,14 +1495,21 @@ function Cars() {
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert 
-          onClose={handleCloseSnackbar} 
-          severity={snackbar.severity} 
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* English Translation Dialog */}
+      <CarEnglishTranslation
+        car={translationDialog.car}
+        open={translationDialog.open}
+        onClose={() => setTranslationDialog({ open: false, car: null })}
+      />
     </Box>
   )
 }

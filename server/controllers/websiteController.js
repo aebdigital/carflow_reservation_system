@@ -385,11 +385,78 @@ const toggleInfoBar = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Update info bar English translation
+// @route   PUT /api/website/settings/info-bar/english
+// @access  Private/Admin
+const updateInfoBarEnglish = asyncHandler(async (req, res, next) => {
+  const { textEn } = req.body;
+
+  const updateData = {
+    'infoBar.textEn': textEn || '',
+    lastUpdatedBy: req.user._id
+  };
+
+  const settings = await WebsiteSettings.findOneAndUpdate(
+    { tenantId: req.user.tenantId },
+    updateData,
+    {
+      new: true,
+      runValidators: true,
+      upsert: true
+    }
+  ).populate('lastUpdatedBy', 'firstName lastName email');
+
+  res.status(200).json({
+    success: true,
+    data: settings.infoBar,
+    message: 'Info bar English translation updated successfully'
+  });
+});
+
+// @desc    Update modal English translations
+// @route   PUT /api/website/modals/:id/english
+// @access  Private/Admin
+const updateModalEnglish = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { titleEn, contentEn, emailPlaceholderEn, buttonTextEn, secondaryButtonTextEn } = req.body;
+
+  const settings = await WebsiteSettings.findOne({ tenantId: req.user.tenantId });
+
+  if (!settings) {
+    return next(new AppError('Website settings not found', 404));
+  }
+
+  const modalIndex = settings.modals.findIndex(modal => modal._id.toString() === id);
+
+  if (modalIndex === -1) {
+    return next(new AppError('Modal not found', 404));
+  }
+
+  // Update English fields
+  if (titleEn !== undefined) settings.modals[modalIndex].titleEn = titleEn;
+  if (contentEn !== undefined) settings.modals[modalIndex].contentEn = contentEn;
+  if (emailPlaceholderEn !== undefined) settings.modals[modalIndex].emailPlaceholderEn = emailPlaceholderEn;
+  if (buttonTextEn !== undefined) settings.modals[modalIndex].buttonTextEn = buttonTextEn;
+  if (secondaryButtonTextEn !== undefined) settings.modals[modalIndex].secondaryButtonTextEn = secondaryButtonTextEn;
+
+  settings.modals[modalIndex].lastUpdatedBy = req.user._id;
+  settings.lastUpdatedBy = req.user._id;
+
+  await settings.save();
+
+  res.status(200).json({
+    success: true,
+    data: settings.modals[modalIndex],
+    message: 'Modal English translations updated successfully'
+  });
+});
+
 module.exports = {
   getWebsiteSettings,
   updateWebsiteSettings,
   updateInfoBar,
   toggleInfoBar,
+  updateInfoBarEnglish,
   // Modal CRUD operations
   getModals,
   createModal,
@@ -397,5 +464,6 @@ module.exports = {
   deleteModal,
   toggleModal,
   getActiveModals,
-  recordModalAnalytics
+  recordModalAnalytics,
+  updateModalEnglish
 }; 

@@ -15,7 +15,12 @@ const blogSchema = new mongoose.Schema({
     trim: true,
     maxLength: [200, 'Title cannot exceed 200 characters']
   },
-  
+  titleEn: {
+    type: String,
+    trim: true,
+    maxLength: [200, 'English title cannot exceed 200 characters']
+  },
+
   slug: {
     type: String,
     required: [true, 'Blog slug is required'],
@@ -23,17 +28,31 @@ const blogSchema = new mongoose.Schema({
     lowercase: true,
     match: [/^[a-z0-9-]+$/, 'Slug can only contain lowercase letters, numbers, and hyphens']
   },
-  
+  slugEn: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    match: [/^[a-z0-9-]+$/, 'English slug can only contain lowercase letters, numbers, and hyphens']
+  },
+
   excerpt: {
     type: String,
     required: [true, 'Blog excerpt is required'],
     trim: true,
     maxLength: [500, 'Excerpt cannot exceed 500 characters']
   },
-  
+  excerptEn: {
+    type: String,
+    trim: true,
+    maxLength: [500, 'English excerpt cannot exceed 500 characters']
+  },
+
   content: {
     type: String,
     required: [true, 'Blog content is required']
+  },
+  contentEn: {
+    type: String
   },
   
   // Featured image

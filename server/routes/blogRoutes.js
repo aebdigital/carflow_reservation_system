@@ -7,7 +7,8 @@ const {
   updateBlog,
   deleteBlog,
   uploadBlogImageHandler,
-  toggleBlogStatus
+  toggleBlogStatus,
+  updateBlogEnglish
 } = require('../controllers/blogController');
 
 const { protect, requireStaff } = require('../middleware/authMiddleware');
@@ -49,5 +50,8 @@ router.post('/:id/upload-image', upload.single('image'), uploadBlogImageHandler)
 
 // Publish/unpublish blog
 router.patch('/:id/publish', toggleBlogStatus);
+
+// English translation route
+router.put('/:id/english', updateBlogEnglish);
 
 module.exports = router; 

@@ -2449,6 +2449,35 @@ const testFileUpload = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Update car English translation
+// @route   PUT /api/cars/:id/english
+// @access  Private/Staff
+const updateCarEnglish = asyncHandler(async (req, res, next) => {
+  const { descriptionEn } = req.body;
+
+  const car = await Car.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  });
+
+  if (!car) {
+    return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
+  }
+
+  // Update English description
+  if (descriptionEn !== undefined) {
+    car.descriptionEn = descriptionEn;
+  }
+
+  await car.save();
+
+  res.status(200).json({
+    success: true,
+    data: car,
+    message: 'Car English translation updated successfully'
+  });
+});
+
 module.exports = {
   getCars,
   getCar,
@@ -2464,5 +2493,6 @@ module.exports = {
   setPrimaryImage,
   getCarCalendar,
   getCarStatus,
-  testFileUpload
+  testFileUpload,
+  updateCarEnglish
 }; 

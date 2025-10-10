@@ -657,6 +657,46 @@ const updateSortOrder = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Update additional service English translations
+// @route   PUT /api/additional-services/:id/english
+// @access  Private/Admin
+const updateAdditionalServiceEnglish = asyncHandler(async (req, res, next) => {
+  const { nameEn, descriptionEn } = req.body;
+
+  const service = await AdditionalService.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  });
+
+  if (!service) {
+    return next(new AppError(`Additional service not found with id of ${req.params.id}`, 404));
+  }
+
+  // Update English fields
+  const updateData = {
+    lastModifiedBy: req.user._id
+  };
+
+  if (nameEn !== undefined) updateData.nameEn = nameEn;
+  if (descriptionEn !== undefined) updateData.descriptionEn = descriptionEn;
+
+  const updatedService = await AdditionalService.findByIdAndUpdate(
+    req.params.id,
+    updateData,
+    {
+      new: true,
+      runValidators: true
+    }
+  ).populate('createdBy', 'name email')
+   .populate('lastModifiedBy', 'name email');
+
+  res.status(200).json({
+    success: true,
+    data: updatedService,
+    message: 'Additional service English translations updated successfully'
+  });
+});
+
 module.exports = {
   getAdditionalServices,
   getAdditionalService,
@@ -669,5 +709,6 @@ module.exports = {
   getServicesForVehiclePublic,
   calculateServicePrice,
   calculateServicePricePublic,
-  updateSortOrder
+  updateSortOrder,
+  updateAdditionalServiceEnglish
 }; 

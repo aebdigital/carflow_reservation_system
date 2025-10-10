@@ -744,6 +744,46 @@ const migrateBannersToHighRes = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Update banner image English translations
+// @route   PUT /api/banners/:id/images/:imageId/english
+// @access  Private/Admin
+const updateBannerImageEnglish = asyncHandler(async (req, res, next) => {
+  try {
+    console.log('🖼️ [BANNER UPDATE IMAGE EN] Starting image English translation update...');
+
+    const banner = await Banner.findOne({
+      _id: req.params.id,
+      tenantId: req.user.tenantId
+    });
+
+    if (!banner) {
+      return next(new AppError(`Banner not found with id of ${req.params.id}`, 404));
+    }
+
+    const image = banner.images.find(img => img._id.toString() === req.params.imageId);
+    if (!image) {
+      return next(new AppError(`Image not found with id of ${req.params.imageId}`, 404));
+    }
+
+    // Update English translations
+    const { titleEn, descriptionEn, altEn } = req.body;
+    if (titleEn !== undefined) image.titleEn = titleEn;
+    if (descriptionEn !== undefined) image.descriptionEn = descriptionEn;
+    if (altEn !== undefined) image.altEn = altEn;
+
+    await banner.save();
+
+    res.status(200).json({
+      success: true,
+      data: banner,
+      message: 'Image English translations updated successfully'
+    });
+  } catch (error) {
+    console.error('🖼️ [BANNER UPDATE IMAGE EN] Error:', error);
+    return next(new AppError(error.message || 'Failed to update image English translations', 400));
+  }
+});
+
 module.exports = {
   getBanners,
   getBanner,
@@ -759,6 +799,7 @@ module.exports = {
   removeBannerImage,
   reorderBannerImages,
   updateBannerImage,
+  updateBannerImageEnglish,
   debugBanners,
   migrateBannersToHighRes
 }; 

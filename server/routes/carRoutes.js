@@ -13,7 +13,8 @@ const {
   getCarStats,
   setPrimaryImage,
   getCarStatus,
-  testFileUpload
+  testFileUpload,
+  updateCarEnglish
 } = require('../controllers/carController');
 
 const { protect, requireAdmin, requireStaff, addTenantFilter, restrictRivalDomain } = require('../middleware/authMiddleware');
@@ -52,5 +53,8 @@ router.put('/:id/images/reorder', requireStaff, reorderCarImages);
 
 // Test endpoint for debugging uploads
 router.post('/test-upload', requireAdmin, uploadMultipleCarImages, handleMulterError, testFileUpload);
+
+// English translation endpoint
+router.put('/:id/english', requireStaff, updateCarEnglish);
 
 module.exports = router; 

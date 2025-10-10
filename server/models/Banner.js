@@ -15,15 +15,30 @@ const bannerImageSchema = new mongoose.Schema({
     maxlength: [200, 'Image alt text cannot exceed 200 characters'],
     default: 'Banner image'
   },
+  altEn: {
+    type: String,
+    trim: true,
+    maxlength: [200, 'English image alt text cannot exceed 200 characters']
+  },
   title: {
     type: String,
     trim: true,
     maxlength: [100, 'Image title cannot exceed 100 characters']
   },
+  titleEn: {
+    type: String,
+    trim: true,
+    maxlength: [100, 'English image title cannot exceed 100 characters']
+  },
   description: {
     type: String,
     trim: true,
     maxlength: [500, 'Image description cannot exceed 500 characters']
+  },
+  descriptionEn: {
+    type: String,
+    trim: true,
+    maxlength: [500, 'English image description cannot exceed 500 characters']
   },
   sortOrder: {
     type: Number,

@@ -13,6 +13,7 @@ const {
   removeBannerImage,
   reorderBannerImages,
   updateBannerImage,
+  updateBannerImageEnglish,
   debugBanners,
   migrateBannersToHighRes
 } = require('../controllers/bannerController');
@@ -78,6 +79,9 @@ router.route('/:id/images/reorder')
 router.route('/:id/images/:imageId')
   .put(updateBannerImage) // Update image details (title, description, alt)
   .delete(removeBannerImage); // Remove specific image
+
+router.route('/:id/images/:imageId/english')
+  .put(updateBannerImageEnglish); // Update English translations (titleEn, descriptionEn, altEn)
 
 // Admin-only routes
 router.route('/sort-order')

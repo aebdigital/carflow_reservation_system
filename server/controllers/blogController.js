@@ -692,6 +692,48 @@ const addBlogComment = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Update blog English translations
+// @route   PUT /api/blogs/:id/english
+// @access  Private/Staff
+const updateBlogEnglish = asyncHandler(async (req, res, next) => {
+  const { titleEn, slugEn, excerptEn, contentEn } = req.body;
+
+  const blog = await Blog.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  });
+
+  if (!blog) {
+    return next(new AppError(`Blog not found with id of ${req.params.id}`, 404));
+  }
+
+  // Update English fields
+  const updateData = {
+    lastModifiedBy: req.user._id
+  };
+
+  if (titleEn !== undefined) updateData.titleEn = titleEn;
+  if (slugEn !== undefined) updateData.slugEn = slugEn;
+  if (excerptEn !== undefined) updateData.excerptEn = excerptEn;
+  if (contentEn !== undefined) updateData.contentEn = contentEn;
+
+  const updatedBlog = await Blog.findByIdAndUpdate(
+    req.params.id,
+    updateData,
+    {
+      new: true,
+      runValidators: true
+    }
+  ).populate('author', 'firstName lastName email')
+   .populate('lastModifiedBy', 'firstName lastName email');
+
+  res.status(200).json({
+    success: true,
+    data: updatedBlog,
+    message: 'Blog English translations updated successfully'
+  });
+});
+
 module.exports = {
   // Admin endpoints
   getBlogs,
@@ -701,7 +743,8 @@ module.exports = {
   deleteBlog,
   uploadBlogImageHandler,
   toggleBlogStatus,
-  
+  updateBlogEnglish,
+
   // Public endpoints
   getPublicBlogsByUser,
   getPublicBlogBySlug,

@@ -10,7 +10,8 @@ const {
   getPublicServices,
   getServicesForVehicle,
   calculateServicePrice,
-  updateSortOrder
+  updateSortOrder,
+  updateAdditionalServiceEnglish
 } = require('../controllers/additionalServiceController');
 
 const { protect, requireAdmin, requireStaff } = require('../middleware/authMiddleware');
@@ -152,5 +153,8 @@ router.route('/:id')
     authorize('admin'),
     deleteAdditionalService
   );
+
+// English translation route
+router.put('/:id/english', authorize('admin', 'staff'), updateAdditionalServiceEnglish);
 
 module.exports = router; 

@@ -7,6 +7,10 @@ const infoBarSchema = new mongoose.Schema({
     required: [true, 'Info bar text is required'],
     maxLength: [200, 'Info bar text cannot exceed 200 characters']
   },
+  textEn: {
+    type: String,
+    maxLength: [200, 'English info bar text cannot exceed 200 characters']
+  },
   color: {
     type: String,
     enum: ['red', 'blue', 'green', 'yellow', 'orange', 'purple'],
@@ -51,10 +55,18 @@ const modalSchema = new mongoose.Schema({
     required: [true, 'Modal title is required'],
     maxLength: [100, 'Modal title cannot exceed 100 characters']
   },
+  titleEn: {
+    type: String,
+    maxLength: [100, 'English modal title cannot exceed 100 characters']
+  },
   content: {
     type: String,
     required: [true, 'Modal content is required'],
     maxLength: [1000, 'Modal content cannot exceed 1000 characters']
+  },
+  contentEn: {
+    type: String,
+    maxLength: [1000, 'English modal content cannot exceed 1000 characters']
   },
   type: {
     type: String,
@@ -112,13 +124,25 @@ const modalSchema = new mongoose.Schema({
     type: String,
     default: 'Zadajte váš email'
   },
+  emailPlaceholderEn: {
+    type: String,
+    default: 'Enter your email'
+  },
   buttonText: {
     type: String,
     default: 'Získať zľavu'
   },
+  buttonTextEn: {
+    type: String,
+    default: 'Get Discount'
+  },
   secondaryButtonText: {
     type: String,
     default: 'Možno neskôr'
+  },
+  secondaryButtonTextEn: {
+    type: String,
+    default: 'Maybe Later'
   },
   // Discount specific fields
   discountCode: {
