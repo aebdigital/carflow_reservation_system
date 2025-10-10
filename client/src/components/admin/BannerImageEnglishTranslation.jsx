@@ -17,16 +17,23 @@ const BannerImageEnglishTranslation = ({ image, bannerId, open, onClose, onSucce
   const [altEn, setAltEn] = useState('');
   const [titleEn, setTitleEn] = useState('');
   const [descriptionEn, setDescriptionEn] = useState('');
-  const [updateBannerImageEnglish, { isLoading, isSuccess, isError, error }] =
+  const [updateBannerImageEnglish, { isLoading, isSuccess, isError, error, reset }] =
     useUpdateBannerImageEnglishMutation();
 
   useEffect(() => {
-    if (image) {
+    if (image && open) {
       setAltEn(image.altEn || '');
       setTitleEn(image.titleEn || '');
       setDescriptionEn(image.descriptionEn || '');
     }
-  }, [image]);
+  }, [image, open]);
+
+  useEffect(() => {
+    if (!open) {
+      // Reset mutation state when dialog closes
+      reset();
+    }
+  }, [open, reset]);
 
   useEffect(() => {
     if (isSuccess) {

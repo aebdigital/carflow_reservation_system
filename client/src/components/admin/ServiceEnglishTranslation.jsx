@@ -16,15 +16,22 @@ import { useUpdateServiceEnglishMutation } from '../../store/store';
 const ServiceEnglishTranslation = ({ service, open, onClose }) => {
   const [nameEn, setNameEn] = useState('');
   const [descriptionEn, setDescriptionEn] = useState('');
-  const [updateServiceEnglish, { isLoading, isSuccess, isError, error }] =
+  const [updateServiceEnglish, { isLoading, isSuccess, isError, error, reset }] =
     useUpdateServiceEnglishMutation();
 
   useEffect(() => {
-    if (service) {
+    if (service && open) {
       setNameEn(service.nameEn || '');
       setDescriptionEn(service.descriptionEn || '');
     }
-  }, [service]);
+  }, [service, open]);
+
+  useEffect(() => {
+    if (!open) {
+      // Reset mutation state when dialog closes
+      reset();
+    }
+  }, [open, reset]);
 
   useEffect(() => {
     if (isSuccess) {

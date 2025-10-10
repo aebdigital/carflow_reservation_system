@@ -14,14 +14,21 @@ import { useUpdateCarEnglishMutation } from '../../store/store';
 
 const CarEnglishTranslation = ({ car, open, onClose }) => {
   const [descriptionEn, setDescriptionEn] = useState('');
-  const [updateCarEnglish, { isLoading, isSuccess, isError, error }] =
+  const [updateCarEnglish, { isLoading, isSuccess, isError, error, reset }] =
     useUpdateCarEnglishMutation();
 
   useEffect(() => {
-    if (car) {
+    if (car && open) {
       setDescriptionEn(car.descriptionEn || '');
     }
-  }, [car]);
+  }, [car, open]);
+
+  useEffect(() => {
+    if (!open) {
+      // Reset mutation state when dialog closes
+      reset();
+    }
+  }, [open, reset]);
 
   useEffect(() => {
     if (isSuccess) {

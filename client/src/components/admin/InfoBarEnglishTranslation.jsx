@@ -14,14 +14,21 @@ import { useUpdateInfoBarEnglishMutation } from '../../store/store';
 
 const InfoBarEnglishTranslation = ({ infoBar, open, onClose }) => {
   const [textEn, setTextEn] = useState('');
-  const [updateInfoBarEnglish, { isLoading, isSuccess, isError, error }] =
+  const [updateInfoBarEnglish, { isLoading, isSuccess, isError, error, reset }] =
     useUpdateInfoBarEnglishMutation();
 
   useEffect(() => {
-    if (infoBar) {
+    if (infoBar && open) {
       setTextEn(infoBar.textEn || '');
     }
-  }, [infoBar]);
+  }, [infoBar, open]);
+
+  useEffect(() => {
+    if (!open) {
+      // Reset mutation state when dialog closes
+      reset();
+    }
+  }, [open, reset]);
 
   useEffect(() => {
     if (isSuccess) {

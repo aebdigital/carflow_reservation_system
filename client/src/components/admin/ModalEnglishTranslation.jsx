@@ -20,18 +20,25 @@ const ModalEnglishTranslation = ({ modal, open, onClose }) => {
   const [buttonTextEn, setButtonTextEn] = useState('');
   const [secondaryButtonTextEn, setSecondaryButtonTextEn] = useState('');
 
-  const [updateModalEnglish, { isLoading, isSuccess, isError, error }] =
+  const [updateModalEnglish, { isLoading, isSuccess, isError, error, reset }] =
     useUpdateModalEnglishMutation();
 
   useEffect(() => {
-    if (modal) {
+    if (modal && open) {
       setTitleEn(modal.titleEn || '');
       setContentEn(modal.contentEn || '');
       setEmailPlaceholderEn(modal.emailPlaceholderEn || 'Enter your email');
       setButtonTextEn(modal.buttonTextEn || 'Get Discount');
       setSecondaryButtonTextEn(modal.secondaryButtonTextEn || 'Maybe Later');
     }
-  }, [modal]);
+  }, [modal, open]);
+
+  useEffect(() => {
+    if (!open) {
+      // Reset mutation state when dialog closes
+      reset();
+    }
+  }, [open, reset]);
 
   useEffect(() => {
     if (isSuccess) {

@@ -22,17 +22,25 @@ const BlogEnglishTranslation = ({ blog, open, onClose }) => {
   const [excerptEn, setExcerptEn] = useState('');
   const [contentEn, setContentEn] = useState('');
 
-  const [updateBlogEnglish, { isLoading, isSuccess, isError, error }] =
+  const [updateBlogEnglish, { isLoading, isSuccess, isError, error, reset }] =
     useUpdateBlogEnglishMutation();
 
   useEffect(() => {
-    if (blog) {
+    if (blog && open) {
       setTitleEn(blog.titleEn || '');
       setSlugEn(blog.slugEn || '');
       setExcerptEn(blog.excerptEn || '');
       setContentEn(blog.contentEn || '');
+      setActiveTab(0); // Reset to first tab when opening
     }
-  }, [blog]);
+  }, [blog, open]);
+
+  useEffect(() => {
+    if (!open) {
+      // Reset mutation state when dialog closes
+      reset();
+    }
+  }, [open, reset]);
 
   useEffect(() => {
     if (isSuccess) {
