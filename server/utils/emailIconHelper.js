@@ -111,6 +111,7 @@ class EmailIconHelper {
     return {
       facebook: path.join(templatePath, 'facebook_icon.png'),
       instagram: path.join(templatePath, 'instagram_icon.png'),
+      logo: path.join(templatePath, 'nitracarlogo.png'), // Add logo support
     };
   }
 
@@ -126,6 +127,17 @@ class EmailIconHelper {
 
     const iconPaths = this.getIconFilePaths(templatesPath);
     const attachments = [];
+
+    // Add Logo if exists (for Nitra-Car)
+    if (isNitracarEmail && iconPaths.logo && fs.existsSync(iconPaths.logo)) {
+      const logoBuffer = fs.readFileSync(iconPaths.logo);
+      attachments.push({
+        filename: 'nitracarlogo.png',
+        content: logoBuffer.toString('base64'),
+        type: 'image/png',
+        cid: 'nitracarlogo'
+      });
+    }
 
     // Add Facebook icon if exists
     if (fs.existsSync(iconPaths.facebook)) {

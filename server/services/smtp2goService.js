@@ -79,6 +79,15 @@ class SMTP2GOService {
     const emailConfig = this.getTenantEmailConfig(user);
     const senderEmail = emailConfig.emailFrom;
 
+    // Check if we need inline attachments (logo, icons) for Nitra-Car emails
+    const emailIconHelper = require('../utils/emailIconHelper');
+    const inlineAttachments = emailIconHelper.getIconAttachments(senderEmail);
+
+    if (inlineAttachments.length > 0) {
+      console.log('📎 [EMAIL] Sending email with', inlineAttachments.length, 'inline attachments (logo/icons)');
+      return this.sendEmailWithAttachment(to, subject, html, inlineAttachments, text, user);
+    }
+
     console.log('🔍 [SMTP2GO DEBUG] Sender email details:', {
       sender: senderEmail,
       EMAIL_FROM: process.env.EMAIL_FROM,
@@ -1219,11 +1228,18 @@ class SMTP2GOService {
       subject: cleanSubject,
       text_body: cleanText,
       html_body: cleanHtml,
-      attachments: attachments.map(attachment => ({
-        filename: attachment.filename,
-        fileblob: attachment.content, // base64 encoded content
-        mimetype: attachment.type || 'application/octet-stream'
-      }))
+      attachments: attachments.map(attachment => {
+        const attObj = {
+          filename: attachment.filename,
+          fileblob: attachment.content, // base64 encoded content
+          mimetype: attachment.type || 'application/octet-stream'
+        };
+        // Add CID for inline attachments (logo, icons)
+        if (attachment.cid) {
+          attObj.cid = attachment.cid;
+        }
+        return attObj;
+      })
     };
 
     console.log('📎 [SMTP2GO] Payload prepared with', attachments.length, 'attachments');

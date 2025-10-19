@@ -1,35 +1,181 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-  <meta charset="UTF-8">
-  <title>Pripomenutie zálohy rezervácie</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upomienka platby rezervácie - NITRA-CAR</title>
+    <style>
+        @media only screen and (max-width: 600px) {
+            .main-table {
+                width: 100% !important;
+            }
+            .payment-box {
+                padding: 15px !important;
+            }
+            .logo-img {
+                max-width: 200px !important;
+            }
+            .footer-social td {
+                width: 50% !important;
+                display: inline-block !important;
+                text-align: center !important;
+                padding: 5px 0 !important;
+            }
+        }
+    </style>
 </head>
-<body>
-<pre>
-Dobrý deň {{first_name}} {{last_name}},
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+    <table class="main-table" style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-collapse: collapse;">
+        <!-- Header -->
+        <tr>
+            <td style="background-color: #22D3EE; padding: 30px 20px; text-align: center;">
+                <img class="logo-img" src="cid:nitracarlogo" alt="NITRA-CAR" style="max-width: 250px; width: 100%; height: auto;" />
+            </td>
+        </tr>
 
-chceli by sme Vám pripomenúť zálohu za Vašu rezerváciu, pre jej potvrdenie potrebujeme platbu vo výške {{deposit_amount}} EUR – o túto sumu budete menej platiť pri preberaní vozidla.
+        <!-- Title -->
+        <tr>
+            <td style="padding: 30px 20px 20px 20px; text-align: center;">
+                <div style="width: 60px; height: 60px; background-color: #FF9800; border-radius: 50%; display: inline-block; position: relative; margin-bottom: 15px;">
+                    <span style="color: white; font-size: 30px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">💰</span>
+                </div>
+                <h2 style="color: #666666; font-size: 24px; font-weight: bold; margin: 10px 0 0 0;">UPOMIENKA PLATBY</h2>
+            </td>
+        </tr>
 
-Bez uhradenia zálohy je Vami vybrané vozidlo naďalej ponúkané ďalším záujemcom a môže sa stať, že už nebude k dispozícii v požadovanom termíne.
+        <!-- Greeting -->
+        <tr>
+            <td style="padding: 0 20px 20px 20px; text-align: center;">
+                <p style="color: #666666; font-size: 16px; margin: 0;">
+                    Dobrý deň <strong style="color: #22D3EE;">{{customer_name}}</strong>,
+                </p>
+                <p style="color: #666666; font-size: 16px; margin: 10px 0 0 0;">
+                    Vaša rezervácia bola úspešne potvrdená, ale zatiaľ sme nezaznamenali uhradenie zálohy. Pripomíname Vám, že pre dokončenie rezervácie je potrebné uhradiť zálohu.
+                </p>
+            </td>
+        </tr>
 
-Platbu môžete uskutočniť:
-1. V hotovosti u nás na pobočke
-2. Bankovým prevodom na č. účtu: {{bank_account}}
-   Variabilný symbol: {{variable_symbol}}
-3. Online prostredníctvom služby Tatra Banka, a.s. – CardPay/TatraPay.
-   Na platobnú bránu pokračujte stlačením tlačidla uvedeného v e-maile.
+        <!-- Reservation Details Box -->
+        <tr>
+            <td style="padding: 20px;">
+                <table style="width: 100%; border-collapse: collapse; background-color: #f9f9f9; border-left: 4px solid #22D3EE;">
+                    <tr>
+                        <td class="payment-box" style="padding: 20px;">
+                            <h3 style="color: #22D3EE; font-size: 18px; margin: 0 0 15px 0;">Detaily rezervácie</h3>
+                            <p style="margin: 5px 0; color: #333333;"><strong>Vozidlo:</strong> {{car_brand}} {{car_model}}</p>
+                            <p style="margin: 5px 0; color: #333333;"><strong>Dátum vyzdvihnutia:</strong> {{start_date}}</p>
+                            <p style="margin: 5px 0; color: #333333;"><strong>Dátum vrátenia:</strong> {{end_date}}</p>
+                            <p style="margin: 5px 0; color: #333333;"><strong>Miesto vyzdvihnutia:</strong> {{pickup_location}}</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
 
-Pokiaľ bude rezervácia zrušená zo strany klienta, je záloha za rezerváciu nevratná.
-V prípade otázok alebo upresnení nás neváhajte kontaktovať.
+        <!-- Price Total -->
+        <tr>
+            <td style="padding: 0 20px 20px 20px; text-align: center;">
+                <div style="background-color: #fff3e0; padding: 15px; border-radius: 8px;">
+                    <p style="margin: 0; color: #666666; font-size: 14px;">Záloha k úhrade:</p>
+                    <p style="margin: 5px 0 0 0; color: #FF9800; font-size: 28px; font-weight: bold;">{{deposit_amount}}</p>
+                </div>
+            </td>
+        </tr>
 
-Ďakujeme.
+        <!-- Payment Options -->
+        <tr>
+            <td style="padding: 20px;">
+                <table style="width: 100%; border-collapse: collapse; background-color: #22D3EE;">
+                    <tr>
+                        <td style="padding: 20px;">
+                            <h3 style="color: white; font-size: 18px; margin: 0 0 15px 0;">Možnosti platby:</h3>
 
-Kde nás nájsť:
-{{google_maps_link}}
+                            <div style="margin: 10px 0;">
+                                <div style="width: 30px; height: 30px; background-color: white; border-radius: 50%; display: inline-block; position: relative; margin-right: 10px; vertical-align: middle;">
+                                    <span style="color: #22D3EE; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">1</span>
+                                </div>
+                                <span style="color: white; font-size: 16px; vertical-align: middle;">V hotovosti u nás na pobočke</span>
+                            </div>
 
-{{company_name}}
-{{company_phone}}
-{{company_website}}
-</pre>
+                            <div style="margin: 10px 0;">
+                                <div style="width: 30px; height: 30px; background-color: white; border-radius: 50%; display: inline-block; position: relative; margin-right: 10px; vertical-align: middle;">
+                                    <span style="color: #22D3EE; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">2</span>
+                                </div>
+                                <span style="color: white; font-size: 16px; vertical-align: middle;">Bankovým prevodom:</span>
+                            </div>
+
+                            <div style="margin: 10px 0 10px 45px; color: white; font-size: 14px;">
+                                <p style="margin: 5px 0;"><strong>Číslo účtu:</strong> {{bank_account}}</p>
+                                <p style="margin: 5px 0;"><strong>Variabilný symbol:</strong> {{variable_symbol}}</p>
+                            </div>
+
+                            <div style="margin: 10px 0;">
+                                <div style="width: 30px; height: 30px; background-color: white; border-radius: 50%; display: inline-block; position: relative; margin-right: 10px; vertical-align: middle;">
+                                    <span style="color: #22D3EE; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">3</span>
+                                </div>
+                                <span style="color: white; font-size: 16px; vertical-align: middle;">Online prostredníctvom platobnej brány</span>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
+        <!-- Important Notice -->
+        <tr>
+            <td style="padding: 0 20px 20px 20px;">
+                <div style="background-color: #ffebee; padding: 15px; border-radius: 8px; border-left: 4px solid #ff4444;">
+                    <p style="margin: 0; color: #c62828; font-weight: bold; font-size: 14px;">
+                        <span style="font-size: 18px;">⚠️</span> Dôležité
+                    </p>
+                    <p style="margin: 10px 0 0 0; color: #666666; font-size: 14px;">
+                        Bez uhradenia zálohy je Vami vybrané vozidlo naďalej ponúkané ďalším záujemcom a môže sa stať, že už nebude k dispozícii v požadovanom termíne.
+                    </p>
+                    <p style="margin: 10px 0 0 0; color: #666666; font-size: 14px;">
+                        Pokiaľ bude rezervácia zrušená zo strany klienta, je záloha za rezerváciu nevratná.
+                    </p>
+                </div>
+            </td>
+        </tr>
+
+        <!-- Contact Section -->
+        <tr>
+            <td style="padding: 0 20px 20px 20px; text-align: center;">
+                <p style="color: #666666; font-size: 14px; margin: 0;">
+                    V prípade otázok alebo upresnení nás neváhajte kontaktovať.
+                </p>
+            </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+            <td style="background-color: #22D3EE; padding: 20px; text-align: center;">
+                <p style="color: white; font-size: 18px; font-weight: bold; margin: 0 0 10px 0;">{{company_phone}}</p>
+                <p style="color: white; font-size: 16px; margin: 0 0 15px 0;">{{company_email}}</p>
+
+                <table class="footer-social" style="width: 100%; max-width: 400px; margin: 15px auto;">
+                    <tr>
+                        <td style="width: 50%; text-align: center; padding: 0 10px;">
+                            <a href="{{instagram_url}}" target="_blank" style="text-decoration: none; color: white; display: inline-block;">
+                                <img src="https://img.icons8.com/ios-filled/50/FFFFFF/instagram-new.png" alt="Instagram" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 8px;" />
+                                <span style="color: white; font-size: 14px;">INSTAGRAM</span>
+                            </a>
+                        </td>
+                        <td style="width: 50%; text-align: center; padding: 0 10px;">
+                            <a href="{{facebook_url}}" target="_blank" style="text-decoration: none; color: white; display: inline-block;">
+                                <img src="https://img.icons8.com/ios-filled/50/FFFFFF/facebook.png" alt="Facebook" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 8px;" />
+                                <span style="color: white; font-size: 14px;">FACEBOOK</span>
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+
+                <hr style="border: 1px solid white; margin: 15px 0;">
+
+                <p style="color: white; font-size: 16px; font-weight: bold; margin: 0; letter-spacing: 1px;">AUTO/MOTOPOŽIČOVŇA NITRA-CAR</p>
+                <p style="color: white; font-size: 12px; margin: 5px 0 0 0;">© {{current_year}} NITRA-CAR. Všetky práva vyhradené.</p>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
