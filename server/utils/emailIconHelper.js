@@ -181,14 +181,31 @@ class EmailIconHelper {
   }
 
   /**
-   * Get template variables with social media icons included
+   * Get template variables with social media icons and logo included
    * @param {Object} variables - Existing template variables
    * @param {string} senderEmail - Sender email to determine template folder
-   * @returns {Object} Variables with social icons added
+   * @returns {Object} Variables with social icons and logo added as base64 data URIs
    */
   addSocialIconsToVariables(variables = {}, senderEmail = null) {
-    // Templates now use CID references, no need to add base64 data
-    // Keep this method for backward compatibility but return variables unchanged
+    // Check if this is a Nitra-Car email
+    const isNitracarEmail = senderEmail && (
+      senderEmail === process.env.NITRACAR_EMAIL_FROM ||
+      senderEmail.includes('nitra-car@nitra-car.sk') ||
+      senderEmail.includes('nitracar') ||
+      senderEmail.includes('nitra-car')
+    );
+
+    const templatesPath = isNitracarEmail ? this.nitracarTemplatesPath : this.defaultTemplatesPath;
+    const iconPaths = this.getIconFilePaths(templatesPath);
+
+    // Add Nitra-Car logo as base64 data URI
+    if (isNitracarEmail && iconPaths.logo && fs.existsSync(iconPaths.logo)) {
+      const logoBuffer = fs.readFileSync(iconPaths.logo);
+      const logoBase64 = logoBuffer.toString('base64');
+      variables.nitracar_logo_base64 = `data:image/png;base64,${logoBase64}`;
+      console.log('✅ [ICON HELPER] Added Nitra-Car logo as base64 data URI -', logoBuffer.length, 'bytes');
+    }
+
     return variables;
   }
 

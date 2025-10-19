@@ -15,9 +15,14 @@ class EmailTemplateService {
    * @returns {string} Template path to use
    */
   getTemplatePath(senderEmail = null) {
-    // If sender email is NITRACAR email, use NITRACAR templates
-    const isNitracarEmail = senderEmail && senderEmail === process.env.NITRACAR_EMAIL_FROM;
-    
+    // Check if this is a Nitra-Car email
+    const isNitracarEmail = senderEmail && (
+      senderEmail === process.env.NITRACAR_EMAIL_FROM ||
+      senderEmail.includes('nitra-car@nitra-car.sk') ||
+      senderEmail.includes('nitracar') ||
+      senderEmail.includes('nitra-car')
+    );
+
     if (isNitracarEmail) {
       console.log('📧 [TEMPLATE] Using NITRACAR templates for email from:', senderEmail);
       return this.nitracarTemplatesPath;
@@ -36,7 +41,12 @@ class EmailTemplateService {
   async loadTemplate(templateName, senderEmail = null) {
     try {
       // Create cache key that includes the template source
-      const isNitracar = senderEmail === process.env.NITRACAR_EMAIL_FROM;
+      const isNitracar = senderEmail && (
+        senderEmail === process.env.NITRACAR_EMAIL_FROM ||
+        senderEmail.includes('nitra-car@nitra-car.sk') ||
+        senderEmail.includes('nitracar') ||
+        senderEmail.includes('nitra-car')
+      );
       const cacheKey = `${templateName}_${isNitracar ? 'nitracar' : 'default'}`;
       
       // Check cache first
