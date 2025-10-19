@@ -141,19 +141,9 @@ class EmailIconHelper {
       logoPath: iconPaths.logo
     });
 
-    // Add Logo if exists (for Nitra-Car)
-    if (isNitracarEmail && iconPaths.logo && fs.existsSync(iconPaths.logo)) {
-      const logoBuffer = fs.readFileSync(iconPaths.logo);
-      console.log('✅ [ICON HELPER] Nitra-Car logo attached:', iconPaths.logo, '- Size:', logoBuffer.length, 'bytes');
-      attachments.push({
-        filename: 'nitracarlogo.png',
-        content: logoBuffer.toString('base64'),
-        type: 'image/png',
-        cid: 'nitracarlogo'
-      });
-    } else if (isNitracarEmail) {
-      console.warn('⚠️ [ICON HELPER] Nitra-Car email detected but logo not found:', iconPaths.logo);
-    }
+    // Logo is now embedded as base64 data URI in template variables
+    // No need to attach as CID - skip logo attachment
+    console.log('ℹ️ [ICON HELPER] Logo will be embedded as base64 data URI, not as CID attachment');
 
     // Add Facebook icon if exists
     if (fs.existsSync(iconPaths.facebook)) {
@@ -187,6 +177,11 @@ class EmailIconHelper {
    * @returns {Object} Variables with social icons and logo added as base64 data URIs
    */
   addSocialIconsToVariables(variables = {}, senderEmail = null) {
+    console.log('🔍 [ICON HELPER] addSocialIconsToVariables called:', {
+      senderEmail,
+      hasVariables: !!variables
+    });
+
     // Check if this is a Nitra-Car email
     const isNitracarEmail = senderEmail && (
       senderEmail === process.env.NITRACAR_EMAIL_FROM ||
@@ -194,6 +189,12 @@ class EmailIconHelper {
       senderEmail.includes('nitracar') ||
       senderEmail.includes('nitra-car')
     );
+
+    console.log('🔍 [ICON HELPER] Nitra-Car detection:', {
+      isNitracarEmail,
+      senderEmail,
+      envVar: process.env.NITRACAR_EMAIL_FROM
+    });
 
     const templatesPath = isNitracarEmail ? this.nitracarTemplatesPath : this.defaultTemplatesPath;
     const iconPaths = this.getIconFilePaths(templatesPath);
@@ -203,7 +204,18 @@ class EmailIconHelper {
       const logoBuffer = fs.readFileSync(iconPaths.logo);
       const logoBase64 = logoBuffer.toString('base64');
       variables.nitracar_logo_base64 = `data:image/png;base64,${logoBase64}`;
-      console.log('✅ [ICON HELPER] Added Nitra-Car logo as base64 data URI -', logoBuffer.length, 'bytes');
+      console.log('✅ [ICON HELPER] Added Nitra-Car logo as base64 data URI:', {
+        bytes: logoBuffer.length,
+        base64Length: logoBase64.length,
+        dataUriLength: variables.nitracar_logo_base64.length,
+        preview: variables.nitracar_logo_base64.substring(0, 50) + '...'
+      });
+    } else {
+      console.log('⚠️ [ICON HELPER] Logo NOT added:', {
+        isNitracarEmail,
+        logoExists: iconPaths.logo && fs.existsSync(iconPaths.logo),
+        logoPath: iconPaths.logo
+      });
     }
 
     return variables;
