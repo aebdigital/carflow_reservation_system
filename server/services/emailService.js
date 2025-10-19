@@ -137,10 +137,14 @@ class EmailService {
         return (!value || value === '' || value === null || value === undefined) ? content : '';
       });
 
+      // Add logo and social icons to template variables
+      const emailIconHelper = require('../utils/emailIconHelper');
+      const dataWithIcons = emailIconHelper.addSocialIconsToVariables(data, senderEmail);
+
       // Replace template variables with data
       // Support both Handlebars-style {{variable}} and simple template replacement
-      Object.keys(data).forEach(key => {
-        const value = data[key] || '';
+      Object.keys(dataWithIcons).forEach(key => {
+        const value = dataWithIcons[key] || '';
         // Replace {{key}} and {{{key}}} patterns
         html = html.replace(new RegExp(`{{${key}}}`, 'g'), value);
         html = html.replace(new RegExp(`{{{${key}}}}`, 'g'), value);
