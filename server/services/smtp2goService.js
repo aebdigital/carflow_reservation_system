@@ -81,7 +81,21 @@ class SMTP2GOService {
 
     // Check if we need inline attachments (logo, icons) for Nitra-Car emails
     const emailIconHelper = require('../utils/emailIconHelper');
-    const inlineAttachments = emailIconHelper.getIconAttachments(senderEmail);
+
+    // Check if this is a Nitra-Car user based on user email
+    const isNitraCarUser = user && user.email === 'nitra-car@nitra-car.sk';
+
+    // Pass the user's email to getIconAttachments if it's Nitra-Car, otherwise use senderEmail
+    const emailForAttachments = isNitraCarUser ? user.email : senderEmail;
+
+    console.log('📎 [EMAIL DEBUG] Checking attachments for:', {
+      senderEmail,
+      userEmail: user?.email,
+      isNitraCarUser,
+      emailForAttachments
+    });
+
+    const inlineAttachments = emailIconHelper.getIconAttachments(emailForAttachments);
 
     if (inlineAttachments.length > 0) {
       console.log('📎 [EMAIL] Sending email with', inlineAttachments.length, 'inline attachments (logo/icons)');
@@ -1215,6 +1229,12 @@ class SMTP2GOService {
 
     console.log('📎 [SMTP2GO] Sending email with attachments to:', cleanedToEmails);
     console.log('📎 [SMTP2GO] Attachments count:', attachments.length);
+    console.log('📎 [SMTP2GO] Attachment details:', attachments.map(a => ({
+      filename: a.filename,
+      cid: a.cid,
+      type: a.type,
+      contentLength: a.content?.length
+    })));
 
     // Clean and sanitize content to avoid JSON issues
     const cleanText = text ? this.sanitizeTextForJson(text) : this.sanitizeTextForJson(this.stripHtml(html));

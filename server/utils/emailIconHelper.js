@@ -122,21 +122,37 @@ class EmailIconHelper {
    */
   getIconAttachments(senderEmail = null) {
     // Determine template path based on sender email
-    const isNitracarEmail = senderEmail && senderEmail === process.env.NITRACAR_EMAIL_FROM;
+    // Check both environment variable and hardcoded Nitra-Car email
+    const isNitracarEmail = senderEmail && (
+      senderEmail === process.env.NITRACAR_EMAIL_FROM ||
+      senderEmail.includes('nitra-car@nitra-car.sk') ||
+      senderEmail.includes('nitracar') ||
+      senderEmail.includes('nitra-car')
+    );
     const templatesPath = isNitracarEmail ? this.nitracarTemplatesPath : this.defaultTemplatesPath;
 
     const iconPaths = this.getIconFilePaths(templatesPath);
     const attachments = [];
 
+    console.log('🔍 [ICON HELPER] Template detection:', {
+      senderEmail,
+      isNitracarEmail,
+      templatesPath,
+      logoPath: iconPaths.logo
+    });
+
     // Add Logo if exists (for Nitra-Car)
     if (isNitracarEmail && iconPaths.logo && fs.existsSync(iconPaths.logo)) {
       const logoBuffer = fs.readFileSync(iconPaths.logo);
+      console.log('✅ [ICON HELPER] Nitra-Car logo attached:', iconPaths.logo, '- Size:', logoBuffer.length, 'bytes');
       attachments.push({
         filename: 'nitracarlogo.png',
         content: logoBuffer.toString('base64'),
         type: 'image/png',
         cid: 'nitracarlogo'
       });
+    } else if (isNitracarEmail) {
+      console.warn('⚠️ [ICON HELPER] Nitra-Car email detected but logo not found:', iconPaths.logo);
     }
 
     // Add Facebook icon if exists
