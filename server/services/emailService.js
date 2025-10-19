@@ -106,33 +106,37 @@ class EmailService {
   }
 
   // Send templated email by loading template from templates/email/ folder
-  async sendTemplatedEmail(to, subject, templateName, data) {
-    const fs = require('fs');
-    const path = require('path');
-    
+  // Now uses tenant-aware template selection via emailTemplateService
+  async sendTemplatedEmail(to, subject, templateName, data, user = null) {
+    const emailTemplateService = require('./emailTemplateService');
+
     try {
-      // Load template from templates/email/ folder
-      const templatePath = path.join(__dirname, '..', 'templates', 'email', `${templateName}.html`);
-      
-      if (!fs.existsSync(templatePath)) {
-        throw new Error(`Email template not found: ${templateName}.html`);
-      }
-      
-      let html = fs.readFileSync(templatePath, 'utf8');
-      
+      // Get tenant-specific email configuration to determine sender
+      const senderEmail = user ? smtp2goService.getTenantEmailConfig(user).emailFrom : null;
+
+      console.log('📧 [EMAIL SERVICE] sendTemplatedEmail called:', {
+        to,
+        templateName,
+        senderEmail,
+        isNitraCarUser: user?.email === 'nitra-car@nitra-car.sk'
+      });
+
+      // Load template using tenant-aware service
+      const template = await emailTemplateService.loadTemplate(templateName, senderEmail);
+
       // Handle conditional blocks (simple if/else logic)
       // Handle {{#if variable}} ... {{/if}} blocks
-      html = html.replace(/\{\{#if\s+(\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g, (match, varName, content) => {
+      let html = template.replace(/\{\{#if\s+(\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g, (match, varName, content) => {
         const value = data[varName];
         return (value && value !== '' && value !== null && value !== undefined) ? content : '';
       });
-      
-      // Handle {{#unless variable}} ... {{/unless}} blocks  
+
+      // Handle {{#unless variable}} ... {{/unless}} blocks
       html = html.replace(/\{\{#unless\s+(\w+)\}\}([\s\S]*?)\{\{\/unless\}\}/g, (match, varName, content) => {
         const value = data[varName];
         return (!value || value === '' || value === null || value === undefined) ? content : '';
       });
-      
+
       // Replace template variables with data
       // Support both Handlebars-style {{variable}} and simple template replacement
       Object.keys(data).forEach(key => {
@@ -141,10 +145,10 @@ class EmailService {
         html = html.replace(new RegExp(`{{${key}}}`, 'g'), value);
         html = html.replace(new RegExp(`{{{${key}}}}`, 'g'), value);
       });
-      
-      // Send the email
-      return await this.sendEmail(to, subject, html);
-      
+
+      // Send the email with user context for tenant-specific config
+      return await this.sendEmail(to, subject, html, null, user);
+
     } catch (error) {
       console.error(`Error sending templated email (${templateName}):`, error);
       throw new Error(`Failed to send templated email: ${error.message}`);

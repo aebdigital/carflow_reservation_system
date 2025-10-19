@@ -1730,33 +1730,59 @@ const sendPaymentNotification = asyncHandler(async (req, res, next) => {
     // Get business/tenant details
     const businessUser = await User.findOne({ tenantId: req.user.tenantId, role: 'admin' });
     
-    // Prepare email data
+    // Prepare email data with correct variable names for templates
+    const depositAmount = reservation.car.deposit || reservation.pricing.deposit || 0;
     const emailData = {
-      customerName: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
-      reservationNumber: reservation.reservationNumber,
-      carBrand: reservation.car.brand,
-      carModel: reservation.car.model,
-      carYear: reservation.car.year,
-      startDate: reservation.startDate.toLocaleDateString('sk-SK'),
-      endDate: reservation.endDate.toLocaleDateString('sk-SK'),
-      totalDays: reservation.pricing.totalDays,
-      pickupLocation: reservation.pickupLocation.name,
-      totalAmount: reservation.pricing.totalAmount,
-      businessName: businessUser?.companyName || 'Požičovňa vozidiel',
-      businessAddress: businessUser?.address || '',
-      contactEmail: businessUser?.email || '',
-      contactPhone: businessUser?.phone || '',
-      businessHours: '08:00 - 18:00',
-      bankDetails: reservation.bySquarePayment || null,
-      qrPaymentCode: null // Will be generated if needed
+      // Customer info
+      customer_name: `${reservation.customer.firstName} ${reservation.customer.lastName}`,
+      first_name: reservation.customer.firstName,
+      last_name: reservation.customer.lastName,
+
+      // Reservation info
+      reservation_number: reservation.reservationNumber,
+
+      // Car info
+      car_brand: reservation.car.brand,
+      car_model: reservation.car.model,
+      car_year: reservation.car.year,
+
+      // Dates and location
+      start_date: reservation.startDate.toLocaleDateString('sk-SK'),
+      end_date: reservation.endDate.toLocaleDateString('sk-SK'),
+      total_days: reservation.pricing.totalDays,
+      pickup_location: reservation.pickupLocation.name,
+
+      // Pricing
+      total_amount: `${reservation.pricing.totalAmount}€`,
+      deposit_amount: `${depositAmount}€`,
+
+      // Payment details
+      bank_account: businessUser?.bankAccount || 'SK31 1200 0000 0012 3456 7890',
+      variable_symbol: reservation.reservationNumber || '',
+
+      // Company info
+      company_name: businessUser?.companyName || 'NITRA-CAR',
+      company_phone: businessUser?.phone || '+421 910 524 554',
+      company_email: businessUser?.email || 'info@nitra-car.sk',
+      company_address: businessUser?.address || '',
+
+      // Social media
+      instagram_url: businessUser?.instagramUrl || 'https://www.instagram.com/nitracar',
+      facebook_url: businessUser?.facebookUrl || 'https://www.facebook.com/nitracar',
+
+      // Additional
+      google_maps_link: businessUser?.googleMapsUrl || '',
+      company_website: businessUser?.website || 'https://www.nitra-car.sk',
+      current_year: new Date().getFullYear()
     };
 
-    // Send payment notification email
+    // Send payment notification email with user context for tenant-specific templates
     await emailService.sendTemplatedEmail(
       reservation.customer.email,
       'Upomienka platby rezervácie',
       'payment-notification',
-      emailData
+      emailData,
+      req.user  // Pass user for tenant-specific template selection
     );
 
     // Update tracking
