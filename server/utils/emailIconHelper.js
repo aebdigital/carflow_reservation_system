@@ -111,7 +111,7 @@ class EmailIconHelper {
     return {
       facebook: path.join(templatePath, 'facebook_icon.png'),
       instagram: path.join(templatePath, 'instagram_icon.png'),
-      logo: path.join(templatePath, 'nitracarlogo.png'), // Add logo support
+      logo: path.join(templatePath, 'nitracarlogo_optimized.png'), // Use optimized logo for email embedding
     };
   }
 
@@ -183,39 +183,52 @@ class EmailIconHelper {
     });
 
     // Check if this is a Nitra-Car email
+    // Make detection case-insensitive and handle email format variations
+    const senderEmailLower = senderEmail ? senderEmail.toLowerCase() : '';
     const isNitracarEmail = senderEmail && (
       senderEmail === process.env.NITRACAR_EMAIL_FROM ||
-      senderEmail.includes('nitra-car@nitra-car.sk') ||
-      senderEmail.includes('nitracar') ||
-      senderEmail.includes('nitra-car')
+      senderEmailLower.includes('nitra-car@nitra-car.sk') ||
+      senderEmailLower.includes('nitracar') ||
+      senderEmailLower.includes('nitra-car')
     );
 
     console.log('🔍 [ICON HELPER] Nitra-Car detection:', {
       isNitracarEmail,
       senderEmail,
+      senderEmailLower,
       envVar: process.env.NITRACAR_EMAIL_FROM
     });
 
     const templatesPath = isNitracarEmail ? this.nitracarTemplatesPath : this.defaultTemplatesPath;
     const iconPaths = this.getIconFilePaths(templatesPath);
 
-    // Add Nitra-Car logo as base64 data URI
-    if (isNitracarEmail && iconPaths.logo && fs.existsSync(iconPaths.logo)) {
-      const logoBuffer = fs.readFileSync(iconPaths.logo);
-      const logoBase64 = logoBuffer.toString('base64');
-      variables.nitracar_logo_base64 = `data:image/png;base64,${logoBase64}`;
-      console.log('✅ [ICON HELPER] Added Nitra-Car logo as base64 data URI:', {
-        bytes: logoBuffer.length,
-        base64Length: logoBase64.length,
-        dataUriLength: variables.nitracar_logo_base64.length,
-        preview: variables.nitracar_logo_base64.substring(0, 50) + '...'
-      });
-    } else {
-      console.log('⚠️ [ICON HELPER] Logo NOT added:', {
-        isNitracarEmail,
-        logoExists: iconPaths.logo && fs.existsSync(iconPaths.logo),
-        logoPath: iconPaths.logo
-      });
+    // Add Nitra-Car logo - prefer hosted URL, fall back to base64
+    if (isNitracarEmail) {
+      // Check if a hosted logo URL is configured (more reliable for email clients)
+      const hostedLogoUrl = process.env.NITRACAR_LOGO_URL;
+
+      if (hostedLogoUrl) {
+        variables.nitracar_logo_base64 = hostedLogoUrl;
+        console.log('✅ [ICON HELPER] Using hosted Nitra-Car logo URL:', hostedLogoUrl);
+      } else if (iconPaths.logo && fs.existsSync(iconPaths.logo)) {
+        // Fall back to base64 embedding (less reliable for large images)
+        const logoBuffer = fs.readFileSync(iconPaths.logo);
+        const logoBase64 = logoBuffer.toString('base64');
+        variables.nitracar_logo_base64 = `data:image/png;base64,${logoBase64}`;
+        console.log('✅ [ICON HELPER] Added Nitra-Car logo as base64 data URI:', {
+          bytes: logoBuffer.length,
+          base64Length: logoBase64.length,
+          dataUriLength: variables.nitracar_logo_base64.length,
+          preview: variables.nitracar_logo_base64.substring(0, 50) + '...',
+          warning: logoBuffer.length > 30000 ? '⚠️ Logo is large (>30KB), consider using NITRACAR_LOGO_URL instead' : null
+        });
+      } else {
+        console.log('⚠️ [ICON HELPER] Logo NOT added:', {
+          isNitracarEmail,
+          logoExists: iconPaths.logo && fs.existsSync(iconPaths.logo),
+          logoPath: iconPaths.logo
+        });
+      }
     }
 
     return variables;
