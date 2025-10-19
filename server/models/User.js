@@ -57,7 +57,7 @@ const userSchema = new mongoose.Schema({
   licenseNumber: {
     type: String,
     required: false, // Made optional to support public API customers without license
-    unique: true,
+    // Removed global unique constraint - allow same license across tenants and repeat customers
     sparse: true
   },
   licenseExpiry: {
@@ -110,13 +110,14 @@ const userSchema = new mongoose.Schema({
 });
 
 // Index for better performance
-userSchema.index({ licenseNumber: 1 });
 userSchema.index({ role: 1 });
 // Compound index for tenant-based queries
 userSchema.index({ tenantId: 1, role: 1 });
 userSchema.index({ tenantId: 1, isActive: 1 });
 // Compound unique index: email is unique within each tenant
 userSchema.index({ email: 1, tenantId: 1 }, { unique: true });
+// Compound unique index: license number is unique within each tenant (allows same customer across tenants)
+userSchema.index({ licenseNumber: 1, tenantId: 1 }, { unique: true, sparse: true });
 
 // Generate unique storage folder path before saving
 userSchema.pre('save', async function(next) {

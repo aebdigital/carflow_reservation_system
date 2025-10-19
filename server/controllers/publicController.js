@@ -514,6 +514,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     address,
     licenseNumber,
     licenseExpiry,
+    idNumber, // ID card number (Číslo OP)
     
     // Company/Firma details
     isCompany,
@@ -715,6 +716,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
         },
         licenseNumber,
         licenseExpiry: licenseExpiry ? new Date(licenseExpiry) : undefined,
+        idNumber, // ID card number
         role: 'customer',
         isActive: true,
         tenantId
@@ -1243,6 +1245,7 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     address,
     licenseNumber,
     licenseExpiry,
+    idNumber, // ID card number (Číslo OP)
     
     // Company/Firma details
     isCompany,
@@ -1438,6 +1441,7 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
           },
           licenseNumber: uniqueLicenseNumber,
           licenseExpiry: licenseExpiry ? new Date(licenseExpiry) : undefined,
+          idNumber, // ID card number
           role: 'customer',
           isActive: true,
           tenantId
@@ -1472,6 +1476,7 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
           },
           licenseNumber,
           licenseExpiry: licenseExpiry ? new Date(licenseExpiry) : undefined,
+          idNumber, // ID card number
           role: 'customer',
           isActive: true,
           tenantId
