@@ -480,7 +480,8 @@ const createCar = asyncHandler(async (req, res, next) => {
       const integerFields = new Set([
         'year', 'seats', 'doors', 'trunkVolume',
         'engine.displacement', 'engine.power', 'engine.torque', 'engine.cylinders',
-        'fuelConsumption.co2Emissions', 'mileageLimits.dailyLimit', 'mileage.current'
+        'fuelConsumption.co2Emissions', 'mileageLimits.dailyLimit', 'mileage.current',
+        'pricing.deposit', 'pricing.dailyRate', 'pricing.weeklyRate', 'pricing.monthlyRate' // Pricing should be integers (no decimal euros)
       ]);
 
       numericFields.forEach(field => {
@@ -1346,7 +1347,8 @@ const updateCar = asyncHandler(async (req, res, next) => {
       const integerFields = new Set([
         'year', 'seats', 'doors', 'trunkVolume',
         'engine.displacement', 'engine.power', 'engine.torque', 'engine.cylinders',
-        'fuelConsumption.co2Emissions', 'mileageLimits.dailyLimit', 'mileage.current'
+        'fuelConsumption.co2Emissions', 'mileageLimits.dailyLimit', 'mileage.current',
+        'pricing.deposit', 'pricing.dailyRate', 'pricing.weeklyRate', 'pricing.monthlyRate' // Pricing should be integers (no decimal euros)
       ]);
 
       console.log('🚗 [CAR UPDATE] Step 4n: Processing numeric fields...');

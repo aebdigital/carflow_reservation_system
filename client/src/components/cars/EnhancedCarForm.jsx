@@ -1536,7 +1536,7 @@ const EnhancedCarForm = ({
                 label="Denná sadzba"
                 type="number"
                 value={formData.pricing?.dailyRate || ''}
-                onChange={(e) => handleNestedChange('pricing.dailyRate', parseFloat(e.target.value))}
+                onChange={(e) => handleNestedChange('pricing.dailyRate', parseInt(e.target.value, 10) || 0)}
                 disabled={dialogMode === 'view'}
                 InputProps={{
                   endAdornment: <InputAdornment position="end">€</InputAdornment>,
@@ -1550,7 +1550,7 @@ const EnhancedCarForm = ({
                 label="Depozit"
                 type="number"
                 value={formData.pricing?.deposit || ''}
-                onChange={(e) => handleNestedChange('pricing.deposit', parseFloat(e.target.value))}
+                onChange={(e) => handleNestedChange('pricing.deposit', parseInt(e.target.value, 10) || 0)}
                 disabled={dialogMode === 'view'}
                 InputProps={{
                   endAdornment: <InputAdornment position="end">€</InputAdornment>,
