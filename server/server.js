@@ -72,6 +72,7 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
   'http://localhost:3005',
+  'http://localhost:3006',
   'http://localhost:8080'
 ];
 
