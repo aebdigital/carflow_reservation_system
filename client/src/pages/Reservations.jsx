@@ -1669,10 +1669,26 @@ function Reservations() {
                             Kategória: {selectedReservation.car.category || 'Neuvedené'}
                           </Typography>
                           <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Denná sadzba: {selectedReservation.pricing?.dailyRate?.toFixed(2) || selectedReservation.car.dailyRate?.toFixed(2) || 'Neuvedené'}€/deň
+                            Denná sadzba: {(() => {
+                              const days = Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24));
+                              const rates = selectedReservation.car.pricing?.rates;
+                              let dailyRate = selectedReservation.pricing?.dailyRate || selectedReservation.car.pricing?.dailyRate || 0;
+
+                              if (rates) {
+                                if (days === 1 && rates['1day']) dailyRate = rates['1day'];
+                                else if (days >= 2 && days <= 3 && rates['2-3days']) dailyRate = rates['2-3days'];
+                                else if (days >= 4 && days <= 10 && rates['4-10days']) dailyRate = rates['4-10days'];
+                                else if (days >= 11 && days <= 17 && rates['11-17days']) dailyRate = rates['11-17days'];
+                                else if (days >= 18 && days <= 24 && rates['18-24days']) dailyRate = rates['18-24days'];
+                                else if (days >= 25 && days <= 29 && rates['25-29days']) dailyRate = rates['25-29days'];
+                                else if (days >= 30 && rates['30plus']) return rates['30plus'];
+                              }
+
+                              return typeof dailyRate === 'number' ? `${dailyRate.toFixed(2)}€/deň` : dailyRate || 'Neuvedené';
+                            })()}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            Depozit: {selectedReservation.car.deposit?.toFixed(2) || '0.00'}€
+                            Depozit: {selectedReservation.car.pricing?.deposit?.toFixed(2) || '0.00'}€
                           </Typography>
                         </>
                       ) : (
