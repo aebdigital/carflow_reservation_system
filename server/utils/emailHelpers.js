@@ -92,15 +92,33 @@ function prepareReservationEmailData(reservation, car, customer) {
 }
 
 /**
+ * Get admin email based on tenant
+ */
+function getAdminEmailForTenant(user) {
+  // If user context is provided, check tenant
+  if (user && user.email) {
+    const userEmail = user.email.toLowerCase().trim();
+
+    // Special case for rival tenant
+    if (userEmail === 'rival@test.sk') {
+      return 'rivalautopozicovna@gmail.com';
+    }
+  }
+
+  // Default admin email for all other tenants
+  return 'peter@aebdig.com';
+}
+
+/**
  * Send admin notification email for new reservation
  */
-async function sendAdminNotificationEmail(reservation, car, customer) {
+async function sendAdminNotificationEmail(reservation, car, customer, user = null) {
   try {
     console.log('📧 [EMAIL] Sending admin notification for reservation:', reservation._id);
-    
+
     // Import email service
     const emailService = require('../services/emailService');
-    
+
     // Check if email service is configured
     if (!emailService.isConfigured) {
       console.warn('⚠️ [EMAIL] Email service not configured, skipping admin notification');
@@ -109,14 +127,16 @@ async function sendAdminNotificationEmail(reservation, car, customer) {
 
     // Prepare email data
     const emailData = prepareReservationEmailData(reservation, car, customer);
-    
-    // Send email to admin
-    const adminEmail = 'peter@aebdig.com';
-    const result = await emailService.sendAdminReservationNotification(adminEmail, emailData);
-    
-    console.log('✅ [EMAIL] Admin notification sent successfully');
+
+    // Get admin email based on tenant
+    const adminEmail = getAdminEmailForTenant(user);
+    console.log('📧 [EMAIL] Admin email for tenant:', adminEmail, '(User:', user?.email || 'No user context', ')');
+
+    const result = await emailService.sendAdminReservationNotification(adminEmail, emailData, user);
+
+    console.log('✅ [EMAIL] Admin notification sent successfully to:', adminEmail);
     return { success: true, result };
-    
+
   } catch (error) {
     console.error('❌ [EMAIL] Failed to send admin notification:', error.message);
     return { success: false, error: error.message };
@@ -143,10 +163,10 @@ async function sendReservationEmails(reservation, car, customer, user = null) {
     const emailData = prepareReservationEmailData(reservation, car, customer);
     
     const results = [];
-    
+
     // Send email to admin
     try {
-      const adminEmail = 'peter@aebdig.com';
+      const adminEmail = getAdminEmailForTenant(user);
       console.log('📧 [EMAIL] Sending admin notification to:', adminEmail);
       console.log('📧 [EMAIL] Admin email user context:', user ? { email: user.email, tenantId: user.tenantId } : 'No user context');
       const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData, user);
@@ -218,6 +238,7 @@ async function sendReservationEmails(reservation, car, customer, user = null) {
 
 module.exports = {
   prepareReservationEmailData,
+  getAdminEmailForTenant,
   sendAdminNotificationEmail,
   sendReservationEmails
 }; 
