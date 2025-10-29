@@ -754,16 +754,21 @@ function Reservations() {
         throw new Error(`Failed to download Slovak agreement: ${response.status}`)
       }
 
-      // Verify we got a PDF
-      const contentType = response.headers.get('content-type')
-      if (!contentType || !contentType.includes('application/pdf')) {
-        console.error('Unexpected content type:', contentType)
-        throw new Error('Server did not return a PDF')
-      }
-
       // Get the blob from the response
       const blob = await response.blob()
+
+      // Verify we got a PDF by checking blob type and size
+      const contentType = response.headers.get('content-type')
+      console.log('Content-Type:', contentType)
       console.log('PDF blob size:', blob.size, 'bytes')
+      console.log('Blob type:', blob.type)
+
+      // Check if blob is too small (likely an error page)
+      if (blob.size < 1000) {
+        const text = await blob.text()
+        console.error('Response too small, likely an error:', text)
+        throw new Error('Server returned an error instead of PDF')
+      }
 
       // Create a blob URL and download it
       const blobUrl = window.URL.createObjectURL(blob)

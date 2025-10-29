@@ -50,8 +50,14 @@ import {
 import { t } from '../utils/translations'
 import EnhancedCarForm from '../components/cars/EnhancedCarForm'
 import CarEnglishTranslation from '../components/admin/CarEnglishTranslation'
+import { useSelector } from 'react-redux'
 
 function Cars() {
+  // Get current user to check tenant
+  const { user } = useSelector((state) => state.auth)
+
+  // Check if multi-language features should be shown (only for nitracar tenant)
+  const showMultiLanguage = user?.email && !['rival@test.sk', 'lerent@lerent.sk'].includes(user.email.toLowerCase())
   const [openDialog, setOpenDialog] = useState(false)
   const [selectedCar, setSelectedCar] = useState(null)
   const [dialogMode, setDialogMode] = useState('create') // 'create', 'edit', 'view'
@@ -1245,33 +1251,35 @@ function Cars() {
               >
                 <EditIcon sx={{ fontSize: '22px' }} />
               </IconButton>
-              <Tooltip title="English Translation">
-                <IconButton
-                  size="medium"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setTranslationDialog({ open: true, car });
-                  }}
-                  color="info"
-                  sx={{ mr: 0.5, p: 0.6 }}
-                >
-                  <LanguageIcon sx={{ fontSize: '22px' }} />
-                  {car.descriptionEn && (
-                    <Box
-                      component="span"
-                      sx={{
-                        position: 'absolute',
-                        top: 2,
-                        right: 2,
-                        width: 8,
-                        height: 8,
-                        bgcolor: 'success.main',
-                        borderRadius: '50%',
-                      }}
-                    />
-                  )}
-                </IconButton>
-              </Tooltip>
+              {showMultiLanguage && (
+                <Tooltip title="English Translation">
+                  <IconButton
+                    size="medium"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTranslationDialog({ open: true, car });
+                    }}
+                    color="info"
+                    sx={{ mr: 0.5, p: 0.6 }}
+                  >
+                    <LanguageIcon sx={{ fontSize: '22px' }} />
+                    {car.descriptionEn && (
+                      <Box
+                        component="span"
+                        sx={{
+                          position: 'absolute',
+                          top: 2,
+                          right: 2,
+                          width: 8,
+                          height: 8,
+                          bgcolor: 'success.main',
+                          borderRadius: '50%',
+                        }}
+                      />
+                    )}
+                  </IconButton>
+                </Tooltip>
+              )}
               <IconButton
                 size="medium"
                 onClick={(e) => {
@@ -1504,12 +1512,14 @@ function Cars() {
         </Alert>
       </Snackbar>
 
-      {/* English Translation Dialog */}
-      <CarEnglishTranslation
-        car={translationDialog.car}
-        open={translationDialog.open}
-        onClose={() => setTranslationDialog({ open: false, car: null })}
-      />
+      {/* English Translation Dialog - Only for nitracar tenant */}
+      {showMultiLanguage && (
+        <CarEnglishTranslation
+          car={translationDialog.car}
+          open={translationDialog.open}
+          onClose={() => setTranslationDialog({ open: false, car: null })}
+        />
+      )}
     </Box>
   )
 }
