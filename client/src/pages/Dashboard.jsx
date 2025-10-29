@@ -288,7 +288,7 @@ function Dashboard() {
       {/* Monthly Revenue and Fleet Overview */}
       <Grid container spacing={3} sx={{ mb: 4, mt: 3, justifyContent: 'space-evenly', width: '100%' }}>
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                 Mesačné tržby {new Date().getFullYear()}
@@ -297,23 +297,23 @@ function Dashboard() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dashboardData.monthlyRevenueData}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="month" 
+                    <XAxis
+                      dataKey="month"
                       fontSize={12}
                       tick={{ fill: '#666' }}
                     />
-                    <YAxis 
+                    <YAxis
                       fontSize={12}
                       tick={{ fill: '#666' }}
                       tickFormatter={(value) => `${value}€`}
                     />
-                    <Tooltip 
+                    <Tooltip
                       formatter={(value) => [`${value}€`, 'Tržby']}
                       labelStyle={{ color: '#333' }}
                     />
-                    <Bar 
-                      dataKey="revenue" 
-                      fill="#2196f3" 
+                    <Bar
+                      dataKey="revenue"
+                      fill="#2196f3"
                       radius={[4, 4, 0, 0]}
                     />
                   </BarChart>
@@ -322,9 +322,9 @@ function Dashboard() {
             </CardContent>
           </Card>
         </Grid>
-        
+
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                 {t('fleetOverview')}
