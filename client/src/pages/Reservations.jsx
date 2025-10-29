@@ -739,8 +739,12 @@ function Reservations() {
   const handleDownloadSlovakAgreementFile = async (reservationId) => {
     try {
       // Fetch the PDF as a blob with authorization
+      // Use window.location.origin to get the current origin for proper proxying
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/reservations/${reservationId}/slovak-agreement`, {
+      const apiUrl = `${window.location.origin}/api/reservations/${reservationId}/slovak-agreement`
+      console.log('Fetching PDF from:', apiUrl)
+
+      const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
