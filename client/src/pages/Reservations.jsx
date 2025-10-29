@@ -741,8 +741,15 @@ function Reservations() {
       // Fetch the PDF as a blob with authorization
       // Use the API base URL from environment or default to production API
       const token = localStorage.getItem('token')
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api'
+
+      // Get base URL and normalize it (remove trailing slashes)
+      let apiBaseUrl = import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api'
+      apiBaseUrl = apiBaseUrl.replace(/\/+$/, '') // Remove all trailing slashes
+
+      // Construct the full URL
       const apiUrl = `${apiBaseUrl}/reservations/${reservationId}/slovak-agreement`
+
+      console.log('API Base URL:', apiBaseUrl)
       console.log('Fetching PDF from:', apiUrl)
 
       const response = await fetch(apiUrl, {
