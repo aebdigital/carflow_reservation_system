@@ -1509,6 +1509,14 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
 // @access  Private
 const generateSlovakAgreement = asyncHandler(async (req, res, next) => {
   try {
+    console.log('🔄 [PDF] Starting Slovak rental agreement generation');
+    console.log('📋 [PDF] Request params:', {
+      reservationId: req.params.id,
+      tenantId: req.user.tenantId,
+      userId: req.user._id,
+      userRole: req.user.role
+    });
+
     const reservation = await Reservation.findOne({
       _id: req.params.id,
       tenantId: req.user.tenantId
@@ -1518,27 +1526,48 @@ const generateSlovakAgreement = asyncHandler(async (req, res, next) => {
       .populate('createdBy', 'firstName lastName');
 
     if (!reservation) {
+      console.error('❌ [PDF] Reservation not found:', req.params.id);
       return next(new AppError(`Rezervácia s ID ${req.params.id} nebola nájdená`, 404));
     }
 
+    console.log('✅ [PDF] Reservation found:', {
+      reservationNumber: reservation.reservationNumber,
+      customerName: reservation.customer ? `${reservation.customer.firstName} ${reservation.customer.lastName}` : 'N/A',
+      carInfo: reservation.car ? `${reservation.car.brand} ${reservation.car.model}` : 'N/A',
+      status: reservation.status
+    });
+
     // Check if user owns the reservation or is staff
     if (req.user.role === 'customer' && reservation.customer._id.toString() !== req.user._id.toString()) {
+      console.error('❌ [PDF] Access denied - user does not own reservation');
       return next(new AppError('Nemáte oprávnenie na prístup k tejto rezervácii', 403));
     }
 
-    console.log('🔄 [PDF] Generating Slovak rental agreement for reservation:', req.params.id);
+    console.log('🔄 [PDF] Calling pdfService.generateRentalAgreement...');
 
     // Generate the PDF using the PDF service
     const pdfBuffer = await pdfService.generateRentalAgreement(
-      reservation, 
-      reservation.car, 
+      reservation,
+      reservation.car,
       reservation.customer
     );
+
+    console.log('✅ [PDF] PDF buffer generated successfully:', {
+      bufferLength: pdfBuffer.length,
+      bufferType: typeof pdfBuffer,
+      isBuffer: Buffer.isBuffer(pdfBuffer)
+    });
 
     // Set response headers for PDF
     const isPreviewing = req.query.preview === 'true';
     const filename = `zmluva-o-najme-${reservation.reservationNumber || req.params.id}.pdf`;
-    
+
+    console.log('📤 [PDF] Setting response headers:', {
+      isPreviewing,
+      filename,
+      contentLength: pdfBuffer.length
+    });
+
     if (isPreviewing) {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
@@ -1546,16 +1575,26 @@ const generateSlovakAgreement = asyncHandler(async (req, res, next) => {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     }
-    
+
     res.setHeader('Content-Length', pdfBuffer.length);
-    
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     // Send the PDF
+    console.log('📤 [PDF] Sending PDF buffer to client...');
     res.send(pdfBuffer);
 
     console.log('✅ [PDF] Slovak rental agreement sent successfully');
 
   } catch (error) {
     console.error('❌ [PDF] Error generating Slovak rental agreement:', error);
+    console.error('❌ [PDF] Error stack:', error.stack);
+    console.error('❌ [PDF] Error details:', {
+      message: error.message,
+      name: error.name,
+      code: error.code
+    });
     return next(new AppError('Chyba pri generovaní zmluvy o nájme', 500));
   }
 });

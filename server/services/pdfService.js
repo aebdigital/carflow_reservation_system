@@ -72,11 +72,31 @@ class PDFService {
    */
   async generateRentalAgreement(reservation, car, customer) {
     try {
-      console.log('🔄 [PDF] Generating Slovak rental agreement...');
-      
+      console.log('🔄 [PDF Service] Starting generateRentalAgreement');
+      console.log('📋 [PDF Service] Input data:', {
+        reservationId: reservation?._id,
+        reservationNumber: reservation?.reservationNumber,
+        carBrand: car?.brand,
+        carModel: car?.model,
+        customerName: customer ? `${customer.firstName} ${customer.lastName}` : 'N/A',
+        templatePath: this.templatePath
+      });
+
+      // Check if template exists
+      if (!fs.existsSync(this.templatePath)) {
+        console.error('❌ [PDF Service] Template file not found at:', this.templatePath);
+        throw new Error(`Template file not found at: ${this.templatePath}`);
+      }
+      console.log('✅ [PDF Service] Template file exists');
+
       // Read the template PDF
+      console.log('🔄 [PDF Service] Reading template file...');
       const templateBytes = fs.readFileSync(this.templatePath);
+      console.log('✅ [PDF Service] Template file read successfully:', templateBytes.length, 'bytes');
+
+      console.log('🔄 [PDF Service] Loading PDF document...');
       const pdfDoc = await PDFDocument.load(templateBytes);
+      console.log('✅ [PDF Service] PDF document loaded successfully');
       
       // Try to get the form (if it has fillable fields)
       const form = pdfDoc.getForm();
@@ -105,13 +125,27 @@ class PDFService {
       }
       
       // Save the filled PDF
+      console.log('🔄 [PDF Service] Saving PDF document...');
       const pdfBytes = await pdfDoc.save();
-      console.log('✅ [PDF] Slovak rental agreement generated successfully');
-      
-      return Buffer.from(pdfBytes);
-      
+      console.log('✅ [PDF Service] PDF document saved successfully:', pdfBytes.length, 'bytes');
+
+      const buffer = Buffer.from(pdfBytes);
+      console.log('✅ [PDF Service] Buffer created successfully:', {
+        bufferLength: buffer.length,
+        isBuffer: Buffer.isBuffer(buffer)
+      });
+      console.log('✅ [PDF Service] Slovak rental agreement generated successfully');
+
+      return buffer;
+
     } catch (error) {
-      console.error('❌ [PDF] Error generating rental agreement:', error);
+      console.error('❌ [PDF Service] Error generating rental agreement:', error);
+      console.error('❌ [PDF Service] Error stack:', error.stack);
+      console.error('❌ [PDF Service] Error details:', {
+        message: error.message,
+        name: error.name,
+        code: error.code
+      });
       throw new Error(`Failed to generate PDF: ${error.message}`);
     }
   }

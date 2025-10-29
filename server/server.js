@@ -136,9 +136,24 @@ app.use(morgan('combined'));
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Logging middleware
+// Enhanced logging middleware
 app.use((req, res, next) => {
   console.log(`🌐 [REQUEST] ${req.method} ${req.path} - ${new Date().toISOString()}`);
+
+  // Extra logging for PDF requests
+  if (req.path.includes('slovak-agreement') || req.path.includes('.pdf')) {
+    console.log(`📄 [PDF REQUEST] Details:`, {
+      method: req.method,
+      path: req.path,
+      query: req.query,
+      headers: {
+        accept: req.headers.accept,
+        authorization: req.headers.authorization ? 'Bearer token present' : 'No auth',
+        contentType: req.headers['content-type']
+      }
+    });
+  }
+
   next();
 });
 
