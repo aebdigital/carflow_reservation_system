@@ -69,6 +69,7 @@ const allowedOrigins = [
   'https://rentaldemo.carflow.sk',
   'https://rival.carflow.sk',
   'https://nitracar.carflow.sk',
+  'https://lerent.carflow.sk',
   'https://pozicauto.sk',
   'https://www.pozicauto.sk',
   'http://localhost:5173',
