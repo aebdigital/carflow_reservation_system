@@ -90,6 +90,87 @@ function TabPanel({ children, value, index, ...other }) {
   )
 }
 
+// Dual scrollbar wrapper component
+function DualScrollbarTableContainer({ children }) {
+  const topScrollRef = React.useRef(null)
+  const bottomScrollRef = React.useRef(null)
+
+  const syncScroll = (source, target) => {
+    if (target.current && source.current) {
+      target.current.scrollLeft = source.current.scrollLeft
+    }
+  }
+
+  React.useEffect(() => {
+    const updateTopScrollWidth = () => {
+      if (topScrollRef.current && bottomScrollRef.current) {
+        const table = bottomScrollRef.current.querySelector('table')
+        if (table) {
+          topScrollRef.current.firstElementChild.style.width = `${table.offsetWidth}px`
+        }
+      }
+    }
+    updateTopScrollWidth()
+    window.addEventListener('resize', updateTopScrollWidth)
+    return () => window.removeEventListener('resize', updateTopScrollWidth)
+  }, [children])
+
+  return (
+    <Box>
+      {/* Top scrollbar */}
+      <Box
+        ref={topScrollRef}
+        sx={{
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          mb: 0.5,
+          '&::-webkit-scrollbar': {
+            height: 8,
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: '#f1f1f1',
+            borderRadius: 4,
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: '#c1c1c1',
+            borderRadius: 4,
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            backgroundColor: '#a8a8a8',
+          },
+        }}
+        onScroll={() => syncScroll(topScrollRef, bottomScrollRef)}
+      >
+        <Box sx={{ height: 1 }} />
+      </Box>
+      {/* Main table with bottom scrollbar */}
+      <TableContainer
+        ref={bottomScrollRef}
+        sx={{
+          overflowX: 'auto',
+          '&::-webkit-scrollbar': {
+            height: 8,
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: '#f1f1f1',
+            borderRadius: 4,
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: '#c1c1c1',
+            borderRadius: 4,
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            backgroundColor: '#a8a8a8',
+          },
+        }}
+        onScroll={() => syncScroll(bottomScrollRef, topScrollRef)}
+      >
+        {children}
+      </TableContainer>
+    </Box>
+  )
+}
+
 function Reservations() {
   // Debug: Check authentication state
   const auth = useSelector((state) => state.auth)
@@ -736,7 +817,7 @@ function Reservations() {
               Error loading reservations: {reservationsError.message}
             </Alert>
           ) : (
-            <TableContainer sx={{ overflowX: 'auto' }}>
+            <DualScrollbarTableContainer>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -991,7 +1072,7 @@ function Reservations() {
                   ))}
                 </TableBody>
               </Table>
-            </TableContainer>
+            </DualScrollbarTableContainer>
           )}
         </TabPanel>
 
@@ -1006,7 +1087,7 @@ function Reservations() {
               Error loading reservations: {reservationsError.message}
             </Alert>
           ) : (
-            <TableContainer sx={{ overflowX: 'auto' }}>
+            <DualScrollbarTableContainer>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -1148,7 +1229,7 @@ function Reservations() {
                   ))}
                 </TableBody>
               </Table>
-            </TableContainer>
+            </DualScrollbarTableContainer>
           )}
         </TabPanel>
         <TabPanel value={tabValue} index={2}>
@@ -1161,7 +1242,7 @@ function Reservations() {
               Error loading reservations: {reservationsError.message}
             </Alert>
           ) : (
-            <TableContainer sx={{ overflowX: 'auto' }}>
+            <DualScrollbarTableContainer>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -1320,7 +1401,7 @@ function Reservations() {
                   ))}
                 </TableBody>
               </Table>
-            </TableContainer>
+            </DualScrollbarTableContainer>
           )}
         </TabPanel>
         <TabPanel value={tabValue} index={3}>
@@ -1333,7 +1414,7 @@ function Reservations() {
               Error loading reservations: {reservationsError.message}
             </Alert>
           ) : (
-            <TableContainer sx={{ overflowX: 'auto' }}>
+            <DualScrollbarTableContainer>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -1466,7 +1547,7 @@ function Reservations() {
                   ))}
                 </TableBody>
               </Table>
-            </TableContainer>
+            </DualScrollbarTableContainer>
           )}
         </TabPanel>
       </Card>
@@ -1585,10 +1666,13 @@ function Reservations() {
                             Evidenčné číslo: {selectedReservation.car.registrationNumber}
                           </Typography>
                           <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Kategória: {selectedReservation.car.category}
+                            Kategória: {selectedReservation.car.category || 'Neuvedené'}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Denná sadzba: {selectedReservation.pricing?.dailyRate?.toFixed(2) || selectedReservation.car.dailyRate?.toFixed(2) || 'Neuvedené'}€/deň
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            Denná sadzba: {selectedReservation.pricing?.dailyRate?.toFixed(2) || 'Neuvedené'}€/deň
+                            Depozit: {selectedReservation.car.deposit?.toFixed(2) || '0.00'}€
                           </Typography>
                         </>
                       ) : (
@@ -1602,7 +1686,7 @@ function Reservations() {
 
                 {/* Rental Dates */}
                 <Grid item xs={12} md={6}>
-                  <Card variant="outlined">
+                  <Card variant="outlined" sx={{ height: '100%' }}>
                     <CardContent>
                       <Typography variant="h6" gutterBottom color="primary">
                         {t('rentalPeriod')}
@@ -1665,7 +1749,7 @@ function Reservations() {
 
                 {/* Pricing Information */}
                 <Grid item xs={12} md={6}>
-                  <Card variant="outlined">
+                  <Card variant="outlined" sx={{ height: '100%' }}>
                     <CardContent>
                       <Typography variant="h6" gutterBottom color="primary">
                         Podrobnosti o cenách
@@ -1673,21 +1757,13 @@ function Reservations() {
                       {selectedReservation.pricing ? (
                         <>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                            <Typography variant="body2">{t('subtotal')}:</Typography>
+                            <Typography variant="body2">Medzisúčet:</Typography>
                             <Typography variant="body2">{selectedReservation.pricing.subtotal?.toFixed(2) || '0.00'}€</Typography>
                           </Box>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                            <Typography variant="body2">{t('tax')}:</Typography>
-                            <Typography variant="body2">{selectedReservation.pricing.taxes?.toFixed(2) || '0.00'}€</Typography>
+                            <Typography variant="body2">DPH (23%):</Typography>
+                            <Typography variant="body2">{((selectedReservation.pricing.subtotal || 0) * 0.23).toFixed(2)}€</Typography>
                           </Box>
-                          {selectedReservation.pricing.fees && selectedReservation.pricing.fees.length > 0 && (
-                            selectedReservation.pricing.fees.map((fee, index) => (
-                              <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                <Typography variant="body2">{fee.name}:</Typography>
-                                <Typography variant="body2">{fee.amount?.toFixed(2) || '0.00'}€</Typography>
-                              </Box>
-                            ))
-                          )}
                           {/* Discount Information */}
                           {selectedReservation.pricing?.appliedDiscount && (
                             <>
@@ -1707,52 +1783,9 @@ function Reservations() {
                               )}
                             </>
                           )}
-                          
-                          {/* Services Total */}
-                          {selectedReservation.servicesTotal && selectedReservation.servicesTotal > 0 && (
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                              <Typography variant="body2">Dodatočné služby:</Typography>
-                              <Typography variant="body2">{selectedReservation.servicesTotal?.toFixed(2)}€</Typography>
-                            </Box>
-                          )}
-
-                          {/* Deposit */}
-                          {selectedReservation.pricing?.deposit && selectedReservation.pricing.deposit > 0 && (
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                              <Typography variant="body2">Záloha:</Typography>
-                              <Typography variant="body2" color="warning.main" fontWeight="medium">{selectedReservation.pricing.deposit?.toFixed(2)}€</Typography>
-                            </Box>
-                          )}
-
-                          {/* Extra Options */}
-                          {selectedReservation.pricing?.extraOptions && (
-                            <Box sx={{ mb: 1 }}>
-                              <Typography variant="caption" color="text.secondary" display="block">Extra možnosti:</Typography>
-                              {Object.entries(selectedReservation.pricing.extraOptions).map(([key, value]) => (
-                                value && (
-                                  <Chip 
-                                    key={key}
-                                    label={key.toUpperCase()} 
-                                    size="small" 
-                                    color="info"
-                                    variant="outlined"
-                                    sx={{ mr: 0.5, mt: 0.5 }}
-                                  />
-                                )
-                              ))}
-                            </Box>
-                          )}
 
                           <Divider sx={{ my: 1 }} />
-                          
-                          {/* Show both calculated total and total amount */}
-                          {selectedReservation.pricing?.calculatedTotal && (
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                              <Typography variant="body2">Vypočítaná suma:</Typography>
-                              <Typography variant="body2">{selectedReservation.pricing.calculatedTotal?.toFixed(2)}€</Typography>
-                            </Box>
-                          )}
-                          
+
                           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                             <Typography variant="body1" fontWeight="bold">{t('totalAmount')}:</Typography>
                             <Typography variant="body1" fontWeight="bold" color="primary">{selectedReservation.pricing.totalAmount?.toFixed(2) || '0.00'}€</Typography>
@@ -2000,7 +2033,7 @@ function Reservations() {
                 </Grid>
 
                 {/* Terms and Conditions */}
-                {selectedReservation.terms && Object.keys(selectedReservation.terms).length > 0 ? (
+                {selectedReservation.car && (
                   <Grid item xs={12}>
                     <Card variant="outlined">
                       <CardContent>
@@ -2008,31 +2041,21 @@ function Reservations() {
                           Obchodné podmienky
                         </Typography>
                         <Grid container spacing={2}>
-                          <Grid item xs={12} md={3}>
+                          <Grid item xs={12} md={6}>
                             <Typography variant="body2" gutterBottom>
-                              <strong>Limit najazdených km:</strong> {selectedReservation.terms.mileageLimit === -1 ? 'Neobmedzené' : `${selectedReservation.terms.mileageLimit} km`}
+                              <strong>Denný limit km:</strong> {selectedReservation.car.mileageLimits?.dailyLimit || selectedReservation.terms?.mileageLimit || 'Neobmedzené'} km/deň
                             </Typography>
                           </Grid>
-                          <Grid item xs={12} md={3}>
+                          <Grid item xs={12} md={6}>
                             <Typography variant="body2" gutterBottom>
-                              <strong>Politika paliva:</strong> {selectedReservation.terms.fuelPolicy}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={12} md={3}>
-                            <Typography variant="body2" gutterBottom>
-                              <strong>Poplatok za oneskorené vrátenie:</strong> {selectedReservation.terms.lateReturnFee || 0}€
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={12} md={3}>
-                            <Typography variant="body2" gutterBottom>
-                              <strong>Storno podmienky:</strong> {selectedReservation.terms.cancellationPolicy || 'Štandardné podmienky'}
+                              <strong>Cena za nadmerné km:</strong> {selectedReservation.car.mileageLimits?.excessKmPrice?.toFixed(2) || '0.00'}€/km
                             </Typography>
                           </Grid>
                         </Grid>
                       </CardContent>
                     </Card>
                   </Grid>
-                ) : null}
+                )}
 
                 {/* Check-in Information */}
                 {selectedReservation.checkIn && selectedReservation.checkIn.date && (

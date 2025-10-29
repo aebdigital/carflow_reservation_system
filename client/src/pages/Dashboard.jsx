@@ -293,7 +293,7 @@ function Dashboard() {
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                 Mesačné tržby {new Date().getFullYear()}
               </Typography>
-              <Box sx={{ height: 300, mt: 2 }}>
+              <Box sx={{ height: 400, mt: 2 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dashboardData.monthlyRevenueData}>
                     <CartesianGrid strokeDasharray="3 3" />
