@@ -743,16 +743,27 @@ function Reservations() {
       const response = await fetch(`/api/reservations/${reservationId}/slovak-agreement`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/pdf'
         }
       })
 
       if (!response.ok) {
-        throw new Error('Failed to download Slovak agreement')
+        const errorText = await response.text()
+        console.error('Server error:', errorText)
+        throw new Error(`Failed to download Slovak agreement: ${response.status}`)
+      }
+
+      // Verify we got a PDF
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/pdf')) {
+        console.error('Unexpected content type:', contentType)
+        throw new Error('Server did not return a PDF')
       }
 
       // Get the blob from the response
       const blob = await response.blob()
+      console.log('PDF blob size:', blob.size, 'bytes')
 
       // Create a blob URL and download it
       const blobUrl = window.URL.createObjectURL(blob)
@@ -763,11 +774,11 @@ function Reservations() {
       a.click()
       document.body.removeChild(a)
 
-      // Clean up the blob URL
-      window.URL.revokeObjectURL(blobUrl)
+      // Clean up the blob URL after a short delay
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100)
     } catch (error) {
       console.error('Error downloading Slovak agreement:', error)
-      alert('Chyba pri sťahovaní slovenskej zmluvy')
+      alert(`Chyba pri sťahovaní slovenskej zmluvy: ${error.message}`)
     }
   }
 
