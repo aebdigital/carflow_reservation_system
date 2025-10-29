@@ -736,38 +736,35 @@ function Reservations() {
   }
 
   // Handle creating invoice for reservation
-  const handleCreateInvoice = (reservation) => {
-    // Navigate to payments page with reservation data
-    navigate('/payments', { 
-      state: { 
-        createInvoice: true, 
-        reservation: reservation 
-      } 
-    })
-  }
-
-
-  const handleDownloadSlovakAgreement = async (reservationId) => {
-    try {
-      // Open the Slovak agreement PDF in a new tab
-      const url = `/api/reservations/${reservationId}/slovak-agreement?preview=true`
-      window.open(url, '_blank')
-    } catch (error) {
-      console.error('Error generating Slovak agreement:', error)
-      alert('Chyba pri generovaní slovenskej zmluvy')
-    }
-  }
-
   const handleDownloadSlovakAgreementFile = async (reservationId) => {
     try {
-      // Download the Slovak agreement PDF
-      const url = `/api/reservations/${reservationId}/slovak-agreement`
+      // Fetch the PDF as a blob with authorization
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/reservations/${reservationId}/slovak-agreement`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to download Slovak agreement')
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob()
+
+      // Create a blob URL and download it
+      const blobUrl = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
-      a.href = url
+      a.href = blobUrl
       a.download = `zmluva-o-najme-${reservationId}.pdf`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
+
+      // Clean up the blob URL
+      window.URL.revokeObjectURL(blobUrl)
     } catch (error) {
       console.error('Error downloading Slovak agreement:', error)
       alert('Chyba pri sťahovaní slovenskej zmluvy')
@@ -1048,26 +1045,6 @@ function Reservations() {
                               </IconButton>
                             </Tooltip>
                           )}
-                          {reservation.status === 'confirmed' && !hasPayment(reservation._id) && (
-                            <Tooltip title="Create Invoice">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleCreateInvoice(reservation)}
-                                color="info"
-                              >
-                                <ReceiptIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                          <Tooltip title="Generovanie Slovenskej zmluvy">
-                            <IconButton 
-                              size="small" 
-                              onClick={() => handleDownloadSlovakAgreement(reservation._id)}
-                              color="primary"
-                            >
-                              <SlovakAgreementIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
                           <Tooltip title="Stiahnuť Slovensku zmluvu">
                             <IconButton 
                               size="small" 
@@ -1216,18 +1193,9 @@ function Reservations() {
                               <CheckOutIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Generovanie Slovenskej zmluvy">
-                            <IconButton 
-                              size="small" 
-                              onClick={() => handleDownloadSlovakAgreement(reservation._id)}
-                              color="primary"
-                            >
-                              <SlovakAgreementIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
                           <Tooltip title="Stiahnuť Slovensku zmluvu">
-                            <IconButton 
-                              size="small" 
+                            <IconButton
+                              size="small"
                               onClick={() => handleDownloadSlovakAgreementFile(reservation._id)}
                               color="secondary"
                             >
@@ -1379,15 +1347,6 @@ function Reservations() {
                               <ConfirmIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Náhľad slovenskej zmluvy">
-                            <IconButton 
-                              size="small" 
-                              onClick={() => handleDownloadSlovakAgreement(reservation._id)}
-                              color="primary"
-                            >
-                              <SlovakAgreementIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
                           <Tooltip title="Stiahnuť slovenskú zmluvu">
                             <IconButton 
                               size="small" 
@@ -1532,15 +1491,6 @@ function Reservations() {
                               onClick={() => handleOpenDialog('view', reservation)}
                             >
                               <ViewIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Náhľad slovenskej zmluvy">
-                            <IconButton 
-                              size="small" 
-                              onClick={() => handleDownloadSlovakAgreement(reservation._id)}
-                              color="primary"
-                            >
-                              <SlovakAgreementIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Stiahnuť slovenskú zmluvu">
