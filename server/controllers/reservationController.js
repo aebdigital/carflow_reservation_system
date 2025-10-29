@@ -44,7 +44,7 @@ const getReservations = asyncHandler(async (req, res, next) => {
       if (field === 'customer') {
         query = query.populate('customer', 'firstName lastName email phone licenseNumber');
       } else if (field === 'car') {
-        query = query.populate('car', 'brand model year registrationNumber dailyRate images status');
+        query = query.populate('car', 'brand model year registrationNumber category pricing mileageLimits dailyRate images status');
       } else if (field === 'payment') {
         query = query.populate('payment');
       } else if (field === 'selectedServices.service') {
