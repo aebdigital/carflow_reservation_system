@@ -94,6 +94,7 @@ function TabPanel({ children, value, index, ...other }) {
 function DualScrollbarTableContainer({ children }) {
   const topScrollRef = React.useRef(null)
   const bottomScrollRef = React.useRef(null)
+  const contentRef = React.useRef(null)
 
   const syncScroll = (source, target) => {
     if (target.current && source.current) {
@@ -103,16 +104,35 @@ function DualScrollbarTableContainer({ children }) {
 
   React.useEffect(() => {
     const updateTopScrollWidth = () => {
-      if (topScrollRef.current && bottomScrollRef.current) {
+      if (contentRef.current && bottomScrollRef.current) {
         const table = bottomScrollRef.current.querySelector('table')
         if (table) {
-          topScrollRef.current.firstElementChild.style.width = `${table.offsetWidth}px`
+          contentRef.current.style.width = `${table.offsetWidth}px`
         }
       }
     }
-    updateTopScrollWidth()
+
+    // Initial update
+    const timer = setTimeout(updateTopScrollWidth, 100)
+
+    // Update on resize
     window.addEventListener('resize', updateTopScrollWidth)
-    return () => window.removeEventListener('resize', updateTopScrollWidth)
+
+    // Observer for table size changes
+    const observer = new MutationObserver(updateTopScrollWidth)
+    if (bottomScrollRef.current) {
+      observer.observe(bottomScrollRef.current, {
+        childList: true,
+        subtree: true,
+        attributes: true
+      })
+    }
+
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('resize', updateTopScrollWidth)
+      observer.disconnect()
+    }
   }, [children])
 
   return (
@@ -141,7 +161,7 @@ function DualScrollbarTableContainer({ children }) {
         }}
         onScroll={() => syncScroll(topScrollRef, bottomScrollRef)}
       >
-        <Box sx={{ height: 1 }} />
+        <Box ref={contentRef} sx={{ height: 1, minWidth: '100%' }} />
       </Box>
       {/* Main table with bottom scrollbar */}
       <TableContainer
@@ -2465,7 +2485,7 @@ function Reservations() {
                   options={pickupLocationsData?.data?.pickupLocations || []}
                   getOptionLabel={(option) => option.name || ''}
                   value={pickupLocationsData?.data?.pickupLocations?.find(
-                    loc => loc.name === formData.pickupLocation.name
+                    loc => loc.name?.trim() === formData.pickupLocation?.name?.trim()
                   ) || null}
                   onChange={(_, newValue) => {
                     setFormData({
@@ -2484,6 +2504,7 @@ function Reservations() {
                   }}
                   disabled={dialogMode === 'view'}
                   loading={pickupLocationsLoading}
+                  isOptionEqualToValue={(option, value) => option.name?.trim() === value?.name?.trim()}
                   renderInput={(params) => (
                     <TextField
                       {...params}
@@ -2523,7 +2544,7 @@ function Reservations() {
                   options={pickupLocationsData?.data?.pickupLocations || []}
                   getOptionLabel={(option) => option.name || ''}
                   value={pickupLocationsData?.data?.pickupLocations?.find(
-                    loc => loc.name === formData.dropoffLocation.name
+                    loc => loc.name?.trim() === formData.dropoffLocation?.name?.trim()
                   ) || null}
                   onChange={(_, newValue) => {
                     setFormData({
@@ -2542,6 +2563,7 @@ function Reservations() {
                   }}
                   disabled={dialogMode === 'view'}
                   loading={pickupLocationsLoading}
+                  isOptionEqualToValue={(option, value) => option.name?.trim() === value?.name?.trim()}
                   renderInput={(params) => (
                     <TextField
                       {...params}
