@@ -194,14 +194,20 @@ async function sendReservationEmails(reservation, car, customer, user = null) {
       results.push({ type: 'customer_email', success: false, error: customerError.message });
     }
     
-    // Send confirmation SMS to customer
+    // Send confirmation SMS to customer (ONLY for rival@test.sk tenant)
     try {
-      if (customer.phone) {
-        console.log('📱 [SMS] Sending customer confirmation SMS to:', customer.phone);
+      const userEmail = user?.email ? user.email.toLowerCase().trim() : '';
+      const isRivalTenant = userEmail === 'rival@test.sk';
+
+      if (!isRivalTenant) {
+        console.log('📱 [SMS] Skipping SMS - not rival@test.sk tenant (user:', userEmail || 'NO USER', ')');
+        results.push({ type: 'customer_sms', success: false, error: 'SMS only enabled for Rival tenant' });
+      } else if (customer.phone) {
+        console.log('📱 [SMS] Sending customer confirmation SMS to:', customer.phone, '(Rival tenant)');
         const bulkGateService = require('../services/bulkGateService');
-        
+
         if (bulkGateService.isConfigured) {
-          // Create SMS data with raw reservation dates, not formatted emailData  
+          // Create SMS data with raw reservation dates, not formatted emailData
           const smsData = {
             ...emailData,
             startDate: reservation.startDate,  // Raw date from DB

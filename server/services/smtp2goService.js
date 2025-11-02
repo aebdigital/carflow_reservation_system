@@ -31,39 +31,47 @@ class SMTP2GOService {
    * @param {Object} user - User object with email to determine tenant
    */
   getTenantEmailConfig(user = null) {
-    // DEBUG: Log detailed information about the user object
-    console.log('🔍 [EMAIL DEBUG] getTenantEmailConfig called with user:', user ? JSON.stringify(user, null, 2) : 'NULL');
-    console.log('🔍 [EMAIL DEBUG] User email:', user?.email);
-    console.log('🔍 [EMAIL DEBUG] Expected email:', 'nitra-car@nitra-car.sk');
-    console.log('🔍 [EMAIL DEBUG] Email match (===):', user?.email === 'nitra-car@nitra-car.sk');
-    console.log('🔍 [EMAIL DEBUG] Email match (toLowerCase):', user?.email?.toLowerCase() === 'nitra-car@nitra-car.sk');
-    
-    // Check if user is from nitra-car tenant
-    const isNitraCarUser = user && user.email === 'nitra-car@nitra-car.sk';
-    
-    // DEBUG: Log environment variables
-    console.log('🔍 [EMAIL DEBUG] Environment variables:');
-    console.log('   NITRACAR_SMTP2GO_API_KEY:', process.env.NITRACAR_SMTP2GO_API_KEY ? 'SET' : 'NOT SET');
+    const userEmail = user?.email ? user.email.toLowerCase().trim() : '';
+
+    // DEBUG: Log tenant email configuration
+    console.log('🔍 [EMAIL DEBUG] getTenantEmailConfig called for user:', userEmail || 'NO USER');
     console.log('   NITRACAR_EMAIL_FROM:', process.env.NITRACAR_EMAIL_FROM || 'NOT SET');
-    console.log('   Default EMAIL_FROM:', process.env.EMAIL_FROM || 'NOT SET');
-    
-    if (isNitraCarUser) {
-      console.log('🔧 [EMAIL] Using NITRACAR email configuration for nitra-car user');
-      const config = {
+    console.log('   LERENT_EMAIL_FROM:', process.env.LERENT_EMAIL_FROM || 'NOT SET');
+    console.log('   EMAIL_FROM (Rival):', process.env.EMAIL_FROM || 'NOT SET');
+
+    // Nitra-Car tenant
+    if (userEmail === 'nitra-car@nitra-car.sk') {
+      console.log('🔧 [EMAIL] Using NITRACAR email configuration');
+      return {
         apiKey: process.env.NITRACAR_SMTP2GO_API_KEY || this.apiKey,
-        emailFrom: process.env.NITRACAR_EMAIL_FROM || process.env.EMAIL_FROM || 'noreply@carflow.sk'
+        emailFrom: process.env.NITRACAR_EMAIL_FROM || 'noreply@nitracar.sk'
       };
-      console.log('🔍 [EMAIL DEBUG] NITRACAR config:', config);
-      return config;
-    } else {
-      console.log('🔧 [EMAIL] Using default email configuration');
-      const config = {
-        apiKey: this.apiKey,
-        emailFrom: process.env.EMAIL_FROM || 'noreply@carflow.sk'
-      };
-      console.log('🔍 [EMAIL DEBUG] Default config:', config);
-      return config;
     }
+
+    // LeRent tenant
+    if (userEmail === 'lerent@lerent.sk') {
+      console.log('🔧 [EMAIL] Using LERENT email configuration');
+      return {
+        apiKey: process.env.LERENT_SMTP2GO_API_KEY || this.apiKey,
+        emailFrom: process.env.LERENT_EMAIL_FROM || 'noreply@lerent.sk'
+      };
+    }
+
+    // Rival tenant (uses EMAIL_FROM)
+    if (userEmail === 'rival@test.sk') {
+      console.log('🔧 [EMAIL] Using RIVAL email configuration');
+      return {
+        apiKey: this.apiKey,
+        emailFrom: process.env.EMAIL_FROM || 'noreply@rivalcars.sk'
+      };
+    }
+
+    // Default for other tenants
+    console.log('🔧 [EMAIL] Using default email configuration');
+    return {
+      apiKey: this.apiKey,
+      emailFrom: process.env.EMAIL_FROM || 'noreply@carflow.sk'
+    };
   }
 
   async sendEmail(to, subject, html, text = null, user = null) {
