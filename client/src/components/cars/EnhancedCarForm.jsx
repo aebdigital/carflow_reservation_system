@@ -714,6 +714,22 @@ const EnhancedCarForm = ({
               {formErrors.category && <FormHelperText>{formErrors.category}</FormHelperText>}
             </FormControl>
           </Grid>
+
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              multiline
+              rows={4}
+              label="Popis vozidla (slovensky)"
+              value={formData.description || ''}
+              onChange={(e) => handleChange('description', e.target.value)}
+              disabled={dialogMode === 'view'}
+              error={!!formErrors.description}
+              helperText={formErrors.description || "Max. 1000 znakov - zobrazí sa na verejnej stránke"}
+              inputProps={{ maxLength: 1000 }}
+              placeholder="Napríklad: Luxusné športové sedan s výnimočným výkonom a komfortom. Ideálne pre náročných vodičov."
+            />
+          </Grid>
         </Grid>
       </TabPanel>
 
