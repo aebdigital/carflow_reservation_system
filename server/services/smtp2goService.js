@@ -74,6 +74,23 @@ class SMTP2GOService {
     };
   }
 
+  /**
+   * Check if SMS should be sent for this tenant (ONLY rival@test.sk)
+   * @param {Object} user - User object with email to determine tenant
+   */
+  isSmsEnabledForTenant(user = null) {
+    const userEmail = user?.email ? user.email.toLowerCase().trim() : '';
+    const isRivalTenant = userEmail === 'rival@test.sk';
+
+    console.log('📱 [SMS] Tenant check:', {
+      userEmail: userEmail || 'NO USER',
+      isRivalTenant,
+      smsEnabled: isRivalTenant ? 'YES' : 'NO'
+    });
+
+    return isRivalTenant;
+  }
+
   async sendEmail(to, subject, html, text = null, user = null) {
     if (!this.isConfigured) {
       throw new Error('SMTP2GO service not properly configured. Please set SMTP2GO_API_KEY.');
@@ -849,19 +866,23 @@ class SMTP2GOService {
       emailResult = await this.sendEmail(to, subject, emailData.html, null, user);
     }
     
-    // Send SMS if phone number available
+    // Send SMS if phone number available (ONLY for rival@test.sk tenant)
     try {
-      const bulkGateService = require('./bulkGateService');
-      if (bulkGateService.isConfigured && reservationData.customerPhone) {
-        console.log('📱 [SMS] Sending reservation confirmed SMS to:', reservationData.customerPhone);
-        // Create SMS data with raw dates if available, otherwise use formatted data
-        const smsData = rawReservation ? {
-          ...reservationData,
-          startDate: rawReservation.startDate,  // Raw date from DB
-          endDate: rawReservation.endDate       // Raw date from DB
-        } : reservationData;
-        await bulkGateService.sendReservationConfirmed(reservationData.customerPhone, smsData);
-        console.log('✅ [SMS] Reservation confirmed SMS sent successfully');
+      if (!this.isSmsEnabledForTenant(user)) {
+        console.log('📱 [SMS] Skipping SMS - not enabled for this tenant');
+      } else {
+        const bulkGateService = require('./bulkGateService');
+        if (bulkGateService.isConfigured && reservationData.customerPhone) {
+          console.log('📱 [SMS] Sending reservation confirmed SMS to:', reservationData.customerPhone);
+          // Create SMS data with raw dates if available, otherwise use formatted data
+          const smsData = rawReservation ? {
+            ...reservationData,
+            startDate: rawReservation.startDate,  // Raw date from DB
+            endDate: rawReservation.endDate       // Raw date from DB
+          } : reservationData;
+          await bulkGateService.sendReservationConfirmed(reservationData.customerPhone, smsData);
+          console.log('✅ [SMS] Reservation confirmed SMS sent successfully');
+        }
       }
     } catch (smsError) {
       console.error('❌ [SMS] Failed to send reservation confirmed SMS:', smsError.message);
@@ -907,15 +928,19 @@ class SMTP2GOService {
     
     // Send email
     const emailResult = await this.sendEmail(to, subject, emailData.html, null, user);
-    
-    // Send SMS if phone number available
+
+    // Send SMS if phone number available (ONLY for rival@test.sk tenant)
     try {
-      const bulkGateService = require('./bulkGateService');
-      if (bulkGateService.isConfigured && reservationData.customerPhone) {
-        console.log('📱 [SMS] Sending reservation edited SMS to:', reservationData.customerPhone);
-        // Use formatted data for edited SMS (no raw reservation available here)
-        await bulkGateService.sendReservationEdited(reservationData.customerPhone, reservationData);
-        console.log('✅ [SMS] Reservation edited SMS sent successfully');
+      if (!this.isSmsEnabledForTenant(user)) {
+        console.log('📱 [SMS] Skipping SMS - not enabled for this tenant');
+      } else {
+        const bulkGateService = require('./bulkGateService');
+        if (bulkGateService.isConfigured && reservationData.customerPhone) {
+          console.log('📱 [SMS] Sending reservation edited SMS to:', reservationData.customerPhone);
+          // Use formatted data for edited SMS (no raw reservation available here)
+          await bulkGateService.sendReservationEdited(reservationData.customerPhone, reservationData);
+          console.log('✅ [SMS] Reservation edited SMS sent successfully');
+        }
       }
     } catch (smsError) {
       console.error('❌ [SMS] Failed to send reservation edited SMS:', smsError.message);
@@ -962,14 +987,18 @@ class SMTP2GOService {
     
     // Send email
     const emailResult = await this.sendEmail(to, subject, emailData.html, null, user);
-    
-    // Send SMS if phone number available
+
+    // Send SMS if phone number available (ONLY for rival@test.sk tenant)
     try {
-      const bulkGateService = require('./bulkGateService');
-      if (bulkGateService.isConfigured && cancellationData.customerPhone) {
-        console.log('📱 [SMS] Sending reservation cancelled SMS to:', cancellationData.customerPhone);
-        await bulkGateService.sendReservationCancelled(cancellationData.customerPhone, cancellationData);
-        console.log('✅ [SMS] Reservation cancelled SMS sent successfully');
+      if (!this.isSmsEnabledForTenant(user)) {
+        console.log('📱 [SMS] Skipping SMS - not enabled for this tenant');
+      } else {
+        const bulkGateService = require('./bulkGateService');
+        if (bulkGateService.isConfigured && cancellationData.customerPhone) {
+          console.log('📱 [SMS] Sending reservation cancelled SMS to:', cancellationData.customerPhone);
+          await bulkGateService.sendReservationCancelled(cancellationData.customerPhone, cancellationData);
+          console.log('✅ [SMS] Reservation cancelled SMS sent successfully');
+        }
       }
     } catch (smsError) {
       console.error('❌ [SMS] Failed to send reservation cancelled SMS:', smsError.message);
@@ -1017,14 +1046,18 @@ class SMTP2GOService {
     
     // Send email
     const emailResult = await this.sendEmail(to, subject, emailData.html, null, user);
-    
-    // Send SMS if phone number available
+
+    // Send SMS if phone number available (ONLY for rival@test.sk tenant)
     try {
-      const bulkGateService = require('./bulkGateService');
-      if (bulkGateService.isConfigured && reservationData.customerPhone) {
-        console.log('📱 [SMS] Sending 24h reminder SMS to:', reservationData.customerPhone);
-        await bulkGateService.sendReservationReminder24(reservationData.customerPhone, reservationData);
-        console.log('✅ [SMS] 24h reminder SMS sent successfully');
+      if (!this.isSmsEnabledForTenant(user)) {
+        console.log('📱 [SMS] Skipping SMS - not enabled for this tenant');
+      } else {
+        const bulkGateService = require('./bulkGateService');
+        if (bulkGateService.isConfigured && reservationData.customerPhone) {
+          console.log('📱 [SMS] Sending 24h reminder SMS to:', reservationData.customerPhone);
+          await bulkGateService.sendReservationReminder24(reservationData.customerPhone, reservationData);
+          console.log('✅ [SMS] 24h reminder SMS sent successfully');
+        }
       }
     } catch (smsError) {
       console.error('❌ [SMS] Failed to send 24h reminder SMS:', smsError.message);
@@ -1127,14 +1160,18 @@ class SMTP2GOService {
     
     // Send email
     const emailResult = await this.sendEmail(to, subject, emailData.html, null, user);
-    
-    // Send SMS if phone number available
+
+    // Send SMS if phone number available (ONLY for rival@test.sk tenant)
     try {
-      const bulkGateService = require('./bulkGateService');
-      if (bulkGateService.isConfigured && reservationData.customerPhone) {
-        console.log('📱 [SMS] Sending review request SMS to:', reservationData.customerPhone);
-        await bulkGateService.sendReviewRequest(reservationData.customerPhone, reservationData);
-        console.log('✅ [SMS] Review request SMS sent successfully');
+      if (!this.isSmsEnabledForTenant(user)) {
+        console.log('📱 [SMS] Skipping SMS - not enabled for this tenant');
+      } else {
+        const bulkGateService = require('./bulkGateService');
+        if (bulkGateService.isConfigured && reservationData.customerPhone) {
+          console.log('📱 [SMS] Sending review request SMS to:', reservationData.customerPhone);
+          await bulkGateService.sendReviewRequest(reservationData.customerPhone, reservationData);
+          console.log('✅ [SMS] Review request SMS sent successfully');
+        }
       }
     } catch (smsError) {
       console.error('❌ [SMS] Failed to send review request SMS:', smsError.message);
