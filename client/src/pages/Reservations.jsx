@@ -1770,6 +1770,95 @@ function Reservations() {
                       </Typography>
                       {selectedReservation.pricing ? (
                         <>
+                          {/* Base rental price */}
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                            <Typography variant="body2">Prenájom vozidla:</Typography>
+                            <Typography variant="body2">{(() => {
+                              const days = Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24));
+                              const dailyRate = selectedReservation.pricing?.dailyRate || 0;
+                              return `${(dailyRate * days).toFixed(2)}€`;
+                            })()}</Typography>
+                          </Box>
+
+                          {/* Additional Services */}
+                          {selectedReservation.selectedServices && selectedReservation.selectedServices.length > 0 && (
+                            <>
+                              <Typography variant="body2" sx={{ mt: 1.5, mb: 0.5, fontWeight: 'medium', color: 'text.secondary' }}>
+                                Dodatočné služby:
+                              </Typography>
+                              {selectedReservation.selectedServices.map((service, index) => (
+                                <Box key={service._id || index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, pl: 2 }}>
+                                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                                    {service.quantity > 1 ? `${service.quantity}x ` : ''}{service.name || service.service?.name || 'Služba'}
+                                    {service.pricing?.type === 'per_day' && ' (za deň)'}
+                                    {service.pricing?.type === 'fixed' && ' (jednorazovo)'}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                                    {service.totalPrice?.toFixed(2) || '0.00'}€
+                                  </Typography>
+                                </Box>
+                              ))}
+                            </>
+                          )}
+
+                          {/* Additional Insurance */}
+                          {selectedReservation.selectedAdditionalInsurance && selectedReservation.selectedAdditionalInsurance.length > 0 && (
+                            <>
+                              <Typography variant="body2" sx={{ mt: 1.5, mb: 0.5, fontWeight: 'medium', color: 'text.secondary' }}>
+                                Dodatočné poistenie:
+                              </Typography>
+                              {selectedReservation.selectedAdditionalInsurance.map((insurance, index) => {
+                                const totalDays = Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24));
+                                const totalPrice = insurance.calculatedPrice ||
+                                                  (insurance.pricingType === 'per_day' ?
+                                                   (insurance.baseAmount || insurance.price || 0) * totalDays :
+                                                   (insurance.baseAmount || insurance.price || 0));
+
+                                return (
+                                  <Box key={insurance._id || index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, pl: 2 }}>
+                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                                      {insurance.name || insurance.insuranceId?.name || 'Poistenie'}
+                                      {insurance.pricingType === 'per_day' && ' (za deň)'}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                                      {totalPrice.toFixed(2)}€
+                                    </Typography>
+                                  </Box>
+                                );
+                              })}
+                            </>
+                          )}
+
+                          {/* Extended Insurance */}
+                          {selectedReservation.selectedExtendedInsurance && selectedReservation.selectedExtendedInsurance.length > 0 && (
+                            <>
+                              <Typography variant="body2" sx={{ mt: 1.5, mb: 0.5, fontWeight: 'medium', color: 'text.secondary' }}>
+                                Rozšírené poistenie:
+                              </Typography>
+                              {selectedReservation.selectedExtendedInsurance.map((insurance, index) => {
+                                const totalDays = Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24));
+                                const totalPrice = insurance.calculatedPrice ||
+                                                  (insurance.pricingType === 'per_day' ?
+                                                   (insurance.baseAmount || insurance.price || 0) * totalDays :
+                                                   (insurance.baseAmount || insurance.price || 0));
+
+                                return (
+                                  <Box key={insurance._id || index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, pl: 2 }}>
+                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                                      {insurance.name || insurance.insuranceId?.name || 'Rozšírené poistenie'}
+                                      {insurance.pricingType === 'per_day' && ' (za deň)'}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                                      {totalPrice.toFixed(2)}€
+                                    </Typography>
+                                  </Box>
+                                );
+                              })}
+                            </>
+                          )}
+
+                          <Divider sx={{ my: 1 }} />
+
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                             <Typography variant="body2">Medzisúčet:</Typography>
                             <Typography variant="body2">{selectedReservation.pricing.subtotal?.toFixed(2) || '0.00'}€</Typography>
