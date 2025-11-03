@@ -35,8 +35,10 @@ BULKGATE_APP_TOKEN=your-rival-bulkgate-token
 **Email Configuration:**
 ```env
 LERENT_EMAIL_FROM="LeRent <noreply@lerent.sk>"
-LERENT_SMTP2GO_API_KEY=api-your-lerent-smtp2go-key  # (Optional - uses main if not set)
+LERENT_SMTP2GO_API_KEY=api-your-lerent-smtp2go-key
 ```
+
+**Note:** Both `LERENT_EMAIL_FROM` and `LERENT_SMTP2GO_API_KEY` should be set on Render for the LeRent tenant.
 
 **SMS Configuration:**
 ```
@@ -45,6 +47,7 @@ NONE - SMS disabled for LeRent
 
 **Features:**
 - ✅ Sends emails from `noreply@lerent.sk`
+- ✅ Uses LeRent's own SMTP2GO API key (`LERENT_SMTP2GO_API_KEY`)
 - ❌ NO SMS confirmations (BulkGate only for Rival)
 - ✅ Uses LeRent branding in emails
 - ✅ Admin notifications go to `peter@aebdig.com` (default)
@@ -102,12 +105,12 @@ BULKGATE_APP_TOKEN=your-rival-bulkgate-token
 ### LeRent-Specific (lerent@lerent.sk)
 
 ```env
-# Email
+# Email (REQUIRED)
 LERENT_EMAIL_FROM="LeRent <noreply@lerent.sk>"
-
-# Optional: Separate SMTP2GO account
 LERENT_SMTP2GO_API_KEY=api-your-lerent-smtp2go-key
 ```
+
+**Important:** Both variables should be set on Render for LeRent emails to work properly.
 
 ### Nitra-Car-Specific (nitra-car@nitra-car.sk)
 

@@ -14,7 +14,11 @@ class SMTP2GOService {
     console.log('📋 SMTP2GO environment variables:');
     console.log('   SMTP2GO_API_KEY:', process.env.SMTP2GO_API_KEY ? '✅ Set' : '❌ Missing');
     console.log('   SMTP2GO_BASE_URL:', process.env.SMTP2GO_BASE_URL ? '✅ Set' : '❌ Using default');
-    console.log('   EMAIL_FROM:', process.env.EMAIL_FROM ? '✅ Set' : '❌ Missing');
+    console.log('   EMAIL_FROM (Rival):', process.env.EMAIL_FROM ? '✅ Set' : '❌ Missing');
+    console.log('   LERENT_EMAIL_FROM:', process.env.LERENT_EMAIL_FROM ? '✅ Set' : '❌ Missing');
+    console.log('   LERENT_SMTP2GO_API_KEY:', process.env.LERENT_SMTP2GO_API_KEY ? '✅ Set' : '❌ Missing');
+    console.log('   NITRACAR_EMAIL_FROM:', process.env.NITRACAR_EMAIL_FROM ? '✅ Set' : '❌ Missing');
+    console.log('   NITRACAR_SMTP2GO_API_KEY:', process.env.NITRACAR_SMTP2GO_API_KEY ? '✅ Set' : '❌ Missing');
 
     if (!this.apiKey) {
       console.warn('⚠️  SMTP2GO not configured. Set SMTP2GO_API_KEY environment variable.');
