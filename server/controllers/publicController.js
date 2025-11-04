@@ -966,6 +966,102 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     // Generate unique reservation number
     const reservationNumber = `RES-${tenantId.toString().slice(-4).toUpperCase()}-${Date.now()}`;
 
+    // 🔧 PROCESS INSURANCE: Look up insurance documents and calculate prices
+    const processedAdditionalInsurance = [];
+    const processedExtendedInsurance = [];
+    const Insurance = require('../models/Insurance');
+
+    // Calculate number of rental days
+    const numberOfDays = durationDays;
+    const carRentalCost = finalPricing.subtotal || 0;
+
+    // Process Additional Insurance
+    if (selectedAdditionalInsurance && Array.isArray(selectedAdditionalInsurance) && selectedAdditionalInsurance.length > 0) {
+      for (const insuranceItem of selectedAdditionalInsurance) {
+        const insuranceId = insuranceItem.id || insuranceItem.insuranceId || insuranceItem;
+
+        if (insuranceId) {
+          const insurance = await Insurance.findById(insuranceId);
+
+          if (insurance) {
+            let calculatedPrice = 0;
+
+            // Calculate price based on pricing type
+            switch (insurance.pricing?.type) {
+              case 'per_day':
+                calculatedPrice = (insurance.pricing.amount || 0) * numberOfDays;
+                break;
+              case 'fixed':
+                calculatedPrice = insurance.pricing.amount || 0;
+                break;
+              case 'percentage':
+                calculatedPrice = (carRentalCost * (insurance.pricing.amount || 0)) / 100;
+                break;
+              default:
+                calculatedPrice = insurance.pricing?.amount || 0;
+            }
+
+            processedAdditionalInsurance.push({
+              insuranceId: insurance._id,
+              name: insurance.name,
+              description: insurance.description,
+              baseAmount: insurance.pricing?.amount || 0,
+              pricingType: insurance.pricing?.type || 'fixed',
+              calculatedPrice: calculatedPrice
+            });
+
+            console.log(`✅ [INSURANCE] Processed ${insurance.name}: ${insurance.pricing?.amount} × ${numberOfDays} days = ${calculatedPrice}€`);
+          }
+        }
+      }
+    }
+
+    // Process Extended Insurance
+    if (selectedExtendedInsurance && Array.isArray(selectedExtendedInsurance) && selectedExtendedInsurance.length > 0) {
+      for (const insuranceItem of selectedExtendedInsurance) {
+        const insuranceId = insuranceItem.id || insuranceItem.insuranceId || insuranceItem;
+
+        if (insuranceId) {
+          const insurance = await Insurance.findById(insuranceId);
+
+          if (insurance) {
+            let calculatedPrice = 0;
+
+            // Calculate price based on pricing type
+            switch (insurance.pricing?.type) {
+              case 'per_day':
+                calculatedPrice = (insurance.pricing.amount || 0) * numberOfDays;
+                break;
+              case 'fixed':
+                calculatedPrice = insurance.pricing.amount || 0;
+                break;
+              case 'percentage':
+                calculatedPrice = (carRentalCost * (insurance.pricing.amount || 0)) / 100;
+                break;
+              default:
+                calculatedPrice = insurance.pricing?.amount || 0;
+            }
+
+            processedExtendedInsurance.push({
+              insuranceId: insurance._id,
+              name: insurance.name,
+              description: insurance.description,
+              baseAmount: insurance.pricing?.amount || 0,
+              pricingType: insurance.pricing?.type || 'fixed',
+              calculatedPrice: calculatedPrice
+            });
+
+            console.log(`✅ [INSURANCE] Processed ${insurance.name}: ${insurance.pricing?.amount} × ${numberOfDays} days = ${calculatedPrice}€`);
+          }
+        }
+      }
+    }
+
+    console.log('📦 [INSURANCE] Processed insurance data:', {
+      additionalCount: processedAdditionalInsurance.length,
+      extendedCount: processedExtendedInsurance.length
+    });
+
     // Create reservation
     const reservation = await Reservation.create({
       tenantId,
@@ -993,8 +1089,8 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       // ✅ ADDITIONAL SERVICES AND INSURANCE DATA (PUBLIC API)
       selectedServices: selectedServices || [],
       servicesTotal: servicesTotal || 0,
-      selectedAdditionalInsurance: selectedAdditionalInsurance || [],
-      selectedExtendedInsurance: selectedExtendedInsurance || [],
+      selectedAdditionalInsurance: processedAdditionalInsurance,
+      selectedExtendedInsurance: processedExtendedInsurance,
       insurancePrices: insurancePrices || {},
       extendedInsurancePrices: extendedInsurancePrices || {},
       terms: {

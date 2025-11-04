@@ -1797,25 +1797,16 @@ function Reservations() {
                               <Typography variant="body2" sx={{ mt: 1.5, mb: 0.5, fontWeight: 'medium', color: 'text.secondary' }}>
                                 Dodatočné poistenie:
                               </Typography>
-                              {selectedReservation.selectedAdditionalInsurance.map((insurance, index) => {
-                                const totalDays = Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24));
-                                const totalPrice = insurance.calculatedPrice ||
-                                                  (insurance.pricingType === 'per_day' ?
-                                                   (insurance.baseAmount || insurance.price || 0) * totalDays :
-                                                   (insurance.baseAmount || insurance.price || 0));
-
-                                return (
-                                  <Box key={insurance._id || index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, pl: 2 }}>
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
-                                      {insurance.name || insurance.insuranceId?.name || 'Poistenie'}
-                                      {insurance.pricingType === 'per_day' && ' (za deň)'}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
-                                      {totalPrice.toFixed(2)}€
-                                    </Typography>
-                                  </Box>
-                                );
-                              })}
+                              {selectedReservation.selectedAdditionalInsurance.map((insurance, index) => (
+                                <Box key={insurance._id || insurance.insuranceId || index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, pl: 2 }}>
+                                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                                    {insurance.name || insurance.insuranceId?.name || 'Poistenie'}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                                    {(insurance.calculatedPrice || 0).toFixed(2)}€
+                                  </Typography>
+                                </Box>
+                              ))}
                             </>
                           )}
 
@@ -1825,25 +1816,16 @@ function Reservations() {
                               <Typography variant="body2" sx={{ mt: 1.5, mb: 0.5, fontWeight: 'medium', color: 'text.secondary' }}>
                                 Rozšírené poistenie:
                               </Typography>
-                              {selectedReservation.selectedExtendedInsurance.map((insurance, index) => {
-                                const totalDays = Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24));
-                                const totalPrice = insurance.calculatedPrice ||
-                                                  (insurance.pricingType === 'per_day' ?
-                                                   (insurance.baseAmount || insurance.price || 0) * totalDays :
-                                                   (insurance.baseAmount || insurance.price || 0));
-
-                                return (
-                                  <Box key={insurance._id || index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, pl: 2 }}>
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
-                                      {insurance.name || insurance.insuranceId?.name || 'Rozšírené poistenie'}
-                                      {insurance.pricingType === 'per_day' && ' (za deň)'}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
-                                      {totalPrice.toFixed(2)}€
-                                    </Typography>
-                                  </Box>
-                                );
-                              })}
+                              {selectedReservation.selectedExtendedInsurance.map((insurance, index) => (
+                                <Box key={insurance._id || insurance.insuranceId || index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, pl: 2 }}>
+                                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                                    {insurance.name || insurance.insuranceId?.name || 'Rozšírené poistenie'}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                                    {(insurance.calculatedPrice || 0).toFixed(2)}€
+                                  </Typography>
+                                </Box>
+                              ))}
                             </>
                           )}
 
