@@ -1082,15 +1082,17 @@ function Reservations() {
                               <DownloadIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Generovanie QR kódu">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleShowQRCode(reservation)}
-                              color="info"
-                            >
-                              <QrCodeIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                          {auth.user?.email !== 'lerent@lerent.sk' && (
+                            <Tooltip title="Generovanie QR kódu">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleShowQRCode(reservation)}
+                                color="info"
+                              >
+                                <QrCodeIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -1230,15 +1232,17 @@ function Reservations() {
                               <DownloadIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Generovanie QR kódu">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleShowQRCode(reservation)}
-                              color="info"
-                            >
-                              <QrCodeIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                          {auth.user?.email !== 'lerent@lerent.sk' && (
+                            <Tooltip title="Generovanie QR kódu">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleShowQRCode(reservation)}
+                                color="info"
+                              >
+                                <QrCodeIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -1393,15 +1397,17 @@ function Reservations() {
                               <CancelIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Generovanie QR kódu">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleShowQRCode(reservation)}
-                              color="info"
-                            >
-                              <QrCodeIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                          {auth.user?.email !== 'lerent@lerent.sk' && (
+                            <Tooltip title="Generovanie QR kódu">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleShowQRCode(reservation)}
+                                color="info"
+                              >
+                                <QrCodeIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -1530,15 +1536,17 @@ function Reservations() {
                               <DownloadIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Generovanie QR kódu">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleShowQRCode(reservation)}
-                              color="info"
-                            >
-                              <QrCodeIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                          {auth.user?.email !== 'lerent@lerent.sk' && (
+                            <Tooltip title="Generovanie QR kódu">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleShowQRCode(reservation)}
+                                color="info"
+                              >
+                                <QrCodeIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
