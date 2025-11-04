@@ -6,6 +6,7 @@ class EmailTemplateService {
   constructor() {
     this.defaultTemplatesPath = path.join(__dirname, '../templates/email');
     this.nitracarTemplatesPath = path.join(__dirname, '../templates_nitracar/email');
+    this.lerentTemplatesPath = path.join(__dirname, '../templates_lerent/email');
     this.templateCache = new Map();
   }
 
@@ -15,6 +16,13 @@ class EmailTemplateService {
    * @returns {string} Template path to use
    */
   getTemplatePath(senderEmail = null) {
+    // Check if this is a LeRent email
+    const isLerentEmail = senderEmail && (
+      senderEmail === process.env.LERENT_EMAIL_FROM ||
+      senderEmail.includes('lerent@lerent.sk') ||
+      senderEmail.includes('lerent')
+    );
+
     // Check if this is a Nitra-Car email
     const isNitracarEmail = senderEmail && (
       senderEmail === process.env.NITRACAR_EMAIL_FROM ||
@@ -23,7 +31,10 @@ class EmailTemplateService {
       senderEmail.includes('nitra-car')
     );
 
-    if (isNitracarEmail) {
+    if (isLerentEmail) {
+      console.log('📧 [TEMPLATE] Using LERENT templates for email from:', senderEmail);
+      return this.lerentTemplatesPath;
+    } else if (isNitracarEmail) {
       console.log('📧 [TEMPLATE] Using NITRACAR templates for email from:', senderEmail);
       return this.nitracarTemplatesPath;
     } else {
@@ -41,14 +52,24 @@ class EmailTemplateService {
   async loadTemplate(templateName, senderEmail = null) {
     try {
       // Create cache key that includes the template source
+      const isLerent = senderEmail && (
+        senderEmail === process.env.LERENT_EMAIL_FROM ||
+        senderEmail.includes('lerent@lerent.sk') ||
+        senderEmail.includes('lerent')
+      );
       const isNitracar = senderEmail && (
         senderEmail === process.env.NITRACAR_EMAIL_FROM ||
         senderEmail.includes('nitra-car@nitra-car.sk') ||
         senderEmail.includes('nitracar') ||
         senderEmail.includes('nitra-car')
       );
-      const cacheKey = `${templateName}_${isNitracar ? 'nitracar' : 'default'}`;
-      
+
+      let templateSource = 'default';
+      if (isLerent) templateSource = 'lerent';
+      else if (isNitracar) templateSource = 'nitracar';
+
+      const cacheKey = `${templateName}_${templateSource}`;
+
       // Check cache first
       if (this.templateCache.has(cacheKey)) {
         return this.templateCache.get(cacheKey);
