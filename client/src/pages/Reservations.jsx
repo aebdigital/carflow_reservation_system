@@ -1770,16 +1770,6 @@ function Reservations() {
                       </Typography>
                       {selectedReservation.pricing ? (
                         <>
-                          {/* Base rental price */}
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                            <Typography variant="body2">Prenájom vozidla:</Typography>
-                            <Typography variant="body2">{(() => {
-                              const days = Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24));
-                              const dailyRate = selectedReservation.pricing?.dailyRate || 0;
-                              return `${(dailyRate * days).toFixed(2)}€`;
-                            })()}</Typography>
-                          </Box>
-
                           {/* Additional Services */}
                           {selectedReservation.selectedServices && selectedReservation.selectedServices.length > 0 && (
                             <>
@@ -1861,11 +1851,16 @@ function Reservations() {
 
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                             <Typography variant="body2">Medzisúčet:</Typography>
-                            <Typography variant="body2">{selectedReservation.pricing.subtotal?.toFixed(2) || '0.00'}€</Typography>
+                            <Typography variant="body2">{(() => {
+                              const totalAmount = selectedReservation.pricing.totalAmount || 0;
+                              const dph = totalAmount * 0.23;
+                              const subtotal = totalAmount - dph;
+                              return subtotal.toFixed(2);
+                            })()}€</Typography>
                           </Box>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                             <Typography variant="body2">DPH (23%):</Typography>
-                            <Typography variant="body2">{((selectedReservation.pricing.subtotal || 0) * 0.23).toFixed(2)}€</Typography>
+                            <Typography variant="body2">{((selectedReservation.pricing.totalAmount || 0) * 0.23).toFixed(2)}€</Typography>
                           </Box>
                           {/* Discount Information */}
                           {selectedReservation.pricing?.appliedDiscount && (
