@@ -1798,12 +1798,12 @@ function Reservations() {
                                 Dodatočné poistenie:
                               </Typography>
                               {selectedReservation.selectedAdditionalInsurance.map((insurance, index) => (
-                                <Box key={insurance._id || insurance.insuranceId || index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, pl: 2 }}>
+                                <Box key={insurance._id || insurance.insuranceId || insurance.id || index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, pl: 2 }}>
                                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
                                     {insurance.name || insurance.insuranceId?.name || 'Poistenie'}
                                   </Typography>
                                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
-                                    {(insurance.calculatedPrice || 0).toFixed(2)}€
+                                    {(insurance.calculatedPrice || insurance.totalPrice || 0).toFixed(2)}€
                                   </Typography>
                                 </Box>
                               ))}
@@ -1817,12 +1817,12 @@ function Reservations() {
                                 Rozšírené poistenie:
                               </Typography>
                               {selectedReservation.selectedExtendedInsurance.map((insurance, index) => (
-                                <Box key={insurance._id || insurance.insuranceId || index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, pl: 2 }}>
+                                <Box key={insurance._id || insurance.insuranceId || insurance.id || index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, pl: 2 }}>
                                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
                                     {insurance.name || insurance.insuranceId?.name || 'Rozšírené poistenie'}
                                   </Typography>
                                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
-                                    {(insurance.calculatedPrice || 0).toFixed(2)}€
+                                    {(insurance.calculatedPrice || insurance.totalPrice || 0).toFixed(2)}€
                                   </Typography>
                                 </Box>
                               ))}
