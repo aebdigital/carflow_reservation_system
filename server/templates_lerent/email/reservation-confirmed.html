@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <title>Rezervácia potvrdená</title>
+</head>
+<body>
+    <h2>REZERVÁCIA POTVRDENÁ</h2>
+
+    <h3>{{car_brand}} {{car_model}}</h3>
+
+    <p>Dobrý deň <strong>{{customer_name}}</strong>,</p>
+    <p>Vaša rezervácia je <strong>oficiálne potvrdená</strong>! Tešíme sa na Vás.</p>
+
+    <h3>ZAČIATOK</h3>
+    <p><strong>Dátum:</strong> {{start_date}}</p>
+    <p><strong>Miesto vyzdvihnutia:</strong> {{pickup_location}}</p>
+    <p><strong>Čas:</strong> {{start_time}}</p>
+
+    <h3>KONIEC</h3>
+    <p><strong>Dátum:</strong> {{end_date}}</p>
+    <p><strong>Miesto vrátenia:</strong> {{dropoff_location}}</p>
+    <p><strong>Čas:</strong> {{end_time}}</p>
+
+    <h3>Čo si pripraviť na vyzdvihnutie:</h3>
+    <p>✓ Platný vodičský preukaz</p>
+    <p>✓ Občiansky preukaz alebo pas</p>
+    <p>✓ Platobná karta na zablokovanie kaucie ({{deposit_amount}})</p>
+
+    <h3>Dôležité upozornenie:</h3>
+    <p>Pri vyzdvihnutí vozidla je potrebné zablokovať kauciu vo výške {{deposit_amount}}. Kaucia bude po vrátení vozidla v poriadku odblokovaná.</p>
+
+    <p>V prípade akýchkoľvek otázok nás neváhajte kontaktovať.</p>
+
+    <p>Tešíme sa na Vás!</p>
+
+    <p>{{company_phone}}</p>
+    <p>{{company_email}}</p>
+</body>
+</html>

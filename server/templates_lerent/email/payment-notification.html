@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <title>Upomienka platby rezervácie</title>
+</head>
+<body>
+    <h2>UPOMIENKA PLATBY</h2>
+
+    <p>Dobrý deň <strong>{{customer_name}}</strong>,</p>
+
+    <p>Vaša rezervácia bola úspešne potvrdená, ale zatiaľ sme nezaznamenali uhradenie zálohy. Pripomíname Vám, že pre dokončenie rezervácie je potrebné uhradiť zálohu.</p>
+
+    <h3>Detaily rezervácie</h3>
+    <p><strong>Vozidlo:</strong> {{car_brand}} {{car_model}}</p>
+    <p><strong>Dátum vyzdvihnutia:</strong> {{start_date}}</p>
+    <p><strong>Dátum vrátenia:</strong> {{end_date}}</p>
+    <p><strong>Miesto vyzdvihnutia:</strong> {{pickup_location}}</p>
+
+    <h3>Záloha k úhrade: {{deposit_amount}}</h3>
+
+    <h3>Možnosti platby:</h3>
+    <p>1. V hotovosti u nás na pobočke</p>
+    <p>2. Bankovým prevodom:</p>
+    <p><strong>Číslo účtu:</strong> {{bank_account}}</p>
+    <p><strong>Variabilný symbol:</strong> {{variable_symbol}}</p>
+    <p>3. Online prostredníctvom platobnej brány</p>
+
+    <h3>Dôležité</h3>
+    <p>Bez uhradenia zálohy je Vami vybrané vozidlo naďalej ponúkané ďalším záujemcom a môže sa stať, že už nebude k dispozícii v požadovanom termíne.</p>
+    <p>Pokiaľ bude rezervácia zrušená zo strany klienta, je záloha za rezerváciu nevratná.</p>
+
+    <p>V prípade otázok alebo upresnení nás neváhajte kontaktovať.</p>
+
+    <p>{{company_phone}}</p>
+    <p>{{company_email}}</p>
+</body>
+</html>
