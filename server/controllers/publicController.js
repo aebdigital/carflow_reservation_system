@@ -977,41 +977,59 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
 
     // Process Additional Insurance
     if (selectedAdditionalInsurance && Array.isArray(selectedAdditionalInsurance) && selectedAdditionalInsurance.length > 0) {
+      console.log(`🔍 [INSURANCE] Processing ${selectedAdditionalInsurance.length} additional insurance items`);
+
       for (const insuranceItem of selectedAdditionalInsurance) {
         const insuranceId = insuranceItem.id || insuranceItem.insuranceId || insuranceItem;
+        console.log(`🔍 [INSURANCE] Looking up insurance ID: ${insuranceId}`);
 
         if (insuranceId) {
-          const insurance = await Insurance.findById(insuranceId);
+          try {
+            const insurance = await Insurance.findById(insuranceId);
 
-          if (insurance) {
-            let calculatedPrice = 0;
+            if (insurance) {
+              console.log(`✅ [INSURANCE] Found insurance document:`, {
+                id: insurance._id,
+                name: insurance.name,
+                pricingType: insurance.pricing?.type,
+                amount: insurance.pricing?.amount
+              });
 
-            // Calculate price based on pricing type
-            switch (insurance.pricing?.type) {
-              case 'per_day':
-                calculatedPrice = (insurance.pricing.amount || 0) * numberOfDays;
-                break;
-              case 'fixed':
-                calculatedPrice = insurance.pricing.amount || 0;
-                break;
-              case 'percentage':
-                calculatedPrice = (carRentalCost * (insurance.pricing.amount || 0)) / 100;
-                break;
-              default:
-                calculatedPrice = insurance.pricing?.amount || 0;
+              let calculatedPrice = 0;
+
+              // Calculate price based on pricing type
+              switch (insurance.pricing?.type) {
+                case 'per_day':
+                  calculatedPrice = (insurance.pricing.amount || 0) * numberOfDays;
+                  break;
+                case 'fixed':
+                  calculatedPrice = insurance.pricing.amount || 0;
+                  break;
+                case 'percentage':
+                  calculatedPrice = (carRentalCost * (insurance.pricing.amount || 0)) / 100;
+                  break;
+                default:
+                  calculatedPrice = insurance.pricing?.amount || 0;
+              }
+
+              processedAdditionalInsurance.push({
+                insuranceId: insurance._id,
+                name: insurance.name,
+                description: insurance.description,
+                baseAmount: insurance.pricing?.amount || 0,
+                pricingType: insurance.pricing?.type || 'fixed',
+                calculatedPrice: calculatedPrice
+              });
+
+              console.log(`✅ [INSURANCE] Processed ${insurance.name}: ${insurance.pricing?.amount} × ${numberOfDays} days = ${calculatedPrice}€`);
+            } else {
+              console.warn(`⚠️ [INSURANCE] Insurance document not found for ID: ${insuranceId}`);
             }
-
-            processedAdditionalInsurance.push({
-              insuranceId: insurance._id,
-              name: insurance.name,
-              description: insurance.description,
-              baseAmount: insurance.pricing?.amount || 0,
-              pricingType: insurance.pricing?.type || 'fixed',
-              calculatedPrice: calculatedPrice
-            });
-
-            console.log(`✅ [INSURANCE] Processed ${insurance.name}: ${insurance.pricing?.amount} × ${numberOfDays} days = ${calculatedPrice}€`);
+          } catch (error) {
+            console.error(`❌ [INSURANCE] Error looking up insurance ${insuranceId}:`, error.message);
           }
+        } else {
+          console.warn(`⚠️ [INSURANCE] No valid insurance ID in item:`, insuranceItem);
         }
       }
     }
