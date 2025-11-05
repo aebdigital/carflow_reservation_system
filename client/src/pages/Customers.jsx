@@ -230,11 +230,9 @@ function Customers() {
     if (!formData.email.trim()) errors.email = 'Email je povinný'
     else if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = 'Neplatný email formát'
     
-    // Phone number validation to match server regex: /^[\+]?[1-9][\d]{0,15}$/
+    // Phone number validation - only check if provided, no format validation
     if (!formData.phone.trim()) {
       errors.phone = 'Telefónne číslo je povinné'
-    } else if (!/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.trim())) {
-      errors.phone = 'Neplatný formát telefónneho čísla'
     }
     
     
@@ -825,10 +823,10 @@ function Customers() {
                   label="Telefónne číslo"
                   placeholder="napr., +421123456789 alebo 0901123456"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: formatPhoneNumber(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   disabled={dialogMode === 'view'}
                   error={!!formErrors.phone}
-                  helperText={formErrors.phone || 'Formát: +421123456789 alebo 0901123456 (bez medzier/pomlčiek)'}
+                  helperText={formErrors.phone || 'Akýkoľvek formát telefónneho čísla'}
                   required
                 />
               </Grid>
