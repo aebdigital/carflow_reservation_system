@@ -202,6 +202,15 @@ class PDFService {
       mileageLimit: car.mileageLimit
     });
 
+    // Helper to format city with postal code
+    const formatCityWithZip = (address) => {
+      if (!address) return '';
+      const parts = [];
+      if (address.zipCode) parts.push(address.zipCode);
+      if (address.city) parts.push(address.city);
+      return parts.join(' ');
+    };
+
     const formData = {
       // Current generation date
       'date_of_generation': formatDate(new Date()),
@@ -215,8 +224,8 @@ class PDFService {
 
       // Customer information
       'customer_name': safeValue(`${customer.firstName} ${customer.lastName}`),
-      'customer_adress': safeValue(customer.address?.street || customer.address),
-      'customer_city': safeValue(customer.address?.city),
+      'customer_adress': safeValue(customer.address?.street || (typeof customer.address === 'string' ? customer.address : '')),
+      'customer_city': formatCityWithZip(customer.address),
       'customer_op_number': safeValue(customer.idNumber),
       'customer_passport_number': '', // Don't use
       'customer_vp_number': safeValue(customer.licenseNumber),
