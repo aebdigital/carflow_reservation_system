@@ -284,24 +284,25 @@ class PDFService {
     const fields = form.getFields();
     
     // Try different field name variations
+    // You can add your custom field names to any of these arrays
     const fieldVariations = {
-      'meno_najomcu': ['meno_najomcu', 'meno najomcu', 'menoNajomcu', 'customer_name', 'tenant_name'],
-      'adresa_najomcu': ['adresa_najomcu', 'adresa najomcu', 'adresaNajomcu', 'customer_address', 'tenant_address'],
-      'cislo_op': ['cislo_op', 'cislo op', 'cisloOp', 'id_number', 'license_number'],
-      'telefon': ['telefon', 'phone', 'telefon_cislo'],
-      'email': ['email', 'email_address', 'elektronicka_posta'],
-      'meno_vozidla': ['meno_vozidla', 'meno vozidla', 'menoVozidla', 'vehicle_name', 'car_name'],
-      'ECV': ['ECV', 'ecv', 'registration', 'reg_number'],
-      'VIN': ['VIN', 'vin', 'vin_number'],
-      'rok_vyroby': ['rok_vyroby', 'rok vyroby', 'rokVyroby', 'year', 'manufacture_year'],
-      'farba': ['farba', 'color', 'car_color'],
-      'zaciatok_najmu': ['zaciatok_najmu', 'zaciatok najmu', 'zaciatokNajmu', 'start_date', 'rental_start'],
-      'koniec_najmu': ['koniec_najmu', 'koniec najmu', 'koniecNajmu', 'end_date', 'rental_end'],
-      'denna_sadzba': ['denna_sadzba', 'denna sadzba', 'dennaSadzba', 'daily_rate', 'rate_per_day'],
-      'pocet_dni': ['pocet_dni', 'pocet dni', 'pocetDni', 'days', 'number_of_days'],
-      'cena_bez_depozitu': ['cena_bez_depozitu', 'cena bez depozitu', 'cenaBezDepozitu', 'price_without_deposit', 'base_price'],
-      'sluzby_priplatky': ['sluzby_priplatky', 'sluzby priplatky', 'sluzbyPriplatky', 'additional_services', 'extras'],
-      'spolu_cena': ['spolu_cena', 'spolu cena', 'spoluCena', 'total_price', 'total_amount']
+      'meno_najomcu': ['meno_najomcu', 'meno najomcu', 'menoNajomcu', 'customer_name', 'tenant_name', 'Meno'],
+      'adresa_najomcu': ['adresa_najomcu', 'adresa najomcu', 'adresaNajomcu', 'customer_address', 'tenant_address', 'Adresa'],
+      'cislo_op': ['cislo_op', 'cislo op', 'cisloOp', 'id_number', 'license_number', 'CisloOP'],
+      'telefon': ['telefon', 'phone', 'telefon_cislo', 'Telefon'],
+      'email': ['email', 'email_address', 'elektronicka_posta', 'Email'],
+      'meno_vozidla': ['meno_vozidla', 'meno vozidla', 'menoVozidla', 'vehicle_name', 'car_name', 'Vozidlo'],
+      'ECV': ['ECV', 'ecv', 'registration', 'reg_number', 'Registracia'],
+      'VIN': ['VIN', 'vin', 'vin_number', 'VIN_cislo'],
+      'rok_vyroby': ['rok_vyroby', 'rok vyroby', 'rokVyroby', 'year', 'manufacture_year', 'Rok'],
+      'farba': ['farba', 'color', 'car_color', 'Farba'],
+      'zaciatok_najmu': ['zaciatok_najmu', 'zaciatok najmu', 'zaciatokNajmu', 'start_date', 'rental_start', 'Zaciatok'],
+      'koniec_najmu': ['koniec_najmu', 'koniec najmu', 'koniecNajmu', 'end_date', 'rental_end', 'Koniec'],
+      'denna_sadzba': ['denna_sadzba', 'denna sadzba', 'dennaSadzba', 'daily_rate', 'rate_per_day', 'DennaSadzba'],
+      'pocet_dni': ['pocet_dni', 'pocet dni', 'pocetDni', 'days', 'number_of_days', 'PocetDni'],
+      'cena_bez_depozitu': ['cena_bez_depozitu', 'cena bez depozitu', 'cenaBezDepozitu', 'price_without_deposit', 'base_price', 'ZakladnaCena'],
+      'sluzby_priplatky': ['sluzby_priplatky', 'sluzby priplatky', 'sluzbyPriplatky', 'additional_services', 'extras', 'Priplatky'],
+      'spolu_cena': ['spolu_cena', 'spolu cena', 'spoluCena', 'total_price', 'total_amount', 'CelkovaCena']
     };
     
     // Try to fill each field
