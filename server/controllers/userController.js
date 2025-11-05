@@ -192,11 +192,15 @@ const createUser = asyncHandler(async (req, res, next) => {
     firstName,
     lastName,
     email,
-    password,
     phone,
     role: role || 'customer',
     tenantId: req.user.tenantId  // Assign to the same tenant as the creator
   };
+
+  // Only add password if provided (required for admin/staff, optional for customers)
+  if (password) {
+    userData.password = password;
+  }
 
   // Add customer-specific fields if role is customer
   if (userData.role === 'customer') {

@@ -23,14 +23,17 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
+    required: function() {
+      // Password is only required for admin and staff roles
+      return this.role === 'admin' || this.role === 'staff';
+    },
     minLength: [6, 'Password must be at least 6 characters'],
     select: false
   },
   phone: {
     type: String,
-    required: [true, 'Phone number is required'],
-    match: [/^[\+]?[0-9]{8,15}$/, 'Please provide a valid phone number']
+    required: [true, 'Phone number is required']
+    // Removed strict phone format validation - accept any phone number
   },
   role: {
     type: String,
