@@ -377,17 +377,25 @@ const generateContractPDF = asyncHandler(async (req, res, next) => {
     // Get the reservation data with populated customer and car
     const reservation = await Reservation.findById(contract.reservation._id)
       .populate('customer', 'firstName lastName email phone address licenseNumber idNumber')
-      .populate('car', 'brand model year registrationNumber vin color category');
+      .populate('car', 'brand model year registrationNumber vin color category mileageLimit idCardNumber technicalInspection');
 
     if (!reservation) {
       return next(new AppError('Reservation not found for this contract', 404));
     }
 
-    // Generate the PDF using the PDF service (Slovak template)
+    // Get tenant user to determine which template to use
+    const User = require('../models/User');
+    const tenantAdmin = await User.findOne({
+      tenantId: req.user.tenantId,
+      role: 'admin'
+    });
+
+    // Generate the PDF using the PDF service (Slovak template) - pass tenant email for template selection
     const pdfBuffer = await pdfService.generateRentalAgreement(
-      reservation, 
-      reservation.car, 
-      reservation.customer
+      reservation,
+      reservation.car,
+      reservation.customer,
+      tenantAdmin?.email || req.user.email
     );
 
     // Set response headers for PDF

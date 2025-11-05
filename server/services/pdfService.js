@@ -4,7 +4,22 @@ const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 
 class PDFService {
   constructor() {
+    // Default template path (Rival)
     this.templatePath = path.join(__dirname, '../templates/Zmlu o najme vozidla 2025.pdf');
+    // Nitra-Car template path
+    this.nitracarTemplatePath = path.join(__dirname, '../templates_nitracar/nitracarzmluva.pdf');
+  }
+
+  /**
+   * Get the appropriate template path based on tenant email
+   */
+  getTemplatePath(tenantEmail) {
+    if (tenantEmail === 'nitra-car@nitra-car.sk' || tenantEmail?.includes('nitra-car')) {
+      console.log('📄 [PDF] Using Nitra-Car template for:', tenantEmail);
+      return this.nitracarTemplatePath;
+    }
+    console.log('📄 [PDF] Using default Rival template for:', tenantEmail);
+    return this.templatePath;
   }
 
   /**
@@ -70,8 +85,12 @@ class PDFService {
    * @param {Object} customer - The customer object
    * @returns {Promise<Buffer>} PDF buffer
    */
-  async generateRentalAgreement(reservation, car, customer) {
+  async generateRentalAgreement(reservation, car, customer, tenantEmail = null) {
     try {
+      // Determine which template to use
+      const templatePath = this.getTemplatePath(tenantEmail);
+      const isNitraCar = tenantEmail === 'nitra-car@nitra-car.sk' || tenantEmail?.includes('nitra-car');
+
       console.log('🔄 [PDF Service] Starting generateRentalAgreement');
       console.log('📋 [PDF Service] Input data:', {
         reservationId: reservation?._id,
@@ -79,19 +98,21 @@ class PDFService {
         carBrand: car?.brand,
         carModel: car?.model,
         customerName: customer ? `${customer.firstName} ${customer.lastName}` : 'N/A',
-        templatePath: this.templatePath
+        tenantEmail: tenantEmail,
+        isNitraCar: isNitraCar,
+        templatePath: templatePath
       });
 
       // Check if template exists
-      if (!fs.existsSync(this.templatePath)) {
-        console.error('❌ [PDF Service] Template file not found at:', this.templatePath);
-        throw new Error(`Template file not found at: ${this.templatePath}`);
+      if (!fs.existsSync(templatePath)) {
+        console.error('❌ [PDF Service] Template file not found at:', templatePath);
+        throw new Error(`Template file not found at: ${templatePath}`);
       }
       console.log('✅ [PDF Service] Template file exists');
 
       // Read the template PDF
       console.log('🔄 [PDF Service] Reading template file...');
-      const templateBytes = fs.readFileSync(this.templatePath);
+      const templateBytes = fs.readFileSync(templatePath);
       console.log('✅ [PDF Service] Template file read successfully:', templateBytes.length, 'bytes');
 
       console.log('🔄 [PDF Service] Loading PDF document...');
@@ -110,16 +131,19 @@ class PDFService {
         fields.forEach((field, index) => {
           console.log(`📝 [PDF] Field ${index + 1}: ${field.getName()} (Type: ${field.constructor.name})`);
         });
-        
-        // Fill form fields with reservation data
-        const formData = this.prepareFormData(reservation, car, customer);
-        await this.fillFormFields(form, formData);
-        
+
+        // Fill form fields with reservation data - use tenant-specific preparation
+        const formData = isNitraCar
+          ? this.prepareNitraCarFormData(reservation, car, customer)
+          : this.prepareFormData(reservation, car, customer);
+
+        await this.fillFormFields(form, formData, isNitraCar);
+
         // Flatten the form to prevent further editing
         form.flatten();
       } else {
         console.log('ℹ️ [PDF] No form fields found, will use text overlay method');
-        
+
         // If no form fields, use text overlay method
         await this.overlayTextData(pdfDoc, reservation, car, customer);
       }
@@ -151,7 +175,73 @@ class PDFService {
   }
 
   /**
-   * Prepare form data mapping from reservation
+   * Prepare Nitra-Car specific form data mapping from reservation
+   */
+  prepareNitraCarFormData(reservation, car, customer) {
+    const startDate = new Date(reservation.startDate);
+    const endDate = new Date(reservation.endDate);
+
+    // Format dates
+    const formatDate = (date) => date.toLocaleDateString('sk-SK');
+    const formatTime = (date) => date.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+
+    // Helper to return empty string if no value
+    const safeValue = (val) => val || '';
+
+    console.log('📋 [NITRA-CAR PDF] Preparing form data');
+    console.log('📋 [NITRA-CAR PDF] Customer data:', {
+      name: `${customer.firstName} ${customer.lastName}`,
+      address: customer.address,
+      idNumber: customer.idNumber,
+      licenseNumber: customer.licenseNumber
+    });
+    console.log('📋 [NITRA-CAR PDF] Car data:', {
+      ecv: car.registrationNumber,
+      vin: car.vin,
+      category: car.category,
+      mileageLimit: car.mileageLimit
+    });
+
+    const formData = {
+      // Current generation date
+      'date_of_generation': formatDate(new Date()),
+
+      // Company fields - leave blank as requested
+      'company_name': '',
+      'company_adres': '',
+      'company_city': '',
+      'company_ico': '',
+      'company_icdph': '',
+
+      // Customer information
+      'customer_name': safeValue(`${customer.firstName} ${customer.lastName}`),
+      'customer_adress': safeValue(customer.address?.street || customer.address),
+      'customer_city': safeValue(customer.address?.city),
+      'customer_op_number': safeValue(customer.idNumber),
+      'customer_passport_number': '', // Don't use
+      'customer_vp_number': safeValue(customer.licenseNumber),
+
+      // Car information
+      'car_ecv': safeValue(car.registrationNumber),
+      'car_category': safeValue(car.category),
+      'car_idcard_number': safeValue(car.idCardNumber || car.technicalInspection),
+      'car_vin': safeValue(car.vin),
+      'car_over_limitkm': safeValue(car.mileageLimit?.toString()),
+
+      // Reservation dates and times
+      'reservation_date_from': formatDate(startDate),
+      'reservation_time_from': formatTime(startDate),
+      'reservation_date_to': formatDate(endDate),
+      'reservation_time_to': formatTime(endDate)
+    };
+
+    console.log('✅ [NITRA-CAR PDF] Form data prepared:', Object.keys(formData).length, 'fields');
+
+    return formData;
+  }
+
+  /**
+   * Prepare form data mapping from reservation (Rival template)
    */
   prepareFormData(reservation, car, customer) {
     const startDate = new Date(reservation.startDate);
@@ -280,10 +370,28 @@ class PDFService {
   /**
    * Fill form fields with data
    */
-  async fillFormFields(form, formData) {
+  async fillFormFields(form, formData, isNitraCar = false) {
     const fields = form.getFields();
-    
-    // Try different field name variations
+
+    // If Nitra-Car, try exact field names first (no variations needed for Nitra-Car)
+    if (isNitraCar) {
+      console.log('📝 [NITRA-CAR] Filling form fields with exact names');
+      for (const [fieldName, value] of Object.entries(formData)) {
+        try {
+          const textField = form.getTextField(fieldName);
+          if (textField) {
+            const stringValue = value?.toString() || '';
+            textField.setText(stringValue);
+            console.log(`✅ [NITRA-CAR] Filled field '${fieldName}' with: ${stringValue}`);
+          }
+        } catch (error) {
+          console.log(`ℹ️ [NITRA-CAR] Field '${fieldName}' not found or not a text field`);
+        }
+      }
+      return;
+    }
+
+    // Try different field name variations for Rival template
     // You can add your custom field names to any of these arrays
     const fieldVariations = {
       'meno_najomcu': ['meno_najomcu', 'meno najomcu', 'menoNajomcu', 'customer_name', 'tenant_name', 'Meno'],
