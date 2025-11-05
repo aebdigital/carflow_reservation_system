@@ -1522,7 +1522,7 @@ const generateSlovakAgreement = asyncHandler(async (req, res, next) => {
       tenantId: req.user.tenantId
     })
       .populate('customer', 'firstName lastName email phone address licenseNumber idNumber')
-      .populate('car', 'brand model year registrationNumber vin color category')
+      .populate('car', 'brand model year registrationNumber vin color category mileageLimit idCardNumber technicalInspection')
       .populate('createdBy', 'firstName lastName');
 
     if (!reservation) {
@@ -1543,13 +1543,22 @@ const generateSlovakAgreement = asyncHandler(async (req, res, next) => {
       return next(new AppError('Nemáte oprávnenie na prístup k tejto rezervácii', 403));
     }
 
-    console.log('🔄 [PDF] Calling pdfService.generateRentalAgreement...');
+    // Get tenant admin email to determine which template to use
+    const User = require('../models/User');
+    const tenantAdmin = await User.findOne({
+      tenantId: req.user.tenantId,
+      role: 'admin'
+    });
 
-    // Generate the PDF using the PDF service
+    console.log('🔄 [PDF] Calling pdfService.generateRentalAgreement...');
+    console.log('📧 [PDF] Tenant email for template selection:', tenantAdmin?.email || req.user.email);
+
+    // Generate the PDF using the PDF service - pass tenant email for template selection
     const pdfBuffer = await pdfService.generateRentalAgreement(
       reservation,
       reservation.car,
-      reservation.customer
+      reservation.customer,
+      tenantAdmin?.email || req.user.email
     );
 
     console.log('✅ [PDF] PDF buffer generated successfully:', {
