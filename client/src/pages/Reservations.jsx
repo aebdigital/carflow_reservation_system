@@ -1082,7 +1082,7 @@ function Reservations() {
                               <DownloadIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          {auth.user?.email !== 'lerent@lerent.sk' && (
+                          {auth.user?.email !== 'lerent@lerent.sk' && auth.user?.email !== 'nitra-car@nitra-car.sk' && (
                             <Tooltip title="Generovanie QR kódu">
                               <IconButton
                                 size="small"
@@ -1232,7 +1232,7 @@ function Reservations() {
                               <DownloadIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          {auth.user?.email !== 'lerent@lerent.sk' && (
+                          {auth.user?.email !== 'lerent@lerent.sk' && auth.user?.email !== 'nitra-car@nitra-car.sk' && (
                             <Tooltip title="Generovanie QR kódu">
                               <IconButton
                                 size="small"
@@ -1397,7 +1397,7 @@ function Reservations() {
                               <CancelIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          {auth.user?.email !== 'lerent@lerent.sk' && (
+                          {auth.user?.email !== 'lerent@lerent.sk' && auth.user?.email !== 'nitra-car@nitra-car.sk' && (
                             <Tooltip title="Generovanie QR kódu">
                               <IconButton
                                 size="small"
@@ -1536,7 +1536,7 @@ function Reservations() {
                               <DownloadIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          {auth.user?.email !== 'lerent@lerent.sk' && (
+                          {auth.user?.email !== 'lerent@lerent.sk' && auth.user?.email !== 'nitra-car@nitra-car.sk' && (
                             <Tooltip title="Generovanie QR kódu">
                               <IconButton
                                 size="small"
