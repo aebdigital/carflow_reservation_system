@@ -89,6 +89,16 @@ const bannerSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
+  title: {
+    type: String,
+    trim: true,
+    maxlength: [200, 'Title cannot exceed 200 characters']
+  },
+  subtitle: {
+    type: String,
+    trim: true,
+    maxlength: [500, 'Subtitle cannot exceed 500 characters']
+  },
   tenantId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

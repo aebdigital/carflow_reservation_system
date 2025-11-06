@@ -52,6 +52,7 @@ import {
   PhotoLibrary as PhotoLibraryIcon,
   Language as LanguageIcon
 } from '@mui/icons-material'
+import { useSelector } from 'react-redux'
 import {
   useGetBannersQuery,
   useCreateBannerMutation,
@@ -213,6 +214,10 @@ const DraggableImage = ({ image, index, onRemove, onTranslate, onDragStart, onDr
 }
 
 export default function BannerSettings() {
+  // Get current user to check if LeRent
+  const { user } = useSelector((state) => state.auth)
+  const isLeRentUser = user?.email === 'lerent@lerent.sk'
+
   const [banners, setBanners] = useState([])
   const [openDialog, setOpenDialog] = useState(false)
   const [dialogMode, setDialogMode] = useState('create')
@@ -225,6 +230,8 @@ export default function BannerSettings() {
     position: 'hero-section',
     isActive: true,
     sortOrder: 0,
+    title: '', // For LeRent user
+    subtitle: '', // For LeRent user
   })
 
   const { data: bannersData, isLoading: bannersLoading, error: bannersError, refetch } = useGetBannersQuery()
@@ -257,6 +264,8 @@ export default function BannerSettings() {
         position: banner.position || 'hero-section',
         isActive: banner.isActive !== undefined ? banner.isActive : true,
         sortOrder: banner.sortOrder || 0,
+        title: banner.title || '',
+        subtitle: banner.subtitle || '',
       })
       // Handle both old single image format and new multiple images format
       if (banner.images && banner.images.length > 0) {
@@ -276,6 +285,8 @@ export default function BannerSettings() {
         position: 'hero-section',
         isActive: true,
         sortOrder: 0,
+        title: '',
+        subtitle: '',
       })
       setImagePreviews([])
     }
@@ -821,18 +832,44 @@ export default function BannerSettings() {
                     </FormControl>
                   </Grid>
 
-                  {/* Sort Order */}
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Poradie zobrazenia"
-                      type="number"
-                      value={formData.sortOrder}
-                      onChange={handleChange('sortOrder')}
-                      InputProps={{ inputProps: { min: 0 } }}
-                      helperText="Čím menšie číslo, tým vyššie sa banner zobrazí"
-                    />
-                  </Grid>
+                  {/* Title and Subtitle - Only for LeRent user */}
+                  {isLeRentUser && (
+                    <>
+                      <Grid item xs={12}>
+                        <TextField
+                          fullWidth
+                          label="Nadpis"
+                          value={formData.title}
+                          onChange={handleChange('title')}
+                          helperText="Hlavný nadpis pre banner"
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <TextField
+                          fullWidth
+                          label="Podnadpis"
+                          value={formData.subtitle}
+                          onChange={handleChange('subtitle')}
+                          helperText="Podnadpis alebo popis banneru"
+                        />
+                      </Grid>
+                    </>
+                  )}
+
+                  {/* Sort Order - Hidden for LeRent user */}
+                  {!isLeRentUser && (
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Poradie zobrazenia"
+                        type="number"
+                        value={formData.sortOrder}
+                        onChange={handleChange('sortOrder')}
+                        InputProps={{ inputProps: { min: 0 } }}
+                        helperText="Čím menšie číslo, tým vyššie sa banner zobrazí"
+                      />
+                    </Grid>
+                  )}
 
                   {/* Status */}
                   <Grid item xs={12}>
