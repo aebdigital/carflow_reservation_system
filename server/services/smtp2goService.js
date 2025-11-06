@@ -615,6 +615,20 @@ class SMTP2GOService {
       templateVariables.qr_deposit_display = 'none';
     }
 
+    // Add bank transfer details for LeRent when payment type is 'prevod'
+    const isLeRent = senderEmail === 'lerent@lerent.sk' || user?.email === 'lerent@lerent.sk';
+    const isPrevodPayment = rawReservation?.paymentType === 'prevod';
+
+    if (isLeRent && isPrevodPayment) {
+      console.log('🏦 [EMAIL] Adding LeRent bank transfer details for prevod payment');
+      templateVariables.show_bank_details = 'block';
+      templateVariables.bank_name = 'Tatra banka, a.s.';
+      templateVariables.bank_iban = 'SK31 1100 0000 0029 4103 7541';
+      templateVariables.payment_amount = rawReservation.pricing?.totalAmount?.toFixed(2) || '0.00';
+    } else {
+      templateVariables.show_bank_details = 'none';
+    }
+
     // Log template variables for debugging
     console.log('📧 [EMAIL DEBUG] Final confirmation template variables:', {
       qr_section_display: templateVariables.qr_section_display,
@@ -622,7 +636,8 @@ class SMTP2GOService {
       qr_deposit_url: templateVariables.qr_deposit_url ? 'SET' : 'NOT SET',
       qr_deposit_display: templateVariables.qr_deposit_display,
       rental_amount: templateVariables.rental_amount,
-      deposit_amount: templateVariables.deposit_amount
+      deposit_amount: templateVariables.deposit_amount,
+      show_bank_details: templateVariables.show_bank_details
     });
 
     // Get processed email template with sender-specific template folder

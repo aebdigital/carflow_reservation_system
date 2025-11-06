@@ -27,6 +27,17 @@
     <p>2. Zašleme Vám informácie o platbe zálohy</p>
     <p>3. Po uhradení zálohy je rezervácia definitívne potvrdená</p>
 
+    <!-- Bank Transfer Details (Only for 'prevod' payment type) -->
+    <div style="display: {{show_bank_details}}; margin-top: 30px; padding: 20px; background-color: #f5f5f5; border-left: 4px solid #2196F3;">
+        <h3 style="color: #2196F3; margin-top: 0;">💳 INFORMÁCIE O PLATBE - BANKOVÝ PREVOD</h3>
+        <p><strong>Banka:</strong> {{bank_name}}</p>
+        <p><strong>IBAN:</strong> {{bank_iban}}</p>
+        <p><strong>Suma k úhrade:</strong> {{payment_amount}}€</p>
+        <p style="margin-top: 15px; font-size: 0.9em; color: #666;">
+            Prosím, uhraďte túto sumu bankovým prevodom na uvedený účet. Po potvrdení platby Vám zašleme definitívne potvrdenie rezervácie.
+        </p>
+    </div>
+
     <p>V prípade akýchkoľvek otázok nás neváhajte kontaktovať.</p>
 
     <p>Tešíme sa na Vás!</p>
