@@ -1894,6 +1894,16 @@ function Reservations() {
                             <Typography variant="body1" fontWeight="bold">{t('totalAmount')}:</Typography>
                             <Typography variant="body1" fontWeight="bold" color="primary">{selectedReservation.pricing.totalAmount?.toFixed(2) || '0.00'}€</Typography>
                           </Box>
+
+                          {/* Payment Type */}
+                          {selectedReservation.paymentType && (
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                              <Typography variant="body2" color="text.secondary">Typ platby:</Typography>
+                              <Typography variant="body2" fontWeight="medium" color="text.secondary">
+                                {selectedReservation.paymentType === 'stripe' ? 'Stripe (Karta)' : 'Bankový prevod'}
+                              </Typography>
+                            </Box>
+                          )}
                         </>
                       ) : (
                         <Typography variant="body2" color="text.secondary">
