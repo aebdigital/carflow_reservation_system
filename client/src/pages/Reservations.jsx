@@ -1073,14 +1073,18 @@ function Reservations() {
                               </IconButton>
                             </Tooltip>
                           )}
-                          <Tooltip title="Stiahnuť Slovensku zmluvu">
-                            <IconButton 
-                              size="small" 
-                              onClick={() => handleDownloadSlovakAgreementFile(reservation._id)}
-                              color="secondary"
-                            >
-                              <DownloadIcon fontSize="small" />
-                            </IconButton>
+                          <Tooltip title={auth.user?.email === 'lerent@lerent.sk' ? 'Funkcia dočasne nedostupná' : 'Stiahnuť Slovensku zmluvu'}>
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDownloadSlovakAgreementFile(reservation._id)}
+                                color="secondary"
+                                disabled={auth.user?.email === 'lerent@lerent.sk'}
+                                sx={auth.user?.email === 'lerent@lerent.sk' ? { opacity: 0.3 } : {}}
+                              >
+                                <DownloadIcon fontSize="small" />
+                              </IconButton>
+                            </span>
                           </Tooltip>
                           {auth.user?.email !== 'lerent@lerent.sk' && auth.user?.email !== 'nitra-car@nitra-car.sk' && (
                             <Tooltip title="Generovanie QR kódu">
@@ -1223,14 +1227,18 @@ function Reservations() {
                               <CheckOutIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Stiahnuť Slovensku zmluvu">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDownloadSlovakAgreementFile(reservation._id)}
-                              color="secondary"
-                            >
-                              <DownloadIcon fontSize="small" />
-                            </IconButton>
+                          <Tooltip title={auth.user?.email === 'lerent@lerent.sk' ? 'Funkcia dočasne nedostupná' : 'Stiahnuť Slovensku zmluvu'}>
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDownloadSlovakAgreementFile(reservation._id)}
+                                color="secondary"
+                                disabled={auth.user?.email === 'lerent@lerent.sk'}
+                                sx={auth.user?.email === 'lerent@lerent.sk' ? { opacity: 0.3 } : {}}
+                              >
+                                <DownloadIcon fontSize="small" />
+                              </IconButton>
+                            </span>
                           </Tooltip>
                           {auth.user?.email !== 'lerent@lerent.sk' && auth.user?.email !== 'nitra-car@nitra-car.sk' && (
                             <Tooltip title="Generovanie QR kódu">
@@ -1379,14 +1387,18 @@ function Reservations() {
                               <ConfirmIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Stiahnuť slovenskú zmluvu">
-                            <IconButton 
-                              size="small" 
-                              onClick={() => handleDownloadSlovakAgreementFile(reservation._id)}
-                              color="secondary"
-                            >
-                              <DownloadIcon fontSize="small" />
-                            </IconButton>
+                          <Tooltip title={auth.user?.email === 'lerent@lerent.sk' ? 'Funkcia dočasne nedostupná' : 'Stiahnuť slovenskú zmluvu'}>
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDownloadSlovakAgreementFile(reservation._id)}
+                                color="secondary"
+                                disabled={auth.user?.email === 'lerent@lerent.sk'}
+                                sx={auth.user?.email === 'lerent@lerent.sk' ? { opacity: 0.3 } : {}}
+                              >
+                                <DownloadIcon fontSize="small" />
+                              </IconButton>
+                            </span>
                           </Tooltip>
                           <Tooltip title="Cancel">
                             <IconButton
@@ -1527,14 +1539,18 @@ function Reservations() {
                               <ViewIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Stiahnuť slovenskú zmluvu">
-                            <IconButton 
-                              size="small" 
-                              onClick={() => handleDownloadSlovakAgreementFile(reservation._id)}
-                              color="secondary"
-                            >
-                              <DownloadIcon fontSize="small" />
-                            </IconButton>
+                          <Tooltip title={auth.user?.email === 'lerent@lerent.sk' ? 'Funkcia dočasne nedostupná' : 'Stiahnuť slovenskú zmluvu'}>
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDownloadSlovakAgreementFile(reservation._id)}
+                                color="secondary"
+                                disabled={auth.user?.email === 'lerent@lerent.sk'}
+                                sx={auth.user?.email === 'lerent@lerent.sk' ? { opacity: 0.3 } : {}}
+                              >
+                                <DownloadIcon fontSize="small" />
+                              </IconButton>
+                            </span>
                           </Tooltip>
                           {auth.user?.email !== 'lerent@lerent.sk' && auth.user?.email !== 'nitra-car@nitra-car.sk' && (
                             <Tooltip title="Generovanie QR kódu">
