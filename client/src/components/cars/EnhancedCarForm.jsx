@@ -434,13 +434,6 @@ const EnhancedCarForm = ({
       return;
     }
 
-    if (!equipmentIconPreview) {
-      if (onShowNotification) {
-        onShowNotification('Ikona je povinná. Nahrajte SVG alebo PNG súbor.', 'error');
-      }
-      return;
-    }
-    
     const currentEquipment = formData.equipment || [];
     
     const equipmentItem = {
@@ -2108,7 +2101,7 @@ const EnhancedCarForm = ({
                   />
                   
                   <Typography variant="caption" color="text.secondary" display="block">
-                    Podporované formáty ikon: SVG, PNG (max 1MB). Ikona je povinná.
+                    Podporované formáty ikon: SVG, PNG (max 1MB). Ikona je voliteľná.
                   </Typography>
                 </Box>
               )}
