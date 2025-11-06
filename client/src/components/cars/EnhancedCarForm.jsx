@@ -2061,7 +2061,7 @@ const EnhancedCarForm = ({
                         size="small"
                         startIcon={editingEquipmentIndex !== null ? <EditIcon /> : <AddIcon />}
                         onClick={handleAddOrUpdateEquipment}
-                        disabled={!formData.customEquipmentName?.trim() || !equipmentIconPreview}
+                        disabled={!formData.customEquipmentName?.trim()}
                       >
                         {editingEquipmentIndex !== null ? 'Uložiť úpravu' : 'Pridať'}
                       </Button>
