@@ -435,13 +435,13 @@ const EnhancedCarForm = ({
     }
 
     const currentEquipment = formData.equipment || [];
-    
+
     const equipmentItem = {
       name: name,
       description: formData.customEquipmentDescription || '',
-      icon: equipmentIconPreview,
+      icon: equipmentIconPreview || '', // Icon is optional - use empty string if not provided
       category: 'custom',
-      iconType: 'file',
+      iconType: equipmentIconPreview ? 'file' : 'none', // Set iconType based on whether icon exists
       position: editingEquipmentIndex !== null ? currentEquipment[editingEquipmentIndex]?.position : currentEquipment.length
     };
     
