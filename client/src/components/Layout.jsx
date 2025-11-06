@@ -67,7 +67,7 @@ function Layout() {
   // Filter menu items based on user
   const menuItems = baseMenuItems.filter(item => {
     // Hide payments section for specific users
-    if (item.path === '/payments' && (user?.email === 'rival@test.sk' || user?.email === 'nitra-car@nitra-car.sk')) {
+    if (item.path === '/payments' && (user?.email === 'rival@test.sk' || user?.email === 'nitra-car@nitra-car.sk' || user?.email === 'lerent@lerent.sk')) {
       console.log('🔐 [MENU FILTER] Hiding payments for user:', user?.email);
       return false;
     }
