@@ -434,11 +434,19 @@ export default function BannerSettings() {
 
     try {
       const formDataToSend = new FormData()
-      
+
       // Add form fields
       formDataToSend.append('position', formData.position)
       formDataToSend.append('isActive', formData.isActive)
       formDataToSend.append('sortOrder', formData.sortOrder)
+
+      // Add title and subtitle (for LeRent)
+      if (formData.title) {
+        formDataToSend.append('title', formData.title)
+      }
+      if (formData.subtitle) {
+        formDataToSend.append('subtitle', formData.subtitle)
+      }
       
       // Add images
       selectedFiles.forEach((file, index) => {
@@ -461,6 +469,14 @@ export default function BannerSettings() {
         updateData.append('position', formData.position)
         updateData.append('isActive', formData.isActive)
         updateData.append('sortOrder', formData.sortOrder)
+
+        // Add title and subtitle (for LeRent)
+        if (formData.title !== undefined) {
+          updateData.append('title', formData.title)
+        }
+        if (formData.subtitle !== undefined) {
+          updateData.append('subtitle', formData.subtitle)
+        }
         
         result = await updateBanner({ id: selectedBanner.id, data: updateData }).unwrap()
         setAlert({ type: 'success', message: 'Banner bol úspešne aktualizovaný!' })

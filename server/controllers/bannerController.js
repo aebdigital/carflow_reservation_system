@@ -115,10 +115,12 @@ const createBanner = asyncHandler(async (req, res, next) => {
     }
     
     // Add tenant information and creator
-    const bannerData = { 
+    const bannerData = {
       position: req.body.position || 'hero-section',
       isActive: req.body.isActive !== undefined ? req.body.isActive : true,
       sortOrder: parseInt(req.body.sortOrder) || 0,
+      title: req.body.title || '',
+      subtitle: req.body.subtitle || '',
       tenantId: req.user.tenantId,
       createdBy: req.user._id,
       images: []
@@ -204,6 +206,8 @@ const updateBanner = asyncHandler(async (req, res, next) => {
       position: req.body.position || banner.position,
       isActive: req.body.isActive !== undefined ? req.body.isActive : banner.isActive,
       sortOrder: req.body.sortOrder !== undefined ? parseInt(req.body.sortOrder) : banner.sortOrder,
+      title: req.body.title !== undefined ? req.body.title : banner.title,
+      subtitle: req.body.subtitle !== undefined ? req.body.subtitle : banner.subtitle,
     };
     
     // Handle new image uploads if present
