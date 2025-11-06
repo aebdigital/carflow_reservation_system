@@ -170,7 +170,9 @@ const createReservation = asyncHandler(async (req, res, next) => {
     insurancePrices,
     extendedInsurancePrices,
     calculatedTotal,
-    extraOptions
+    extraOptions,
+    // Payment type (optional: 'stripe' or 'prevod')
+    paymentType
   } = req.body;
 
   // Validate car exists and is available (tenant-scoped)
@@ -409,6 +411,8 @@ const createReservation = asyncHandler(async (req, res, next) => {
     selectedExtendedInsurance: selectedExtendedInsurance || [],
     insurancePrices: insurancePrices || {},
     extendedInsurancePrices: extendedInsurancePrices || {},
+    // Payment type (optional: 'stripe' or 'prevod')
+    paymentType: paymentType || undefined,
     tenantId: req.user.tenantId,
     createdBy: req.user._id
   };

@@ -161,7 +161,14 @@ const reservationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Payment'
   },
-  
+
+  // Payment type - optional field for frontend to specify payment method
+  paymentType: {
+    type: String,
+    enum: ['stripe', 'prevod'],
+    required: false
+  },
+
   // BySquare QR payment codes
   qrCodes: {
     payBySquare: {
