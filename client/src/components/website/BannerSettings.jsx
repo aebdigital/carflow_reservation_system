@@ -440,12 +440,12 @@ export default function BannerSettings() {
       formDataToSend.append('isActive', formData.isActive)
       formDataToSend.append('sortOrder', formData.sortOrder)
 
-      // Add title and subtitle (for LeRent)
-      if (formData.title) {
-        formDataToSend.append('title', formData.title)
+      // Add title and subtitle (for LeRent) - always send even if empty
+      if (formData.title !== undefined) {
+        formDataToSend.append('title', formData.title || '')
       }
-      if (formData.subtitle) {
-        formDataToSend.append('subtitle', formData.subtitle)
+      if (formData.subtitle !== undefined) {
+        formDataToSend.append('subtitle', formData.subtitle || '')
       }
       
       // Add images

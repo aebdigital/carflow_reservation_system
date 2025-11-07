@@ -115,16 +115,30 @@ const createBanner = asyncHandler(async (req, res, next) => {
     }
     
     // Add tenant information and creator
+    console.log('🖼️ [BANNER CREATE] Request body:', {
+      position: req.body.position,
+      isActive: req.body.isActive,
+      sortOrder: req.body.sortOrder,
+      title: req.body.title,
+      subtitle: req.body.subtitle
+    });
+
     const bannerData = {
       position: req.body.position || 'hero-section',
       isActive: req.body.isActive !== undefined ? req.body.isActive : true,
       sortOrder: parseInt(req.body.sortOrder) || 0,
-      title: req.body.title || '',
-      subtitle: req.body.subtitle || '',
       tenantId: req.user.tenantId,
       createdBy: req.user._id,
       images: []
     };
+
+    // Only add title and subtitle if they are provided (don't default to empty string)
+    if (req.body.title !== undefined && req.body.title !== null) {
+      bannerData.title = req.body.title;
+    }
+    if (req.body.subtitle !== undefined && req.body.subtitle !== null) {
+      bannerData.subtitle = req.body.subtitle;
+    }
     
     // Handle multiple image uploads
     console.log('🖼️ [BANNER CREATE] Processing multiple images...');
@@ -191,10 +205,17 @@ const updateBanner = asyncHandler(async (req, res, next) => {
   try {
     console.log('🖼️ [BANNER UPDATE] Starting banner update process...');
     console.log('🖼️ [BANNER UPDATE] Files received:', req.files ? req.files.length : 0);
-    
-    let banner = await Banner.findOne({ 
-      _id: req.params.id, 
-      tenantId: req.user.tenantId 
+    console.log('🖼️ [BANNER UPDATE] Request body:', {
+      position: req.body.position,
+      isActive: req.body.isActive,
+      sortOrder: req.body.sortOrder,
+      title: req.body.title,
+      subtitle: req.body.subtitle
+    });
+
+    let banner = await Banner.findOne({
+      _id: req.params.id,
+      tenantId: req.user.tenantId
     });
 
     if (!banner) {
@@ -205,10 +226,16 @@ const updateBanner = asyncHandler(async (req, res, next) => {
     const updateData = {
       position: req.body.position || banner.position,
       isActive: req.body.isActive !== undefined ? req.body.isActive : banner.isActive,
-      sortOrder: req.body.sortOrder !== undefined ? parseInt(req.body.sortOrder) : banner.sortOrder,
-      title: req.body.title !== undefined ? req.body.title : banner.title,
-      subtitle: req.body.subtitle !== undefined ? req.body.subtitle : banner.subtitle,
+      sortOrder: req.body.sortOrder !== undefined ? parseInt(req.body.sortOrder) : banner.sortOrder
     };
+
+    // Handle title and subtitle separately to allow empty strings
+    if (req.body.title !== undefined) {
+      updateData.title = req.body.title;
+    }
+    if (req.body.subtitle !== undefined) {
+      updateData.subtitle = req.body.subtitle;
+    }
     
     // Handle new image uploads if present
     if (req.files && req.files.length > 0) {
