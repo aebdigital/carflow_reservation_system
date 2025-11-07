@@ -126,9 +126,21 @@ app.use((req, res, next) => {
   next();
 });
 
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body parsing middleware - EXCEPT for Stripe webhooks which need raw body
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/payments/stripe-webhook') {
+    next(); // Skip JSON parsing for webhook
+  } else {
+    express.json({ limit: '10mb' })(req, res, next);
+  }
+});
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/payments/stripe-webhook') {
+    next(); // Skip URL encoding for webhook
+  } else {
+    express.urlencoded({ extended: true, limit: '10mb' })(req, res, next);
+  }
+});
 
 // Logging middleware
 app.use(morgan('combined'));
