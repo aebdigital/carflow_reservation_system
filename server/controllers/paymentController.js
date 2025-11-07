@@ -159,7 +159,7 @@ const createCheckoutSession = asyncHandler(async (req, res, next) => {
     // Debug metadata before sending to Stripe
     const metadataToSend = {
       payment_id: payment._id.toString(),
-      tenant_id: admin.tenantId,
+      tenant_id: admin.tenantId.toString(), // Convert ObjectId to string
       reservation_id: reservationId || '',
     };
     console.log('🔍 [STRIPE] Metadata being sent to Stripe:', metadataToSend);
