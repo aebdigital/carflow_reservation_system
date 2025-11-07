@@ -241,8 +241,14 @@ const handleStripeWebhook = asyncHandler(async (req, res, next) => {
   const paymentId = rawEvent.data?.object?.metadata?.payment_id;
   const tenantId = rawEvent.data?.object?.metadata?.tenant_id;
 
+  console.log('🔍 [WEBHOOK DEBUG] Event type:', rawEvent.type);
+  console.log('🔍 [WEBHOOK DEBUG] Metadata received:', rawEvent.data?.object?.metadata);
+  console.log('🔍 [WEBHOOK DEBUG] Payment ID:', paymentId);
+  console.log('🔍 [WEBHOOK DEBUG] Tenant ID:', tenantId);
+
   if (!paymentId || !tenantId) {
-    console.error('Missing payment_id or tenant_id in webhook metadata');
+    console.error('❌ [WEBHOOK] Missing payment_id or tenant_id in webhook metadata');
+    console.error('❌ [WEBHOOK] Full event object:', JSON.stringify(rawEvent, null, 2));
     return res.status(400).send('Missing required metadata');
   }
 
