@@ -82,7 +82,16 @@ const createCheckoutSession = asyncHandler(async (req, res, next) => {
     return next(new AppError('No admin found with this email', 404));
   }
 
-  console.log('✅ [STRIPE] Found admin:', { adminId: admin._id, tenantId: admin.tenantId });
+  console.log('✅ [STRIPE] Found admin:', { adminId: admin._id, tenantId: admin.tenantId, email: admin.email });
+
+  if (!admin.tenantId) {
+    console.error('❌ [STRIPE] Admin has no tenantId:', {
+      adminId: admin._id,
+      email: admin.email,
+      tenantId: admin.tenantId
+    });
+    return next(new AppError('Admin configuration error: missing tenantId', 500));
+  }
 
   let payment = null; // Declare payment variable outside try block
 
@@ -147,6 +156,14 @@ const createCheckoutSession = asyncHandler(async (req, res, next) => {
       createdBy: admin._id
     });
 
+    // Debug metadata before sending to Stripe
+    const metadataToSend = {
+      payment_id: payment._id.toString(),
+      tenant_id: admin.tenantId,
+      reservation_id: reservationId || '',
+    };
+    console.log('🔍 [STRIPE] Metadata being sent to Stripe:', metadataToSend);
+
     // Create Stripe checkout session with tenant-specific Stripe instance
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -167,11 +184,7 @@ const createCheckoutSession = asyncHandler(async (req, res, next) => {
       success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}&payment_id=${payment._id}`,
       cancel_url: `${cancelUrl}?payment_id=${payment._id}`,
       customer_email: customerInfo?.email || customer?.email || null,
-      metadata: {
-        payment_id: payment._id.toString(),
-        tenant_id: admin.tenantId,
-        reservation_id: reservationId || '',
-      },
+      metadata: metadataToSend,
     });
 
     // Update payment with Stripe session ID
