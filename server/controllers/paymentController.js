@@ -295,10 +295,22 @@ const handleStripeWebhook = asyncHandler(async (req, res, next) => {
 
           // Update reservation status if exists
           if (payment.reservation) {
-            const reservation = await Reservation.findById(payment.reservation);
+            const reservation = await Reservation.findById(payment.reservation)
+              .populate('customer')
+              .populate('car');
             if (reservation && reservation.status === 'pending') {
               reservation.status = 'confirmed';
               await reservation.save();
+
+              // Send confirmation emails after successful payment
+              console.log('📧 [WEBHOOK] Sending confirmation emails for paid reservation:', reservation.reservationNumber);
+              try {
+                const { sendReservationEmails } = require('../services/emailService');
+                await sendReservationEmails(reservation, reservation.customer, 'webhook_confirmation');
+                console.log('✅ [WEBHOOK] Confirmation emails sent successfully');
+              } catch (emailError) {
+                console.error('❌ [WEBHOOK] Failed to send confirmation emails:', emailError.message);
+              }
             }
           }
         }
