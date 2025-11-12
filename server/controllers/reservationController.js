@@ -1799,8 +1799,8 @@ const sendPaymentNotification = asyncHandler(async (req, res, next) => {
       car_year: reservation.car.year,
 
       // Dates and location
-      start_date: reservation.startDate.toLocaleDateString('sk-SK'),
-      end_date: reservation.endDate.toLocaleDateString('sk-SK'),
+      start_date: reservation.startDate.toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' }),
+      end_date: reservation.endDate.toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' }),
       total_days: reservation.pricing.totalDays,
       pickup_location: reservation.pickupLocation.name,
 

@@ -34,21 +34,23 @@ function prepareReservationEmailData(reservation, car, customer) {
     reservationNumber: reservation.reservationNumber || reservation._id.toString().slice(-8),
     status: reservation.status,
     statusText: getStatusText(reservation.status),
-    startDate: startDate.toLocaleDateString('sk-SK', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
+    startDate: startDate.toLocaleDateString('sk-SK', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: 'Europe/Bratislava'
     }),
-    endDate: endDate.toLocaleDateString('sk-SK', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
+    endDate: endDate.toLocaleDateString('sk-SK', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: 'Europe/Bratislava'
     }),
     duration: duration,
     specialRequests: reservation.specialRequests || reservation.notes || '',
