@@ -216,8 +216,15 @@ const EnhancedCarForm = ({
     }));
 
     // Update imagePreviewUrls to reflect new order
-    // Extract just the URLs in the new order
-    const reorderedPreviewUrls = newlyAddedImages.map(img => img.url);
+    // We need to find the corresponding preview objects for the new images
+    const reorderedPreviewUrls = newlyAddedImages.map(newImg => {
+      // Find the original preview object in imagePreviewUrls
+      // The _id for new images is `new-${index}` where index is the original position
+      const originalIndex = parseInt(newImg._id.replace('new-', ''));
+      return imagePreviewUrls[originalIndex];
+    }).filter(Boolean); // Remove any undefined entries
+
+    console.log('🎯 [DRAG] Reordered preview URLs:', reorderedPreviewUrls);
     setImagePreviewUrls(reorderedPreviewUrls);
 
     // If we're editing and have existing images, save to backend
