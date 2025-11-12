@@ -2681,9 +2681,6 @@ const EnhancedCarForm = ({
               >
                 Nahrať ikonu značky (voliteľné)
               </Button>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                Formát: PNG, max. 500KB (komprimovaná ako obrázky áut)
-              </Typography>
             </Box>
 
             {/* Brand Icon Preview */}
