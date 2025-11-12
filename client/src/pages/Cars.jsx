@@ -1439,7 +1439,7 @@ function Cars() {
       )}
 
       {/* Cars Grid */}
-      <Grid container spacing={3}>
+      <Grid container spacing={4}>
         {filteredCars.map(renderCarCard)}
       </Grid>
 

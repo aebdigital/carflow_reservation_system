@@ -1320,10 +1320,7 @@ const EnhancedCarForm = ({
       <TabPanel value={tabValue} index={3}>
         <Box>
           <Typography variant="h6" gutterBottom>Fotodokumentácia</Typography>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            Ideálne rozmery: 1200x800px, formát JPG/PNG, maximálne 5MB na obrázok
-          </Alert>
-          
+
           {/* Show all images (existing and new) with drag and drop support */}
           {(getCombinedImages().length > 0 || (dialogMode !== 'create' && formData.images && formData.images.length > 0)) && (
             <Box sx={{ mb: 3 }}>
