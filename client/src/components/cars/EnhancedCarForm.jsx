@@ -133,20 +133,19 @@ const EnhancedCarForm = ({
   const getCombinedImages = useCallback(() => {
     console.log('📷 [COMBINED] getCombinedImages called');
     console.log('📷 [COMBINED] Dialog mode:', dialogMode);
-    console.log('📷 [COMBINED] carData?.images (old path):', carData?.images?.map(img => ({ id: img._id, order: img.order })));
-    console.log('📷 [COMBINED] carData?.data?.images (new path):', carData?.data?.images?.map(img => ({ id: img._id, order: img.order })));
-    console.log('📷 [COMBINED] formData.images:', formData.images?.map(img => ({ id: img._id, order: img.order })));
+    console.log('📷 [COMBINED] carData?.data?.images (RTK Query):', carData?.data?.images?.map(img => ({ id: img._id, order: img.order })));
     console.log('📷 [COMBINED] imagePreviewUrls length:', imagePreviewUrls.length);
-    
-    // In edit mode, prefer formData (local state) if it exists, otherwise use RTK Query cache
-    // This ensures drag and drop changes are immediately visible
-    const existingImages = (formData.images && formData.images.length > 0) 
-      ? formData.images 
-      : (dialogMode === 'edit' && carData?.data?.images) 
-        ? carData.data.images 
+
+    // In edit mode, ALWAYS use RTK Query cache as source of truth for existing images
+    // This ensures reordered images from backend are immediately reflected
+    // Only use formData.images in create mode
+    const existingImages = (dialogMode === 'edit' && carData?.data?.images)
+      ? carData.data.images
+      : (dialogMode === 'create' && formData.images && formData.images.length > 0)
+        ? formData.images
         : [];
     console.log('📷 [COMBINED] Using existing images:', existingImages.map(img => ({ id: img._id, order: img.order })));
-    
+
     const newImages = imagePreviewUrls.map((previewData, index) => ({
       _id: `new-${index}`,
       url: previewData.url || previewData,
@@ -155,7 +154,7 @@ const EnhancedCarForm = ({
       order: existingImages.length + index,
       isNew: true
     }));
-    
+
     // Combine all images and ensure first image is primary
     const allImages = [...existingImages, ...newImages];
     const result = allImages.map((image, index) => ({
@@ -163,7 +162,7 @@ const EnhancedCarForm = ({
       order: index,
       isPrimary: index === 0
     }));
-    
+
     console.log('📷 [COMBINED] Final combined images:', result.map(img => ({ id: img._id, order: img.order, isNew: img.isNew })));
     return result;
   }, [dialogMode, carData?.data?.images, formData.images, imagePreviewUrls]);
@@ -209,13 +208,7 @@ const EnhancedCarForm = ({
     console.log('🎯 [DRAG] Existing images to reorder:', existingImages.map(img => ({ id: img._id, order: img.order })));
     console.log('🎯 [DRAG] New images to reorder:', newlyAddedImages.map(img => ({ id: img._id, order: img.order })));
 
-    // Update local state for both existing and new images
-    setFormData(prev => ({
-      ...prev,
-      images: existingImages
-    }));
-
-    // Update imagePreviewUrls to reflect new order
+    // Update imagePreviewUrls to reflect new order for new images
     // We need to find the corresponding preview objects for the new images
     const reorderedPreviewUrls = newlyAddedImages.map(newImg => {
       // Find the original preview object in imagePreviewUrls
@@ -225,7 +218,17 @@ const EnhancedCarForm = ({
     }).filter(Boolean); // Remove any undefined entries
 
     console.log('🎯 [DRAG] Reordered preview URLs:', reorderedPreviewUrls);
+    console.log('🎯 [DRAG] Setting imagePreviewUrls to:', reorderedPreviewUrls.length, 'items');
     setImagePreviewUrls(reorderedPreviewUrls);
+
+    // In create mode, also update formData.images
+    if (dialogMode === 'create') {
+      console.log('🎯 [DRAG] CREATE mode - updating formData.images');
+      setFormData(prev => ({
+        ...prev,
+        images: existingImages
+      }));
+    }
 
     // If we're editing and have existing images, save to backend
     if (dialogMode === 'edit' && existingImages.length > 0 && onReorderImages) {
