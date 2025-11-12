@@ -1828,6 +1828,58 @@ const sendPaymentNotification = asyncHandler(async (req, res, next) => {
       current_year: new Date().getFullYear()
     };
 
+    // For nitra-car users: Generate Stripe payment link for €50
+    if (req.user?.email && (
+      req.user.email.toLowerCase().includes('nitra-car@nitra-car.sk') ||
+      req.user.email.toLowerCase().includes('nitracar') ||
+      req.user.email.toLowerCase().includes('nitra-car')
+    )) {
+      console.log('💳 [STRIPE] Generating payment link for nitra-car payment notification');
+      try {
+        const Settings = require('../models/Settings');
+        const stripeConfig = await Settings.getStripeConfig(req.user.tenantId);
+
+        if (stripeConfig && stripeConfig.secretKey) {
+          const stripe = require('stripe')(stripeConfig.secretKey);
+
+          // Create a Stripe Payment Link for €50
+          const paymentLink = await stripe.paymentLinks.create({
+            line_items: [
+              {
+                price_data: {
+                  currency: 'eur',
+                  product_data: {
+                    name: 'Rezervačný poplatok',
+                    description: `Rezervácia #${reservation.reservationNumber}`,
+                  },
+                  unit_amount: 5000, // €50 in cents
+                },
+                quantity: 1,
+              },
+            ],
+            after_completion: {
+              type: 'hosted_confirmation',
+              hosted_confirmation: {
+                custom_message: 'Ďakujeme za úhradu rezervačného poplatku!',
+              },
+            },
+          });
+
+          emailData.stripe_payment_url = paymentLink.url;
+          emailData.stripe_payment_amount = '50€';
+          console.log('✅ [STRIPE] Payment link created for payment notification:', paymentLink.url);
+        } else {
+          console.warn('⚠️ [STRIPE] No Stripe configuration found for nitra-car tenant');
+          emailData.stripe_payment_url = '';
+        }
+      } catch (error) {
+        console.error('❌ [STRIPE] Error creating payment link for nitra-car payment notification:', error);
+        emailData.stripe_payment_url = '';
+      }
+    } else {
+      emailData.stripe_payment_url = '';
+    }
+
     // Send payment notification email with user context for tenant-specific templates
     await emailService.sendTemplatedEmail(
       reservation.customer.email,

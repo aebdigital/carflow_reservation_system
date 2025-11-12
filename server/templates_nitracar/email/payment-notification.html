@@ -72,49 +72,32 @@
             </td>
         </tr>
 
-        <!-- Price Total -->
+        <!-- Price Total - Fixed €50 -->
         <tr>
             <td style="padding: 0 20px 20px 20px; text-align: center;">
                 <div style="background-color: #fff3e0; padding: 15px; border-radius: 8px;">
-                    <p style="margin: 0; color: #666666; font-size: 14px;">Záloha k úhrade:</p>
-                    <p style="margin: 5px 0 0 0; color: #FF9800; font-size: 28px; font-weight: bold;">{{deposit_amount}}</p>
+                    <p style="margin: 0; color: #666666; font-size: 14px;">Rezervačný poplatok k úhrade:</p>
+                    <p style="margin: 5px 0 0 0; color: #FF9800; font-size: 28px; font-weight: bold;">50€</p>
                 </div>
             </td>
         </tr>
 
-        <!-- Payment Options -->
+        <!-- Stripe Payment Button -->
         <tr>
-            <td style="padding: 20px;">
-                <table style="width: 100%; border-collapse: collapse; background-color: #22D3EE;">
+            <td style="padding: 20px; text-align: center;">
+                <table style="width: 100%; max-width: 500px; margin: 0 auto; background: linear-gradient(135deg, #22D3EE 0%, #1BA3C3 100%); border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
                     <tr>
-                        <td style="padding: 20px;">
-                            <h3 style="color: white; font-size: 18px; margin: 0 0 15px 0;">Možnosti platby:</h3>
-
-                            <div style="margin: 10px 0;">
-                                <div style="width: 30px; height: 30px; background-color: white; border-radius: 50%; display: inline-block; position: relative; margin-right: 10px; vertical-align: middle;">
-                                    <span style="color: #22D3EE; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">1</span>
-                                </div>
-                                <span style="color: white; font-size: 16px; vertical-align: middle;">V hotovosti u nás na pobočke</span>
-                            </div>
-
-                            <div style="margin: 10px 0;">
-                                <div style="width: 30px; height: 30px; background-color: white; border-radius: 50%; display: inline-block; position: relative; margin-right: 10px; vertical-align: middle;">
-                                    <span style="color: #22D3EE; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">2</span>
-                                </div>
-                                <span style="color: white; font-size: 16px; vertical-align: middle;">Bankovým prevodom:</span>
-                            </div>
-
-                            <div style="margin: 10px 0 10px 45px; color: white; font-size: 14px;">
-                                <p style="margin: 5px 0;"><strong>Číslo účtu:</strong> {{bank_account}}</p>
-                                <p style="margin: 5px 0;"><strong>Variabilný symbol:</strong> {{variable_symbol}}</p>
-                            </div>
-
-                            <div style="margin: 10px 0;">
-                                <div style="width: 30px; height: 30px; background-color: white; border-radius: 50%; display: inline-block; position: relative; margin-right: 10px; vertical-align: middle;">
-                                    <span style="color: #22D3EE; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">3</span>
-                                </div>
-                                <span style="color: white; font-size: 16px; vertical-align: middle;">Online prostredníctvom platobnej brány</span>
-                            </div>
+                        <td style="padding: 25px; text-align: center;">
+                            <h3 style="color: #ffffff; font-size: 20px; font-weight: bold; margin: 0 0 10px 0;">💳 Rezervačný poplatok</h3>
+                            <p style="color: #ffffff; font-size: 16px; margin: 0 0 20px 0;">
+                                Pre dokončenie rezervácie prosím uhraďte rezervačný poplatok vo výške <strong style="font-size: 24px;">50€</strong>
+                            </p>
+                            <a href="{{stripe_payment_url}}" target="_blank" style="display: inline-block; padding: 15px 40px; background-color: #ffffff; color: #22D3EE; text-decoration: none; font-size: 18px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); transition: all 0.3s ease;">
+                                Zaplatiť teraz
+                            </a>
+                            <p style="color: #ffffff; font-size: 12px; margin: 15px 0 0 0; opacity: 0.9;">
+                                Bezpečná platba cez Stripe
+                            </p>
                         </td>
                     </tr>
                 </table>
