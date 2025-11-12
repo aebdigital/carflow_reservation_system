@@ -900,9 +900,9 @@ const generateInvoice = asyncHandler(async (req, res, next) => {
     doc.rect(400, 70, 150, 100).stroke();
     doc.fontSize(10).fillColor('#666666')
        .text(`Faktura c.: ${payment.invoice.invoiceNumber || 'N/A'}`, 410, 80)
-       .text(`Datum vystavenia: ${payment.invoice.issuedAt?.toLocaleDateString('sk-SK') || new Date().toLocaleDateString('sk-SK')}`, 410, 95)
-       .text(`Datum splatnosti: ${payment.invoice.dueAt?.toLocaleDateString('sk-SK') || 'Pri obdrzani'}`, 410, 110)
-       .text(`Datum platby: ${payment.invoice.paidAt?.toLocaleDateString('sk-SK') || 'Caka sa'}`, 410, 125)
+       .text(`Datum vystavenia: ${payment.invoice.issuedAt?.toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' }) || new Date().toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' })}`, 410, 95)
+       .text(`Datum splatnosti: ${payment.invoice.dueAt?.toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' }) || 'Pri obdrzani'}`, 410, 110)
+       .text(`Datum platby: ${payment.invoice.paidAt?.toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' }) || 'Caka sa'}`, 410, 125)
        .text(`Stav: ${(payment.status || 'pending') === 'pending' ? 'CAKA SA' : (payment.status || 'pending') === 'succeeded' ? 'ZAPLATENE' : (payment.status || 'CAKA SA').toUpperCase()}`, 410, 140);
 
     // Customer details
@@ -922,7 +922,7 @@ const generateInvoice = asyncHandler(async (req, res, next) => {
          .text(`Rezervacia c.: ${payment.reservation.reservationNumber || 'N/A'}`, 50, 310);
       
       if (payment.reservation.startDate && payment.reservation.endDate) {
-        doc.text(`Obdobie prenajmu: ${new Date(payment.reservation.startDate).toLocaleDateString('sk-SK')} - ${new Date(payment.reservation.endDate).toLocaleDateString('sk-SK')}`, 50, 325);
+        doc.text(`Obdobie prenajmu: ${new Date(payment.reservation.startDate).toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' })} - ${new Date(payment.reservation.endDate).toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' })}`, 50, 325);
       }
       
       if (payment.reservation.car) {

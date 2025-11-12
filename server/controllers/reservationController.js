@@ -1272,7 +1272,7 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
     const docInfoX = pageWidth - 200;
     doc.fontSize(18).font('Helvetica-Bold').fillColor('#1976D2').text('POTVRDENIE OBJEDNAVKY', docInfoX, yPos, { align: 'right' });
     doc.fontSize(12).font('Helvetica').fillColor('#333333').text(`Cislo objednavky: RES${reservation._id.toString().slice(-8)}`, docInfoX, yPos + 25, { align: 'right' });
-    doc.fontSize(12).font('Helvetica').fillColor('#333333').text(`Datum vytvorenia: ${new Date(reservation.createdAt).toLocaleDateString('sk-SK')}`, docInfoX, yPos + 40, { align: 'right' });
+    doc.fontSize(12).font('Helvetica').fillColor('#333333').text(`Datum vytvorenia: ${new Date(reservation.createdAt).toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' })}`, docInfoX, yPos + 40, { align: 'right' });
 
     yPos += 75;
     
@@ -1359,10 +1359,10 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
     
     // Left column
     doc.fontSize(11).font('Helvetica-Bold').fillColor('#333333').text('Datum prevzatia:', margin + 15, yPos + 15);
-    doc.fontSize(11).font('Helvetica').fillColor('#666666').text(startDate.toLocaleDateString('sk-SK'), margin + 15, yPos + 30);
-    
+    doc.fontSize(11).font('Helvetica').fillColor('#666666').text(startDate.toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' }), margin + 15, yPos + 30);
+
     doc.fontSize(11).font('Helvetica-Bold').fillColor('#333333').text('Datum vratenia:', margin + 15, yPos + 45);
-    doc.fontSize(11).font('Helvetica').fillColor('#666666').text(endDate.toLocaleDateString('sk-SK'), margin + 15, yPos + 60);
+    doc.fontSize(11).font('Helvetica').fillColor('#666666').text(endDate.toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' }), margin + 15, yPos + 60);
     
     // Right column
     doc.fontSize(11).font('Helvetica-Bold').fillColor('#333333').text('Doba prenajmu:', margin + contentWidth / 2, yPos + 15);
@@ -1497,7 +1497,7 @@ const generateReservationContract = asyncHandler(async (req, res, next) => {
     
     doc.fontSize(9).font('Helvetica').fillColor('#666666').text('CarFlow - System spravy prenajmu vozidiel', margin, footerY + 10);
     doc.text('Email: info@carflow.sk | Tel: +421 123 456 789', margin, footerY + 25);
-    doc.text(`Vygenerovane: ${new Date().toLocaleDateString('sk-SK')} o ${new Date().toLocaleTimeString('sk-SK')}`, pageWidth - 200, footerY + 10, { align: 'right' });
+    doc.text(`Vygenerovane: ${new Date().toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' })} o ${new Date().toLocaleTimeString('sk-SK', { timeZone: 'Europe/Bratislava' })}`, pageWidth - 200, footerY + 10, { align: 'right' });
     doc.text('Dakujeme za vasu objednavku!', pageWidth - 200, footerY + 25, { align: 'right' });
 
     // Finalize PDF
