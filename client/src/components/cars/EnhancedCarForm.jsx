@@ -239,11 +239,20 @@ const EnhancedCarForm = ({
     // If we're editing and have existing images, save to backend
     if (dialogMode === 'edit' && existingImages.length > 0 && onReorderImages) {
       try {
+        // Extract IDs from reorderedImages, preserving the order and filtering out new images
+        // Important: We use reorderedImages (not existingImages) to maintain the correct order
+        // where new images might be inserted between existing images
         const imageIds = reorderedImages
           .filter(img => !img.isNew && img._id) // Only existing images with IDs
           .map(img => img._id);
 
         console.log('🎯 [DRAG] Image IDs to send to backend:', imageIds);
+        console.log('🎯 [DRAG] Reordered images structure:', reorderedImages.map((img, idx) => ({
+          index: idx,
+          id: img._id,
+          order: img.order,
+          isNew: img.isNew
+        })));
 
         if (imageIds.length > 0) {
           console.log('🎯 [DRAG] Calling onReorderImages...');
@@ -1375,7 +1384,7 @@ const EnhancedCarForm = ({
                           key={image._id || `image-${index}`}
                           draggableId={image._id || `image-${index}`}
                           index={index}
-                          isDragDisabled={dialogMode === 'view'}
+                          isDragDisabled={dialogMode === 'view' || image.isNew}
                         >
                           {(provided, snapshot) => (
                             <Box
