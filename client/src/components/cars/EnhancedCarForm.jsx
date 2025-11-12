@@ -343,12 +343,25 @@ const EnhancedCarForm = ({
   ];
 
   // Car brands for LeRent autocomplete dropdown (preset + custom brands)
+  // Normalize custom brands to extract names (handle both string and object formats)
+  const customBrandNames = customBrands.map(brand =>
+    typeof brand === 'object' && brand.name ? brand.name : brand
+  );
+
   const carBrands = [
     'BMW',
     'Mercedes-Benz',
-    ...customBrands,
+    ...customBrandNames,
     '+ Nová značka'  // Special option to add new brand
   ];
+
+  // Helper to get brand icon if available
+  const getBrandIcon = useCallback((brandName) => {
+    const customBrand = customBrands.find(brand =>
+      typeof brand === 'object' ? brand.name === brandName : brand === brandName
+    );
+    return typeof customBrand === 'object' ? customBrand.icon : null;
+  }, [customBrands]);
 
   // Handle form field changes - memoized to prevent re-renders
   const handleChange = useCallback((field, value, nestedField = null) => {
@@ -472,35 +485,42 @@ const EnhancedCarForm = ({
   }, [newBrandName, brandIconPreview, customBrands, carBrands, handleChange, onShowNotification]);
 
   // Handle deleting a brand (LeRent only)
-  const handleDeleteBrand = useCallback((brandToDelete, event) => {
+  const handleDeleteBrand = useCallback((brandNameToDelete, event) => {
     // Prevent the option from being selected when clicking delete
     if (event) {
       event.stopPropagation();
       event.preventDefault();
     }
 
+    // Check if brand exists in custom brands (handle both string and object formats)
+    const brandExists = customBrands.some(brand =>
+      typeof brand === 'object' ? brand.name === brandNameToDelete : brand === brandNameToDelete
+    );
+
     // Only allow deleting custom brands, not preset ones
-    if (!customBrands.includes(brandToDelete)) {
+    if (!brandExists) {
       if (onShowNotification) {
         onShowNotification('Nemôžete vymazať prednastaveú značku', 'warning');
       }
       return;
     }
 
-    // Remove from custom brands
-    const updatedBrands = customBrands.filter(brand => brand !== brandToDelete);
+    // Remove from custom brands (handle both formats)
+    const updatedBrands = customBrands.filter(brand =>
+      typeof brand === 'object' ? brand.name !== brandNameToDelete : brand !== brandNameToDelete
+    );
     setCustomBrands(updatedBrands);
 
     // Save to localStorage
     localStorage.setItem('lerent_custom_brands', JSON.stringify(updatedBrands));
 
     // If the deleted brand was selected, clear the selection
-    if (formData.brand === brandToDelete) {
+    if (formData.brand === brandNameToDelete) {
       handleChange('brand', '');
     }
 
     if (onShowNotification) {
-      onShowNotification(`Značka "${brandToDelete}" bola odstránená`, 'success');
+      onShowNotification(`Značka "${brandNameToDelete}" bola odstránená`, 'success');
     }
   }, [customBrands, formData.brand, handleChange, onShowNotification]);
 
@@ -814,40 +834,59 @@ const EnhancedCarForm = ({
                   }
                 }}
                 disabled={dialogMode === 'view'}
-                renderOption={(props, option) => (
-                  <Box
-                    component="li"
-                    {...props}
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      '&:hover .delete-icon': {
-                        opacity: 1
-                      }
-                    }}
-                  >
-                    <span>{option}</span>
-                    {/* Show delete icon only for custom brands */}
-                    {customBrands.includes(option) && (
-                      <IconButton
-                        className="delete-icon"
-                        size="small"
-                        onClick={(e) => handleDeleteBrand(option, e)}
-                        sx={{
-                          opacity: 0,
-                          transition: 'opacity 0.2s',
-                          ml: 1,
-                          '&:hover': {
-                            color: 'error.main'
-                          }
-                        }}
-                      >
-                        <CloseIcon fontSize="small" />
-                      </IconButton>
-                    )}
-                  </Box>
-                )}
+                renderOption={(props, option) => {
+                  const brandIcon = getBrandIcon(option);
+                  const isCustomBrand = customBrandNames.includes(option);
+
+                  return (
+                    <Box
+                      component="li"
+                      {...props}
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        '&:hover .delete-icon': {
+                          opacity: 1
+                        }
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {brandIcon && (
+                          <Box
+                            component="img"
+                            src={brandIcon}
+                            alt={option}
+                            sx={{
+                              width: 24,
+                              height: 24,
+                              objectFit: 'contain'
+                            }}
+                          />
+                        )}
+                        <span>{option}</span>
+                      </Box>
+                      {/* Show delete icon only for custom brands */}
+                      {isCustomBrand && (
+                        <IconButton
+                          className="delete-icon"
+                          size="small"
+                          onClick={(e) => handleDeleteBrand(option, e)}
+                          sx={{
+                            opacity: 0,
+                            transition: 'opacity 0.2s',
+                            ml: 1,
+                            '&:hover': {
+                              color: 'error.main'
+                            }
+                          }}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                    </Box>
+                  );
+                }}
                 renderInput={(params) => (
                   <TextField
                     {...params}
