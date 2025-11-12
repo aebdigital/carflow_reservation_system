@@ -548,7 +548,7 @@ reservationSchema.methods.canBeCancelled = function() {
 reservationSchema.statics.findOverlapping = function(carId, startDate, endDate, excludeId = null) {
   const query = {
     car: carId,
-    status: { $in: ['confirmed', 'ongoing'] },
+    status: { $in: ['pending', 'confirmed', 'ongoing'] },
     $or: [
       {
         startDate: { $lte: endDate },
@@ -556,11 +556,11 @@ reservationSchema.statics.findOverlapping = function(carId, startDate, endDate, 
       }
     ]
   };
-  
+
   if (excludeId) {
     query._id = { $ne: excludeId };
   }
-  
+
   return this.find(query);
 };
 

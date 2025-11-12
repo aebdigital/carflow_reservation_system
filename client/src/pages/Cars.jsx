@@ -1473,6 +1473,7 @@ function Cars() {
             onDeleteExistingImage={handleDeleteExistingImage}
             onReorderImages={handleReorderImages}
             onShowNotification={showNotification}
+            user={user}
           />
         </DialogContent>
         

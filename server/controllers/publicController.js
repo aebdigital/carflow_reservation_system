@@ -161,7 +161,7 @@ const getCarsByUser = asyncHandler(async (req, res, next) => {
       const overlappingReservations = await Reservation.find({
         car: car._id,
         tenantId: car.tenantId,
-        status: { $in: ['confirmed', 'ongoing'] },
+        status: { $in: ['pending', 'confirmed', 'ongoing'] },
         $or: [
           {
             startDate: { $lte: start },
@@ -207,7 +207,7 @@ const getCarsByUser = asyncHandler(async (req, res, next) => {
       const overlappingReservations = await Reservation.find({
         car: car._id,
         tenantId: car.tenantId,
-        status: { $in: ['confirmed', 'ongoing'] },
+        status: { $in: ['pending', 'confirmed', 'ongoing'] },
         $or: [
           {
             startDate: { $lte: new Date(startDate) },
@@ -394,7 +394,7 @@ const getCarAvailabilityByUser = asyncHandler(async (req, res, next) => {
     const overlappingReservations = await Reservation.find({
       car: carId,
       tenantId,
-      status: { $in: ['confirmed', 'ongoing'] },
+      status: { $in: ['pending', 'confirmed', 'ongoing'] },
       $or: [
         {
           startDate: { $lte: start },
@@ -2645,7 +2645,7 @@ const getPublicCars = asyncHandler(async (req, res, next) => {
       const overlappingReservations = await Reservation.find({
         car: car._id,
         tenantId: car.tenantId,
-        status: { $in: ['confirmed', 'ongoing'] },
+        status: { $in: ['pending', 'confirmed', 'ongoing'] },
         $or: [
           {
             startDate: { $lte: start },
@@ -2694,7 +2694,7 @@ const getPublicCars = asyncHandler(async (req, res, next) => {
       const overlappingReservations = await Reservation.find({
         car: car._id,
         tenantId: car.tenantId,
-        status: { $in: ['confirmed', 'ongoing'] },
+        status: { $in: ['pending', 'confirmed', 'ongoing'] },
         $or: [
           {
             startDate: { $lte: new Date(startDate) },
@@ -3293,10 +3293,8 @@ const getCarCalendarByUser = asyncHandler(async (req, res, next) => {
   }
 
   // Determine which reservation statuses to include
-  const statusesToInclude = ['confirmed', 'ongoing'];
-  if (includePending === 'true') {
-    statusesToInclude.push('pending');
-  }
+  const statusesToInclude = ['pending', 'confirmed', 'ongoing'];
+  // Note: Pending reservations are now included by default to prevent double-booking
 
   // Get all reservations for this car in the date range (tenant-specific)
   const reservations = await Reservation.find({
@@ -3414,10 +3412,8 @@ const getReservedDatesByUser = asyncHandler(async (req, res, next) => {
   }
 
   // Determine which reservation statuses to include
-  const statusesToInclude = ['confirmed', 'ongoing'];
-  if (includePending === 'true') {
-    statusesToInclude.push('pending');
-  }
+  const statusesToInclude = ['pending', 'confirmed', 'ongoing'];
+  // Note: Pending reservations are now included by default to prevent double-booking
 
   // Get all reservations for these cars in the date range
   const reservations = await Reservation.find({
@@ -3514,10 +3510,8 @@ const getPublicCarCalendar = asyncHandler(async (req, res, next) => {
   }
 
   // Determine which reservation statuses to include
-  const statusesToInclude = ['confirmed', 'ongoing'];
-  if (includePending === 'true') {
-    statusesToInclude.push('pending');
-  }
+  const statusesToInclude = ['pending', 'confirmed', 'ongoing'];
+  // Note: Pending reservations are now included by default to prevent double-booking
 
   // Get all reservations for this car in the date range
   const reservations = await Reservation.find({
@@ -4586,7 +4580,7 @@ const getCarsByBrandByUser = asyncHandler(async (req, res, next) => {
         const overlappingReservations = await Reservation.find({
           car: car._id,
           tenantId: car.tenantId,
-          status: { $in: ['confirmed', 'ongoing'] },
+          status: { $in: ['pending', 'confirmed', 'ongoing'] },
           $or: [
             {
               startDate: { $lte: new Date(startDate) },
@@ -4732,7 +4726,7 @@ const getCarsByEquipmentByUser = asyncHandler(async (req, res, next) => {
         const overlappingReservations = await Reservation.find({
           car: car._id,
           tenantId: car.tenantId,
-          status: { $in: ['confirmed', 'ongoing'] },
+          status: { $in: ['pending', 'confirmed', 'ongoing'] },
           $or: [
             {
               startDate: { $lte: new Date(startDate) },
@@ -4915,7 +4909,7 @@ const searchCarsByUser = asyncHandler(async (req, res, next) => {
         const overlappingReservations = await Reservation.find({
           car: car._id,
           tenantId: car.tenantId,
-          status: { $in: ['confirmed', 'ongoing'] },
+          status: { $in: ['pending', 'confirmed', 'ongoing'] },
           $or: [
             {
               startDate: { $lte: new Date(startDate) },

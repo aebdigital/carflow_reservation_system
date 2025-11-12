@@ -53,7 +53,12 @@ const carSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['economy', 'compact', 'midsize', 'fullsize', 'luxury', 'suv', 'minivan', 'convertible', 'sports', 'utility', 'caravan', 'motorcycle', 'electric']
+    enum: [
+      // Default categories (for all tenants)
+      'economy', 'compact', 'midsize', 'fullsize', 'luxury', 'suv', 'minivan', 'convertible', 'sports', 'utility', 'caravan', 'motorcycle', 'electric',
+      // LeRent-specific categories
+      'sedan', 'kombi', 'sport', 'premium', 'viacmiestne', 'elektro', 'uzitkove'
+    ]
   },
   
   // 2. TECHNICKÉ ÚDAJE
@@ -70,7 +75,7 @@ const carSchema = new mongoose.Schema({
   },
   drivetrain: {
     type: String,
-    enum: ['front', 'rear', 'awd', '4wd'],
+    enum: ['front', 'rear', 'awd'],
     default: 'front'
   },
   transmission: {
@@ -194,7 +199,9 @@ const carSchema = new mongoose.Schema({
       '11-17days': Number,
       '18-24days': Number,
       '25-29days': Number,
-      '30plus': String // "dohoda - volať/písať mail"
+      '30-60days': Number, // For LeRent only
+      '60plus': String, // "dohoda - volať/písať mail" (LeRent only)
+      '30plus': String // "dohoda - volať/písať mail" (for other tenants)
     },
     weeklyRate: Number,
     monthlyRate: Number,
@@ -635,7 +642,7 @@ carSchema.methods.isAvailableForBooking = function() {
 // Method to calculate total rate based on period
 carSchema.methods.calculateRate = function(days) {
   const rates = this.pricing?.rates || {};
-  
+
   // Check specific day ranges first
   if (days === 1 && rates['1day']) return rates['1day'];
   if (days >= 2 && days <= 3 && rates['2-3days']) return rates['2-3days'] * days;
@@ -643,18 +650,21 @@ carSchema.methods.calculateRate = function(days) {
   if (days >= 11 && days <= 17 && rates['11-17days']) return rates['11-17days'] * days;
   if (days >= 18 && days <= 24 && rates['18-24days']) return rates['18-24days'] * days;
   if (days >= 25 && days <= 29 && rates['25-29days']) return rates['25-29days'] * days;
-  
+  if (days >= 30 && days <= 60 && rates['30-60days']) return rates['30-60days'] * days;
+
   // Fallback to pricing rates or legacy fields
   const dailyRate = this.pricing?.dailyRate || this.dailyRate || 0;
   const weeklyRate = this.pricing?.weeklyRate || this.weeklyRate;
   const monthlyRate = this.pricing?.monthlyRate || this.monthlyRate;
-  
-  if (days >= 30 && monthlyRate) {
+
+  if (days >= 61 && monthlyRate) {
+    return Math.floor(days / 30) * monthlyRate + (days % 30) * dailyRate;
+  } else if (days >= 30 && monthlyRate) {
     return Math.floor(days / 30) * monthlyRate + (days % 30) * dailyRate;
   } else if (days >= 7 && weeklyRate) {
     return Math.floor(days / 7) * weeklyRate + (days % 7) * dailyRate;
   }
-  
+
   return days * dailyRate;
 };
 

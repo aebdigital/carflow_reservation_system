@@ -78,12 +78,24 @@ class EmailTemplateService {
       const templatesPath = this.getTemplatePath(senderEmail);
       const templatePath = path.join(templatesPath, `${templateName}.html`);
       const templateContent = await fs.readFile(templatePath, 'utf8');
-      
+
       // Cache the template for future use
       this.templateCache.set(cacheKey, templateContent);
-      
+
       return templateContent;
     } catch (error) {
+      // For LeRent, do NOT fallback - throw error to skip email sending
+      const isLerent = senderEmail && (
+        senderEmail === process.env.LERENT_EMAIL_FROM ||
+        senderEmail.includes('lerent@lerent.sk') ||
+        senderEmail.includes('lerent')
+      );
+
+      if (isLerent) {
+        console.error(`❌ [LERENT] Template '${templateName}' not found - SKIPPING email (no fallback for LeRent)`);
+        throw new Error(`LERENT_TEMPLATE_NOT_FOUND: ${templateName}`);
+      }
+
       console.error(`Error loading email template '${templateName}':`, error);
       throw new Error(`Failed to load email template: ${templateName}`);
     }

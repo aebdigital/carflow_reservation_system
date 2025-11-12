@@ -20,7 +20,7 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: parseInt(process.env.MAX_IMAGE_SIZE) || 5242880, // 5MB default
+    fileSize: parseInt(process.env.MAX_IMAGE_SIZE) || 10485760, // 10MB default
     files: parseInt(process.env.MAX_IMAGES_PER_CAR) || 10
   }
 });
@@ -35,7 +35,7 @@ const uploadMultipleCarImages = upload.array('images', parseInt(process.env.MAX_
 const handleMulterError = (error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
-      return next(new AppError('File too large. Maximum size is 5MB.', 400));
+      return next(new AppError('File too large. Maximum size is 10MB.', 400));
     }
     if (error.code === 'LIMIT_FILE_COUNT') {
       return next(new AppError(`Too many files. Maximum ${process.env.MAX_IMAGES_PER_CAR || 10} images allowed.`, 400));

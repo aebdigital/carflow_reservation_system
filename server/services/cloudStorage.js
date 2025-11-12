@@ -82,14 +82,15 @@ class CloudStorageService {
 
     // Image processing settings
     this.imageSettings = {
-      maxSize: parseInt(process.env.MAX_IMAGE_SIZE) || 5242880, // 5MB
+      maxSize: parseInt(process.env.MAX_IMAGE_SIZE) || 10485760, // 10MB (increased from 5MB)
       allowedTypes: (process.env.ALLOWED_IMAGE_TYPES || 'image/jpeg,image/png,image/webp').split(','),
       maxImagesPerCar: parseInt(process.env.MAX_IMAGES_PER_CAR) || 10,
-      quality: 85,
+      uploadOriginalOnly: false, // Create multiple sizes for better performance
+      quality: 95, // High quality with minimal compression
+      largeQuality: 98, // Even higher quality for large/detail view images
       sizes: {
-        thumbnail: { width: 300, height: 200 },
-        medium: { width: 800, height: 600 },
-        large: { width: 1200, height: 900 }
+        thumbnail: { width: 400, height: 300 },
+        large: { width: 1920, height: 1440 }
       }
     };
   }
@@ -152,28 +153,55 @@ class CloudStorageService {
       // Generate unique filename
       const fileExtension = path.extname(originalName).toLowerCase();
       const baseFileName = `${uuidv4()}${fileExtension}`;
-      
+
       // Use user-specific folder path for complete tenant separation
       const folderPath = `${user.storageFolder}/cars/${carId}`;
 
-      // Process and upload different sizes
+      // If uploadOriginalOnly is true, skip compression and upload full-size image
+      if (this.imageSettings.uploadOriginalOnly) {
+        console.log(`🖼️ [ORIGINAL UPLOAD] Uploading full-size image without compression: ${baseFileName}`);
+
+        // Determine content type
+        const contentType = fileType;
+        const fileName = `${folderPath}/${baseFileName}`;
+
+        // Upload original file directly without processing
+        const result = await this.uploadToGCS(fileBuffer, fileName, contentType);
+
+        // Return simplified result with single URL
+        return {
+          filename: baseFileName,
+          description: description,
+          urls: {
+            thumbnail: result.url,
+            medium: result.url,
+            large: result.url,
+            original: result.url
+          },
+          uploadDate: new Date(),
+          tenantId: user.tenantId,
+          userId: user._id
+        };
+      }
+
+      // Process and upload different sizes (original behavior)
       const uploadPromises = await this.processAndUploadSizes(
-        fileBuffer, 
-        folderPath, 
+        fileBuffer,
+        folderPath,
         baseFileName
       );
 
       const results = await Promise.all(uploadPromises);
-      
+
       // Return structured result
       return {
         filename: baseFileName,
         description: description,
         urls: {
           thumbnail: results[0].url,
-          medium: results[1].url,
-          large: results[2].url,
-          original: results[3].url
+          medium: results[1].url, // Using large for medium (car detail page)
+          large: results[1].url,
+          original: results[2].url
         },
         uploadDate: new Date(),
         tenantId: user.tenantId,
@@ -267,43 +295,17 @@ class CloudStorageService {
         .jpeg({ quality: this.imageSettings.quality })
         .toBuffer();
     }
-    
+
     promises.push(this.uploadToGCS(
-      thumbnailBuffer, 
+      thumbnailBuffer,
       `${folderPath}/${name}_thumbnail${outputExt}`,
       contentType
     ));
 
-    // Medium
-    let mediumBuffer;
-    if (isPNG) {
-      mediumBuffer = await sharp(fileBuffer)
-        .resize(this.imageSettings.sizes.medium.width, this.imageSettings.sizes.medium.height, {
-          fit: 'inside',
-          withoutEnlargement: true,
-          background: { r: 0, g: 0, b: 0, alpha: 0 } // Transparent background
-        })
-        .png({ compressionLevel: 6 })
-        .toBuffer();
-    } else {
-      mediumBuffer = await sharp(fileBuffer)
-        .resize(this.imageSettings.sizes.medium.width, this.imageSettings.sizes.medium.height, {
-          fit: 'inside',
-          withoutEnlargement: true
-        })
-        .jpeg({ quality: this.imageSettings.quality })
-        .toBuffer();
-    }
-    
-    promises.push(this.uploadToGCS(
-      mediumBuffer, 
-      `${folderPath}/${name}_medium${outputExt}`,
-      contentType
-    ));
-
-    // Large
+    // Large (used for car detail page and zoom - high quality)
     let largeBuffer;
     if (isPNG) {
+      console.log(`🖼️ [LARGE] Processing as PNG with transparency preservation at 98% quality`);
       largeBuffer = await sharp(fileBuffer)
         .resize(this.imageSettings.sizes.large.width, this.imageSettings.sizes.large.height, {
           fit: 'inside',
@@ -313,17 +315,18 @@ class CloudStorageService {
         .png({ compressionLevel: 6 })
         .toBuffer();
     } else {
+      console.log(`🖼️ [LARGE] Processing as JPEG at ${this.imageSettings.largeQuality}% quality`);
       largeBuffer = await sharp(fileBuffer)
         .resize(this.imageSettings.sizes.large.width, this.imageSettings.sizes.large.height, {
           fit: 'inside',
           withoutEnlargement: true
         })
-        .jpeg({ quality: this.imageSettings.quality })
+        .jpeg({ quality: this.imageSettings.largeQuality })
         .toBuffer();
     }
-    
+
     promises.push(this.uploadToGCS(
-      largeBuffer, 
+      largeBuffer,
       `${folderPath}/${name}_large${outputExt}`,
       contentType
     ));
@@ -339,9 +342,9 @@ class CloudStorageService {
         .jpeg({ quality: this.imageSettings.quality })
         .toBuffer();
     }
-    
+
     promises.push(this.uploadToGCS(
-      originalBuffer, 
+      originalBuffer,
       `${folderPath}/${name}${outputExt}`,
       contentType
     ));
@@ -403,7 +406,6 @@ class CloudStorageService {
         
         const filesToDelete = [
           `${folderPath}${name}_thumbnail${ext}`,
-          `${folderPath}${name}_medium${ext}`,
           `${folderPath}${name}_large${ext}`,
           `${folderPath}${filename}`
         ];
@@ -548,22 +550,22 @@ class CloudStorageService {
 
       // Process and upload different sizes
       const uploadPromises = await this.processAndUploadSizes(
-        fileBuffer, 
-        folderPath, 
+        fileBuffer,
+        folderPath,
         baseFileName
       );
 
       const results = await Promise.all(uploadPromises);
-      
+
       // Return structured result
       return {
         filename: baseFileName,
         description: description,
         urls: {
           thumbnail: results[0].url,
-          medium: results[1].url,
-          large: results[2].url,
-          original: results[3].url
+          medium: results[1].url, // Using large for medium
+          large: results[1].url,
+          original: results[2].url
         },
         uploadDate: new Date(),
         tenantId: user.tenantId,
@@ -593,13 +595,12 @@ class CloudStorageService {
       
       const filesToDelete = [
         `${folderPath}${name}_thumbnail${ext}`,
-        `${folderPath}${name}_medium${ext}`,
         `${folderPath}${name}_large${ext}`,
         `${folderPath}${filename}`
       ];
 
       await Promise.all(
-        filesToDelete.map(file => 
+        filesToDelete.map(file =>
           this.bucket.file(file).delete().catch(() => {
             // Ignore errors for non-existent files
           })
@@ -645,22 +646,22 @@ class CloudStorageService {
 
       // Process and upload different sizes (banners need higher quality and larger sizes)
       const uploadPromises = await this.processAndUploadBannerSizes(
-        fileBuffer, 
-        folderPath, 
+        fileBuffer,
+        folderPath,
         baseFileName
       );
 
       const results = await Promise.all(uploadPromises);
-      
+
       // Return structured result
       return {
         filename: baseFileName,
         description: description,
         urls: {
           thumbnail: results[0].url,
-          medium: results[1].url,
-          large: results[2].url,
-          original: results[3].url
+          medium: results[1].url, // Using large for medium
+          large: results[1].url,
+          original: results[2].url
         },
         uploadDate: new Date(),
         tenantId: user.tenantId,
@@ -686,9 +687,9 @@ class CloudStorageService {
     // Banner-specific sizes (larger and higher quality for display)
     const bannerSizes = {
       thumbnail: { width: 400, height: 250 }, // Larger thumbnail for previews
-      medium: { width: 1200, height: 800 },   // Higher medium for desktop
       large: { width: 1920, height: 1080 },   // Full HD for large displays
-      quality: 95 // Higher quality for banners (vs 85 for regular images)
+      quality: 95, // Quality for thumbnails
+      largeQuality: 98 // Higher quality for large banners
     };
 
     // Determine output format and content type based on input
@@ -715,41 +716,14 @@ class CloudStorageService {
         .jpeg({ quality: bannerSizes.quality })
         .toBuffer();
     }
-    
+
     promises.push(this.uploadToGCS(
-      thumbnailBuffer, 
+      thumbnailBuffer,
       `${folderPath}/${name}_thumbnail${outputExt}`,
       contentType
     ));
 
-    // Medium (higher resolution than standard)
-    let mediumBuffer;
-    if (isPNG) {
-      mediumBuffer = await sharp(fileBuffer)
-        .resize(bannerSizes.medium.width, bannerSizes.medium.height, {
-          fit: 'inside',
-          withoutEnlargement: true,
-          background: { r: 0, g: 0, b: 0, alpha: 0 } // Transparent background
-        })
-        .png({ compressionLevel: 6 })
-        .toBuffer();
-    } else {
-      mediumBuffer = await sharp(fileBuffer)
-        .resize(bannerSizes.medium.width, bannerSizes.medium.height, {
-          fit: 'inside',
-          withoutEnlargement: true
-        })
-        .jpeg({ quality: bannerSizes.quality })
-        .toBuffer();
-    }
-    
-    promises.push(this.uploadToGCS(
-      mediumBuffer, 
-      `${folderPath}/${name}_medium${outputExt}`,
-      contentType
-    ));
-
-    // Large (Full HD)
+    // Large (Full HD - used for all banner displays)
     let largeBuffer;
     if (isPNG) {
       largeBuffer = await sharp(fileBuffer)
@@ -766,12 +740,12 @@ class CloudStorageService {
           fit: 'inside',
           withoutEnlargement: true
         })
-        .jpeg({ quality: bannerSizes.quality })
+        .jpeg({ quality: bannerSizes.largeQuality })
         .toBuffer();
     }
-    
+
     promises.push(this.uploadToGCS(
-      largeBuffer, 
+      largeBuffer,
       `${folderPath}/${name}_large${outputExt}`,
       contentType
     ));
@@ -784,12 +758,12 @@ class CloudStorageService {
         .toBuffer();
     } else {
       originalBuffer = await sharp(fileBuffer)
-        .jpeg({ quality: bannerSizes.quality })
+        .jpeg({ quality: bannerSizes.largeQuality })
         .toBuffer();
     }
-    
+
     promises.push(this.uploadToGCS(
-      originalBuffer, 
+      originalBuffer,
       `${folderPath}/${name}${outputExt}`,
       contentType
     ));
@@ -814,13 +788,12 @@ class CloudStorageService {
       
       const filesToDelete = [
         `${folderPath}${name}_thumbnail${ext}`,
-        `${folderPath}${name}_medium${ext}`,
         `${folderPath}${name}_large${ext}`,
         `${folderPath}${filename}`
       ];
 
       await Promise.all(
-        filesToDelete.map(file => 
+        filesToDelete.map(file =>
           this.bucket.file(file).delete().catch(() => {
             // Ignore errors for non-existent files
           })
@@ -866,22 +839,22 @@ class CloudStorageService {
 
       // Process and upload different sizes
       const uploadPromises = await this.processAndUploadSizes(
-        fileBuffer, 
-        folderPath, 
+        fileBuffer,
+        folderPath,
         baseFileName
       );
 
       const results = await Promise.all(uploadPromises);
-      
+
       // Return structured result
       return {
         filename: baseFileName,
         description: description,
         urls: {
           thumbnail: results[0].url,
-          medium: results[1].url,
-          large: results[2].url,
-          original: results[3].url
+          medium: results[1].url, // Using large for medium
+          large: results[1].url,
+          original: results[2].url
         },
         uploadDate: new Date(),
         tenantId: user.tenantId,
@@ -911,13 +884,12 @@ class CloudStorageService {
       
       const filesToDelete = [
         `${folderPath}${name}_thumbnail${ext}`,
-        `${folderPath}${name}_medium${ext}`,
         `${folderPath}${name}_large${ext}`,
         `${folderPath}${filename}`
       ];
 
       await Promise.all(
-        filesToDelete.map(file => 
+        filesToDelete.map(file =>
           this.bucket.file(file).delete().catch(() => {
             // Ignore errors for non-existent files
           })

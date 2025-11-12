@@ -118,11 +118,22 @@ class EmailService {
         to,
         templateName,
         senderEmail,
-        isNitraCarUser: user?.email === 'nitra-car@nitra-car.sk'
+        isNitraCarUser: user?.email === 'nitra-car@nitra-car.sk',
+        isLeRentUser: user?.email === 'lerent@lerent.sk'
       });
 
       // Load template using tenant-aware service
-      const template = await emailTemplateService.loadTemplate(templateName, senderEmail);
+      let template;
+      try {
+        template = await emailTemplateService.loadTemplate(templateName, senderEmail);
+      } catch (error) {
+        // Check if this is a LeRent template not found error
+        if (error.message && error.message.includes('LERENT_TEMPLATE_NOT_FOUND')) {
+          console.warn(`⚠️ [LERENT] Skipping email - template '${templateName}' not found (no fallback for LeRent)`);
+          return { success: false, skipped: true, reason: 'LeRent template not found' };
+        }
+        throw error;
+      }
 
       // Handle conditional blocks (simple if/else logic)
       // Handle {{#if variable}} ... {{/if}} blocks

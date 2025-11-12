@@ -27,7 +27,12 @@ import {
   AccordionSummary,
   AccordionDetails,
   Tooltip,
-  Badge
+  Badge,
+  Autocomplete,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import {
@@ -50,10 +55,10 @@ import DamageModal from './DamageModal';
 import { useGetCarQuery, useGetGlobalEquipmentQuery } from '../../store/store';
 
 // Enhanced car form with comprehensive features
-const EnhancedCarForm = ({ 
-  formData, 
-  setFormData, 
-  formErrors, 
+const EnhancedCarForm = ({
+  formData,
+  setFormData,
+  formErrors,
   dialogMode = 'create',
   carId,
   onImageChange,
@@ -62,7 +67,8 @@ const EnhancedCarForm = ({
   imagePreviewUrls = [],
   onDeleteExistingImage,
   onReorderImages,
-  onShowNotification
+  onShowNotification,
+  user
 }) => {
   // Reduce logging frequency to prevent performance issues
   const renderCount = useRef(0);
@@ -85,6 +91,15 @@ const EnhancedCarForm = ({
   const [editingEquipmentIndex, setEditingEquipmentIndex] = useState(null);
   const [equipmentIconFile, setEquipmentIconFile] = useState(null);
   const [equipmentIconPreview, setEquipmentIconPreview] = useState(null);
+
+  // Brand management state (LeRent only)
+  const [brandDialogOpen, setBrandDialogOpen] = useState(false);
+  const [newBrandName, setNewBrandName] = useState('');
+  const [customBrands, setCustomBrands] = useState(() => {
+    // Load custom brands from localStorage
+    const saved = localStorage.getItem('lerent_custom_brands');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   // Add ref for file input
   const fileInputRef = useRef(null);
@@ -235,8 +250,21 @@ const EnhancedCarForm = ({
     }
   }, [getCombinedImages, setFormData, onShowNotification, onReorderImages, dialogMode, carId]);
 
-  // Enhanced options with new categories
-  const categoryOptions = [
+  // Enhanced options with new categories (tenant-specific)
+  const isLeRent = user?.email?.toLowerCase() === 'lerent@lerent.sk';
+
+  const categoryOptions = isLeRent ? [
+    // LeRent-specific categories
+    { value: 'sedan', label: 'Sedan' },
+    { value: 'kombi', label: 'Kombi' },
+    { value: 'sport', label: 'Sport' },
+    { value: 'suv', label: 'SUV' },
+    { value: 'premium', label: 'Premium' },
+    { value: 'viacmiestne', label: 'Viacmiestne' },
+    { value: 'elektro', label: 'Elektro' },
+    { value: 'uzitkove', label: 'Úžitkové' }
+  ] : [
+    // Default categories (for other tenants)
     { value: 'economy', label: 'Ekonomická trieda' },
     { value: 'compact', label: 'Kompaktné vozidlá' },
     { value: 'midsize', label: 'Stredná trieda' },
@@ -262,8 +290,7 @@ const EnhancedCarForm = ({
   const drivetrainOptions = [
     { value: 'front', label: 'Predný pohon' },
     { value: 'rear', label: 'Zadný pohon' },
-    { value: 'awd', label: 'Pohon všetkých kolies' },
-    { value: '4wd', label: '4x4' }
+    { value: 'awd', label: 'Pohon všetkých kolies' }
   ];
 
   const transmissionOptions = [
@@ -276,6 +303,14 @@ const EnhancedCarForm = ({
     { value: 'active', label: 'Aktívne', color: 'success' },
     { value: 'unavailable', label: 'Nedostupné', color: 'warning' },
     { value: 'archived', label: 'Archivované', color: 'error' }
+  ];
+
+  // Car brands for LeRent autocomplete dropdown (preset + custom brands)
+  const carBrands = [
+    'BMW',
+    'Mercedes-Benz',
+    ...customBrands,
+    '+ Nová značka'  // Special option to add new brand
   ];
 
   // Handle form field changes - memoized to prevent re-renders
@@ -325,6 +360,74 @@ const EnhancedCarForm = ({
       return updated;
     });
   }, []);
+
+  // Handle adding a new brand (LeRent only)
+  const handleAddNewBrand = useCallback(() => {
+    if (!newBrandName.trim()) {
+      return;
+    }
+
+    const brandToAdd = newBrandName.trim();
+
+    // Check if brand already exists
+    if (carBrands.includes(brandToAdd)) {
+      if (onShowNotification) {
+        onShowNotification('Táto značka už existuje', 'warning');
+      }
+      return;
+    }
+
+    // Add to custom brands
+    const updatedBrands = [...customBrands, brandToAdd];
+    setCustomBrands(updatedBrands);
+
+    // Save to localStorage
+    localStorage.setItem('lerent_custom_brands', JSON.stringify(updatedBrands));
+
+    // Set as selected brand
+    handleChange('brand', brandToAdd);
+
+    // Close dialog and reset
+    setBrandDialogOpen(false);
+    setNewBrandName('');
+
+    if (onShowNotification) {
+      onShowNotification(`Značka "${brandToAdd}" bola pridaná`, 'success');
+    }
+  }, [newBrandName, customBrands, carBrands, handleChange, onShowNotification]);
+
+  // Handle deleting a brand (LeRent only)
+  const handleDeleteBrand = useCallback((brandToDelete, event) => {
+    // Prevent the option from being selected when clicking delete
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+
+    // Only allow deleting custom brands, not preset ones
+    if (!customBrands.includes(brandToDelete)) {
+      if (onShowNotification) {
+        onShowNotification('Nemôžete vymazať prednastaveú značku', 'warning');
+      }
+      return;
+    }
+
+    // Remove from custom brands
+    const updatedBrands = customBrands.filter(brand => brand !== brandToDelete);
+    setCustomBrands(updatedBrands);
+
+    // Save to localStorage
+    localStorage.setItem('lerent_custom_brands', JSON.stringify(updatedBrands));
+
+    // If the deleted brand was selected, clear the selection
+    if (formData.brand === brandToDelete) {
+      handleChange('brand', '');
+    }
+
+    if (onShowNotification) {
+      onShowNotification(`Značka "${brandToDelete}" bola odstránená`, 'success');
+    }
+  }, [customBrands, formData.brand, handleChange, onShowNotification]);
 
   // Tab panel component - memoized to prevent re-renders
   const TabPanel = useCallback(({ children, value, index, ...other }) => (
@@ -615,15 +718,82 @@ const EnhancedCarForm = ({
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Značka"
-              value={formData.brand || ''}
-              onChange={(e) => handleChange('brand', e.target.value)}
-              disabled={dialogMode === 'view'}
-              error={!!formErrors.brand}
-              helperText={formErrors.brand}
-            />
+            {isLeRent ? (
+              // LeRent: Autocomplete dropdown with ability to add custom brand
+              <Autocomplete
+                freeSolo
+                options={carBrands}
+                value={formData.brand || ''}
+                onChange={(event, newValue) => {
+                  // Check if user selected "Nova značka"
+                  if (newValue === '+ Nová značka') {
+                    setBrandDialogOpen(true);
+                  } else {
+                    handleChange('brand', newValue || '');
+                  }
+                }}
+                onInputChange={(event, newInputValue) => {
+                  // Allow typing custom brand (but not the special option)
+                  if (event?.type === 'change' && newInputValue !== '+ Nová značka') {
+                    handleChange('brand', newInputValue);
+                  }
+                }}
+                disabled={dialogMode === 'view'}
+                renderOption={(props, option) => (
+                  <Box
+                    component="li"
+                    {...props}
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      '&:hover .delete-icon': {
+                        opacity: 1
+                      }
+                    }}
+                  >
+                    <span>{option}</span>
+                    {/* Show delete icon only for custom brands */}
+                    {customBrands.includes(option) && (
+                      <IconButton
+                        className="delete-icon"
+                        size="small"
+                        onClick={(e) => handleDeleteBrand(option, e)}
+                        sx={{
+                          opacity: 0,
+                          transition: 'opacity 0.2s',
+                          ml: 1,
+                          '&:hover': {
+                            color: 'error.main'
+                          }
+                        }}
+                      >
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                  </Box>
+                )}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Značka"
+                    error={!!formErrors.brand}
+                    helperText={formErrors.brand || 'Vyberte zo zoznamu, napíšte vlastnú značku alebo pridajte novú'}
+                  />
+                )}
+              />
+            ) : (
+              // Other tenants: Regular text field
+              <TextField
+                fullWidth
+                label="Značka"
+                value={formData.brand || ''}
+                onChange={(e) => handleChange('brand', e.target.value)}
+                disabled={dialogMode === 'view'}
+                error={!!formErrors.brand}
+                helperText={formErrors.brand}
+              />
+            )}
           </Grid>
           
           <Grid item xs={12} md={6}>
@@ -1656,15 +1826,47 @@ const EnhancedCarForm = ({
               />
             </Grid>
 
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="30+ dní"
-                value="dohoda - volať/písať mail"
-                disabled
-                helperText="Pre dlhodobé prenájmy"
-              />
-            </Grid>
+            {/* Conditional rendering based on user email */}
+            {user?.email?.toLowerCase() === 'lerent@lerent.sk' ? (
+              <>
+                {/* LeRent: 30-60 days (number input) */}
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="30-60 dní"
+                    type="number"
+                    value={formData.pricing?.rates?.['30-60days'] || ''}
+                    onChange={(e) => handleNestedChange('pricing.rates.30-60days', parseFloat(e.target.value))}
+                    disabled={dialogMode === 'view'}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                    }}
+                  />
+                </Grid>
+
+                {/* LeRent: 60+ days (contact message) */}
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="60+ dní"
+                    value="dohoda - volať/písať mail"
+                    disabled
+                    helperText="Pre veľmi dlhodobé prenájmy"
+                  />
+                </Grid>
+              </>
+            ) : (
+              /* Other tenants: 30+ days (contact message) */
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="30+ dní"
+                  value="dohoda - volať/písať mail"
+                  disabled
+                  helperText="Pre dlhodobé prenájmy"
+                />
+              </Grid>
+            )}
 
             <Grid item xs={12}>
               <Divider sx={{ my: 3 }} />
@@ -2264,6 +2466,56 @@ const EnhancedCarForm = ({
         damage={selectedDamage}
         mode={damageModalMode}
       />
+
+      {/* Add New Brand Dialog (LeRent only) */}
+      {isLeRent && (
+        <Dialog
+          open={brandDialogOpen}
+          onClose={() => {
+            setBrandDialogOpen(false);
+            setNewBrandName('');
+          }}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Pridať novú značku</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Názov značky"
+              type="text"
+              fullWidth
+              value={newBrandName}
+              onChange={(e) => setNewBrandName(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleAddNewBrand();
+                }
+              }}
+              helperText="Zadajte názov novej značky automobilu"
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => {
+                setBrandDialogOpen(false);
+                setNewBrandName('');
+              }}
+            >
+              Zrušiť
+            </Button>
+            <Button
+              onClick={handleAddNewBrand}
+              variant="contained"
+              startIcon={<AddIcon />}
+              disabled={!newBrandName.trim()}
+            >
+              Pridať značku
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </Box>
   );
 };

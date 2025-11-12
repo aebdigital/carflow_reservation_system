@@ -95,6 +95,36 @@ class SMTP2GOService {
     return isRivalTenant;
   }
 
+  /**
+   * Check if error is a LeRent template not found error
+   * @param {Error} error - Error object to check
+   */
+  isLeRentTemplateError(error) {
+    return error && error.message && error.message.includes('LERENT_TEMPLATE_NOT_FOUND');
+  }
+
+  /**
+   * Safely load email template with LeRent-specific error handling
+   * Returns null if LeRent template not found, throws for other errors
+   * @param {string} templateName - Template name
+   * @param {Object} templateVariables - Template variables
+   * @param {string} senderEmail - Sender email
+   */
+  async safeLoadEmailTemplate(templateName, templateVariables, senderEmail) {
+    const emailTemplateService = require('./emailTemplateService');
+    try {
+      return await emailTemplateService.getEmailTemplate(templateName, templateVariables, senderEmail);
+    } catch (error) {
+      // For LeRent, if template doesn't exist, skip email completely (no fallback)
+      if (this.isLeRentTemplateError(error)) {
+        console.warn(`⚠️ [LERENT] Skipping email - template '${templateName}' not found (no fallback for LeRent)`);
+        return null;
+      }
+      // For other tenants/errors, throw the error
+      throw error;
+    }
+  }
+
   async sendEmail(to, subject, html, text = null, user = null) {
     if (!this.isConfigured) {
       throw new Error('SMTP2GO service not properly configured. Please set SMTP2GO_API_KEY.');
@@ -640,12 +670,18 @@ class SMTP2GOService {
       show_bank_details: templateVariables.show_bank_details
     });
 
-    // Get processed email template with sender-specific template folder
-    const emailData = await emailTemplateService.getEmailTemplate('reservation-confirmation', templateVariables, senderEmail);
-    
+    // Get processed email template with sender-specific template folder (safe for LeRent)
+    const emailData = await this.safeLoadEmailTemplate('reservation-confirmation', templateVariables, senderEmail);
+
+    // If LeRent template doesn't exist, skip email (no fallback)
+    if (!emailData) {
+      console.warn(`⚠️ [LERENT] Skipping reservation confirmation email - template not found`);
+      return { success: false, skipped: true, reason: 'LeRent template not found' };
+    }
+
     // Override subject to match exact specification
     const subject = '📥 Rezervácia prijatá';
-    
+
     return this.sendEmail(to, subject, emailData.html, null, user);
   }
 
@@ -821,7 +857,11 @@ class SMTP2GOService {
 
     // Get processed email template with sender-specific template folder
     console.log('📧 [EMAIL DEBUG] Getting email template with variables...');
-    const emailData = await emailTemplateService.getEmailTemplate('reservation-confirmed', templateVariables, senderEmail);
+    const emailData = await this.safeLoadEmailTemplate('reservation-confirmed', templateVariables, senderEmail);
+    if (!emailData) {
+      console.warn(`⚠️ [LERENT] Skipping reservation confirmed email - template not found`);
+      return { success: false, skipped: true, reason: 'LeRent template not found' };
+    }
     console.log('📧 [EMAIL DEBUG] Email template processed successfully');
     
     // Set subject to match exact specification
@@ -940,7 +980,11 @@ class SMTP2GOService {
     };
 
     // Get processed email template with sender-specific template folder
-    const emailData = await emailTemplateService.getEmailTemplate('reservation-edited', templateVariables, senderEmail);
+    const emailData = await this.safeLoadEmailTemplate('reservation-edited', templateVariables, senderEmail);
+    if (!emailData) {
+      console.warn(`⚠️ [LERENT] Skipping reservation edited email - template not found`);
+      return { success: false, skipped: true, reason: 'LeRent template not found' };
+    }
     
     // Set subject to match exact specification
     const subject = '🔄 Zmena rezervácie';
@@ -999,7 +1043,11 @@ class SMTP2GOService {
     };
 
     // Get processed email template with sender-specific template folder
-    const emailData = await emailTemplateService.getEmailTemplate('reservation-cancelled', templateVariables, senderEmail);
+    const emailData = await this.safeLoadEmailTemplate('reservation-cancelled', templateVariables, senderEmail);
+    if (!emailData) {
+      console.warn(`⚠️ [LERENT] Skipping reservation cancelled email - template not found`);
+      return { success: false, skipped: true, reason: 'LeRent template not found' };
+    }
     
     // Set subject to match exact specification
     const subject = '❌ Rezervácia zrušená';
@@ -1058,8 +1106,17 @@ class SMTP2GOService {
     };
 
     // Get processed email template with sender-specific template folder
-    const emailData = await emailTemplateService.getEmailTemplate('reminder-notification', templateVariables, senderEmail);
-    
+    // For pickup reminders, use the specific template for each tenant
+    const templateName = senderEmail && senderEmail.includes('lerent')
+      ? 'reservation-reminder24'       // LeRent specific pickup reminder template
+      : 'reminder-notification';       // Default/Rival template
+
+    const emailData = await this.safeLoadEmailTemplate(templateName, templateVariables, senderEmail);
+    if (!emailData) {
+      console.warn(`⚠️ [LERENT] Skipping email for template '${templateName}' - template not found`);
+      return { success: false, skipped: true, reason: 'LeRent template not found' };
+    }
+
     // Set subject to match exact specification
     const subject = '⏰ Pripomienka: Rezervácia zajtra';
     
@@ -1117,7 +1174,16 @@ class SMTP2GOService {
     };
 
     // Get processed email template with sender-specific template folder
-    const emailData = await emailTemplateService.getEmailTemplate('reminder-notification', templateVariables, senderEmail);
+    // For vehicle return reminders, use the specific template for each tenant
+    const templateName = senderEmail && senderEmail.includes('lerent')
+      ? 'reservation-reminder24after'  // LeRent specific return reminder template
+      : 'reminder-notification';       // Default/Rival template
+
+    const emailData = await this.safeLoadEmailTemplate(templateName, templateVariables, senderEmail);
+    if (!emailData) {
+      console.warn(`⚠️ [LERENT] Skipping email for template '${templateName}' - template not found`);
+      return { success: false, skipped: true, reason: 'LeRent template not found' };
+    }
     
     // Set subject to match exact specification
     const subject = '⏰ Pripomienka: Vrátenie vozidla zajtra';
@@ -1172,11 +1238,23 @@ class SMTP2GOService {
     };
 
     // Get processed email template with sender-specific template folder
-    const emailData = await emailTemplateService.getEmailTemplate('leave-review', templateVariables, senderEmail);
-    
+    // Check if LeRent has review template, if not - skip review emails for LeRent
+    const isLeRent = senderEmail && senderEmail.includes('lerent');
+
+    if (isLeRent) {
+      console.log('ℹ️ [EMAIL] Skipping review email for LeRent tenant - no leave-review template available');
+      return { success: true, skipped: true, reason: 'LeRent tenant has no review email template' };
+    }
+
+    const emailData = await this.safeLoadEmailTemplate('leave-review', templateVariables, senderEmail);
+    if (!emailData) {
+      console.warn(`⚠️ [LERENT] Skipping review request email - template not found`);
+      return { success: false, skipped: true, reason: 'LeRent template not found' };
+    }
+
     // Set subject to match exact specification
     const subject = '⭐ Ako sa Vám páčila jazda?';
-    
+
     // Send email
     const emailResult = await this.sendEmail(to, subject, emailData.html, null, user);
 
