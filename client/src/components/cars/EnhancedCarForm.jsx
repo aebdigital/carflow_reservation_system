@@ -342,15 +342,13 @@ const EnhancedCarForm = ({
     { value: 'archived', label: 'Archivované', color: 'error' }
   ];
 
-  // Car brands for LeRent autocomplete dropdown (preset + custom brands)
+  // Car brands for LeRent autocomplete dropdown (custom brands only)
   // Normalize custom brands to extract names (handle both string and object formats)
   const customBrandNames = customBrands.map(brand =>
     typeof brand === 'object' && brand.name ? brand.name : brand
   );
 
   const carBrands = [
-    'BMW',
-    'Mercedes-Benz',
     ...customBrandNames,
     '+ Nová značka'  // Special option to add new brand
   ];
