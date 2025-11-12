@@ -65,6 +65,7 @@ const EnhancedCarForm = ({
   onImageRemove,
   selectedImages = [],
   imagePreviewUrls = [],
+  setImagePreviewUrls,
   onDeleteExistingImage,
   onReorderImages,
   onShowNotification,

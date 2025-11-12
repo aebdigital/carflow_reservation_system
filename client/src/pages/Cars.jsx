@@ -1470,6 +1470,7 @@ function Cars() {
             onImageRemove={removeImage}
             selectedImages={selectedImages}
             imagePreviewUrls={imagePreviewUrls}
+            setImagePreviewUrls={setImagePreviewUrls}
             onDeleteExistingImage={handleDeleteExistingImage}
             onReorderImages={handleReorderImages}
             onShowNotification={showNotification}
