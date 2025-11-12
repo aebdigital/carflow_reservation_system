@@ -696,9 +696,9 @@ const cancelReservation = asyncHandler(async (req, res, next) => {
     if (emailService.isConfigured && reservation.customer && reservation.customer.email) {
       const customerName = `${reservation.customer.firstName || ''} ${reservation.customer.lastName || ''}`.trim() || 'Vazeny zakaznik';
       const carInfo = `${reservation.car.brand || ''} ${reservation.car.model || ''} ${reservation.car.year || ''}`.trim();
-      const startDate = new Date(reservation.startDate).toLocaleDateString('sk-SK');
-      const endDate = new Date(reservation.endDate).toLocaleDateString('sk-SK');
-      const cancellationDate = new Date().toLocaleDateString('sk-SK');
+      const startDate = new Date(reservation.startDate).toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' });
+      const endDate = new Date(reservation.endDate).toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' });
+      const cancellationDate = new Date().toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' });
       
       // Prepare cancellation data for the simple Slovak email template
       const cancellationData = {
@@ -1701,8 +1701,8 @@ const confirmPayment = asyncHandler(async (req, res, next) => {
             // Prepare email data for payment confirmation
             const customerName = `${reservation.customer.firstName} ${reservation.customer.lastName}`;
             const carInfo = `${reservation.car.brand} ${reservation.car.model} (${reservation.car.year})`;
-            const startDate = new Date(reservation.startDate).toLocaleDateString('sk-SK');
-            const endDate = new Date(reservation.endDate).toLocaleDateString('sk-SK');
+            const startDate = new Date(reservation.startDate).toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' });
+            const endDate = new Date(reservation.endDate).toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' });
 
             const emailData = {
               customerName,

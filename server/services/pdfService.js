@@ -182,8 +182,8 @@ class PDFService {
     const endDate = new Date(reservation.endDate);
 
     // Format dates
-    const formatDate = (date) => date.toLocaleDateString('sk-SK');
-    const formatTime = (date) => date.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+    const formatDate = (date) => date.toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' });
+    const formatTime = (date) => date.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bratislava' });
 
     // Helper to return empty string if no value
     const safeValue = (val) => val || '';
@@ -351,19 +351,19 @@ class PDFService {
       'farba': car.color || 'Neuvedená',
       
       // Rental dates
-      'zaciatok_najmu': startDate.toLocaleDateString('sk-SK'),
-      'koniec_najmu': endDate.toLocaleDateString('sk-SK'),
-      
+      'zaciatok_najmu': startDate.toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' }),
+      'koniec_najmu': endDate.toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' }),
+
       // Pricing - use calculated dynamic daily rate
       'denna_sadzba': `${actualDailyRate.toFixed(2)} €`,
       'pocet_dni': days.toString(),
       'cena_bez_depozitu': `${basePrice.toFixed(2)} €`,
       'sluzby_priplatky': `${additionalServicesTotal.toFixed(2)} €`,
       'spolu_cena': `${totalPrice.toFixed(2)} €`,
-      
+
       // Additional data
       'rezervacia_cislo': reservation.reservationNumber || reservation._id.toString().slice(-8),
-      'datum_vytvorenia': new Date().toLocaleDateString('sk-SK'),
+      'datum_vytvorenia': new Date().toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' }),
       'stav_rezervacie': this.getStatusInSlovak(reservation.status)
     };
     
