@@ -111,6 +111,7 @@ function Cars() {
         '11-17days': '',
         '18-24days': '',
         '25-29days': '',
+        '30-60days': '', // LeRent-specific rate
         '30plus': 'dohoda - volať/písať mail'
       }
     },
@@ -561,6 +562,7 @@ function Cars() {
               '11-17days': car.pricing?.rates?.['11-17days'] || '',
               '18-24days': car.pricing?.rates?.['18-24days'] || '',
               '25-29days': car.pricing?.rates?.['25-29days'] || '',
+              '30-60days': car.pricing?.rates?.['30-60days'] || '', // LeRent-specific rate
               '30plus': 'dohoda - volať/písať mail'
             }
           },
@@ -653,6 +655,7 @@ function Cars() {
               '11-17days': car.pricing?.rates?.['11-17days'] || '',
               '18-24days': car.pricing?.rates?.['18-24days'] || '',
               '25-29days': car.pricing?.rates?.['25-29days'] || '',
+              '30-60days': car.pricing?.rates?.['30-60days'] || '', // LeRent-specific rate
               '30plus': 'dohoda - volať/písať mail'
             }
           },
