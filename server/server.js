@@ -61,6 +61,7 @@ const publicLimiter = rateLimit({
 });
 
 // CORS configuration - more permissive for public access
+// Updated: Allow localhost:3007 for LeRent development
 const allowedOrigins = [
   'https://carflow-reservation-admin.netlify.app',
   'https://carflowdemowebsite.netlify.app',
