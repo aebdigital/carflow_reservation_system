@@ -170,57 +170,64 @@ const EnhancedCarForm = ({
   // Handle drag and drop for image reordering
   const handleImageDragEnd = useCallback(async (result) => {
     const { destination, source } = result;
-    
+
     console.log('🎯 [DRAG] =================== DRAG START ===================');
     console.log('🎯 [DRAG] Drag end triggered');
     console.log('🎯 [DRAG] Source index:', source.index, 'Destination index:', destination?.index);
     console.log('🎯 [DRAG] Dialog mode:', dialogMode);
     console.log('🎯 [DRAG] Car ID:', carId);
-    
+
     // Check if dropped outside the list or in the same position
     if (!destination || destination.index === source.index) {
       console.log('🎯 [DRAG] No destination or same position, returning');
       return;
     }
-    
+
     // Get combined images and reorder them
     const combinedImages = getCombinedImages();
     console.log('🎯 [DRAG] Combined images before reorder:', combinedImages.map(img => ({ id: img._id, order: img.order, isNew: img.isNew })));
-    
+
     const newImages = [...combinedImages];
     const [removed] = newImages.splice(source.index, 1);
     newImages.splice(destination.index, 0, removed);
-    
+
     console.log('🎯 [DRAG] Moved image:', removed._id, 'from', source.index, 'to', destination.index);
-    
+
     // Update order property and set primary image (first image is always primary)
     const reorderedImages = newImages.map((image, index) => ({
       ...image,
       order: index,
       isPrimary: index === 0 // First image is always primary
     }));
-    
+
     console.log('🎯 [DRAG] Reordered images:', reorderedImages.map(img => ({ id: img._id, order: img.order, isNew: img.isNew })));
-    
+
     // Split back into existing and new images
     const existingImages = reorderedImages.filter(img => !img.isNew);
+    const newlyAddedImages = reorderedImages.filter(img => img.isNew);
     console.log('🎯 [DRAG] Existing images to reorder:', existingImages.map(img => ({ id: img._id, order: img.order })));
-    
-    // Always update local state immediately for instant UI response
+    console.log('🎯 [DRAG] New images to reorder:', newlyAddedImages.map(img => ({ id: img._id, order: img.order })));
+
+    // Update local state for both existing and new images
     setFormData(prev => ({
       ...prev,
       images: existingImages
     }));
-    
+
+    // Update imagePreviewUrls to reflect new order
+    // Extract just the URLs in the new order
+    const reorderedPreviewUrls = newlyAddedImages.map(img => img.url);
+    setImagePreviewUrls(reorderedPreviewUrls);
+
     // If we're editing and have existing images, save to backend
     if (dialogMode === 'edit' && existingImages.length > 0 && onReorderImages) {
       try {
         const imageIds = reorderedImages
           .filter(img => !img.isNew && img._id) // Only existing images with IDs
           .map(img => img._id);
-        
+
         console.log('🎯 [DRAG] Image IDs to send to backend:', imageIds);
-        
+
         if (imageIds.length > 0) {
           console.log('🎯 [DRAG] Calling onReorderImages...');
           // Call backend but don't await - let it happen in background
@@ -230,7 +237,7 @@ const EnhancedCarForm = ({
               onShowNotification('Chyba pri ukladaní poradia obrázkov.', 'error');
             }
           });
-          
+
           if (onShowNotification) {
             onShowNotification('Poradie obrázkov bolo zmenené, prvý obrázok je teraz primárny', 'success');
           }
@@ -248,7 +255,7 @@ const EnhancedCarForm = ({
         onShowNotification('Poradie obrázkov bolo zmenené lokálne', 'success');
       }
     }
-  }, [getCombinedImages, setFormData, onShowNotification, onReorderImages, dialogMode, carId]);
+  }, [getCombinedImages, setFormData, setImagePreviewUrls, onShowNotification, onReorderImages, dialogMode, carId]);
 
   // Enhanced options with new categories (tenant-specific)
   const isLeRent = user?.email?.toLowerCase() === 'lerent@lerent.sk';
