@@ -861,9 +861,13 @@ function Cars() {
         });
         
         console.log('📤 Sending FormData to API...');
-        
+        console.log('💰 [PRICING DEBUG FRONTEND] formData.pricing:', JSON.stringify(formData.pricing, null, 2));
+
         // Log FormData contents for debugging
         for (let [key, value] of formDataToSend.entries()) {
+          if (key.includes('pricing')) {
+            console.log(`💰 [PRICING DEBUG FRONTEND] FormData[${key}]:`, value);
+          }
           console.log(`FormData[${key}]:`, value);
         }
         
@@ -973,7 +977,17 @@ function Cars() {
           selectedImages.forEach(image => {
             formDataToSend.append('images', image);
           });
-          
+
+          console.log('📤 [UPDATE WITH IMAGES] Sending FormData to API...');
+          console.log('💰 [PRICING DEBUG FRONTEND UPDATE] formData.pricing:', JSON.stringify(formData.pricing, null, 2));
+
+          // Log FormData contents for debugging
+          for (let [key, value] of formDataToSend.entries()) {
+            if (key.includes('pricing')) {
+              console.log(`💰 [PRICING DEBUG FRONTEND UPDATE] FormData[${key}]:`, value);
+            }
+          }
+
           const result = await updateCar(formDataToSend).unwrap();
           console.log('✅ Car updated successfully:', result);
           showNotification('Auto bolo úspešne aktualizované!', 'success');
@@ -1073,7 +1087,17 @@ function Cars() {
               formDataToSend.append(key, formData[key]);
             }
           });
-          
+
+          console.log('📤 [UPDATE WITHOUT IMAGES] Sending FormData to API...');
+          console.log('💰 [PRICING DEBUG FRONTEND NO IMAGES] formData.pricing:', JSON.stringify(formData.pricing, null, 2));
+
+          // Log FormData contents for debugging
+          for (let [key, value] of formDataToSend.entries()) {
+            if (key.includes('pricing')) {
+              console.log(`💰 [PRICING DEBUG FRONTEND NO IMAGES] FormData[${key}]:`, value);
+            }
+          }
+
           const result = await updateCar(formDataToSend).unwrap();
           console.log('✅ Car updated successfully:', result);
           showNotification('Auto bolo úspešne aktualizované!', 'success');

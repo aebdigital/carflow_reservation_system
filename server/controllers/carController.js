@@ -248,22 +248,29 @@ const createCar = asyncHandler(async (req, res, next) => {
 
       // Handle pricing object
       const pricingKeys = Object.keys(req.body).filter(key => key.startsWith('pricing['));
+      console.log('💰 [PRICING DEBUG] Found pricing keys:', pricingKeys);
       if (pricingKeys.length > 0) {
         req.body.pricing = {};
         pricingKeys.forEach(key => {
           try {
+            console.log('💰 [PRICING DEBUG] Processing key:', key);
+            console.log('💰 [PRICING DEBUG] Key value:', req.body[key]);
             const match = key.match(/pricing\[(.+?)\](?:\[(.+)\])?/);
+            console.log('💰 [PRICING DEBUG] Regex match result:', match);
             if (match) {
               const [, section, field] = match;
+              console.log('💰 [PRICING DEBUG] Section:', section, 'Field:', field);
               if (field) {
                 // Nested object like pricing[rates][1day]
                 if (!req.body.pricing[section]) {
                   req.body.pricing[section] = {};
                 }
                 req.body.pricing[section][field] = req.body[key];
+                console.log('💰 [PRICING DEBUG] Set nested:', `pricing.${section}.${field} = ${req.body[key]}`);
               } else {
                 // Direct field like pricing[dailyRate]
                 req.body.pricing[section] = req.body[key];
+                console.log('💰 [PRICING DEBUG] Set direct:', `pricing.${section} = ${req.body[key]}`);
               }
               delete req.body[key];
             }
@@ -271,6 +278,7 @@ const createCar = asyncHandler(async (req, res, next) => {
             console.error(`Error processing pricing field ${key}:`, error);
           }
         });
+        console.log('💰 [PRICING DEBUG] Final pricing object:', JSON.stringify(req.body.pricing, null, 2));
       }
 
       // Handle mileageLimits object
@@ -1102,23 +1110,30 @@ const updateCar = asyncHandler(async (req, res, next) => {
 
       // Handle pricing object
       const pricingKeys = Object.keys(req.body).filter(key => key.startsWith('pricing['));
+      console.log('💰 [PRICING DEBUG UPDATE] Found pricing keys:', pricingKeys);
       if (pricingKeys.length > 0) {
         console.log('🚗 [CAR UPDATE] Step 4f: Processing pricing fields...');
         req.body.pricing = {};
         pricingKeys.forEach(key => {
           try {
+            console.log('💰 [PRICING DEBUG UPDATE] Processing key:', key);
+            console.log('💰 [PRICING DEBUG UPDATE] Key value:', req.body[key]);
             const match = key.match(/pricing\[(.+?)\](?:\[(.+)\])?/);
+            console.log('💰 [PRICING DEBUG UPDATE] Regex match result:', match);
             if (match) {
               const [, section, field] = match;
+              console.log('💰 [PRICING DEBUG UPDATE] Section:', section, 'Field:', field);
               if (field) {
                 // Nested object like pricing[rates][1day]
                 if (!req.body.pricing[section]) {
                   req.body.pricing[section] = {};
                 }
                 req.body.pricing[section][field] = req.body[key];
+                console.log('💰 [PRICING DEBUG UPDATE] Set nested:', `pricing.${section}.${field} = ${req.body[key]}`);
               } else {
                 // Direct field like pricing[dailyRate]
                 req.body.pricing[section] = req.body[key];
+                console.log('💰 [PRICING DEBUG UPDATE] Set direct:', `pricing.${section} = ${req.body[key]}`);
               }
               delete req.body[key];
             }
@@ -1126,6 +1141,7 @@ const updateCar = asyncHandler(async (req, res, next) => {
             console.error(`Error processing pricing field ${key}:`, error);
           }
         });
+        console.log('💰 [PRICING DEBUG UPDATE] Final pricing object:', JSON.stringify(req.body.pricing, null, 2));
       }
 
       // Handle mileageLimits object
