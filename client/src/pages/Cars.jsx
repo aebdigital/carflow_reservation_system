@@ -107,10 +107,13 @@ function Cars() {
       rates: {
         '1day': '',
         '2-3days': '',
+        '4-9days': '', // Nitra-car-specific rate
         '4-10days': '',
+        '10-25days': '', // Nitra-car-specific rate
         '11-17days': '',
         '18-24days': '',
         '25-29days': '',
+        '26plus': '', // Nitra-car-specific rate
         '30-60days': '', // LeRent-specific rate
         '30plus': 'dohoda - volať/písať mail'
       }
@@ -558,10 +561,13 @@ function Cars() {
             rates: {
               '1day': car.pricing?.rates?.['1day'] || '',
               '2-3days': car.pricing?.rates?.['2-3days'] || '',
+              '4-9days': car.pricing?.rates?.['4-9days'] || '', // Nitra-car-specific rate
               '4-10days': car.pricing?.rates?.['4-10days'] || '',
+              '10-25days': car.pricing?.rates?.['10-25days'] || '', // Nitra-car-specific rate
               '11-17days': car.pricing?.rates?.['11-17days'] || '',
               '18-24days': car.pricing?.rates?.['18-24days'] || '',
               '25-29days': car.pricing?.rates?.['25-29days'] || '',
+              '26plus': car.pricing?.rates?.['26plus'] || '', // Nitra-car-specific rate
               '30-60days': car.pricing?.rates?.['30-60days'] || '', // LeRent-specific rate
               '30plus': 'dohoda - volať/písať mail'
             }
@@ -651,10 +657,13 @@ function Cars() {
             rates: {
               '1day': car.pricing?.rates?.['1day'] || '',
               '2-3days': car.pricing?.rates?.['2-3days'] || '',
+              '4-9days': car.pricing?.rates?.['4-9days'] || '', // Nitra-car-specific rate
               '4-10days': car.pricing?.rates?.['4-10days'] || '',
+              '10-25days': car.pricing?.rates?.['10-25days'] || '', // Nitra-car-specific rate
               '11-17days': car.pricing?.rates?.['11-17days'] || '',
               '18-24days': car.pricing?.rates?.['18-24days'] || '',
               '25-29days': car.pricing?.rates?.['25-29days'] || '',
+              '26plus': car.pricing?.rates?.['26plus'] || '', // Nitra-car-specific rate
               '30-60days': car.pricing?.rates?.['30-60days'] || '', // LeRent-specific rate
               '30plus': 'dohoda - volať/písať mail'
             }

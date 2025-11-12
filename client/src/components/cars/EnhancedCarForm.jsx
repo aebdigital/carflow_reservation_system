@@ -1782,89 +1782,172 @@ const EnhancedCarForm = ({
               <Typography variant="h6" gutterBottom>Časové sadzby</Typography>
             </Grid>
 
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="1 deň"
-                type="number"
-                value={formData.pricing?.rates?.['1day'] || ''}
-                onChange={(e) => handleNestedChange('pricing.rates.1day', parseFloat(e.target.value))}
-                disabled={dialogMode === 'view'}
-                InputProps={{
-                  endAdornment: <InputAdornment position="end">€</InputAdornment>,
-                }}
-              />
-            </Grid>
+            {/* Conditional pricing structure based on tenant */}
+            {user?.email?.toLowerCase() === 'nitra-car@nitra-car.sk' ? (
+              <>
+                {/* Nitra-car: 1 deň */}
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="1 deň"
+                    type="number"
+                    value={formData.pricing?.rates?.['1day'] || ''}
+                    onChange={(e) => handleNestedChange('pricing.rates.1day', parseFloat(e.target.value))}
+                    disabled={dialogMode === 'view'}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">€</InputAdornment>,
+                    }}
+                  />
+                </Grid>
 
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="2-3 dni"
-                type="number"
-                value={formData.pricing?.rates?.['2-3days'] || ''}
-                onChange={(e) => handleNestedChange('pricing.rates.2-3days', parseFloat(e.target.value))}
-                disabled={dialogMode === 'view'}
-                InputProps={{
-                  endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
-                }}
-              />
-            </Grid>
+                {/* Nitra-car: 2-3 dni */}
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="2-3 dni"
+                    type="number"
+                    value={formData.pricing?.rates?.['2-3days'] || ''}
+                    onChange={(e) => handleNestedChange('pricing.rates.2-3days', parseFloat(e.target.value))}
+                    disabled={dialogMode === 'view'}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                    }}
+                  />
+                </Grid>
 
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="4-10 dní"
-                type="number"
-                value={formData.pricing?.rates?.['4-10days'] || ''}
-                onChange={(e) => handleNestedChange('pricing.rates.4-10days', parseFloat(e.target.value))}
-                disabled={dialogMode === 'view'}
-                InputProps={{
-                  endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
-                }}
-              />
-            </Grid>
+                {/* Nitra-car: 4-9 dni */}
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="4-9 dní"
+                    type="number"
+                    value={formData.pricing?.rates?.['4-9days'] || ''}
+                    onChange={(e) => handleNestedChange('pricing.rates.4-9days', parseFloat(e.target.value))}
+                    disabled={dialogMode === 'view'}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                    }}
+                  />
+                </Grid>
 
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="11-17 dní"
-                type="number"
-                value={formData.pricing?.rates?.['11-17days'] || ''}
-                onChange={(e) => handleNestedChange('pricing.rates.11-17days', parseFloat(e.target.value))}
-                disabled={dialogMode === 'view'}
-                InputProps={{
-                  endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
-                }}
-              />
-            </Grid>
+                {/* Nitra-car: 10-25 dni */}
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="10-25 dní"
+                    type="number"
+                    value={formData.pricing?.rates?.['10-25days'] || ''}
+                    onChange={(e) => handleNestedChange('pricing.rates.10-25days', parseFloat(e.target.value))}
+                    disabled={dialogMode === 'view'}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                    }}
+                  />
+                </Grid>
 
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="18-24 dní"
-                type="number"
-                value={formData.pricing?.rates?.['18-24days'] || ''}
-                onChange={(e) => handleNestedChange('pricing.rates.18-24days', parseFloat(e.target.value))}
-                disabled={dialogMode === 'view'}
-                InputProps={{
-                  endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
-                }}
-              />
-            </Grid>
+                {/* Nitra-car: 26+ dni */}
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="26+ dní"
+                    type="number"
+                    value={formData.pricing?.rates?.['26plus'] || ''}
+                    onChange={(e) => handleNestedChange('pricing.rates.26plus', parseFloat(e.target.value))}
+                    disabled={dialogMode === 'view'}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                    }}
+                  />
+                </Grid>
+              </>
+            ) : (
+              <>
+                {/* Default tenants: 6 pricing tiers */}
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="1 deň"
+                    type="number"
+                    value={formData.pricing?.rates?.['1day'] || ''}
+                    onChange={(e) => handleNestedChange('pricing.rates.1day', parseFloat(e.target.value))}
+                    disabled={dialogMode === 'view'}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">€</InputAdornment>,
+                    }}
+                  />
+                </Grid>
 
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="25-29 dní"
-                type="number"
-                value={formData.pricing?.rates?.['25-29days'] || ''}
-                onChange={(e) => handleNestedChange('pricing.rates.25-29days', parseFloat(e.target.value))}
-                disabled={dialogMode === 'view'}
-                InputProps={{
-                  endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
-                }}
-              />
-            </Grid>
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="2-3 dni"
+                    type="number"
+                    value={formData.pricing?.rates?.['2-3days'] || ''}
+                    onChange={(e) => handleNestedChange('pricing.rates.2-3days', parseFloat(e.target.value))}
+                    disabled={dialogMode === 'view'}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="4-10 dní"
+                    type="number"
+                    value={formData.pricing?.rates?.['4-10days'] || ''}
+                    onChange={(e) => handleNestedChange('pricing.rates.4-10days', parseFloat(e.target.value))}
+                    disabled={dialogMode === 'view'}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="11-17 dní"
+                    type="number"
+                    value={formData.pricing?.rates?.['11-17days'] || ''}
+                    onChange={(e) => handleNestedChange('pricing.rates.11-17days', parseFloat(e.target.value))}
+                    disabled={dialogMode === 'view'}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="18-24 dní"
+                    type="number"
+                    value={formData.pricing?.rates?.['18-24days'] || ''}
+                    onChange={(e) => handleNestedChange('pricing.rates.18-24days', parseFloat(e.target.value))}
+                    disabled={dialogMode === 'view'}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="25-29 dní"
+                    type="number"
+                    value={formData.pricing?.rates?.['25-29days'] || ''}
+                    onChange={(e) => handleNestedChange('pricing.rates.25-29days', parseFloat(e.target.value))}
+                    disabled={dialogMode === 'view'}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                    }}
+                  />
+                </Grid>
+              </>
+            )}
 
             {/* Conditional rendering based on user email */}
             {user?.email?.toLowerCase() === 'lerent@lerent.sk' ? (
