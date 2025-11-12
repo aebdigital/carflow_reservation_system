@@ -855,6 +855,58 @@ class SMTP2GOService {
       bank_account: templateVariables.bank_account
     });
 
+    // For nitra-car users: Generate Stripe payment link for €50
+    if (senderEmail && (
+      senderEmail.includes('nitra-car@nitra-car.sk') ||
+      senderEmail.includes('nitracar') ||
+      senderEmail.includes('nitra-car')
+    )) {
+      console.log('💳 [STRIPE] Generating payment link for nitra-car reservation');
+      try {
+        const Settings = require('../models/Settings');
+        const stripeConfig = await Settings.getStripeConfig(user.tenantId);
+
+        if (stripeConfig && stripeConfig.secretKey) {
+          const stripe = require('stripe')(stripeConfig.secretKey);
+
+          // Create a Stripe Payment Link for €50
+          const paymentLink = await stripe.paymentLinks.create({
+            line_items: [
+              {
+                price_data: {
+                  currency: 'eur',
+                  product_data: {
+                    name: 'Rezervačný poplatok',
+                    description: `Rezervácia #${reservationData.reservationNumber || rawReservation?.reservationNumber || 'N/A'}`,
+                  },
+                  unit_amount: 5000, // €50 in cents
+                },
+                quantity: 1,
+              },
+            ],
+            after_completion: {
+              type: 'hosted_confirmation',
+              hosted_confirmation: {
+                custom_message: 'Ďakujeme za úhradu rezervačného poplatku!',
+              },
+            },
+          });
+
+          templateVariables.stripe_payment_url = paymentLink.url;
+          templateVariables.stripe_payment_amount = '50€';
+          console.log('✅ [STRIPE] Payment link created:', paymentLink.url);
+        } else {
+          console.warn('⚠️ [STRIPE] No Stripe configuration found for nitra-car tenant');
+          templateVariables.stripe_payment_url = '';
+        }
+      } catch (error) {
+        console.error('❌ [STRIPE] Error creating payment link for nitra-car:', error);
+        templateVariables.stripe_payment_url = '';
+      }
+    } else {
+      templateVariables.stripe_payment_url = '';
+    }
+
     // Get processed email template with sender-specific template folder
     console.log('📧 [EMAIL DEBUG] Getting email template with variables...');
     const emailData = await this.safeLoadEmailTemplate('reservation-confirmed', templateVariables, senderEmail);
