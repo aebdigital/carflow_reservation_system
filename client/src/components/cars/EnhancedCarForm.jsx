@@ -169,17 +169,23 @@ const EnhancedCarForm = ({
 
   // Handle drag and drop for image reordering
   const handleImageDragEnd = useCallback(async (result) => {
+    console.log('🎯 [DRAG] =================== DRAG END HANDLER CALLED ===================');
+    console.log('🎯 [DRAG] Full result object:', result);
+
     const { destination, source } = result;
 
-    console.log('🎯 [DRAG] =================== DRAG START ===================');
     console.log('🎯 [DRAG] Drag end triggered');
-    console.log('🎯 [DRAG] Source index:', source.index, 'Destination index:', destination?.index);
+    console.log('🎯 [DRAG] Source:', source);
+    console.log('🎯 [DRAG] Destination:', destination);
+    console.log('🎯 [DRAG] Source index:', source?.index, 'Destination index:', destination?.index);
     console.log('🎯 [DRAG] Dialog mode:', dialogMode);
     console.log('🎯 [DRAG] Car ID:', carId);
 
     // Check if dropped outside the list or in the same position
     if (!destination || destination.index === source.index) {
-      console.log('🎯 [DRAG] No destination or same position, returning');
+      console.log('🎯 [DRAG] EARLY RETURN - No destination or same position');
+      console.log('🎯 [DRAG] destination is null/undefined:', !destination);
+      console.log('🎯 [DRAG] Same index:', destination?.index === source?.index);
       return;
     }
 
