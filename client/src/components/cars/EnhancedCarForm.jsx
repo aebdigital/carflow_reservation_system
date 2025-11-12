@@ -1336,155 +1336,166 @@ const EnhancedCarForm = ({
                 )}
               </Typography>
               <DragDropContext onDragEnd={handleImageDragEnd}>
-                <Droppable droppableId="images" direction="horizontal">
+                <Droppable droppableId="images">
                   {(provided, snapshot) => (
                     <Box
                       ref={provided.innerRef}
                       {...provided.droppableProps}
                       sx={{
-                        backgroundColor: snapshot.isDraggingOver ? 'action.hover' : 'transparent',
+                        backgroundColor: snapshot.isDraggingOver ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
                         borderRadius: 1,
                         transition: 'background-color 0.2s ease',
+                        border: snapshot.isDraggingOver ? '2px dashed rgba(25, 118, 210, 0.5)' : '2px dashed transparent',
                         p: 1
                       }}
                     >
-                      <Grid container spacing={2}>
-                        {getCombinedImages().map((image, index) => (
-                          <Draggable
-                            key={image._id || `image-${index}`}
-                            draggableId={image._id || `image-${index}`}
-                            index={index}
-                            isDragDisabled={dialogMode === 'view'}
-                          >
-                            {(provided, snapshot) => (
-                              <Grid 
-                                item 
-                                xs={12} 
-                                sm={6} 
-                                md={4}
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
+                      {getCombinedImages().map((image, index) => (
+                        <Draggable
+                          key={image._id || `image-${index}`}
+                          draggableId={image._id || `image-${index}`}
+                          index={index}
+                          isDragDisabled={dialogMode === 'view'}
+                        >
+                          {(provided, snapshot) => (
+                            <Box
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              sx={{ mb: 2 }}
+                            >
+                              <Card
+                                sx={{
+                                  transform: snapshot.isDragging ? 'scale(1.02)' : 'scale(1)',
+                                  boxShadow: snapshot.isDragging ? 8 : 2,
+                                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                                  opacity: snapshot.isDragging ? 0.9 : 1,
+                                  backgroundColor: snapshot.isDragging ? 'action.hover' : 'background.paper',
+                                  cursor: dialogMode === 'edit' ? 'grab' : 'default',
+                                  '&:active': {
+                                    cursor: dialogMode === 'edit' ? 'grabbing' : 'default'
+                                  },
+                                  '&:hover': {
+                                    boxShadow: dialogMode === 'edit' ? 3 : 2
+                                  }
+                                }}
                               >
-                                <Card
-                                  sx={{
-                                    transform: snapshot.isDragging ? 'rotate(5deg)' : 'none',
-                                    boxShadow: snapshot.isDragging ? 4 : 1,
-                                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                                    cursor: dialogMode === 'edit' ? 'grab' : 'default',
-                                    '&:active': {
-                                      cursor: dialogMode === 'edit' ? 'grabbing' : 'default'
-                                    }
-                                  }}
-                                >
-                                  <CardContent sx={{ p: 1 }}>
-                                    <Box sx={{ position: 'relative' }}>
-                                      <img
-                                        src={image.urls?.thumbnail || image.url || (typeof image === 'string' ? image : '')}
-                                        alt={image.description || `Obrázok ${index + 1}`}
-                                        style={{ 
-                                          width: '100%', 
-                                          height: '120px', 
-                                          objectFit: 'cover',
-                                          borderRadius: 4
-                                        }}
-                                        onError={(e) => {
-                                          e.target.style.display = 'none';
-                                          e.target.nextSibling.style.display = 'flex';
-                                        }}
-                                      />
-                                      {/* Fallback when image fails to load */}
-                                      <Box 
-                                        sx={{ 
-                                          width: '100%', 
-                                          height: '120px', 
-                                          backgroundColor: 'grey.100',
-                                          borderRadius: 1,
-                                          display: 'none',
-                                          flexDirection: 'column',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          border: '2px dashed',
-                                          borderColor: 'grey.300'
-                                        }}
-                                      >
-                                        <CameraIcon sx={{ fontSize: 40, color: 'grey.500', mb: 1 }} />
-                                        <Typography variant="body2" color="text.secondary" align="center">
-                                          Obrázok sa nepodarilo načítať
-                                        </Typography>
-                                      </Box>
-                                      
-                                      {/* Drag handle */}
+                                  <CardContent sx={{ p: 2 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                      {/* Drag handle - visible and easy to grab */}
                                       {dialogMode === 'edit' && (
                                         <Box
                                           {...provided.dragHandleProps}
                                           sx={{
-                                            position: 'absolute',
-                                            top: 4,
-                                            left: 4,
-                                            backgroundColor: 'rgba(0,0,0,0.6)',
-                                            borderRadius: '50%',
-                                            p: 0.5,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: 'primary.main',
+                                            borderRadius: 1,
+                                            p: 1,
                                             cursor: 'grab',
                                             '&:active': { cursor: 'grabbing' },
-                                            zIndex: 2
+                                            '&:hover': { backgroundColor: 'primary.dark' },
+                                            transition: 'background-color 0.2s',
+                                            flexShrink: 0
                                           }}
                                         >
-                                          <DragIcon sx={{ color: 'white', fontSize: 20 }} />
+                                          <DragIcon sx={{ color: 'white', fontSize: 24 }} />
                                         </Box>
                                       )}
-                                      
-                                      {image.isPrimary && (
-                                        <Chip
-                                          label="Primárny"
-                                          color="primary"
-                                          size="small"
-                                          sx={{ position: 'absolute', bottom: 4, left: 4 }}
-                                        />
-                                      )}
-                                      
-                                      {image.isNew && (
-                                        <Chip
-                                          label="NOVÝ"
-                                          color="success"
-                                          size="small"
-                                          sx={{ 
-                                            position: 'absolute', 
-                                            top: 4, 
-                                            left: image.isPrimary ? 4 : 40,
-                                            backgroundColor: '#4caf50',
-                                            color: 'white'
+
+                                      {/* Order number */}
+                                      <Box
+                                        sx={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          backgroundColor: 'grey.800',
+                                          color: 'white',
+                                          borderRadius: 1,
+                                          minWidth: 40,
+                                          height: 40,
+                                          fontWeight: 'bold',
+                                          fontSize: '1.1rem',
+                                          flexShrink: 0
+                                        }}
+                                      >
+                                        {index + 1}
+                                      </Box>
+
+                                      {/* Image preview */}
+                                      <Box sx={{ position: 'relative', flexShrink: 0 }}>
+                                        <img
+                                          src={image.urls?.thumbnail || image.url || (typeof image === 'string' ? image : '')}
+                                          alt={image.description || `Obrázok ${index + 1}`}
+                                          style={{
+                                            width: '120px',
+                                            height: '80px',
+                                            objectFit: 'cover',
+                                            borderRadius: 4
+                                          }}
+                                          onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            e.target.nextSibling.style.display = 'flex';
                                           }}
                                         />
-                                      )}
-                                      
-                                      {/* Order indicator */}
-                                      <Chip
-                                        label={`${index + 1}`}
-                                        size="small"
-                                        sx={{ 
-                                          position: 'absolute', 
-                                          bottom: 4, 
-                                          right: 4,
-                                          backgroundColor: 'rgba(0,0,0,0.7)',
-                                          color: 'white',
-                                          minWidth: 28,
-                                          height: 20,
-                                          fontSize: '0.75rem'
-                                        }}
-                                      />
-                                      
+                                        {/* Fallback when image fails to load */}
+                                        <Box
+                                          sx={{
+                                            width: '120px',
+                                            height: '80px',
+                                            backgroundColor: 'grey.100',
+                                            borderRadius: 1,
+                                            display: 'none',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            border: '2px dashed',
+                                            borderColor: 'grey.300'
+                                          }}
+                                        >
+                                          <CameraIcon sx={{ fontSize: 24, color: 'grey.500' }} />
+                                        </Box>
+                                      </Box>
+
+                                      {/* Info and badges */}
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1, flexWrap: 'wrap' }}>
+                                        {image.isPrimary && (
+                                          <Chip
+                                            label="Primárny obrázok"
+                                            color="primary"
+                                            size="small"
+                                          />
+                                        )}
+
+                                        {image.isNew && (
+                                          <Chip
+                                            label="NOVÝ"
+                                            color="success"
+                                            size="small"
+                                            sx={{
+                                              backgroundColor: '#4caf50',
+                                              color: 'white'
+                                            }}
+                                          />
+                                        )}
+
+                                        {image.description && (
+                                          <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                                            {image.description}
+                                          </Typography>
+                                        )}
+                                      </Box>
+
+                                      {/* Delete button */}
                                       {dialogMode === 'edit' && (
                                         <IconButton
-                                          sx={{ 
-                                            position: 'absolute',
-                                            top: 4,
-                                            right: 4,
-                                            backgroundColor: 'rgba(255,0,0,0.7)',
-                                            color: 'white',
-                                            '&:hover': { backgroundColor: 'rgba(255,0,0,0.9)' },
-                                            zIndex: 1
+                                          color="error"
+                                          sx={{
+                                            flexShrink: 0,
+                                            '&:hover': {
+                                              backgroundColor: 'error.light',
+                                              color: 'white'
+                                            }
                                           }}
-                                          size="small"
                                           onClick={() => {
                                             if (image.isNew) {
                                               // Handle new image deletion
@@ -1509,12 +1520,11 @@ const EnhancedCarForm = ({
                                     </Box>
                                   </CardContent>
                                 </Card>
-                              </Grid>
+                              </Box>
                             )}
                           </Draggable>
                         ))}
-                        {provided.placeholder}
-                      </Grid>
+                      {provided.placeholder}
                     </Box>
                   )}
                 </Droppable>
