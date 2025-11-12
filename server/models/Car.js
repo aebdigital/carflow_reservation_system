@@ -26,6 +26,10 @@ const carSchema = new mongoose.Schema({
     trim: true,
     maxLength: [50, 'Brand cannot exceed 50 characters']
   },
+  brandLogo: {
+    type: String, // Base64 encoded PNG image (LeRent only)
+    trim: true
+  },
   model: {
     type: String,
     required: [true, 'Model is required'],

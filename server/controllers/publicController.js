@@ -5017,6 +5017,50 @@ const searchCarsByUser = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Get all car brands with logos for LeRent user
+// @route   GET /api/public/users/:email/brands
+// @access  Public (LeRent only)
+const getBrandsWithLogosByUser = asyncHandler(async (req, res, next) => {
+  const { email } = req.params;
+
+  // Only allow for LeRent user
+  if (email.toLowerCase() !== 'lerent@lerent.sk') {
+    return res.status(403).json({
+      success: false,
+      message: 'Brand logos are only available for LeRent tenant'
+    });
+  }
+
+  // Get tenant ID from user email
+  const tenantId = await getTenantByUserEmail(email);
+
+  // Get all cars for this tenant and extract unique brands with logos
+  const cars = await Car.find({ tenantId, status: 'available' })
+    .select('brand brandLogo')
+    .lean();
+
+  // Create a map to store unique brands with their logos
+  const brandsMap = new Map();
+
+  cars.forEach(car => {
+    if (car.brand && !brandsMap.has(car.brand)) {
+      brandsMap.set(car.brand, {
+        name: car.brand,
+        logo: car.brandLogo || null
+      });
+    }
+  });
+
+  // Convert map to array
+  const brands = Array.from(brandsMap.values());
+
+  res.status(200).json({
+    success: true,
+    count: brands.length,
+    data: brands
+  });
+});
+
 module.exports = {
   createPublicReservation,
   getCarsByUser,
@@ -5053,5 +5097,6 @@ module.exports = {
   getCarsByBrandByUser,
   getCarModelsByBrandByUser,
   getCarsByEquipmentByUser,
-  searchCarsByUser
+  searchCarsByUser,
+  getBrandsWithLogosByUser
 }; 

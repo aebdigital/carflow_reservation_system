@@ -825,12 +825,18 @@ const EnhancedCarForm = ({
                     setBrandDialogOpen(true);
                   } else {
                     handleChange('brand', newValue || '');
+                    // Also save the brand logo if available
+                    const brandLogo = getBrandIcon(newValue);
+                    handleChange('brandLogo', brandLogo || '');
                   }
                 }}
                 onInputChange={(event, newInputValue) => {
                   // Allow typing custom brand (but not the special option)
                   if (event?.type === 'change' && newInputValue !== '+ Nová značka') {
                     handleChange('brand', newInputValue);
+                    // Also save the brand logo if available
+                    const brandLogo = getBrandIcon(newInputValue);
+                    handleChange('brandLogo', brandLogo || '');
                   }
                 }}
                 disabled={dialogMode === 'view'}
