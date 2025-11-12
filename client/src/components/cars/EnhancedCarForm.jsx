@@ -49,7 +49,8 @@ import {
   Star as StarIcon,
   LocalOffer as TagIcon,
   DragIndicator as DragIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  Image as ImageIcon
 } from '@mui/icons-material';
 import DamageModal from './DamageModal';
 import { useGetCarQuery, useGetGlobalEquipmentQuery } from '../../store/store';
@@ -96,6 +97,8 @@ const EnhancedCarForm = ({
   // Brand management state (LeRent only)
   const [brandDialogOpen, setBrandDialogOpen] = useState(false);
   const [newBrandName, setNewBrandName] = useState('');
+  const [brandIcon, setBrandIcon] = useState(null);
+  const [brandIconPreview, setBrandIconPreview] = useState(null);
   const [customBrands, setCustomBrands] = useState(() => {
     // Load custom brands from localStorage
     const saved = localStorage.getItem('lerent_custom_brands');
@@ -105,6 +108,7 @@ const EnhancedCarForm = ({
   // Add ref for file input
   const fileInputRef = useRef(null);
   const equipmentIconInputRef = useRef(null);
+  const brandIconInputRef = useRef(null);
 
   // Get real-time car data from RTK Query for edit mode
   const { data: carData, isLoading, isError, error } = useGetCarQuery(carId, {
@@ -395,6 +399,37 @@ const EnhancedCarForm = ({
   }, []);
 
   // Handle adding a new brand (LeRent only)
+  // Handle brand icon upload (LeRent only)
+  const handleBrandIconChange = useCallback((event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type - only PNG
+      if (!file.type.includes('png')) {
+        if (onShowNotification) {
+          onShowNotification('Iba PNG súbory sú podporované', 'error');
+        }
+        return;
+      }
+
+      // Check file size (max 500KB for compressed listing card images)
+      if (file.size > 512 * 1024) {
+        if (onShowNotification) {
+          onShowNotification('Súbor je príliš veľký. Maximálna veľkosť je 500KB', 'error');
+        }
+        return;
+      }
+
+      setBrandIcon(file);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setBrandIconPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  }, [onShowNotification]);
+
   const handleAddNewBrand = useCallback(() => {
     if (!newBrandName.trim()) {
       return;
@@ -410,8 +445,13 @@ const EnhancedCarForm = ({
       return;
     }
 
-    // Add to custom brands
-    const updatedBrands = [...customBrands, brandToAdd];
+    // Add to custom brands with icon data
+    const brandData = {
+      name: brandToAdd,
+      icon: brandIconPreview || null // Store base64 icon data or null
+    };
+
+    const updatedBrands = [...customBrands, brandData];
     setCustomBrands(updatedBrands);
 
     // Save to localStorage
@@ -423,11 +463,13 @@ const EnhancedCarForm = ({
     // Close dialog and reset
     setBrandDialogOpen(false);
     setNewBrandName('');
+    setBrandIcon(null);
+    setBrandIconPreview(null);
 
     if (onShowNotification) {
       onShowNotification(`Značka "${brandToAdd}" bola pridaná`, 'success');
     }
-  }, [newBrandName, customBrands, carBrands, handleChange, onShowNotification]);
+  }, [newBrandName, brandIconPreview, customBrands, carBrands, handleChange, onShowNotification]);
 
   // Handle deleting a brand (LeRent only)
   const handleDeleteBrand = useCallback((brandToDelete, event) => {
@@ -2597,6 +2639,8 @@ const EnhancedCarForm = ({
           onClose={() => {
             setBrandDialogOpen(false);
             setNewBrandName('');
+            setBrandIcon(null);
+            setBrandIconPreview(null);
           }}
           maxWidth="sm"
           fullWidth
@@ -2612,18 +2656,77 @@ const EnhancedCarForm = ({
               value={newBrandName}
               onChange={(e) => setNewBrandName(e.target.value)}
               onKeyPress={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === 'Enter' && !e.shiftKey) {
                   handleAddNewBrand();
                 }
               }}
               helperText="Zadajte názov novej značky automobilu"
+              sx={{ mb: 2 }}
             />
+
+            {/* Brand Icon Upload */}
+            <Box sx={{ mb: 2 }}>
+              <input
+                ref={brandIconInputRef}
+                type="file"
+                accept="image/png"
+                style={{ display: 'none' }}
+                onChange={handleBrandIconChange}
+              />
+              <Button
+                variant="outlined"
+                startIcon={<ImageIcon />}
+                onClick={() => brandIconInputRef.current?.click()}
+                fullWidth
+              >
+                Nahrať ikonu značky (voliteľné)
+              </Button>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                Formát: PNG, max. 500KB (komprimovaná ako obrázky áut)
+              </Typography>
+            </Box>
+
+            {/* Brand Icon Preview */}
+            {brandIconPreview && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                <Box
+                  component="img"
+                  src={brandIconPreview}
+                  alt="Náhľad ikony"
+                  sx={{
+                    width: 60,
+                    height: 60,
+                    objectFit: 'contain',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    p: 1,
+                    bgcolor: 'background.paper'
+                  }}
+                />
+                <Button
+                  size="small"
+                  color="error"
+                  onClick={() => {
+                    setBrandIcon(null);
+                    setBrandIconPreview(null);
+                    if (brandIconInputRef.current) {
+                      brandIconInputRef.current.value = '';
+                    }
+                  }}
+                >
+                  Odstrániť
+                </Button>
+              </Box>
+            )}
           </DialogContent>
           <DialogActions>
             <Button
               onClick={() => {
                 setBrandDialogOpen(false);
                 setNewBrandName('');
+                setBrandIcon(null);
+                setBrandIconPreview(null);
               }}
             >
               Zrušiť
