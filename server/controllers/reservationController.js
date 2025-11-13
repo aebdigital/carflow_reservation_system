@@ -887,8 +887,8 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
   }
 
   // 🧾 Create SuperFaktura invoice for LeRent tenant only
-  // DISABLED: Temporarily disabled until testing is complete
-  const SUPERFAKTURA_ENABLED = false; // Set to true to enable automatic invoice creation
+  const SUPERFAKTURA_ENABLED = true; // Automatic invoice creation enabled
+  let invoicePdfBuffer = null; // Store PDF for email attachment
 
   if (SUPERFAKTURA_ENABLED) {
     try {
@@ -912,12 +912,25 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
           console.log('✅ [SUPERFAKTURA] Invoice created successfully!');
           console.log('🧾 [SUPERFAKTURA] Invoice ID:', invoiceResult.data?.Invoice?.id);
           console.log('🧾 [SUPERFAKTURA] Invoice number:', invoiceResult.data?.Invoice?.invoice_number);
+          console.log('🧾 [SUPERFAKTURA] Invoice token:', invoiceResult.data?.Invoice?.token);
 
-          // Optionally store invoice reference in reservation
+          // Store invoice reference in reservation
           if (invoiceResult.data?.Invoice?.id) {
             reservation.superfakturaInvoiceId = invoiceResult.data.Invoice.id;
             reservation.superfakturaInvoiceNumber = invoiceResult.data.Invoice.invoice_number;
             await reservation.save();
+
+            // Download invoice PDF for email attachment
+            try {
+              console.log('📥 [SUPERFAKTURA] Downloading invoice PDF...');
+              invoicePdfBuffer = await superfakturaService.getInvoicePdf(
+                invoiceResult.data.Invoice.id,
+                invoiceResult.data.Invoice.token
+              );
+              console.log('✅ [SUPERFAKTURA] Invoice PDF downloaded successfully');
+            } catch (pdfError) {
+              console.error('❌ [SUPERFAKTURA] Failed to download invoice PDF:', pdfError.message);
+            }
           }
         } else {
           console.error('❌ [SUPERFAKTURA] Invoice creation failed:', invoiceResult.error);
@@ -962,9 +975,20 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
         customerName: `${emailData?.first_name} ${emailData?.last_name}`
       });
       
+      // Prepare attachments array (invoice PDF for LeRent)
+      const attachments = [];
+      if (invoicePdfBuffer) {
+        attachments.push({
+          filename: `Faktura_${reservation.superfakturaInvoiceNumber || reservation.reservationNumber}.pdf`,
+          content: invoicePdfBuffer,
+          contentType: 'application/pdf'
+        });
+        console.log('📎 [EMAIL] Adding SuperFaktura invoice PDF attachment');
+      }
+
       // Send confirmation email using new template, pass both emailData and raw reservation
       console.log('📧 [EMAIL DEBUG] Calling sendCustomerReservationConfirmed...');
-      await emailService.sendCustomerReservationConfirmed(reservation.customer.email, emailData, req.user, reservation);
+      await emailService.sendCustomerReservationConfirmed(reservation.customer.email, emailData, req.user, reservation, attachments);
       console.log('✅ [EMAIL] Confirmation notification sent to customer:', reservation.customer.email);
     } else {
       console.log('❌ [EMAIL DEBUG] Email not sent due to missing requirements:', {

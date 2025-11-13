@@ -5,6 +5,7 @@ const QRCode = require('qrcode');
 class BySquareService {
   constructor() {
     this.apiUrl = 'https://app.bysquare.com/api/generateStringCodes_v2';
+    this.imageApiUrl = 'https://app.bysquare.com/api/generateImageCodes_v2';
 
     // Default (Rival) configuration
     this.username = process.env.BYSQUARE_USERNAME || '';

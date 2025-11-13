@@ -686,13 +686,14 @@ class SMTP2GOService {
   }
 
   // Customer confirmation email when admin confirms reservation
-  async sendCustomerReservationConfirmed(to, reservationData, user = null, rawReservation = null) {
+  async sendCustomerReservationConfirmed(to, reservationData, user = null, rawReservation = null, externalAttachments = []) {
     console.log('📧 [SMTP2GO DEBUG] sendCustomerReservationConfirmed called with:', {
       to: to,
       hasReservationData: !!reservationData,
       hasRawReservation: !!rawReservation,
       rawReservationId: rawReservation?._id,
-      rawReservationQrCodes: !!rawReservation?.qrCodes
+      rawReservationQrCodes: !!rawReservation?.qrCodes,
+      externalAttachmentsCount: externalAttachments.length
     });
     
     const emailTemplateService = require('./emailTemplateService');
@@ -924,13 +925,13 @@ class SMTP2GOService {
     if (rawReservation) {
       try {
         console.log('📎 [EMAIL] Generating contract PDF for confirmed reservation:', rawReservation._id);
-        
+
         const pdfService = require('./pdfService');
         const Contract = require('../models/Contract');
-        
+
         // Find the contract for this reservation
-        const contract = await Contract.findOne({ 
-          reservation: rawReservation._id 
+        const contract = await Contract.findOne({
+          reservation: rawReservation._id
         }).populate([
           {
             path: 'reservation',
@@ -940,7 +941,7 @@ class SMTP2GOService {
             ]
           }
         ]);
-        
+
         if (contract && contract.reservation.customer && contract.reservation.car) {
           // Generate the PDF using the PDF service
           const pdfBuffer = await pdfService.generateRentalAgreement(
@@ -948,17 +949,17 @@ class SMTP2GOService {
             contract.reservation.car,
             contract.reservation.customer
           );
-          
+
           // Convert PDF buffer to base64 for attachment
           const pdfBase64 = pdfBuffer.toString('base64');
           const filename = `zmluva-${contract.contractNumber || reservationData.reservationNumber}.pdf`;
-          
+
           attachments.push({
             filename: filename,
             content: pdfBase64,
             type: 'application/pdf'
           });
-          
+
           console.log('✅ [EMAIL] Contract PDF generated and attached:', filename);
         } else {
           console.warn('⚠️ [EMAIL] Contract or related data not found for PDF generation');
@@ -968,7 +969,30 @@ class SMTP2GOService {
         // Continue sending email without attachment
       }
     }
-    
+
+    // Merge external attachments (e.g., SuperFaktura invoice) with contract attachments
+    if (externalAttachments && externalAttachments.length > 0) {
+      console.log('📎 [EMAIL] Merging external attachments:', externalAttachments.length);
+
+      // Convert external attachments to SMTP2GO format
+      for (const extAttachment of externalAttachments) {
+        // External attachments come as Buffer, need to convert to base64
+        const base64Content = extAttachment.content instanceof Buffer
+          ? extAttachment.content.toString('base64')
+          : extAttachment.content;
+
+        attachments.push({
+          filename: extAttachment.filename,
+          content: base64Content,
+          type: extAttachment.contentType || 'application/pdf'
+        });
+
+        console.log('✅ [EMAIL] Added external attachment:', extAttachment.filename);
+      }
+    }
+
+    console.log('📎 [EMAIL] Total attachments to send:', attachments.length);
+
     // Send email with or without attachment
     let emailResult;
     if (attachments.length > 0) {

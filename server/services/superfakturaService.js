@@ -215,6 +215,42 @@ class SuperFakturaService {
 
     return this.createInvoice(testInvoiceData);
   }
+
+  /**
+   * Get invoice PDF from SuperFaktura
+   * @param {string|number} invoiceId - SuperFaktura invoice ID
+   * @param {string} token - Invoice token from SuperFaktura response
+   * @returns {Promise<Buffer>} PDF file buffer
+   */
+  async getInvoicePdf(invoiceId, token) {
+    try {
+      console.log('📥 [SUPERFAKTURA PDF] Downloading invoice PDF:', invoiceId);
+
+      // Build URL: /slo/invoices/pdf/{INVOICE_ID}/token:{TOKEN}/bysquare:1
+      const url = `${this.baseUrl}/slo/invoices/pdf/${invoiceId}/token:${token}/bysquare:1`;
+
+      const response = await axios.get(url, {
+        headers: {
+          'Authorization': this.getAuthHeader()
+        },
+        responseType: 'arraybuffer' // Important: get binary data
+      });
+
+      if (response.status === 200) {
+        console.log('✅ [SUPERFAKTURA PDF] PDF downloaded successfully, size:', response.data.length, 'bytes');
+        return Buffer.from(response.data);
+      } else {
+        throw new Error(`Unexpected status code: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('❌ [SUPERFAKTURA PDF] Error downloading PDF:', error.message);
+      if (error.response) {
+        console.error('❌ [SUPERFAKTURA PDF] Response status:', error.response.status);
+        console.error('❌ [SUPERFAKTURA PDF] Response data:', error.response.data?.toString?.());
+      }
+      throw error;
+    }
+  }
 }
 
 module.exports = new SuperFakturaService();
