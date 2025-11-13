@@ -816,9 +816,9 @@ class BySquareService {
           Payments: {
             Payment: {
               PaymentOptions: 'paymentorder',
-              Amount: { $: { 'xsi:nil': 'true' } },
+              Amount: invoiceData.amount,
               CurrencyCode: invoiceData.currencyCode,
-              PaymentDueDate: { $: { 'xsi:nil': 'true' } },
+              PaymentDueDate: invoiceData.paymentDueDate,
               BankAccounts: {
                 BankAccount: {
                   IBAN: invoiceData.bankAccount,
