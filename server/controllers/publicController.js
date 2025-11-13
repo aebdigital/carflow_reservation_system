@@ -4039,13 +4039,23 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
 
             await reservation.save();
             console.log('✅ [QR] Missing QR codes generated and saved to reservation');
+            console.log('✅ [QR] Saved QR codes:', {
+              hasPayBySquareRental: !!reservation.qrCodes.payBySquareRental,
+              hasPayBySquareDeposit: !!reservation.qrCodes.payBySquareDeposit
+            });
           }
         }
       } catch (qrError) {
         console.error('❌ [QR] Failed to generate missing QR codes:', qrError.message);
       }
-      
+
       // If still no QR codes after attempt
+      console.log('🔍 [QR CHECK] Checking if QR codes exist after generation:', {
+        hasQrCodes: !!reservation.qrCodes,
+        hasPayBySquareRental: !!reservation.qrCodes?.payBySquareRental,
+        hasPayBySquare: !!reservation.qrCodes?.payBySquare
+      });
+
       if (!reservation.qrCodes || (!reservation.qrCodes.payBySquareRental && !reservation.qrCodes.payBySquare)) {
         return res.status(200).json({
           success: true,

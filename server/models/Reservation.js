@@ -175,6 +175,14 @@ const reservationSchema = new mongoose.Schema({
       type: String,
       default: null
     },
+    payBySquareRental: {
+      type: String,
+      default: null
+    },
+    payBySquareDeposit: {
+      type: String,
+      default: null
+    },
     qrPlatbaCz: {
       type: String,
       default: null
