@@ -68,6 +68,7 @@ function Cars() {
   // Initial form state - Enhanced for comprehensive car management
   const initialFormState = {
     brand: '',
+    brandLogo: '', // LeRent: base64 PNG logo for brand
     model: '',
     year: new Date().getFullYear(),
     registrationNumber: '',
@@ -522,6 +523,7 @@ function Cars() {
         console.log('🚗 [DIALOG] DEBUG: car.fuelConsumption =', car.fuelConsumption);
         setFormData({
           brand: car.brand || '',
+          brandLogo: car.brandLogo || '', // LeRent: base64 PNG logo
           model: car.model || '',
           year: car.year || new Date().getFullYear(),
           registrationNumber: car.registrationNumber || '',
@@ -618,6 +620,7 @@ function Cars() {
         console.log('🚗 [DIALOG] DEBUG VIEW: car.fuelConsumption =', car.fuelConsumption);
         setFormData({
           brand: car.brand || '',
+          brandLogo: car.brandLogo || '', // LeRent: base64 PNG logo
           model: car.model || '',
           year: car.year || new Date().getFullYear(),
           registrationNumber: car.registrationNumber || '',
