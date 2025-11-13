@@ -876,8 +876,12 @@ class BySquareService {
    * Generate QR code image URL (for display)
    */
   generateQRImageUrl(qrCode, format = 'png', size = 200) {
-    // This would typically use a QR code generator library
-    // For now, return a placeholder or use a public QR service
+    // If QR code is already a data URL (base64 image), return it directly
+    if (qrCode && qrCode.startsWith('data:image/')) {
+      return qrCode;
+    }
+
+    // Otherwise, use external QR service to generate image from text
     const encodedData = encodeURIComponent(qrCode);
     return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodedData}&format=${format}`;
   }
