@@ -839,7 +839,9 @@ class BySquareService {
               },
               VariableSymbol: invoiceData.variableSymbol,
               ConstantSymbol: invoiceData.constantSymbol,
-              SpecificSymbol: invoiceData.specificSymbol
+              SpecificSymbol: invoiceData.specificSymbol,
+              BeneficiaryName: invoiceData.beneficiaryName,
+              PaymentNote: invoiceData.paymentNote
             }
           }
         }
