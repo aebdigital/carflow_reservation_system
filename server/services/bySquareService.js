@@ -57,8 +57,12 @@ class BySquareService {
    * @param {string} tenantEmail - Tenant email to determine configuration
    */
   getTenantConfig(tenantEmail) {
+    console.log('🔍 [BYSQUARE CONFIG] Tenant email received:', tenantEmail);
+    console.log('🔍 [BYSQUARE CONFIG] Is LeRent?', tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk');
+
     if (tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk') {
       console.log('🏢 [BYSQUARE] Using LeRent configuration');
+      console.log('🔑 [BYSQUARE] LeRent credentials configured:', !!this.lerentConfig.username && !!this.lerentConfig.password);
       return this.lerentConfig;
     }
     console.log('🏢 [BYSQUARE] Using default (Rival) configuration');
@@ -199,6 +203,10 @@ class BySquareService {
       return result.PayBySquare;
     } catch (error) {
       console.error('❌ [BYSQUARE] Error generating rental QR:', error.message);
+      if (error.response) {
+        console.error('❌ [BYSQUARE] Response status:', error.response.status);
+        console.error('❌ [BYSQUARE] Response data:', error.response.data);
+      }
       throw error;
     }
   }
