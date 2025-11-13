@@ -4,18 +4,20 @@ const xml2js = require('xml2js');
 class BySquareService {
   constructor() {
     this.apiUrl = 'https://app.bysquare.com/api/generateStringCodes_v2';
+
+    // Default (Rival) configuration
     this.username = process.env.BYSQUARE_USERNAME || '';
     this.password = process.env.BYSQUARE_PASSWORD || '';
     this.serviceId = process.env.BYSQUARE_SERVICE_ID || '';
     this.serviceUserId = process.env.BYSQUARE_SERVICE_USER_ID || '';
-    
-    // Configurable bank details
+
+    // Configurable bank details (Rival)
     this.bankAccount = process.env.BYSQUARE_BANK_ACCOUNT || 'SK0483300000002202227202';
     this.bankBIC = process.env.BYSQUARE_BANK_BIC || 'FIOZSKBAXXX';
     this.constantSymbol = process.env.BYSQUARE_CONSTANT_SYMBOL || '0308';
     this.beneficiaryName = process.env.BYSQUARE_BENEFICIARY_NAME || 'Rival Slovakia s.r.o.';
-    
-    // Company details for invoices
+
+    // Company details for invoices (Rival)
     this.companyName = process.env.BYSQUARE_COMPANY_NAME || 'Rival Slovakia s.r.o.';
     this.companyTaxID = process.env.BYSQUARE_COMPANY_TAX_ID || '12345678';
     this.companyVATID = process.env.BYSQUARE_COMPANY_VAT_ID || 'SK12345678';
@@ -27,6 +29,52 @@ class BySquareService {
       country: process.env.BYSQUARE_COMPANY_COUNTRY || 'SVK'
     };
     this.companyEmail = process.env.BYSQUARE_COMPANY_EMAIL || 'info@rivalslovakia.sk';
+
+    // LeRent-specific configuration
+    this.lerentConfig = {
+      username: process.env.LERENT_BYSQUARE_USERNAME || '',
+      password: process.env.LERENT_BYSQUARE_PASSWORD || '',
+      bankAccount: 'SK7311000000002943157379', // LeRent IBAN (formatted without spaces)
+      bankBIC: 'TATRSKBX',
+      constantSymbol: '0308',
+      beneficiaryName: 'LeRent s. r. o.',
+      companyName: 'LeRent s. r. o.',
+      companyTaxID: '12345678', // TODO: Replace with actual LeRent tax ID
+      companyVATID: 'SK12345678', // TODO: Replace with actual LeRent VAT ID
+      companyAddress: {
+        streetName: 'Main Street', // TODO: Replace with actual LeRent address
+        buildingNumber: '1',
+        cityName: 'Bratislava',
+        postalZone: '81101',
+        country: 'SVK'
+      },
+      companyEmail: 'info@lerent.sk'
+    };
+  }
+
+  /**
+   * Get tenant-specific configuration
+   * @param {string} tenantEmail - Tenant email to determine configuration
+   */
+  getTenantConfig(tenantEmail) {
+    if (tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk') {
+      console.log('🏢 [BYSQUARE] Using LeRent configuration');
+      return this.lerentConfig;
+    }
+    console.log('🏢 [BYSQUARE] Using default (Rival) configuration');
+    return {
+      username: this.username,
+      password: this.password,
+      bankAccount: this.bankAccount,
+      bankBIC: this.bankBIC,
+      constantSymbol: this.constantSymbol,
+      beneficiaryName: this.beneficiaryName,
+      companyName: this.companyName,
+      companyTaxID: this.companyTaxID,
+      companyVATID: this.companyVATID,
+      companyAddress: this.companyAddress,
+      companyEmail: this.companyEmail
+    };
   }
 
   /**
@@ -34,9 +82,10 @@ class BySquareService {
    * @param {Object} reservation - The reservation object
    * @param {Object} car - The car object
    * @param {Object} customer - The customer object
+   * @param {string} tenantEmail - Tenant email for configuration
    * @returns {Promise<Object>} QR code data
    */
-  async generateReservationQR(reservation, car, customer) {
+  async generateReservationQR(reservation, car, customer, tenantEmail = null) {
     try {
       console.log('🔄 [BYSQUARE] Generating 2 Slovak QR codes for reservation:', reservation._id);
       console.log('📋 [BYSQUARE] Input data:', {
@@ -60,9 +109,12 @@ class BySquareService {
         }
       });
 
+      // Get tenant configuration
+      const config = this.getTenantConfig(tenantEmail);
+
       // Generate QR code for rental amount only
-      const rentalQR = await this.generateRentalQR(reservation, car, customer);
-      
+      const rentalQR = await this.generateRentalQR(reservation, car, customer, tenantEmail);
+
       // Generate QR code for deposit amount only (if exists)
       let depositQR = null;
       
@@ -94,7 +146,7 @@ class BySquareService {
           },
           deposit: depositAmount
         };
-        depositQR = await this.generateDepositQR(reservation, carWithDeposit, customer);
+        depositQR = await this.generateDepositQR(reservation, carWithDeposit, customer, tenantEmail);
         console.log('✅ [BYSQUARE] Deposit QR code generated');
       } else {
         console.log('ℹ️ [BYSQUARE] No deposit amount found, skipping deposit QR generation');
@@ -125,12 +177,13 @@ class BySquareService {
   /**
    * Generate QR code specifically for rental amount
    */
-  async generateRentalQR(reservation, car, customer) {
+  async generateRentalQR(reservation, car, customer, tenantEmail = null) {
     try {
       console.log('🔄 [BYSQUARE] Generating rental QR code...');
-      
-      const invoiceData = this.prepareRentalInvoiceData(reservation, car, customer);
-      const xmlData = this.buildXMLRequest(invoiceData, true); // Slovak only
+
+      const config = this.getTenantConfig(tenantEmail);
+      const invoiceData = await this.prepareRentalInvoiceData(reservation, car, customer, tenantEmail);
+      const xmlData = this.buildXMLRequest(invoiceData, true, config); // Slovak only
       
       const response = await axios.post(this.apiUrl, xmlData, {
         headers: {
@@ -153,12 +206,13 @@ class BySquareService {
   /**
    * Generate QR code specifically for deposit amount
    */
-  async generateDepositQR(reservation, car, customer) {
+  async generateDepositQR(reservation, car, customer, tenantEmail = null) {
     try {
       console.log('🔄 [BYSQUARE] Generating deposit QR code...');
-      
-      const invoiceData = this.prepareDepositInvoiceData(reservation, car, customer);
-      const xmlData = this.buildXMLRequest(invoiceData, true); // Slovak only
+
+      const config = this.getTenantConfig(tenantEmail);
+      const invoiceData = await this.prepareDepositInvoiceData(reservation, car, customer, tenantEmail);
+      const xmlData = this.buildXMLRequest(invoiceData, true, config); // Slovak only
       
       const response = await axios.post(this.apiUrl, xmlData, {
         headers: {
@@ -181,19 +235,37 @@ class BySquareService {
   /**
    * Prepare invoice data for rental amount only
    */
-  prepareRentalInvoiceData(reservation, car, customer) {
+  async prepareRentalInvoiceData(reservation, car, customer, tenantEmail = null) {
+    const config = this.getTenantConfig(tenantEmail);
     const invoiceNumber = reservation.reservationNumber || `RES-${reservation._id.toString().slice(-8)}`;
     const issueDate = new Date(reservation.createdAt || Date.now());
     const dueDate = new Date(reservation.startDate);
-    
+
     // Calculate rental amount only (no deposit)
     const rentalAmount = reservation.pricing?.totalAmount || (reservation.pricing?.dailyRate * reservation.pricing?.totalDays) || 0;
-    
-    // Generate variable symbol from reservation number and ID + R for rental
-    const reservationDigits = reservation.reservationNumber ? 
-      reservation.reservationNumber.replace(/[^0-9]/g, '') : 
-      reservation._id.toString().slice(-8);
-    const variableSymbol = reservationDigits.slice(-9).padStart(9, '0') + '1'; // End with 1 for rental
+
+    // Generate variable symbol
+    let variableSymbol;
+    if (tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk') {
+      // LeRent: Use sequential counter (e.g., 20250001, 20250002)
+      const QRCounter = require('../models/QRCounter');
+      const User = require('../models/User');
+
+      // Get tenant ID from email
+      const tenantUser = await User.findOne({ email: tenantEmail.toLowerCase() });
+      if (tenantUser) {
+        variableSymbol = await QRCounter.getNextVariableSymbol(tenantUser._id);
+      } else {
+        // Fallback if user not found
+        variableSymbol = `${new Date().getFullYear()}0001`;
+      }
+    } else {
+      // Other tenants: Use reservation-based variable symbol
+      const reservationDigits = reservation.reservationNumber ?
+        reservation.reservationNumber.replace(/[^0-9]/g, '') :
+        reservation._id.toString().slice(-8);
+      variableSymbol = reservationDigits.slice(-9).padStart(9, '0') + '1'; // End with 1 for rental
+    }
     
     return {
       invoiceId: invoiceNumber + '-RENTAL',
@@ -204,16 +276,16 @@ class BySquareService {
       
       // Supplier (Car Rental Company)
       supplier: {
-        partyName: this.companyName,
-        companyTaxID: this.companyTaxID,
-        companyVATID: this.companyVATID,
-        address: this.companyAddress,
+        partyName: config.companyName,
+        companyTaxID: config.companyTaxID,
+        companyVATID: config.companyVATID,
+        address: config.companyAddress,
         contact: {
-          name: this.companyName + ' Support',
-          email: this.companyEmail
+          name: config.companyName + ' Support',
+          email: config.companyEmail
         }
       },
-      
+
       // Customer
       customer: {
         partyName: `${customer.firstName} ${customer.lastName}`,
@@ -226,18 +298,21 @@ class BySquareService {
           country: customer.address.country || 'SVK'
         } : {}
       },
-      
+
       // Financial details - RENTAL ONLY
       amount: rentalAmount,
       currencyCode: 'EUR',
-      
+
       // Payment details for QR
-      bankAccount: this.bankAccount,
+      bankAccount: config.bankAccount,
       variableSymbol: variableSymbol,
-      constantSymbol: this.constantSymbol,
+      constantSymbol: config.constantSymbol,
       specificSymbol: '',
-      beneficiaryName: this.beneficiaryName,
-      paymentNote: `Car rental: ${car.brand} ${car.model} (${reservation.startDate.toISOString().split('T')[0]} - ${reservation.endDate.toISOString().split('T')[0]})`,
+      beneficiaryName: config.beneficiaryName,
+      // LeRent-specific payment note format: "Prenajom BMW X5, od 15.01.2025 do 20.01.2025"
+      paymentNote: tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk' ?
+        `Prenajom ${car.brand} ${car.model}, od ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} do ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}` :
+        `Car rental: ${car.brand} ${car.model} (${reservation.startDate.toISOString().split('T')[0]} - ${reservation.endDate.toISOString().split('T')[0]})`,
       
       // Invoice items - rental only
       items: [
@@ -256,12 +331,14 @@ class BySquareService {
 
   /**
    * Prepare invoice data for deposit amount only
+   * Note: LeRent doesn't use separate deposit QR codes - they use one QR for total amount
    */
-  prepareDepositInvoiceData(reservation, car, customer) {
+  async prepareDepositInvoiceData(reservation, car, customer, tenantEmail = null) {
+    const config = this.getTenantConfig(tenantEmail);
     const invoiceNumber = reservation.reservationNumber || `RES-${reservation._id.toString().slice(-8)}`;
     const issueDate = new Date(reservation.createdAt || Date.now());
     const dueDate = new Date(reservation.startDate);
-    
+
     // Deposit amount only - check all possible locations (consistent with generateReservationQR)
     const depositAmount = car.pricing?.deposit || car.deposit || reservation.pricing?.deposit || 0;
     console.log('🔍 [BYSQUARE] Deposit amount for QR generation:', {
@@ -270,12 +347,19 @@ class BySquareService {
       reservationPricingDeposit: reservation.pricing?.deposit,
       finalDepositAmount: depositAmount
     });
-    
-    // Generate variable symbol from reservation number and ID + D for deposit
-    const reservationDigits = reservation.reservationNumber ? 
-      reservation.reservationNumber.replace(/[^0-9]/g, '') : 
-      reservation._id.toString().slice(-8);
-    const variableSymbol = reservationDigits.slice(-9).padStart(9, '0') + '2'; // End with 2 for deposit
+
+    // Generate variable symbol
+    let variableSymbol;
+    if (tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk') {
+      // LeRent: Use same sequential counter as rental (they don't use separate deposit QR)
+      variableSymbol = `${new Date().getFullYear()}0000`; // This shouldn't be used for LeRent
+    } else {
+      // Other tenants: Use reservation-based variable symbol + 2 for deposit
+      const reservationDigits = reservation.reservationNumber ?
+        reservation.reservationNumber.replace(/[^0-9]/g, '') :
+        reservation._id.toString().slice(-8);
+      variableSymbol = reservationDigits.slice(-9).padStart(9, '0') + '2'; // End with 2 for deposit
+    }
     
     return {
       invoiceId: invoiceNumber + '-DEPOSIT',
@@ -286,16 +370,16 @@ class BySquareService {
       
       // Supplier (Car Rental Company)
       supplier: {
-        partyName: this.companyName,
-        companyTaxID: this.companyTaxID,
-        companyVATID: this.companyVATID,
-        address: this.companyAddress,
+        partyName: config.companyName,
+        companyTaxID: config.companyTaxID,
+        companyVATID: config.companyVATID,
+        address: config.companyAddress,
         contact: {
-          name: this.companyName + ' Support',
-          email: this.companyEmail
+          name: config.companyName + ' Support',
+          email: config.companyEmail
         }
       },
-      
+
       // Customer
       customer: {
         partyName: `${customer.firstName} ${customer.lastName}`,
@@ -308,18 +392,20 @@ class BySquareService {
           country: customer.address.country || 'SVK'
         } : {}
       },
-      
+
       // Financial details - DEPOSIT ONLY
       amount: depositAmount,
       currencyCode: 'EUR',
-      
+
       // Payment details for QR
-      bankAccount: this.bankAccount,
+      bankAccount: config.bankAccount,
       variableSymbol: variableSymbol,
-      constantSymbol: this.constantSymbol,
+      constantSymbol: config.constantSymbol,
       specificSymbol: '',
-      beneficiaryName: this.beneficiaryName,
-      paymentNote: `Security deposit: ${car.brand} ${car.model} (${reservation.startDate.toISOString().split('T')[0]} - ${reservation.endDate.toISOString().split('T')[0]})`,
+      beneficiaryName: config.beneficiaryName,
+      paymentNote: tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk' ?
+        `Kaucia ${car.brand} ${car.model}, od ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} do ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}` :
+        `Security deposit: ${car.brand} ${car.model} (${reservation.startDate.toISOString().split('T')[0]} - ${reservation.endDate.toISOString().split('T')[0]})`,
       
       // Invoice items - deposit only
       items: [
@@ -445,8 +531,15 @@ class BySquareService {
    * Build XML request for bySquare API
    * @param {Object} invoiceData - Invoice data object
    * @param {boolean} slovakOnly - Generate only Slovak QR codes (default: false for both)
+   * @param {Object} config - Tenant-specific configuration
    */
-  buildXMLRequest(invoiceData, slovakOnly = false) {
+  buildXMLRequest(invoiceData, slovakOnly = false, config = null) {
+    // Use provided config or fall back to default
+    const authConfig = config || {
+      username: this.username,
+      password: this.password
+    };
+
     const builder = new xml2js.Builder({
       rootName: 'BySquareXmlDocuments',
       xmldec: { version: '1.0', encoding: 'UTF-8' },
@@ -461,10 +554,10 @@ class BySquareService {
         'xmlns:xsd': 'http://www.w3.org/2001/XMLSchema',
         'xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance'
       },
-      
-      // Authentication
-      Username: this.username,
-      Password: this.password,
+
+      // Authentication - use tenant-specific credentials
+      Username: authConfig.username,
+      Password: authConfig.password,
       
       // Third-party service credentials (if applicable)
       ...(this.serviceId && this.serviceUserId ? {
@@ -578,7 +671,7 @@ class BySquareService {
               BankAccounts: {
                 BankAccount: {
                   IBAN: invoiceData.bankAccount,
-                  BIC: this.bankBIC
+                  BIC: authConfig.bankBIC || this.bankBIC
                 }
               },
               VariableSymbol: invoiceData.variableSymbol,

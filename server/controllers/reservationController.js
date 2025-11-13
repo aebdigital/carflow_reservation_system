@@ -422,11 +422,16 @@ const createReservation = asyncHandler(async (req, res, next) => {
   // 🆕 Generate bySquare QR payment codes for admin reservations
   try {
     const bySquareService = require('../services/bySquareService');
-    
+
+    // Get tenant email for configuration
+    const User = require('../models/User');
+    const tenantUser = await User.findById(req.user.tenantId);
+    const tenantEmail = tenantUser?.email || null;
+
     if (bySquareService.isConfigured()) {
       console.log('🔄 [QR] Generating bySquare QR codes for admin reservation...');
-      
-      const qrResult = await bySquareService.generateReservationQR(reservation, carDoc, customerDoc);
+
+      const qrResult = await bySquareService.generateReservationQR(reservation, carDoc, customerDoc, tenantEmail);
       
       if (qrResult.success && qrResult.qrCodes) {
         // Calculate total amount including deposit
@@ -772,12 +777,18 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
       console.log('🔄 [QR] No valid QR codes found, generating fresh QR codes for confirmation email...');
       
       const bySquareService = require('../services/bySquareService');
-      
+
+      // Get tenant email for configuration
+      const User = require('../models/User');
+      const tenantUser = await User.findById(req.user.tenantId);
+      const tenantEmail = tenantUser?.email || null;
+
       if (bySquareService.isConfigured()) {
         const qrResult = await bySquareService.generateReservationQR(
           reservation,
           reservation.car,
-          reservation.customer
+          reservation.customer,
+          tenantEmail
         );
         
         if (qrResult.success && qrResult.qrCodes) {
