@@ -875,6 +875,47 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
     // Don't fail the confirmation if contract creation fails
   }
 
+  // 🧾 Create SuperFaktura invoice for LeRent tenant only
+  try {
+    const User = require('../models/User');
+    const tenantUser = await User.findById(req.user.tenantId);
+
+    if (tenantUser && tenantUser.email.toLowerCase() === 'lerent@lerent.sk') {
+      console.log('🧾 [SUPERFAKTURA] LeRent tenant detected - creating invoice...');
+
+      const superfakturaService = require('../services/superfakturaService');
+
+      // Populate full reservation data for invoice
+      await reservation.populate([
+        { path: 'customer', select: 'firstName lastName email phone address city zip' },
+        { path: 'car', select: 'brand model year registrationNumber' }
+      ]);
+
+      const invoiceResult = await superfakturaService.createInvoiceFromReservation(reservation);
+
+      if (invoiceResult.success) {
+        console.log('✅ [SUPERFAKTURA] Invoice created successfully!');
+        console.log('🧾 [SUPERFAKTURA] Invoice ID:', invoiceResult.data?.Invoice?.id);
+        console.log('🧾 [SUPERFAKTURA] Invoice number:', invoiceResult.data?.Invoice?.invoice_number);
+
+        // Optionally store invoice reference in reservation
+        if (invoiceResult.data?.Invoice?.id) {
+          reservation.superfakturaInvoiceId = invoiceResult.data.Invoice.id;
+          reservation.superfakturaInvoiceNumber = invoiceResult.data.Invoice.invoice_number;
+          await reservation.save();
+        }
+      } else {
+        console.error('❌ [SUPERFAKTURA] Invoice creation failed:', invoiceResult.error);
+      }
+    } else {
+      console.log('ℹ️ [SUPERFAKTURA] Not LeRent tenant, skipping invoice creation');
+    }
+  } catch (superfakturaError) {
+    console.error('❌ [SUPERFAKTURA] Error during invoice creation:', superfakturaError.message);
+    console.error('❌ [SUPERFAKTURA] Full error:', superfakturaError);
+    // Don't fail the confirmation if invoice creation fails
+  }
+
   // 📧 Send customer confirmation email using new template system
   try {
     const emailService = require('../services/emailService');

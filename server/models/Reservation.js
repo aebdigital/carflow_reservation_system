@@ -339,6 +339,16 @@ const reservationSchema = new mongoose.Schema({
     }
   },
 
+  // SuperFaktura invoice information (LeRent only)
+  superfakturaInvoiceId: {
+    type: String,
+    default: null
+  },
+  superfakturaInvoiceNumber: {
+    type: String,
+    default: null
+  },
+
   // 24-hour reminder tracking (before pickup)
   reminder24h: {
     sent: {
