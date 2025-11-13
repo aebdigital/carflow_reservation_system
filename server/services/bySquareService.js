@@ -118,19 +118,19 @@ class BySquareService {
       // Get tenant configuration
       const config = this.getTenantConfig(tenantEmail);
 
-      // LeRent: Generate ONE QR code for total amount (rental + deposit)
+      // LeRent: Generate ONE QR code for rental amount ONLY (no deposit)
       // Other tenants: Generate TWO separate QR codes (rental and deposit)
       if (isLeRent) {
-        console.log('💰 [BYSQUARE LERENT] Generating single QR for total amount (rental + deposit)');
-        const totalQR = await this.generateTotalQR(reservation, car, customer, tenantEmail);
+        console.log('💰 [BYSQUARE LERENT] Generating single QR for rental amount ONLY (no deposit)');
+        const rentalOnlyQR = await this.generateTotalQR(reservation, car, customer, tenantEmail);
 
-        console.log('✅ [BYSQUARE LERENT] Single QR code generated successfully');
+        console.log('✅ [BYSQUARE LERENT] Single rental QR code generated successfully');
 
         return {
           success: true,
           qrCodes: {
-            payBySquareRental: totalQR, // Use rental field for the total QR
-            payBySquareDeposit: null    // No separate deposit QR for LeRent
+            payBySquareRental: rentalOnlyQR, // Rental amount only (no deposit)
+            payBySquareDeposit: null          // No separate deposit QR for LeRent
           }
         };
       }
@@ -261,11 +261,11 @@ class BySquareService {
   }
 
   /**
-   * Generate QR code for total amount (rental + deposit) - LeRent only
+   * Generate QR code for rental amount ONLY (no deposit) - LeRent only
    */
   async generateTotalQR(reservation, car, customer, tenantEmail = null) {
     try {
-      console.log('🔄 [BYSQUARE LERENT] Generating total amount QR code (rental + deposit)...');
+      console.log('🔄 [BYSQUARE LERENT] Generating rental QR code (rental ONLY, no deposit)...');
 
       const config = this.getTenantConfig(tenantEmail);
       const invoiceData = await this.prepareTotalInvoiceData(reservation, car, customer, tenantEmail);
@@ -280,11 +280,11 @@ class BySquareService {
       });
 
       const result = await this.parseResponse(response.data);
-      console.log('✅ [BYSQUARE LERENT] Total amount QR code generated');
+      console.log('✅ [BYSQUARE LERENT] Rental QR code generated (rental only, no deposit)');
 
       return result.PayBySquare;
     } catch (error) {
-      console.error('❌ [BYSQUARE LERENT] Error generating total QR:', error.message);
+      console.error('❌ [BYSQUARE LERENT] Error generating rental QR:', error.message);
       if (error.response) {
         console.error('❌ [BYSQUARE LERENT] Response status:', error.response.status);
         console.error('❌ [BYSQUARE LERENT] Response data:', error.response.data);
@@ -484,7 +484,7 @@ class BySquareService {
   }
 
   /**
-   * Prepare invoice data for total amount (rental + deposit) - LeRent only
+   * Prepare invoice data for rental amount ONLY (no deposit) - LeRent only
    */
   async prepareTotalInvoiceData(reservation, car, customer, tenantEmail = null) {
     const config = this.getTenantConfig(tenantEmail);
@@ -492,15 +492,11 @@ class BySquareService {
     const issueDate = new Date(reservation.createdAt || Date.now());
     const dueDate = new Date(reservation.startDate);
 
-    // Calculate total amount (rental + deposit)
+    // LeRent: ONLY rental amount, NO deposit
     const rentalAmount = reservation.pricing?.totalAmount || (reservation.pricing?.dailyRate * reservation.pricing?.totalDays) || 0;
-    const depositAmount = car.pricing?.deposit || car.deposit || reservation.pricing?.deposit || 0;
-    const totalAmount = rentalAmount + depositAmount;
 
-    console.log('💰 [BYSQUARE LERENT] Total amount calculation:', {
-      rentalAmount,
-      depositAmount,
-      totalAmount
+    console.log('💰 [BYSQUARE LERENT] QR amount (rental ONLY, no deposit):', {
+      rentalAmount
     });
 
     // Generate sequential variable symbol for LeRent
@@ -548,8 +544,8 @@ class BySquareService {
         } : {}
       },
 
-      // Financial details - TOTAL AMOUNT (rental + deposit)
-      amount: totalAmount,
+      // Financial details - RENTAL ONLY (no deposit)
+      amount: rentalAmount,
       currencyCode: 'EUR',
 
       // Payment details for QR
@@ -561,15 +557,15 @@ class BySquareService {
       // Slovak payment note: "Prenajom BMW X5, od 15.01.2025 do 20.01.2025"
       paymentNote: `Prenajom ${car.brand} ${car.model}, od ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} do ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
 
-      // Invoice items - single item for total amount
+      // Invoice items - rental only
       items: [
         {
           itemName: `Prenájom vozidla - ${car.brand} ${car.model} ${car.year}`,
           periodFromDate: reservation.startDate.toISOString(),
           periodToDate: reservation.endDate.toISOString(),
           quantity: reservation.pricing?.totalDays || 1,
-          unitPrice: totalAmount / (reservation.pricing?.totalDays || 1),
-          lineTotal: totalAmount,
+          unitPrice: reservation.pricing?.dailyRate || (rentalAmount / (reservation.pricing?.totalDays || 1)),
+          lineTotal: rentalAmount,
           taxRate: 0
         }
       ]
