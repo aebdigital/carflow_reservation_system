@@ -1126,7 +1126,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       if (bySquareService.isConfigured()) {
         console.log('🔄 [QR] Generating bySquare QR codes for tenant reservation...');
         
-        const qrResult = await bySquareService.generateReservationQR(reservation, car, customer);
+        const qrResult = await bySquareService.generateReservationQR(reservation, car, customer, email);
         
         if (qrResult.success && qrResult.qrCodes) {
           // Calculate total amount including deposit
@@ -1820,7 +1820,7 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       if (bySquareService.isConfigured()) {
         console.log('🔄 [QR] Generating bySquare QR codes for tenant reservation...');
         
-        const qrResult = await bySquareService.generateReservationQR(reservation, car, customer);
+        const qrResult = await bySquareService.generateReservationQR(reservation, car, customer, email);
         
         if (qrResult.success && qrResult.qrCodes) {
           // Calculate total amount including deposit
