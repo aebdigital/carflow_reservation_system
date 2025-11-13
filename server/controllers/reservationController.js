@@ -876,44 +876,51 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
   }
 
   // 🧾 Create SuperFaktura invoice for LeRent tenant only
-  try {
-    const User = require('../models/User');
-    const tenantUser = await User.findById(req.user.tenantId);
+  // DISABLED: Temporarily disabled until testing is complete
+  const SUPERFAKTURA_ENABLED = false; // Set to true to enable automatic invoice creation
 
-    if (tenantUser && tenantUser.email.toLowerCase() === 'lerent@lerent.sk') {
-      console.log('🧾 [SUPERFAKTURA] LeRent tenant detected - creating invoice...');
+  if (SUPERFAKTURA_ENABLED) {
+    try {
+      const User = require('../models/User');
+      const tenantUser = await User.findById(req.user.tenantId);
 
-      const superfakturaService = require('../services/superfakturaService');
+      if (tenantUser && tenantUser.email.toLowerCase() === 'lerent@lerent.sk') {
+        console.log('🧾 [SUPERFAKTURA] LeRent tenant detected - creating invoice...');
 
-      // Populate full reservation data for invoice
-      await reservation.populate([
-        { path: 'customer', select: 'firstName lastName email phone address city zip' },
-        { path: 'car', select: 'brand model year registrationNumber' }
-      ]);
+        const superfakturaService = require('../services/superfakturaService');
 
-      const invoiceResult = await superfakturaService.createInvoiceFromReservation(reservation);
+        // Populate full reservation data for invoice
+        await reservation.populate([
+          { path: 'customer', select: 'firstName lastName email phone address city zip' },
+          { path: 'car', select: 'brand model year registrationNumber' }
+        ]);
 
-      if (invoiceResult.success) {
-        console.log('✅ [SUPERFAKTURA] Invoice created successfully!');
-        console.log('🧾 [SUPERFAKTURA] Invoice ID:', invoiceResult.data?.Invoice?.id);
-        console.log('🧾 [SUPERFAKTURA] Invoice number:', invoiceResult.data?.Invoice?.invoice_number);
+        const invoiceResult = await superfakturaService.createInvoiceFromReservation(reservation);
 
-        // Optionally store invoice reference in reservation
-        if (invoiceResult.data?.Invoice?.id) {
-          reservation.superfakturaInvoiceId = invoiceResult.data.Invoice.id;
-          reservation.superfakturaInvoiceNumber = invoiceResult.data.Invoice.invoice_number;
-          await reservation.save();
+        if (invoiceResult.success) {
+          console.log('✅ [SUPERFAKTURA] Invoice created successfully!');
+          console.log('🧾 [SUPERFAKTURA] Invoice ID:', invoiceResult.data?.Invoice?.id);
+          console.log('🧾 [SUPERFAKTURA] Invoice number:', invoiceResult.data?.Invoice?.invoice_number);
+
+          // Optionally store invoice reference in reservation
+          if (invoiceResult.data?.Invoice?.id) {
+            reservation.superfakturaInvoiceId = invoiceResult.data.Invoice.id;
+            reservation.superfakturaInvoiceNumber = invoiceResult.data.Invoice.invoice_number;
+            await reservation.save();
+          }
+        } else {
+          console.error('❌ [SUPERFAKTURA] Invoice creation failed:', invoiceResult.error);
         }
       } else {
-        console.error('❌ [SUPERFAKTURA] Invoice creation failed:', invoiceResult.error);
+        console.log('ℹ️ [SUPERFAKTURA] Not LeRent tenant, skipping invoice creation');
       }
-    } else {
-      console.log('ℹ️ [SUPERFAKTURA] Not LeRent tenant, skipping invoice creation');
+    } catch (superfakturaError) {
+      console.error('❌ [SUPERFAKTURA] Error during invoice creation:', superfakturaError.message);
+      console.error('❌ [SUPERFAKTURA] Full error:', superfakturaError);
+      // Don't fail the confirmation if invoice creation fails
     }
-  } catch (superfakturaError) {
-    console.error('❌ [SUPERFAKTURA] Error during invoice creation:', superfakturaError.message);
-    console.error('❌ [SUPERFAKTURA] Full error:', superfakturaError);
-    // Don't fail the confirmation if invoice creation fails
+  } else {
+    console.log('ℹ️ [SUPERFAKTURA] Invoice creation is currently disabled');
   }
 
   // 📧 Send customer confirmation email using new template system
