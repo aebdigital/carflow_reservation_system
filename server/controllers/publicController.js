@@ -4010,11 +4010,19 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
             const depositAmount = reservation.car.pricing?.deposit || 0;
             const totalAmount = isLeRent ? rentalAmount : (rentalAmount + depositAmount);
 
-            // Generate variable symbol - will be overridden by actual one from QR generation
-            const reservationDigits = reservation.reservationNumber ?
-              reservation.reservationNumber.replace(/[^0-9]/g, '') :
-              reservation._id.toString().slice(-8);
-            const variableSymbol = reservationDigits.slice(-10).padStart(10, '0');
+            // Get variable symbol from QR generation metadata (LeRent) or generate fallback
+            let variableSymbol;
+            if (qrResult.metadata && qrResult.metadata.variableSymbol) {
+              // Use the variable symbol from QR generation (LeRent sequential)
+              variableSymbol = qrResult.metadata.variableSymbol;
+              console.log('🔢 [QR VS] Using variable symbol from QR metadata:', variableSymbol);
+            } else {
+              // Fallback for other tenants: Use reservation-based variable symbol
+              const reservationDigits = reservation.reservationNumber ?
+                reservation.reservationNumber.replace(/[^0-9]/g, '') :
+                reservation._id.toString().slice(-8);
+              variableSymbol = reservationDigits.slice(-10).padStart(10, '0');
+            }
 
             // Payment note based on tenant
             const paymentNote = isLeRent ?

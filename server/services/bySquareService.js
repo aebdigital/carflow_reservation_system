@@ -123,15 +123,21 @@ class BySquareService {
       // Other tenants: Generate TWO separate QR codes (rental and deposit)
       if (isLeRent) {
         console.log('💰 [BYSQUARE LERENT] Generating single QR for rental amount ONLY (no deposit)');
-        const rentalOnlyQR = await this.generateTotalQR(reservation, car, customer, tenantEmail);
+        const totalQRResult = await this.generateTotalQR(reservation, car, customer, tenantEmail);
 
         console.log('✅ [BYSQUARE LERENT] Single rental QR code generated successfully');
+        console.log('🔢 [BYSQUARE LERENT] Variable symbol:', totalQRResult.variableSymbol);
 
         return {
           success: true,
           qrCodes: {
-            payBySquareRental: rentalOnlyQR, // Rental amount only (no deposit)
-            payBySquareDeposit: null          // No separate deposit QR for LeRent
+            payBySquareRental: totalQRResult.qrCode, // Rental amount only (no deposit)
+            payBySquareDeposit: null                  // No separate deposit QR for LeRent
+          },
+          metadata: {
+            variableSymbol: totalQRResult.variableSymbol,
+            amount: totalQRResult.amount,
+            dueDate: totalQRResult.dueDate
           }
         };
       }
@@ -283,7 +289,13 @@ class BySquareService {
       const result = await this.parseResponse(response.data);
       console.log('✅ [BYSQUARE LERENT] Rental QR code generated (rental only, no deposit)');
 
-      return result.PayBySquare;
+      // Return both QR code and metadata
+      return {
+        qrCode: result.PayBySquare,
+        variableSymbol: invoiceData.variableSymbol,
+        amount: invoiceData.amount,
+        dueDate: invoiceData.paymentDueDate
+      };
     } catch (error) {
       console.error('❌ [BYSQUARE LERENT] Error generating rental QR:', error.message);
       if (error.response) {
