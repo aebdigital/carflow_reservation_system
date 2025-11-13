@@ -4065,15 +4065,26 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
 
     // Generate QR code image URLs for display
     const bySquareService = require('../services/bySquareService');
-    
+
+    console.log('📤 [QR API] Preparing response with QR codes:', {
+      hasPayBySquareRental: !!reservation.qrCodes.payBySquareRental,
+      hasPayBySquareDeposit: !!reservation.qrCodes.payBySquareDeposit,
+      hasLegacyPayBySquare: !!reservation.qrCodes.payBySquare
+    });
+
     const qrImageUrls = {
-      payBySquareRental: reservation.qrCodes.payBySquareRental ? 
-        bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquareRental, 'png', 300) : 
+      payBySquareRental: reservation.qrCodes.payBySquareRental ?
+        bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquareRental, 'png', 300) :
         (reservation.qrCodes.payBySquare ? bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquare, 'png', 300) : null),
-      payBySquareDeposit: reservation.qrCodes.payBySquareDeposit ? 
-        bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquareDeposit, 'png', 300) : 
+      payBySquareDeposit: reservation.qrCodes.payBySquareDeposit ?
+        bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquareDeposit, 'png', 300) :
         (reservation.qrCodes.qrPlatbaCz ? bySquareService.generateQRImageUrl(reservation.qrCodes.qrPlatbaCz, 'png', 300) : null)
     };
+
+    console.log('📤 [QR API] QR image URLs generated:', {
+      rentalUrl: qrImageUrls.payBySquareRental ? 'YES' : 'NO',
+      depositUrl: qrImageUrls.payBySquareDeposit ? 'YES' : 'NO'
+    });
 
     res.status(200).json({
       success: true,
