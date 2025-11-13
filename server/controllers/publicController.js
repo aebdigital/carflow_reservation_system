@@ -4082,13 +4082,14 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
       hasLegacyPayBySquare: !!reservation.qrCodes.payBySquare
     });
 
+    // Generate QR code images (async)
     const qrImageUrls = {
       payBySquareRental: reservation.qrCodes.payBySquareRental ?
-        bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquareRental, 'png', 300) :
-        (reservation.qrCodes.payBySquare ? bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquare, 'png', 300) : null),
+        await bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquareRental, 'png', 300) :
+        (reservation.qrCodes.payBySquare ? await bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquare, 'png', 300) : null),
       payBySquareDeposit: reservation.qrCodes.payBySquareDeposit ?
-        bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquareDeposit, 'png', 300) :
-        (reservation.qrCodes.qrPlatbaCz ? bySquareService.generateQRImageUrl(reservation.qrCodes.qrPlatbaCz, 'png', 300) : null)
+        await bySquareService.generateQRImageUrl(reservation.qrCodes.payBySquareDeposit, 'png', 300) :
+        (reservation.qrCodes.qrPlatbaCz ? await bySquareService.generateQRImageUrl(reservation.qrCodes.qrPlatbaCz, 'png', 300) : null)
     };
 
     console.log('📤 [QR API] QR image URLs generated:', {

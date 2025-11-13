@@ -1,5 +1,6 @@
 const axios = require('axios');
 const xml2js = require('xml2js');
+const QRCode = require('qrcode');
 
 class BySquareService {
   constructor() {
@@ -873,17 +874,29 @@ class BySquareService {
 
 
   /**
-   * Generate QR code image URL (for display)
+   * Generate QR code image as base64 data URL
    */
-  generateQRImageUrl(qrCode, format = 'png', size = 200) {
-    // If QR code is already a data URL (base64 image), return it directly
-    if (qrCode && qrCode.startsWith('data:image/')) {
-      return qrCode;
-    }
+  async generateQRImageUrl(qrCode, format = 'png', size = 300) {
+    try {
+      // If QR code is already a data URL (base64 image), return it directly
+      if (qrCode && qrCode.startsWith('data:image/')) {
+        return qrCode;
+      }
 
-    // Otherwise, use external QR service to generate image from text
-    const encodedData = encodeURIComponent(qrCode);
-    return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodedData}&format=${format}`;
+      // Generate QR code image from PayBySquare string as base64 data URL
+      const qrDataUrl = await QRCode.toDataURL(qrCode, {
+        width: size,
+        margin: 1,
+        errorCorrectionLevel: 'M'
+      });
+
+      return qrDataUrl;
+    } catch (error) {
+      console.error('❌ [QR IMAGE] Error generating QR code image:', error.message);
+      // Fallback to external service
+      const encodedData = encodeURIComponent(qrCode);
+      return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodedData}&format=${format}`;
+    }
   }
 }
 
