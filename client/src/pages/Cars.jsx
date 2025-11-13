@@ -877,11 +877,16 @@ function Cars() {
         
         console.log('📤 Sending FormData to API...');
         console.log('💰 [PRICING DEBUG FRONTEND] formData.pricing:', JSON.stringify(formData.pricing, null, 2));
+        console.log('🏷️ [BRAND LOGO DEBUG] formData.brand:', formData.brand);
+        console.log('🏷️ [BRAND LOGO DEBUG] formData.brandLogo:', formData.brandLogo ? 'EXISTS (length: ' + formData.brandLogo.length + ')' : 'MISSING');
 
         // Log FormData contents for debugging
         for (let [key, value] of formDataToSend.entries()) {
           if (key.includes('pricing')) {
             console.log(`💰 [PRICING DEBUG FRONTEND] FormData[${key}]:`, value);
+          }
+          if (key === 'brandLogo') {
+            console.log(`🏷️ [BRAND LOGO DEBUG] FormData[brandLogo]:`, value ? 'EXISTS (length: ' + value.length + ')' : 'MISSING');
           }
           console.log(`FormData[${key}]:`, value);
         }

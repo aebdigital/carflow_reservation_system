@@ -825,6 +825,8 @@ const EnhancedCarForm = ({
                     handleChange('brand', newValue || '');
                     // Also save the brand logo if available
                     const brandLogo = getBrandIcon(newValue);
+                    console.log('🏷️ [BRAND LOGO] Selected brand:', newValue);
+                    console.log('🏷️ [BRAND LOGO] Found logo:', brandLogo ? 'YES (length: ' + brandLogo.length + ')' : 'NO');
                     handleChange('brandLogo', brandLogo || '');
                   }
                 }}
