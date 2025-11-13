@@ -4001,35 +4001,44 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
           );
           
           if (qrResult.success && qrResult.qrCodes) {
-            // Calculate total amount including deposit
+            // Get tenant-specific configuration for metadata
+            const config = bySquareService.getTenantConfig(tenantEmail);
+            const isLeRent = tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk';
+
+            // LeRent: rental amount only, Others: rental + deposit
             const rentalAmount = reservation.pricing?.totalAmount || 0;
             const depositAmount = reservation.car.pricing?.deposit || 0;
-            const totalAmount = rentalAmount + depositAmount;
-            
-            // Generate variable symbol from reservation number and ID
-            const reservationDigits = reservation.reservationNumber ? 
-              reservation.reservationNumber.replace(/[^0-9]/g, '') : 
+            const totalAmount = isLeRent ? rentalAmount : (rentalAmount + depositAmount);
+
+            // Generate variable symbol - will be overridden by actual one from QR generation
+            const reservationDigits = reservation.reservationNumber ?
+              reservation.reservationNumber.replace(/[^0-9]/g, '') :
               reservation._id.toString().slice(-8);
             const variableSymbol = reservationDigits.slice(-10).padStart(10, '0');
-            
-            // Update reservation with QR codes - use new separate structure
+
+            // Payment note based on tenant
+            const paymentNote = isLeRent ?
+              `Prenajom ${reservation.car.brand} ${reservation.car.model}, od ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} do ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}` :
+              `Car rental + deposit: ${reservation.car.brand} ${reservation.car.model}`;
+
+            // Update reservation with QR codes and tenant-specific metadata
             reservation.qrCodes = {
               payBySquareRental: qrResult.qrCodes.payBySquareRental,
               payBySquareDeposit: qrResult.qrCodes.payBySquareDeposit,
               generatedAt: new Date(),
               lastUpdated: new Date(),
               isActive: true,
-              bankAccount: 'SK1234567890123456789012',
+              bankAccount: config.bankAccount,
               variableSymbol: variableSymbol,
-              constantSymbol: '0308',
+              constantSymbol: config.constantSymbol,
               specificSymbol: '',
               amount: totalAmount,
-              beneficiaryName: 'CarFlow Rental',
-              paymentNote: `Car rental + deposit: ${reservation.car.brand} ${reservation.car.model}`
+              beneficiaryName: config.beneficiaryName,
+              paymentNote: paymentNote
             };
-            
+
             await reservation.save();
-            console.log('✅ [QR] Missing QR codes generated successfully');
+            console.log('✅ [QR] Missing QR codes generated and saved to reservation');
           }
         }
       } catch (qrError) {
