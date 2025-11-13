@@ -5035,9 +5035,13 @@ const getBrandsWithLogosByUser = asyncHandler(async (req, res, next) => {
   const tenantId = await getTenantByUserEmail(email);
 
   // Get all cars for this tenant and extract unique brands with logos
-  const cars = await Car.find({ tenantId, status: 'available' })
+  // Include all statuses to show all brands that have been added
+  const cars = await Car.find({ tenantId })
     .select('brand brandLogo')
     .lean();
+
+  console.log(`[BRANDS API] Found ${cars.length} cars for LeRent tenant`);
+  console.log('[BRANDS API] Sample cars:', cars.slice(0, 3));
 
   // Create a map to store unique brands with their logos
   const brandsMap = new Map();
@@ -5048,11 +5052,14 @@ const getBrandsWithLogosByUser = asyncHandler(async (req, res, next) => {
         name: car.brand,
         logo: car.brandLogo || null
       });
+      console.log(`[BRANDS API] Added brand: ${car.brand}, has logo: ${!!car.brandLogo}`);
     }
   });
 
   // Convert map to array
   const brands = Array.from(brandsMap.values());
+
+  console.log(`[BRANDS API] Returning ${brands.length} unique brands`);
 
   res.status(200).json({
     success: true,
