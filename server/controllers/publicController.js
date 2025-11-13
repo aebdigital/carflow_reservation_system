@@ -630,6 +630,11 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
   console.log('🔧 [TENANT FIX] Car:', `${car.brand} ${car.model} (${car._id})`);
   console.log('🔧 [TENANT FIX] Customer email:', finalCustomerEmail);
 
+  // 🔧 BYSQUARE FIX: Look up tenant email for QR generation
+  const tenantUser = await User.findById(tenantId);
+  const tenantEmail = tenantUser?.email || null;
+  console.log('🔧 [BYSQUARE TENANT] Tenant email for QR generation:', tenantEmail);
+
   // Validate required fields
   if (!firstName || !lastName || !finalCustomerEmail || !phone || !carId || !startDate || !endDate) {
     return next(new AppError('Missing required fields: firstName, lastName, email, phone, carId, startDate, endDate', 400));
@@ -1125,8 +1130,9 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       
       if (bySquareService.isConfigured()) {
         console.log('🔄 [QR] Generating bySquare QR codes for tenant reservation...');
-        
-        const qrResult = await bySquareService.generateReservationQR(reservation, car, customer, email);
+        console.log('🔧 [BYSQUARE] Using tenant email:', tenantEmail);
+
+        const qrResult = await bySquareService.generateReservationQR(reservation, car, customer, tenantEmail);
         
         if (qrResult.success && qrResult.qrCodes) {
           // Calculate total amount including deposit
@@ -1819,8 +1825,9 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       
       if (bySquareService.isConfigured()) {
         console.log('🔄 [QR] Generating bySquare QR codes for tenant reservation...');
-        
-        const qrResult = await bySquareService.generateReservationQR(reservation, car, customer, email);
+        console.log('🔧 [BYSQUARE] Using tenant email:', tenantEmail);
+
+        const qrResult = await bySquareService.generateReservationQR(reservation, car, customer, tenantEmail);
         
         if (qrResult.success && qrResult.qrCodes) {
           // Calculate total amount including deposit
@@ -3723,6 +3730,12 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
       return next(new AppError('Reservation not found', 404));
     }
 
+    // 🔧 BYSQUARE FIX: Look up tenant email for QR generation
+    const User = require('../models/User');
+    const tenantUser = await User.findById(reservation.tenantId);
+    const tenantEmail = tenantUser?.email || null;
+    console.log('🔧 [BYSQUARE TENANT] Tenant email for QR generation:', tenantEmail);
+
     console.log('🔍 [QR API] Reservation found:', reservation.reservationNumber);
     console.log('🔍 [QR API] QR codes raw object:', JSON.stringify(reservation.qrCodes, null, 2));
     console.log('🔍 [QR API] QR codes available:', {
@@ -3775,11 +3788,13 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
           console.log('❌ [QR API] Please configure BYSQUARE_USERNAME and BYSQUARE_PASSWORD environment variables');
         } else {
           console.log('✅ [QR API] PayBySquare service configured, generating QR codes');
-          
+          console.log('🔧 [BYSQUARE] Using tenant email:', tenantEmail);
+
           const qrResult = await bySquareService.generateReservationQR(
             reservation,
             reservation.car,
-            reservation.customer
+            reservation.customer,
+            tenantEmail
           );
           
           if (qrResult && qrResult.success && qrResult.qrCodes) {
@@ -3964,19 +3979,25 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
       return next(new AppError('Reservation not found', 404));
     }
 
+    // 🔧 BYSQUARE FIX: Use tenant email from URL params for QR generation
+    const tenantEmail = userEmail; // userEmail from route params is the tenant email
+    console.log('🔧 [BYSQUARE TENANT] Tenant email for QR generation:', tenantEmail);
+
     // Check if reservation has QR codes
     if (!reservation.qrCodes || (!reservation.qrCodes.payBySquareRental && !reservation.qrCodes.payBySquare)) {
       // Try to generate QR codes if they don't exist
       try {
         const bySquareService = require('../services/bySquareService');
-        
+
         if (bySquareService.isConfigured()) {
           console.log('🔄 [QR] Attempting to generate missing QR codes...');
-          
+          console.log('🔧 [BYSQUARE] Using tenant email:', tenantEmail);
+
           const qrResult = await bySquareService.generateReservationQR(
-            reservation, 
-            reservation.car, 
-            reservation.customer
+            reservation,
+            reservation.car,
+            reservation.customer,
+            tenantEmail
           );
           
           if (qrResult.success && qrResult.qrCodes) {
