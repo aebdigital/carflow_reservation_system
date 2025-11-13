@@ -91,7 +91,9 @@ class BySquareService {
    */
   async generateReservationQR(reservation, car, customer, tenantEmail = null) {
     try {
-      console.log('🔄 [BYSQUARE] Generating 2 Slovak QR codes for reservation:', reservation._id);
+      const isLeRent = tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk';
+
+      console.log(`🔄 [BYSQUARE] Generating ${isLeRent ? '1 total' : '2 separate'} Slovak QR code${isLeRent ? '' : 's'} for reservation:`, reservation._id);
       console.log('📋 [BYSQUARE] Input data:', {
         reservation: {
           id: reservation._id,
@@ -116,7 +118,25 @@ class BySquareService {
       // Get tenant configuration
       const config = this.getTenantConfig(tenantEmail);
 
-      // Generate QR code for rental amount only
+      // LeRent: Generate ONE QR code for total amount (rental + deposit)
+      // Other tenants: Generate TWO separate QR codes (rental and deposit)
+      if (isLeRent) {
+        console.log('💰 [BYSQUARE LERENT] Generating single QR for total amount (rental + deposit)');
+        const totalQR = await this.generateTotalQR(reservation, car, customer, tenantEmail);
+
+        console.log('✅ [BYSQUARE LERENT] Single QR code generated successfully');
+
+        return {
+          success: true,
+          qrCodes: {
+            payBySquareRental: totalQR, // Use rental field for the total QR
+            payBySquareDeposit: null    // No separate deposit QR for LeRent
+          }
+        };
+      }
+
+      // Other tenants: Generate separate rental and deposit QR codes
+      console.log('💰 [BYSQUARE] Generating separate rental and deposit QR codes');
       const rentalQR = await this.generateRentalQR(reservation, car, customer, tenantEmail);
 
       // Generate QR code for deposit amount only (if exists)
@@ -221,7 +241,7 @@ class BySquareService {
       const config = this.getTenantConfig(tenantEmail);
       const invoiceData = await this.prepareDepositInvoiceData(reservation, car, customer, tenantEmail);
       const xmlData = this.buildXMLRequest(invoiceData, true, config); // Slovak only
-      
+
       const response = await axios.post(this.apiUrl, xmlData, {
         headers: {
           'Content-Type': 'application/xml',
@@ -229,13 +249,46 @@ class BySquareService {
         },
         timeout: 30000
       });
-      
+
       const result = await this.parseResponse(response.data);
       console.log('✅ [BYSQUARE] Deposit QR code generated');
-      
+
       return result.PayBySquare;
     } catch (error) {
       console.error('❌ [BYSQUARE] Error generating deposit QR:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate QR code for total amount (rental + deposit) - LeRent only
+   */
+  async generateTotalQR(reservation, car, customer, tenantEmail = null) {
+    try {
+      console.log('🔄 [BYSQUARE LERENT] Generating total amount QR code (rental + deposit)...');
+
+      const config = this.getTenantConfig(tenantEmail);
+      const invoiceData = await this.prepareTotalInvoiceData(reservation, car, customer, tenantEmail);
+      const xmlData = this.buildXMLRequest(invoiceData, true, config); // Slovak only
+
+      const response = await axios.post(this.apiUrl, xmlData, {
+        headers: {
+          'Content-Type': 'application/xml',
+          'Accept': 'application/xml'
+        },
+        timeout: 30000
+      });
+
+      const result = await this.parseResponse(response.data);
+      console.log('✅ [BYSQUARE LERENT] Total amount QR code generated');
+
+      return result.PayBySquare;
+    } catch (error) {
+      console.error('❌ [BYSQUARE LERENT] Error generating total QR:', error.message);
+      if (error.response) {
+        console.error('❌ [BYSQUARE LERENT] Response status:', error.response.status);
+        console.error('❌ [BYSQUARE LERENT] Response data:', error.response.data);
+      }
       throw error;
     }
   }
@@ -424,6 +477,99 @@ class BySquareService {
           quantity: 1,
           unitPrice: depositAmount,
           lineTotal: depositAmount,
+          taxRate: 0
+        }
+      ]
+    };
+  }
+
+  /**
+   * Prepare invoice data for total amount (rental + deposit) - LeRent only
+   */
+  async prepareTotalInvoiceData(reservation, car, customer, tenantEmail = null) {
+    const config = this.getTenantConfig(tenantEmail);
+    const invoiceNumber = reservation.reservationNumber || `RES-${reservation._id.toString().slice(-8)}`;
+    const issueDate = new Date(reservation.createdAt || Date.now());
+    const dueDate = new Date(reservation.startDate);
+
+    // Calculate total amount (rental + deposit)
+    const rentalAmount = reservation.pricing?.totalAmount || (reservation.pricing?.dailyRate * reservation.pricing?.totalDays) || 0;
+    const depositAmount = car.pricing?.deposit || car.deposit || reservation.pricing?.deposit || 0;
+    const totalAmount = rentalAmount + depositAmount;
+
+    console.log('💰 [BYSQUARE LERENT] Total amount calculation:', {
+      rentalAmount,
+      depositAmount,
+      totalAmount
+    });
+
+    // Generate sequential variable symbol for LeRent
+    const QRCounter = require('../models/QRCounter');
+    const User = require('../models/User');
+
+    let variableSymbol;
+    const tenantUser = await User.findOne({ email: tenantEmail.toLowerCase() });
+    if (tenantUser) {
+      variableSymbol = await QRCounter.getNextVariableSymbol(tenantUser._id);
+    } else {
+      // Fallback if user not found
+      variableSymbol = `${new Date().getFullYear()}0001`;
+    }
+
+    return {
+      invoiceId: invoiceNumber + '-TOTAL',
+      issueDate: issueDate.toISOString(),
+      taxPointDate: issueDate.toISOString(),
+      paymentDueDate: dueDate.toISOString(),
+      localCurrencyCode: 'EUR',
+
+      // Supplier (Car Rental Company)
+      supplier: {
+        partyName: config.companyName,
+        companyTaxID: config.companyTaxID,
+        companyVATID: config.companyVATID,
+        address: config.companyAddress,
+        contact: {
+          name: config.companyName + ' Support',
+          email: config.companyEmail
+        }
+      },
+
+      // Customer
+      customer: {
+        partyName: `${customer.firstName} ${customer.lastName}`,
+        email: customer.email,
+        phone: customer.phone || '',
+        address: customer.address ? {
+          streetName: customer.address.street || '',
+          cityName: customer.address.city || '',
+          postalZone: customer.address.zipCode || '',
+          country: customer.address.country || 'SVK'
+        } : {}
+      },
+
+      // Financial details - TOTAL AMOUNT (rental + deposit)
+      amount: totalAmount,
+      currencyCode: 'EUR',
+
+      // Payment details for QR
+      bankAccount: config.bankAccount,
+      variableSymbol: variableSymbol,
+      constantSymbol: config.constantSymbol,
+      specificSymbol: '',
+      beneficiaryName: config.beneficiaryName,
+      // Slovak payment note: "Prenajom BMW X5, od 15.01.2025 do 20.01.2025"
+      paymentNote: `Prenajom ${car.brand} ${car.model}, od ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} do ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
+
+      // Invoice items - single item for total amount
+      items: [
+        {
+          itemName: `Prenájom vozidla - ${car.brand} ${car.model} ${car.year}`,
+          periodFromDate: reservation.startDate.toISOString(),
+          periodToDate: reservation.endDate.toISOString(),
+          quantity: reservation.pricing?.totalDays || 1,
+          unitPrice: totalAmount / (reservation.pricing?.totalDays || 1),
+          lineTotal: totalAmount,
           taxRate: 0
         }
       ]
