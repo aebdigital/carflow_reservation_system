@@ -521,9 +521,27 @@ function Cars() {
         console.log('🚗 [DIALOG] DEBUG: car.mileage =', car.mileage);
         console.log('🚗 [DIALOG] DEBUG: car.engine =', car.engine);
         console.log('🚗 [DIALOG] DEBUG: car.fuelConsumption =', car.fuelConsumption);
+
+        // For LeRent: Get brand logo from localStorage if not in database
+        let brandLogoToUse = car.brandLogo || '';
+        if (!brandLogoToUse && user?.email?.toLowerCase() === 'lerent@lerent.sk') {
+          try {
+            const customBrands = JSON.parse(localStorage.getItem('lerent_custom_brands') || '[]');
+            const brandData = customBrands.find(b =>
+              (typeof b === 'object' && b.name === car.brand) || b === car.brand
+            );
+            if (brandData && typeof brandData === 'object' && brandData.icon) {
+              brandLogoToUse = brandData.icon;
+              console.log('🏷️ [EDIT MODE] Found brand logo in localStorage for:', car.brand);
+            }
+          } catch (e) {
+            console.error('Error loading brand logo from localStorage:', e);
+          }
+        }
+
         setFormData({
           brand: car.brand || '',
-          brandLogo: car.brandLogo || '', // LeRent: base64 PNG logo
+          brandLogo: brandLogoToUse, // LeRent: base64 PNG logo from DB or localStorage
           model: car.model || '',
           year: car.year || new Date().getFullYear(),
           registrationNumber: car.registrationNumber || '',
