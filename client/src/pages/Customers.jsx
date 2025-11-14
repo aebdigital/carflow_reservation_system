@@ -733,6 +733,9 @@ function Customers() {
                 <Typography variant="body2" color="text.secondary" gutterBottom>
                   Región/Kraj: {selectedCustomer.address?.state || 'Neuvedené'}
                 </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  PSČ: {selectedCustomer.address?.zipCode || 'Neuvedené'}
+                </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Krajina: {selectedCustomer.address?.country || 'Neuvedené'}
                 </Typography>
@@ -936,6 +939,18 @@ function Customers() {
                   onChange={(e) => setFormData({
                     ...formData,
                     address: { ...formData.address, state: e.target.value }
+                  })}
+                  disabled={dialogMode === 'view'}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="PSČ"
+                  value={formData.address.zipCode}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    address: { ...formData.address, zipCode: e.target.value }
                   })}
                   disabled={dialogMode === 'view'}
                 />

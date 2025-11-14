@@ -1220,6 +1220,52 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       .populate('car', 'brand model year registrationNumber images')
       .populate('appliedDiscountCodes.discountCode', 'code description discountType discountValue');
 
+    // 🧾 Create SuperFaktura invoice for LeRent tenants immediately
+    let invoicePdfBuffer = null;
+    if (tenantAdminEmail && tenantAdminEmail.toLowerCase() === 'lerent@lerent.sk') {
+      try {
+        console.log('🧾 [SUPERFAKTURA] Creating invoice for new LeRent reservation:', populatedReservation._id);
+
+        const superfakturaService = require('../services/superfakturaService');
+        const invoiceResult = await superfakturaService.createInvoiceFromReservation(populatedReservation);
+
+        if (invoiceResult.success) {
+          console.log('✅ [SUPERFAKTURA] Invoice created successfully');
+
+          // Save invoice info to reservation
+          populatedReservation.superfakturaInvoiceId = invoiceResult.data.data.Invoice.id;
+          populatedReservation.superfakturaInvoiceNumber = invoiceResult.data.data.Invoice.invoice_no_formatted;
+          await populatedReservation.save();
+
+          // Download invoice PDF for email attachment
+          try {
+            console.log('📥 [SUPERFAKTURA] Downloading invoice PDF for email attachment...');
+            invoicePdfBuffer = await superfakturaService.getInvoicePdf(
+              invoiceResult.data.data.Invoice.id,
+              invoiceResult.data.data.Invoice.token
+            );
+            console.log('✅ [SUPERFAKTURA] Invoice PDF downloaded for email attachment');
+
+            // Update variable symbol to match invoice number
+            await superfakturaService.updateInvoiceVariable(
+              invoiceResult.data.data.Invoice.id,
+              invoiceResult.data.data.Invoice.invoice_no_formatted
+            );
+            console.log('✅ [SUPERFAKTURA] Variable symbol updated to match invoice number');
+          } catch (pdfError) {
+            console.error('❌ [SUPERFAKTURA] Failed to download invoice PDF:', pdfError.message);
+          }
+        } else {
+          console.error('❌ [SUPERFAKTURA] Invoice creation failed:', invoiceResult.error);
+        }
+      } catch (superfakturaError) {
+        console.error('❌ [SUPERFAKTURA] Error during invoice creation:', superfakturaError.message);
+        console.error('❌ [SUPERFAKTURA] Full error:', superfakturaError);
+      }
+    } else {
+      console.log('ℹ️ [SUPERFAKTURA] Not LeRent tenant, skipping invoice creation');
+    }
+
     // 📧 Send admin notification and customer confirmation emails
     try {
       const { sendReservationEmails } = require('../utils/emailHelpers');
@@ -1246,8 +1292,97 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
         }
       }
       
-      // Send email notifications to both admin and customer
-      const emailResult = await sendReservationEmails(populatedReservation, car, customer, tenantAdminUser);
+      // Prepare email attachments if SuperFaktura PDF was downloaded
+      let attachments = [];
+      if (invoicePdfBuffer) {
+        attachments.push({
+          filename: `Faktura_${populatedReservation.superfakturaInvoiceNumber || populatedReservation.reservationNumber}.pdf`,
+          content: invoicePdfBuffer,
+          contentType: 'application/pdf'
+        });
+        console.log('📎 [EMAIL] Adding SuperFaktura invoice PDF attachment to new reservation email');
+      }
+
+      // Send email notifications to both admin and customer (with attachments if available)
+      let emailResult;
+      if (attachments.length > 0) {
+        console.log('📧 [EMAIL] Sending emails with SuperFaktura PDF attachment');
+
+        // Import email service for direct calls with attachments
+        const emailService = require('../services/emailService');
+        const { prepareReservationEmailData, getAdminEmailForTenant } = require('../utils/emailHelpers');
+
+        // Prepare email data
+        const emailData = prepareReservationEmailData(populatedReservation, car, customer);
+        const results = [];
+
+        // Send admin notification (without attachment)
+        try {
+          const adminEmail = getAdminEmailForTenant(tenantAdminUser);
+          const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData, tenantAdminUser);
+          results.push({ type: 'admin', success: true, result: adminResult });
+          console.log('✅ [EMAIL] Admin notification sent to:', adminEmail);
+        } catch (adminError) {
+          console.error('❌ [EMAIL] Failed to send admin notification:', adminError.message);
+          results.push({ type: 'admin', success: false, error: adminError.message });
+        }
+
+        // Send customer confirmation with PDF attachment
+        try {
+          await emailService.sendCustomerReservationConfirmed(
+            customer.email,
+            emailData,
+            tenantAdminUser,
+            populatedReservation,
+            attachments
+          );
+          results.push({ type: 'customer_email', success: true, result: { success: true } });
+          console.log('✅ [EMAIL] Customer confirmation with PDF attachment sent to:', customer.email);
+        } catch (customerError) {
+          console.error('❌ [EMAIL] Failed to send customer confirmation with attachment:', customerError.message);
+          results.push({ type: 'customer_email', success: false, error: customerError.message });
+        }
+
+        // SMS logic (unchanged)
+        try {
+          const userEmail = tenantAdminUser?.email ? tenantAdminUser.email.toLowerCase().trim() : '';
+          const isRivalTenant = userEmail === 'rival@test.sk';
+
+          if (!isRivalTenant) {
+            console.log('📱 [SMS] Skipping SMS - not rival@test.sk tenant (user:', userEmail || 'NO USER', ')');
+            results.push({ type: 'customer_sms', success: false, error: 'SMS only enabled for Rival tenant' });
+          } else if (customer.phone) {
+            console.log('📱 [SMS] Sending customer confirmation SMS to:', customer.phone, '(Rival tenant)');
+            const bulkGateService = require('../services/bulkGateService');
+
+            if (bulkGateService.isConfigured) {
+              const smsData = {
+                ...emailData,
+                startDate: populatedReservation.startDate,
+                endDate: populatedReservation.endDate
+              };
+              const smsResult = await bulkGateService.sendReservationConfirmation(customer.phone, smsData);
+              results.push({ type: 'customer_sms', success: true, result: smsResult });
+              console.log('✅ [SMS] Customer confirmation SMS sent to:', customer.phone);
+            } else {
+              console.warn('⚠️ [SMS] BulkGate not configured, skipping SMS');
+              results.push({ type: 'customer_sms', success: false, error: 'BulkGate not configured' });
+            }
+          } else {
+            console.warn('⚠️ [SMS] No phone number provided, skipping SMS');
+            results.push({ type: 'customer_sms', success: false, error: 'No phone number' });
+          }
+        } catch (smsError) {
+          console.error('❌ [SMS] Failed to send customer confirmation SMS:', smsError.message);
+          results.push({ type: 'customer_sms', success: false, error: smsError.message });
+        }
+
+        const successCount = results.filter(r => r.success).length;
+        emailResult = { success: successCount > 0, results };
+      } else {
+        // No attachments, use original function
+        emailResult = await sendReservationEmails(populatedReservation, car, customer, tenantAdminUser);
+      }
       
       if (emailResult.success) {
         console.log('✅ [EMAIL] Reservation emails sent successfully for new public reservation');
@@ -1889,6 +2024,64 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       .populate('customer', 'firstName lastName email phone')
       .populate('car', 'brand model year registrationNumber dailyRate images');
 
+    // 🧾 Create SuperFaktura invoice for LeRent tenants immediately
+    let invoicePdfBuffer = null;
+    // Get tenant admin user first to check if it's LeRent
+    let tenantAdminUser = null;
+    try {
+      const User = require('../models/User');
+      tenantAdminUser = await User.findOne({
+        tenantId: tenantId,
+        role: 'admin'
+      });
+    } catch (userError) {
+      console.warn('⚠️ [INVOICE] Could not fetch tenant admin user:', userError.message);
+    }
+
+    if (tenantAdminUser && tenantAdminUser.email.toLowerCase() === 'lerent@lerent.sk') {
+      try {
+        console.log('🧾 [SUPERFAKTURA] Creating invoice for new LeRent general public reservation:', populatedReservation._id);
+
+        const superfakturaService = require('../services/superfakturaService');
+        const invoiceResult = await superfakturaService.createInvoiceFromReservation(populatedReservation);
+
+        if (invoiceResult.success) {
+          console.log('✅ [SUPERFAKTURA] Invoice created successfully');
+
+          // Save invoice info to reservation
+          populatedReservation.superfakturaInvoiceId = invoiceResult.data.data.Invoice.id;
+          populatedReservation.superfakturaInvoiceNumber = invoiceResult.data.data.Invoice.invoice_no_formatted;
+          await populatedReservation.save();
+
+          // Download invoice PDF for email attachment
+          try {
+            console.log('📥 [SUPERFAKTURA] Downloading invoice PDF for email attachment...');
+            invoicePdfBuffer = await superfakturaService.getInvoicePdf(
+              invoiceResult.data.data.Invoice.id,
+              invoiceResult.data.data.Invoice.token
+            );
+            console.log('✅ [SUPERFAKTURA] Invoice PDF downloaded for email attachment');
+
+            // Update variable symbol to match invoice number
+            await superfakturaService.updateInvoiceVariable(
+              invoiceResult.data.data.Invoice.id,
+              invoiceResult.data.data.Invoice.invoice_no_formatted
+            );
+            console.log('✅ [SUPERFAKTURA] Variable symbol updated to match invoice number');
+          } catch (pdfError) {
+            console.error('❌ [SUPERFAKTURA] Failed to download invoice PDF:', pdfError.message);
+          }
+        } else {
+          console.error('❌ [SUPERFAKTURA] Invoice creation failed:', invoiceResult.error);
+        }
+      } catch (superfakturaError) {
+        console.error('❌ [SUPERFAKTURA] Error during invoice creation:', superfakturaError.message);
+        console.error('❌ [SUPERFAKTURA] Full error:', superfakturaError);
+      }
+    } else {
+      console.log('ℹ️ [SUPERFAKTURA] Not LeRent tenant, skipping invoice creation');
+    }
+
     // 📧 Send admin notification and customer confirmation emails
     try {
       const { sendReservationEmails } = require('../utils/emailHelpers');
@@ -1898,24 +2091,97 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       console.log('📧 [EMAIL] Email provider:', process.env.EMAIL_PROVIDER || 'nodemailer');
       console.log('📧 [EMAIL] SMTP2GO configured:', process.env.SMTP2GO_API_KEY ? 'YES' : 'NO');
       
-      // 🔧 FIX: Get tenant admin user for email configuration based on car's tenant
-      let tenantAdminUser = null;
-      
-      try {
-        const User = require('../models/User');
-        // Find the admin user for this tenant (car rental company)
-        tenantAdminUser = await User.findOne({ 
-          tenantId: tenantId,
-          role: 'admin'
+      // Prepare email attachments if SuperFaktura PDF was downloaded
+      let attachments = [];
+      if (invoicePdfBuffer) {
+        attachments.push({
+          filename: `Faktura_${populatedReservation.superfakturaInvoiceNumber || populatedReservation.reservationNumber}.pdf`,
+          content: invoicePdfBuffer,
+          contentType: 'application/pdf'
         });
-        console.log('📧 [EMAIL] Tenant admin user found for general public API:', tenantAdminUser ? tenantAdminUser.email : 'Not found');
-        console.log('📧 [EMAIL] Tenant ID:', tenantId);
-      } catch (userError) {
-        console.warn('⚠️ [EMAIL] Could not fetch tenant admin user for general public API:', userError.message);
+        console.log('📎 [EMAIL] Adding SuperFaktura invoice PDF attachment to general public reservation email');
       }
-      
-      // Send email notifications to both admin and customer with tenant context
-      const emailResult = await sendReservationEmails(populatedReservation, car, customer, tenantAdminUser);
+
+      // Send email notifications to both admin and customer (with attachments if available)
+      let emailResult;
+      if (attachments.length > 0) {
+        console.log('📧 [EMAIL] Sending general public emails with SuperFaktura PDF attachment');
+
+        // Import email service for direct calls with attachments
+        const emailService = require('../services/emailService');
+        const { prepareReservationEmailData, getAdminEmailForTenant } = require('../utils/emailHelpers');
+
+        // Prepare email data
+        const emailData = prepareReservationEmailData(populatedReservation, car, customer);
+        const results = [];
+
+        // Send admin notification (without attachment)
+        try {
+          const adminEmail = getAdminEmailForTenant(tenantAdminUser);
+          const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData, tenantAdminUser);
+          results.push({ type: 'admin', success: true, result: adminResult });
+          console.log('✅ [EMAIL] Admin notification sent to:', adminEmail);
+        } catch (adminError) {
+          console.error('❌ [EMAIL] Failed to send admin notification:', adminError.message);
+          results.push({ type: 'admin', success: false, error: adminError.message });
+        }
+
+        // Send customer confirmation with PDF attachment
+        try {
+          await emailService.sendCustomerReservationConfirmed(
+            customer.email,
+            emailData,
+            tenantAdminUser,
+            populatedReservation,
+            attachments
+          );
+          results.push({ type: 'customer_email', success: true, result: { success: true } });
+          console.log('✅ [EMAIL] Customer confirmation with PDF attachment sent to:', customer.email);
+        } catch (customerError) {
+          console.error('❌ [EMAIL] Failed to send customer confirmation with attachment:', customerError.message);
+          results.push({ type: 'customer_email', success: false, error: customerError.message });
+        }
+
+        // SMS logic (unchanged)
+        try {
+          const userEmail = tenantAdminUser?.email ? tenantAdminUser.email.toLowerCase().trim() : '';
+          const isRivalTenant = userEmail === 'rival@test.sk';
+
+          if (!isRivalTenant) {
+            console.log('📱 [SMS] Skipping SMS - not rival@test.sk tenant (user:', userEmail || 'NO USER', ')');
+            results.push({ type: 'customer_sms', success: false, error: 'SMS only enabled for Rival tenant' });
+          } else if (customer.phone) {
+            console.log('📱 [SMS] Sending customer confirmation SMS to:', customer.phone, '(Rival tenant)');
+            const bulkGateService = require('../services/bulkGateService');
+
+            if (bulkGateService.isConfigured) {
+              const smsData = {
+                ...emailData,
+                startDate: populatedReservation.startDate,
+                endDate: populatedReservation.endDate
+              };
+              const smsResult = await bulkGateService.sendReservationConfirmation(customer.phone, smsData);
+              results.push({ type: 'customer_sms', success: true, result: smsResult });
+              console.log('✅ [SMS] Customer confirmation SMS sent to:', customer.phone);
+            } else {
+              console.warn('⚠️ [SMS] BulkGate not configured, skipping SMS');
+              results.push({ type: 'customer_sms', success: false, error: 'BulkGate not configured' });
+            }
+          } else {
+            console.warn('⚠️ [SMS] No phone number provided, skipping SMS');
+            results.push({ type: 'customer_sms', success: false, error: 'No phone number' });
+          }
+        } catch (smsError) {
+          console.error('❌ [SMS] Failed to send customer confirmation SMS:', smsError.message);
+          results.push({ type: 'customer_sms', success: false, error: smsError.message });
+        }
+
+        const successCount = results.filter(r => r.success).length;
+        emailResult = { success: successCount > 0, results };
+      } else {
+        // No attachments, use original function
+        emailResult = await sendReservationEmails(populatedReservation, car, customer, tenantAdminUser);
+      }
       
       if (emailResult.success) {
         console.log('✅ [EMAIL] Reservation emails sent successfully for new general public reservation');
