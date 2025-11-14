@@ -2010,12 +2010,9 @@ const createInvoice = asyncHandler(async (req, res, next) => {
 
   try {
     // Check if user is LeRent tenant
-    const User = require('../models/User');
-    const tenantUser = await User.findById(req.user.tenantId);
+    console.log('🧾 [CREATE INVOICE] Current user email:', req.user?.email);
 
-    console.log('🧾 [CREATE INVOICE] Tenant user email:', tenantUser?.email);
-
-    if (!tenantUser || tenantUser.email.toLowerCase() !== 'lerent@lerent.sk') {
+    if (!req.user || req.user.email.toLowerCase() !== 'lerent@lerent.sk') {
       console.log('❌ [CREATE INVOICE] Access denied - not LeRent tenant');
       return next(new AppError('Vytváranie faktúr je dostupné len pre LeRent', 403));
     }
