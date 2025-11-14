@@ -1713,11 +1713,45 @@ function Reservations() {
                             Telefón: {selectedReservation.customer.phone || 'Nie je uvedené'}
                           </Typography>
                           {selectedReservation.customer.licenseNumber && (
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
                               Občiansky preukaz: {selectedReservation.customer.licenseNumber}
                             </Typography>
                           )}
-                          
+
+                          {/* Customer Address */}
+                          {selectedReservation.customer.address && (
+                            <Box sx={{ mt: 1 }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                <strong>Adresa:</strong>
+                              </Typography>
+                              {selectedReservation.customer.address.street && (
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                  Ulica: {selectedReservation.customer.address.street}
+                                </Typography>
+                              )}
+                              {selectedReservation.customer.address.city && (
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                  Mesto: {selectedReservation.customer.address.city}
+                                </Typography>
+                              )}
+                              {selectedReservation.customer.address.state && (
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                  Kraj/Oblasť: {selectedReservation.customer.address.state}
+                                </Typography>
+                              )}
+                              {selectedReservation.customer.address.zipCode && (
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                  PSČ: {selectedReservation.customer.address.zipCode}
+                                </Typography>
+                              )}
+                              {selectedReservation.customer.address.country && (
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                  Krajina: {selectedReservation.customer.address.country}
+                                </Typography>
+                              )}
+                            </Box>
+                          )}
+
                           {/* Company Information */}
                           {selectedReservation.firma?.isCompany && (
                             <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
@@ -3070,9 +3104,20 @@ function Reservations() {
                   fullWidth
                   label="Mesto"
                   value={customerFormData.address.city}
-                  onChange={(e) => setCustomerFormData({ 
-                    ...customerFormData, 
+                  onChange={(e) => setCustomerFormData({
+                    ...customerFormData,
                     address: { ...customerFormData.address, city: e.target.value }
+                  })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Kraj/Oblasť"
+                  value={customerFormData.address.state}
+                  onChange={(e) => setCustomerFormData({
+                    ...customerFormData,
+                    address: { ...customerFormData.address, state: e.target.value }
                   })}
                 />
               </Grid>
@@ -3081,8 +3126,8 @@ function Reservations() {
                   fullWidth
                   label="PSČ"
                   value={customerFormData.address.zipCode}
-                  onChange={(e) => setCustomerFormData({ 
-                    ...customerFormData, 
+                  onChange={(e) => setCustomerFormData({
+                    ...customerFormData,
                     address: { ...customerFormData.address, zipCode: e.target.value }
                   })}
                 />
