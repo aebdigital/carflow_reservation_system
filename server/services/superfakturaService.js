@@ -40,16 +40,13 @@ class SuperFakturaService {
       const payload = {
         Invoice: {
           name: invoiceData.invoice.name || 'Faktúra',
-          variable: invoiceData.invoice.variable || '', // Variable symbol
-          constant: invoiceData.invoice.constant || '', // Constant symbol
-          specific: invoiceData.invoice.specific || '', // Specific symbol
-          payment_type: invoiceData.invoice.payment_type || 'transfer', // transfer, cash, card, etc.
+          variable: invoiceData.invoice.variable || '',
+          payment_type: invoiceData.invoice.payment_type || 'transfer',
           invoice_currency: invoiceData.invoice.currency || 'EUR',
           comment: invoiceData.invoice.comment || '',
-          rounding: 'item', // item, document
-          created: invoiceData.invoice.created || new Date().toISOString().split('T')[0], // YYYY-MM-DD
-          delivery: invoiceData.invoice.delivery || new Date().toISOString().split('T')[0], // YYYY-MM-DD
-          due: invoiceData.invoice.due || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 14 days from now
+          created: invoiceData.invoice.created || new Date().toISOString().split('T')[0],
+          delivery: invoiceData.invoice.delivery || new Date().toISOString().split('T')[0],
+          due: invoiceData.invoice.due || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
         },
         InvoiceItem: invoiceData.items.map(item => ({
           name: item.name,
@@ -144,16 +141,22 @@ class SuperFakturaService {
           description: `Prenájom od ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} do ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
           quantity: 1,
           unit: 'ks',
-          unit_price: reservation.totalPrice || 0,
+          unit_price: reservation.pricing?.totalAmount || reservation.totalPrice || 0,
           tax: 20, // 20% VAT
           discount: 0
         }
       ],
       client: {
         name: `${reservation.customer?.firstName || ''} ${reservation.customer?.lastName || ''}`.trim() || 'Test Customer',
-        address: reservation.customer?.address || 'Test Address 123',
-        city: reservation.customer?.city || 'Bratislava',
-        zip: reservation.customer?.zip || '12345',
+        address: typeof reservation.customer?.address === 'string'
+          ? reservation.customer.address
+          : (reservation.customer?.address?.street || 'Test Address 123'),
+        city: typeof reservation.customer?.address === 'object'
+          ? reservation.customer.address.city || 'Bratislava'
+          : reservation.customer?.city || 'Bratislava',
+        zip: typeof reservation.customer?.address === 'object'
+          ? reservation.customer.address.zipCode || '12345'
+          : reservation.customer?.zip || '12345',
         country: 'Slovensko',
         email: reservation.customer?.email || 'test@example.com',
         phone: reservation.customer?.phone || '+421900000000'
