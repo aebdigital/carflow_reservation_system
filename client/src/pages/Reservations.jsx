@@ -48,6 +48,7 @@ import {
   QrCode as QrCodeIcon,
   Payment as PaymentIcon,
   Email as EmailIcon,
+  Description as InvoiceIcon,
 } from '@mui/icons-material'
 import {
   useGetReservationsQuery,
@@ -58,6 +59,7 @@ import {
   useConfirmReservationMutation,
   useConfirmReservationPaymentMutation,
   useSendPaymentNotificationMutation,
+  useCreateInvoiceMutation,
   useCheckInReservationMutation,
   useCheckOutReservationMutation,
   useGetCarsQuery,
@@ -315,6 +317,7 @@ function Reservations() {
   const [confirmReservation] = useConfirmReservationMutation()
   const [confirmReservationPayment] = useConfirmReservationPaymentMutation()
   const [sendPaymentNotification] = useSendPaymentNotificationMutation()
+  const [createInvoice] = useCreateInvoiceMutation()
   const [checkInReservation] = useCheckInReservationMutation()
   const [checkOutReservation] = useCheckOutReservationMutation()
   const [generateSlovakAgreement] = useGenerateReservationSlovakAgreementMutation()
@@ -688,6 +691,25 @@ function Reservations() {
     } catch (error) {
       console.error('Error sending payment notification:', error)
       alert('Chyba pri odosielaní upomienky: ' + (error?.data?.message || error.message))
+    }
+  }
+
+  const handleCreateInvoice = async (reservation) => {
+    try {
+      console.log('🧾 [INVOICE] Creating invoice for reservation:', reservation._id)
+      const result = await createInvoice({
+        id: reservation._id
+      }).unwrap()
+      console.log('🧾 [INVOICE] Invoice created successfully:', result)
+
+      if (result.data?.alreadyExists) {
+        alert(`Faktúra už existuje\nČíslo faktúry: ${result.data.invoiceNumber}`)
+      } else {
+        alert(`Faktúra úspešne vytvorená!\nČíslo faktúry: ${result.data.invoiceNumber}\nID faktúry: ${result.data.invoiceId}`)
+      }
+    } catch (error) {
+      console.error('❌ [INVOICE] Error creating invoice:', error)
+      alert('Chyba pri vytváraní faktúry: ' + (error?.data?.message || error.message))
     }
   }
 
@@ -1097,6 +1119,21 @@ function Reservations() {
                               </IconButton>
                             </Tooltip>
                           )}
+                          {auth.user?.email === 'lerent@lerent.sk' && (
+                            <Tooltip title="Vytvoriť faktúru (SuperFaktura)">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleCreateInvoice(reservation)}
+                                color="primary"
+                                sx={{
+                                  backgroundColor: reservation.superfakturaInvoiceId ? 'success.light' : 'primary.light',
+                                  '&:hover': { backgroundColor: reservation.superfakturaInvoiceId ? 'success.main' : 'primary.main' }
+                                }}
+                              >
+                                <InvoiceIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -1248,6 +1285,21 @@ function Reservations() {
                                 color="info"
                               >
                                 <QrCodeIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          {auth.user?.email === 'lerent@lerent.sk' && (
+                            <Tooltip title="Vytvoriť faktúru (SuperFaktura)">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleCreateInvoice(reservation)}
+                                color="primary"
+                                sx={{
+                                  backgroundColor: reservation.superfakturaInvoiceId ? 'success.light' : 'primary.light',
+                                  '&:hover': { backgroundColor: reservation.superfakturaInvoiceId ? 'success.main' : 'primary.main' }
+                                }}
+                              >
+                                <InvoiceIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
                           )}
@@ -1420,6 +1472,21 @@ function Reservations() {
                               </IconButton>
                             </Tooltip>
                           )}
+                          {auth.user?.email === 'lerent@lerent.sk' && (
+                            <Tooltip title="Vytvoriť faktúru (SuperFaktura)">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleCreateInvoice(reservation)}
+                                color="primary"
+                                sx={{
+                                  backgroundColor: reservation.superfakturaInvoiceId ? 'success.light' : 'primary.light',
+                                  '&:hover': { backgroundColor: reservation.superfakturaInvoiceId ? 'success.main' : 'primary.main' }
+                                }}
+                              >
+                                <InvoiceIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -1560,6 +1627,21 @@ function Reservations() {
                                 color="info"
                               >
                                 <QrCodeIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          {auth.user?.email === 'lerent@lerent.sk' && (
+                            <Tooltip title="Vytvoriť faktúru (SuperFaktura)">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleCreateInvoice(reservation)}
+                                color="primary"
+                                sx={{
+                                  backgroundColor: reservation.superfakturaInvoiceId ? 'success.light' : 'primary.light',
+                                  '&:hover': { backgroundColor: reservation.superfakturaInvoiceId ? 'success.main' : 'primary.main' }
+                                }}
+                              >
+                                <InvoiceIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
                           )}

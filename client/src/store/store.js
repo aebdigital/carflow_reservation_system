@@ -337,6 +337,13 @@ export const api = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [{ type: 'Reservation', id }, 'Reservation'],
     }),
+    createInvoice: builder.mutation({
+      query: ({ id }) => ({
+        url: `reservations/${id}/create-invoice`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Reservation', id }, 'Reservation'],
+    }),
     cancelReservation: builder.mutation({
       query: ({ id, reason }) => ({
         url: `reservations/${id}/cancel`,
@@ -1080,6 +1087,7 @@ export const {
   useConfirmReservationMutation,
   useConfirmReservationPaymentMutation,
   useSendPaymentNotificationMutation,
+  useCreateInvoiceMutation,
   useCancelReservationMutation,
   useDeleteReservationMutation,
   useCheckInReservationMutation,

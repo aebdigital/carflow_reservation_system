@@ -1999,6 +1999,112 @@ const sendPaymentNotification = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Create SuperFaktura invoice manually for a reservation
+// @route   POST /api/reservations/:id/create-invoice
+// @access  Private/Admin (LeRent only)
+const createInvoice = asyncHandler(async (req, res, next) => {
+  console.log('🧾 [CREATE INVOICE] Manual invoice creation requested');
+  console.log('🧾 [CREATE INVOICE] Reservation ID:', req.params.id);
+  console.log('🧾 [CREATE INVOICE] User:', req.user?.email);
+  console.log('🧾 [CREATE INVOICE] Tenant:', req.user?.tenantId);
+
+  try {
+    // Check if user is LeRent tenant
+    const User = require('../models/User');
+    const tenantUser = await User.findById(req.user.tenantId);
+
+    console.log('🧾 [CREATE INVOICE] Tenant user email:', tenantUser?.email);
+
+    if (!tenantUser || tenantUser.email.toLowerCase() !== 'lerent@lerent.sk') {
+      console.log('❌ [CREATE INVOICE] Access denied - not LeRent tenant');
+      return next(new AppError('Vytváranie faktúr je dostupné len pre LeRent', 403));
+    }
+
+    // Find reservation
+    const reservation = await Reservation.findOne({
+      _id: req.params.id,
+      tenantId: req.user.tenantId
+    }).populate([
+      { path: 'customer', select: 'firstName lastName email phone address city zip' },
+      { path: 'car', select: 'brand model year registrationNumber' }
+    ]);
+
+    if (!reservation) {
+      console.log('❌ [CREATE INVOICE] Reservation not found');
+      return next(new AppError('Rezervácia nenájdená', 404));
+    }
+
+    console.log('🧾 [CREATE INVOICE] Reservation found:', reservation.reservationNumber);
+    console.log('🧾 [CREATE INVOICE] Customer:', reservation.customer?.email);
+    console.log('🧾 [CREATE INVOICE] Car:', reservation.car?.brand, reservation.car?.model);
+
+    // Check if invoice already exists
+    if (reservation.superfakturaInvoiceId) {
+      console.log('⚠️ [CREATE INVOICE] Invoice already exists:', reservation.superfakturaInvoiceId);
+      return res.status(200).json({
+        success: true,
+        message: 'Faktúra už existuje',
+        data: {
+          invoiceId: reservation.superfakturaInvoiceId,
+          invoiceNumber: reservation.superfakturaInvoiceNumber,
+          alreadyExists: true
+        }
+      });
+    }
+
+    // Create invoice via SuperFaktura
+    console.log('🧾 [CREATE INVOICE] Calling SuperFaktura service...');
+    const superfakturaService = require('../services/superfakturaService');
+    const invoiceResult = await superfakturaService.createInvoiceFromReservation(reservation);
+
+    console.log('🧾 [CREATE INVOICE] SuperFaktura response:', JSON.stringify(invoiceResult, null, 2));
+
+    if (!invoiceResult.success) {
+      console.error('❌ [CREATE INVOICE] SuperFaktura error:', invoiceResult.error);
+      return next(new AppError(`Chyba pri vytváraní faktúry: ${invoiceResult.error}`, 500));
+    }
+
+    // Save invoice info to reservation
+    reservation.superfakturaInvoiceId = invoiceResult.data.Invoice.id;
+    reservation.superfakturaInvoiceNumber = invoiceResult.data.Invoice.invoice_number;
+    await reservation.save();
+
+    console.log('✅ [CREATE INVOICE] Invoice created and saved successfully');
+    console.log('🧾 [CREATE INVOICE] Invoice ID:', invoiceResult.data.Invoice.id);
+    console.log('🧾 [CREATE INVOICE] Invoice Number:', invoiceResult.data.Invoice.invoice_number);
+
+    // Try to download PDF
+    let pdfDownloaded = false;
+    try {
+      console.log('📥 [CREATE INVOICE] Attempting to download invoice PDF...');
+      const pdfBuffer = await superfakturaService.getInvoicePdf(
+        invoiceResult.data.Invoice.id,
+        invoiceResult.data.Invoice.token
+      );
+      pdfDownloaded = true;
+      console.log('✅ [CREATE INVOICE] PDF downloaded successfully, size:', pdfBuffer.length, 'bytes');
+    } catch (pdfError) {
+      console.error('❌ [CREATE INVOICE] PDF download failed:', pdfError.message);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Faktúra úspešne vytvorená',
+      data: {
+        invoiceId: invoiceResult.data.Invoice.id,
+        invoiceNumber: invoiceResult.data.Invoice.invoice_number,
+        pdfDownloaded,
+        superfakturaResponse: invoiceResult.data
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ [CREATE INVOICE] Unexpected error:', error.message);
+    console.error('❌ [CREATE INVOICE] Stack:', error.stack);
+    return next(new AppError(`Chyba pri vytváraní faktúry: ${error.message}`, 500));
+  }
+});
+
 module.exports = {
   getReservations,
   getReservation,
@@ -2014,5 +2120,6 @@ module.exports = {
   generateSlovakAgreement,
   getPDFTemplateFields,
   confirmPayment,
-  sendPaymentNotification
+  sendPaymentNotification,
+  createInvoice
 }; 

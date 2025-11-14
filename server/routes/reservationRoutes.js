@@ -14,7 +14,8 @@ const {
   generateSlovakAgreement,
   getPDFTemplateFields,
   confirmPayment,
-  sendPaymentNotification
+  sendPaymentNotification,
+  createInvoice
 } = require('../controllers/reservationController');
 
 const { protect, requireStaff, addTenantFilter, restrictRivalDomain } = require('../middleware/authMiddleware');
@@ -53,5 +54,8 @@ router.put('/:id/checkout', requireStaff, checkOutReservation);
 // PDF generation
 router.get('/:id/contract', generateReservationContract);
 router.get('/:id/slovak-agreement', generateSlovakAgreement);
+
+// SuperFaktura invoice creation (LeRent only)
+router.post('/:id/create-invoice', requireStaff, createInvoice);
 
 module.exports = router; 
