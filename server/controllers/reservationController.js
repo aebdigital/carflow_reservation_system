@@ -2062,21 +2062,38 @@ const createInvoice = asyncHandler(async (req, res, next) => {
     }
 
     // Save invoice info to reservation
-    reservation.superfakturaInvoiceId = invoiceResult.data.Invoice.id;
-    reservation.superfakturaInvoiceNumber = invoiceResult.data.Invoice.invoice_number;
+    const invoice = invoiceResult.data.data.Invoice;
+    reservation.superfakturaInvoiceId = invoice.id;
+    reservation.superfakturaInvoiceNumber = invoice.invoice_no_formatted;
     await reservation.save();
 
     console.log('✅ [CREATE INVOICE] Invoice created and saved successfully');
-    console.log('🧾 [CREATE INVOICE] Invoice ID:', invoiceResult.data.Invoice.id);
-    console.log('🧾 [CREATE INVOICE] Invoice Number:', invoiceResult.data.Invoice.invoice_number);
+    console.log('🧾 [CREATE INVOICE] Invoice ID:', invoice.id);
+    console.log('🧾 [CREATE INVOICE] Invoice Number:', invoice.invoice_no_formatted);
+
+    // Update variable symbol to match invoice number
+    try {
+      console.log('🔄 [CREATE INVOICE] Updating variable symbol to match invoice number...');
+      const updateResult = await superfakturaService.updateInvoiceVariable(
+        invoice.id,
+        invoice.invoice_no_formatted
+      );
+      if (updateResult.success) {
+        console.log('✅ [CREATE INVOICE] Variable symbol updated successfully');
+      } else {
+        console.log('⚠️ [CREATE INVOICE] Variable symbol update failed:', updateResult.error);
+      }
+    } catch (updateError) {
+      console.error('❌ [CREATE INVOICE] Variable symbol update error:', updateError.message);
+    }
 
     // Try to download PDF
     let pdfDownloaded = false;
     try {
       console.log('📥 [CREATE INVOICE] Attempting to download invoice PDF...');
       const pdfBuffer = await superfakturaService.getInvoicePdf(
-        invoiceResult.data.Invoice.id,
-        invoiceResult.data.Invoice.token
+        invoice.id,
+        invoice.token
       );
       pdfDownloaded = true;
       console.log('✅ [CREATE INVOICE] PDF downloaded successfully, size:', pdfBuffer.length, 'bytes');
@@ -2088,8 +2105,8 @@ const createInvoice = asyncHandler(async (req, res, next) => {
       success: true,
       message: 'Faktúra úspešne vytvorená',
       data: {
-        invoiceId: invoiceResult.data.Invoice.id,
-        invoiceNumber: invoiceResult.data.Invoice.invoice_number,
+        invoiceId: invoice.id,
+        invoiceNumber: invoice.invoice_no_formatted,
         pdfDownloaded,
         superfakturaResponse: invoiceResult.data
       }

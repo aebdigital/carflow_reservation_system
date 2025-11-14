@@ -121,19 +121,31 @@ class SuperFakturaService {
    * @returns {Promise<Object>} SuperFaktura API response
    */
   async createInvoiceFromReservation(reservation) {
+    // Get total price including VAT from reservation
+    const totalPriceWithVat = reservation.pricing?.totalAmount || reservation.totalPrice || 0;
+    const vatRate = 20; // 20% VAT
+
+    // Calculate price without VAT (SuperFaktura expects unit_price without VAT)
+    const unitPriceWithoutVat = Math.round((totalPriceWithVat / (1 + vatRate / 100)) * 100) / 100;
+
+    console.log('💰 [PRICING] Total with VAT:', totalPriceWithVat, 'EUR');
+    console.log('💰 [PRICING] Unit price without VAT:', unitPriceWithoutVat, 'EUR');
+
     // Prepare invoice data from reservation
     const invoiceData = {
       reservationId: reservation._id,
       invoice: {
         name: `Faktúra - Rezervácia ${reservation.reservationNumber || reservation._id}`,
-        variable: reservation.reservationNumber || '',
+        // Variable symbol will be set after invoice creation to match invoice number
+        variable: '',
         payment_type: reservation.paymentMethod === 'card' ? 'card' :
                      reservation.paymentMethod === 'cash' ? 'cash' : 'transfer',
         currency: 'EUR',
         comment: `Prenájom vozidla: ${reservation.car?.brand} ${reservation.car?.model}\nOd: ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} Do: ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
         created: new Date().toISOString().split('T')[0],
         delivery: new Date().toISOString().split('T')[0],
-        due: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 14 days
+        // Due date is the first day of rental period
+        due: new Date(reservation.startDate).toISOString().split('T')[0]
       },
       items: [
         {
@@ -141,22 +153,23 @@ class SuperFakturaService {
           description: `Prenájom od ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} do ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
           quantity: 1,
           unit: 'ks',
-          unit_price: reservation.pricing?.totalAmount || reservation.totalPrice || 0,
-          tax: 20, // 20% VAT
+          unit_price: unitPriceWithoutVat, // Price WITHOUT VAT
+          tax: vatRate, // 20% VAT
           discount: 0
         }
       ],
       client: {
         name: `${reservation.customer?.firstName || ''} ${reservation.customer?.lastName || ''}`.trim() || 'Test Customer',
+        // Use actual customer address from reservation
         address: typeof reservation.customer?.address === 'string'
           ? reservation.customer.address
-          : (reservation.customer?.address?.street || 'Test Address 123'),
+          : (reservation.customer?.address?.street || ''),
         city: typeof reservation.customer?.address === 'object'
-          ? reservation.customer.address.city || 'Bratislava'
-          : reservation.customer?.city || 'Bratislava',
+          ? reservation.customer.address.city || ''
+          : reservation.customer?.city || '',
         zip: typeof reservation.customer?.address === 'object'
-          ? reservation.customer.address.zipCode || '12345'
-          : reservation.customer?.zip || '12345',
+          ? reservation.customer.address.zipCode || ''
+          : reservation.customer?.zip || '',
         country: 'Slovensko',
         email: reservation.customer?.email || 'test@example.com',
         phone: reservation.customer?.phone || '+421900000000'
@@ -252,6 +265,59 @@ class SuperFakturaService {
         console.error('❌ [SUPERFAKTURA PDF] Response data:', error.response.data?.toString?.());
       }
       throw error;
+    }
+  }
+
+  /**
+   * Update invoice variable symbol to match invoice number
+   * @param {string|number} invoiceId - SuperFaktura invoice ID
+   * @param {string} variableSymbol - New variable symbol
+   * @returns {Promise<Object>} SuperFaktura API response
+   */
+  async updateInvoiceVariable(invoiceId, variableSymbol) {
+    try {
+      console.log('🔄 [SUPERFAKTURA UPDATE] Updating invoice variable symbol:', invoiceId, 'to', variableSymbol);
+
+      const payload = {
+        Invoice: {
+          id: invoiceId,
+          variable: variableSymbol
+        }
+      };
+
+      const url = `${this.baseUrl}/invoices/edit`;
+      const headers = {
+        'Authorization': this.getAuthHeader(),
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+      };
+
+      const formData = new URLSearchParams();
+      formData.append('data', JSON.stringify(payload));
+
+      console.log('🔄 [SUPERFAKTURA UPDATE] Payload:', JSON.stringify(payload, null, 2));
+
+      const response = await axios.post(url, formData.toString(), { headers });
+
+      console.log('✅ [SUPERFAKTURA UPDATE] Variable symbol updated successfully');
+
+      return {
+        success: true,
+        data: response.data
+      };
+
+    } catch (error) {
+      console.error('❌ [SUPERFAKTURA UPDATE] Error updating variable symbol:', error.message);
+
+      if (error.response) {
+        console.error('❌ [SUPERFAKTURA UPDATE] Response status:', error.response.status);
+        console.error('❌ [SUPERFAKTURA UPDATE] Response data:', JSON.stringify(error.response.data, null, 2));
+      }
+
+      return {
+        success: false,
+        error: error.message,
+        details: error.response?.data
+      };
     }
   }
 }
