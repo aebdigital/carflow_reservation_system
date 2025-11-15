@@ -138,19 +138,21 @@ class SMTP2GOService {
     const emailConfig = this.getTenantEmailConfig(user);
     const senderEmail = emailConfig.emailFrom;
 
-    // Check if we need inline attachments (logo, icons) for Nitra-Car emails
+    // Check if we need inline attachments (logo, icons) for tenant emails
     const emailIconHelper = require('../utils/emailIconHelper');
 
-    // Check if this is a Nitra-Car user based on user email
+    // Check tenant based on user email
     const isNitraCarUser = user && user.email === 'nitra-car@nitra-car.sk';
+    const isLeRentUser = user && user.email === 'lerent@lerent.sk';
 
-    // Pass the user's email to getIconAttachments if it's Nitra-Car, otherwise use senderEmail
-    const emailForAttachments = isNitraCarUser ? user.email : senderEmail;
+    // Pass the user's email to getIconAttachments if it's a recognized tenant, otherwise use senderEmail
+    const emailForAttachments = (isNitraCarUser || isLeRentUser) ? user.email : senderEmail;
 
     console.log('📎 [EMAIL DEBUG] Checking attachments for:', {
       senderEmail,
       userEmail: user?.email,
       isNitraCarUser,
+      isLeRentUser,
       emailForAttachments
     });
 
