@@ -144,8 +144,8 @@ class SuperFakturaService {
         comment: `Prenájom vozidla: ${reservation.car?.brand} ${reservation.car?.model}\nOd: ${new Date(reservation.startDate).toLocaleDateString('sk-SK')} Do: ${new Date(reservation.endDate).toLocaleDateString('sk-SK')}`,
         created: new Date().toISOString().split('T')[0],
         delivery: new Date().toISOString().split('T')[0],
-        // Due date is the first day of rental period
-        due: new Date(reservation.startDate).toISOString().split('T')[0]
+        // Due date should not be before issue date, so use the later of today or start date
+        due: new Date(Math.max(new Date(), new Date(reservation.startDate))).toISOString().split('T')[0]
       },
       items: [
         {
