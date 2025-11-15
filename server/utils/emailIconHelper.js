@@ -114,7 +114,7 @@ class EmailIconHelper {
     if (templatePath === this.nitracarTemplatesPath) {
       logoFilename = 'nitracarlogo_optimized.png';
     } else if (templatePath === this.lerentTemplatesPath) {
-      logoFilename = 'logoRENT.svg';
+      logoFilename = 'logoRENT.png'; // Use PNG for better email client compatibility
     }
 
     return {
