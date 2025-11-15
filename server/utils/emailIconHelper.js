@@ -10,6 +10,7 @@ class EmailIconHelper {
     this.iconsCache = new Map();
     this.defaultTemplatesPath = path.join(__dirname, '../templates/email');
     this.nitracarTemplatesPath = path.join(__dirname, '../templates_nitracar/email');
+    this.lerentTemplatesPath = path.join(__dirname, '../templates_lerent/email');
   }
 
   /**
@@ -108,10 +109,18 @@ class EmailIconHelper {
   getIconFilePaths(templatesPath = null) {
     const templatePath = templatesPath || this.defaultTemplatesPath;
 
+    // Determine logo filename based on template path
+    let logoFilename = 'logo.png'; // default
+    if (templatePath === this.nitracarTemplatesPath) {
+      logoFilename = 'nitracarlogo_optimized.png';
+    } else if (templatePath === this.lerentTemplatesPath) {
+      logoFilename = 'logoRENT.svg';
+    }
+
     return {
       facebook: path.join(templatePath, 'facebook_icon.png'),
       instagram: path.join(templatePath, 'instagram_icon.png'),
-      logo: path.join(templatePath, 'nitracarlogo_optimized.png'), // Use optimized logo for email embedding
+      logo: path.join(templatePath, logoFilename),
     };
   }
 
@@ -122,28 +131,58 @@ class EmailIconHelper {
    */
   getIconAttachments(senderEmail = null) {
     // Determine template path based on sender email
-    // Check both environment variable and hardcoded Nitra-Car email
+    const senderEmailLower = senderEmail ? senderEmail.toLowerCase() : '';
+
+    // Check for LeRent
+    const isLerentEmail = senderEmail && (
+      senderEmail === process.env.LERENT_EMAIL_FROM ||
+      senderEmailLower.includes('lerent@lerent.sk') ||
+      senderEmailLower.includes('lerent')
+    );
+
+    // Check for Nitra-Car
     const isNitracarEmail = senderEmail && (
       senderEmail === process.env.NITRACAR_EMAIL_FROM ||
-      senderEmail.includes('nitra-car@nitra-car.sk') ||
-      senderEmail.includes('nitracar') ||
-      senderEmail.includes('nitra-car')
+      senderEmailLower.includes('nitra-car@nitra-car.sk') ||
+      senderEmailLower.includes('nitracar') ||
+      senderEmailLower.includes('nitra-car')
     );
-    const templatesPath = isNitracarEmail ? this.nitracarTemplatesPath : this.defaultTemplatesPath;
+
+    const templatesPath = isLerentEmail ? this.lerentTemplatesPath :
+                          isNitracarEmail ? this.nitracarTemplatesPath :
+                          this.defaultTemplatesPath;
 
     const iconPaths = this.getIconFilePaths(templatesPath);
     const attachments = [];
 
     console.log('🔍 [ICON HELPER] Template detection:', {
       senderEmail,
+      isLerentEmail,
       isNitracarEmail,
       templatesPath,
       logoPath: iconPaths.logo
     });
 
-    // Logo is now embedded as base64 data URI in template variables
-    // No need to attach as CID - skip logo attachment
-    console.log('ℹ️ [ICON HELPER] Logo will be embedded as base64 data URI, not as CID attachment');
+    // Add logo as CID attachment for LeRent and NitraCar
+    if ((isLerentEmail || isNitracarEmail) && fs.existsSync(iconPaths.logo)) {
+      const logoBuffer = fs.readFileSync(iconPaths.logo);
+      const logoMimeType = this.getMimeType(iconPaths.logo);
+      const cidName = isLerentEmail ? 'logoRENT' : 'logo';
+
+      attachments.push({
+        filename: path.basename(iconPaths.logo),
+        content: logoBuffer.toString('base64'),
+        type: logoMimeType,
+        cid: cidName
+      });
+
+      console.log('✅ [ICON HELPER] Logo attached as CID:', {
+        cid: cidName,
+        filename: path.basename(iconPaths.logo),
+        type: logoMimeType,
+        size: logoBuffer.length
+      });
+    }
 
     // Add Facebook icon if exists
     if (fs.existsSync(iconPaths.facebook)) {
