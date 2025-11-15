@@ -1227,7 +1227,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
 
     // 🧾 Create SuperFaktura invoice for LeRent tenants immediately
     let invoicePdfBuffer = null;
-    if (tenantAdminEmail && tenantAdminEmail.toLowerCase() === 'lerent@lerent.sk') {
+    if (tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk') {
       try {
         console.log('🧾 [SUPERFAKTURA] Creating invoice for new LeRent reservation:', populatedReservation._id);
 
