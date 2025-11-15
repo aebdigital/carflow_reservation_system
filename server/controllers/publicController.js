@@ -543,9 +543,12 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     extendedInsurancePrices,
     calculatedTotal,
     extraOptions,
-    
+
     // 🔧 NEW: Frontend pricing override support
-    pricing: frontendPricing
+    pricing: frontendPricing,
+
+    // Payment type (optional: 'stripe' or 'prevod')
+    paymentType
   } = req.body;
 
   // 🔍 DEBUG: Log incoming services and insurance data structure for createReservationByUser
@@ -1116,6 +1119,8 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       selectedExtendedInsurance: processedExtendedInsurance,
       insurancePrices: insurancePrices || {},
       extendedInsurancePrices: extendedInsurancePrices || {},
+      // Payment type (optional: 'stripe' or 'prevod')
+      paymentType: paymentType || undefined,
       terms: {
         mileageLimit: -1,
         fuelPolicy: 'full-to-full',
@@ -1528,9 +1533,12 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     extendedInsurancePrices,
     calculatedTotal,
     extraOptions,
-    
+
     // 🔧 NEW: Frontend pricing override support
-    pricing: frontendPricing
+    pricing: frontendPricing,
+
+    // Payment type (optional: 'stripe' or 'prevod')
+    paymentType
   } = req.body;
 
   // 🔍 DEBUG: Log incoming services and insurance data structure for createPublicReservation
@@ -1946,6 +1954,8 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       selectedExtendedInsurance: selectedExtendedInsurance || [],
       insurancePrices: insurancePrices || {},
       extendedInsurancePrices: extendedInsurancePrices || {},
+      // Payment type (optional: 'stripe' or 'prevod')
+      paymentType: paymentType || undefined,
       terms: {
         mileageLimit: -1, // Unlimited
         fuelPolicy: 'full-to-full',

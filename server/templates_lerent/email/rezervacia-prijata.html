@@ -80,16 +80,6 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .content h3 {
-            font-size: 18px;
-            margin-top: 25px;
-            margin-bottom: 15px;
-            font-family: 'Goldman', cursive;
-            background: linear-gradient(rgb(255, 255, 255) 0%, rgb(250, 146, 8) 100%);
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
         .info-box {
             background-color: rgba(250, 146, 8, 0.1);
             border-left: 4px solid #fa9208;
@@ -105,29 +95,6 @@
             color: #fa9208;
             font-weight: 600;
         }
-        .bank-details {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: rgba(33, 150, 243, 0.1);
-            border-left: 4px solid #2196F3;
-            border-radius: 4px;
-        }
-        .bank-details h3 {
-            color: #2196F3;
-            margin-top: 0;
-            background: linear-gradient(rgb(255, 255, 255) 0%, rgb(33, 150, 243) 100%);
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .bank-details p {
-            margin: 10px 0;
-        }
-        .bank-details .note {
-            margin-top: 15px;
-            font-size: 0.9em;
-            color: #999;
-        }
         .footer {
             text-align: center;
             margin-top: 40px;
@@ -135,83 +102,48 @@
             border-top: 1px solid rgba(255, 255, 255, 0.18);
             color: #cccccc;
         }
-        .steps {
-            margin: 20px 0;
-        }
-        .steps p {
-            margin: 8px 0;
-            padding-left: 20px;
-            position: relative;
-        }
     </style>
 </head>
 <body>
     <div class="email-container">
         <div class="logo-container">
-            <img src="logoRENT.svg" alt="LeRent Logo" class="logo">
+            <img src="logo.svg" alt="Logo" class="logo">
         </div>
-
+        
         <div class="header">
-            <h1>✅ REZERVÁCIA PRIJATÁ</h1>
+            <h1>✅ Rezervácia prijatá</h1>
         </div>
-
+        
         <div class="content">
-            <img src="{{car_image}}" alt="{{car_brand}} {{car_model}}" class="car-image">
-            <div class="car-name">{{car_brand}} {{car_model}}</div>
-
-            <h2>Dobrý deň {{customer_name}},</h2>
-
-            <p>Vašu rezerváciu sme <strong>úspešne prijali</strong>. Čoskoro Vás budeme kontaktovať s potvrdením a ďalšími inštrukciami.</p>
-
+            <h2>Vážený/á {{meno}},</h2>
+            
+            <p>Ďakujeme za vašu rezerváciu! Vaša žiadosť bola úspešne prijatá a je teraz v procese spracovania.</p>
+            
+            <img src="car.jpg" alt="Car Rental" class="car-image">
+            <div class="car-name">{{car}}</div>
+            
             <div class="info-box">
-                <h3>ZAČIATOK</h3>
                 <div class="info-item">
-                    <span class="info-label">Dátum:</span> {{start_date}}
+                    <span class="info-label">Meno:</span> {{meno}}
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Miesto vyzdvihnutia:</span> {{pickup_location}}
+                    <span class="info-label">Cena:</span> {{cena}}
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Čas:</span> {{start_time}}
-                </div>
-            </div>
-
-            <div class="info-box">
-                <h3>KONIEC</h3>
-                <div class="info-item">
-                    <span class="info-label">Dátum:</span> {{end_date}}
+                    <span class="info-label">Dátum a čas od:</span> {{datum_cas_odkedy}}
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Miesto vrátenia:</span> {{dropoff_location}}
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Čas:</span> {{end_time}}
+                    <span class="info-label">Dátum a čas do:</span> {{datum_cas_dokedy}}
                 </div>
             </div>
-
-            <h3>Čo sa bude diať ďalej?</h3>
-            <div class="steps">
-                <p>1. Potvrdíme Vám dostupnosť vozidla</p>
-                <p>2. Zašleme Vám informácie o platbe zálohy</p>
-                <p>3. Po uhradení zálohy je rezervácia definitívne potvrdená</p>
-            </div>
-
-            <!-- Bank Transfer Details (Only for 'prevod' payment type) -->
-            <div class="bank-details" style="display: {{show_bank_details}};">
-                <h3>💳 INFORMÁCIE O PLATBE - BANKOVÝ PREVOD</h3>
-                <p><strong>Fakturačné údaje k platbe nájdete v priloženej faktúre.</strong></p>
-                <p class="note">
-                    Prosím, uhraďte sumu podľa priloženej faktúry bankovým prevodom. Po potvrdení platby Vám zašleme definitívne potvrdenie rezervácie.
-                </p>
-            </div>
-
+            
+            <p>Vaša rezervácia bude čoskoro spracovaná a pošleme vám potvrdenie s ďalšími pokynmi.</p>
+            
             <p>V prípade akýchkoľvek otázok nás neváhajte kontaktovať.</p>
-
-            <p><strong>Tešíme sa na Vás!</strong></p>
         </div>
-
+        
         <div class="footer">
-            <p>LeRent Autopožičovňa</p>
+            <p>S pozdravom,<br>Váš tím car rental</p>
         </div>
     </div>
 </body>

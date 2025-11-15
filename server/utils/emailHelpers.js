@@ -65,6 +65,9 @@ function prepareReservationEmailData(reservation, car, customer) {
     carInfo: `${car.brand || ''} ${car.model || ''} ${car.year || ''}`.trim(),
     carRegistration: car.registrationNumber || car.licensePlate || '',
     carCategory: car.category || car.type || '',
+    carImage: car.images && car.images.length > 0 ? car.images[0] : (car.imageUrl || ''),
+    carBrand: car.brand || '',
+    carModel: car.model || '',
 
     // Pricing info
     dailyRate: (reservation.pricing?.dailyRate || car.dailyRate || 0).toFixed(2),
