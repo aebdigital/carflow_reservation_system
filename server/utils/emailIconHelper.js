@@ -163,11 +163,11 @@ class EmailIconHelper {
       logoPath: iconPaths.logo
     });
 
-    // Add logo as CID attachment for LeRent and NitraCar
-    if ((isLerentEmail || isNitracarEmail) && fs.existsSync(iconPaths.logo)) {
+    // Add logo as CID attachment for NitraCar only (LeRent uses hosted URL)
+    if (isNitracarEmail && fs.existsSync(iconPaths.logo)) {
       const logoBuffer = fs.readFileSync(iconPaths.logo);
       const logoMimeType = this.getMimeType(iconPaths.logo);
-      const cidName = isLerentEmail ? 'logoRENT' : 'logo';
+      const cidName = 'logo';
 
       attachments.push({
         filename: path.basename(iconPaths.logo),
@@ -182,6 +182,10 @@ class EmailIconHelper {
         type: logoMimeType,
         size: logoBuffer.length
       });
+    }
+
+    if (isLerentEmail) {
+      console.log('ℹ️  [ICON HELPER] LeRent uses hosted logo URL, skipping CID attachment');
     }
 
     // Add Facebook icon if exists
