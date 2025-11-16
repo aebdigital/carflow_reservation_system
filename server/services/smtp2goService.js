@@ -547,7 +547,9 @@ class SMTP2GOService {
       company_email: emailConfig.emailFrom,
       company_phone: user?.phoneNumber || user?.phone || '+421 XXX XXX XXX',
       link_view: `https://pozicauto.sk/reservations/${reservationData.reservationNumber}`,
-      current_year: new Date().getFullYear()
+      current_year: new Date().getFullYear(),
+      // LeRent logo URL (from environment variable or fallback)
+      lerent_logo_url: process.env.LERENT_LOGO_URL || 'https://storage.googleapis.com/carflow-reservation-system.appspot.com/lerent-logo.png'
     };
 
     // Add QR code data if available (same logic as confirmed email)
