@@ -549,7 +549,7 @@ class SMTP2GOService {
       link_view: `https://pozicauto.sk/reservations/${reservationData.reservationNumber}`,
       current_year: new Date().getFullYear(),
       // LeRent logo URL (from environment variable or fallback)
-      lerent_logo_url: process.env.LERENT_LOGO_URL || 'https://storage.googleapis.com/carflow-reservation-system.appspot.com/lerent-logo.png'
+      lerent_logo_url: process.env.LERENT_LOGO_URL || 'https://storage.googleapis.com/car_rental_carflow/tenant-5e482191fe5890cb9f9ad402/user-5e482191fe5890cb9f9ad402/logoRENT.png'
     };
 
     // Add QR code data if available (same logic as confirmed email)
@@ -741,7 +741,7 @@ class SMTP2GOService {
       link_view: `https://pozicauto.sk/reservations/${reservationData.reservationNumber}`,
       link_cancel: `https://pozicauto.sk/reservations/${reservationData.reservationNumber}/cancel`,
       // LeRent logo URL (from environment variable or fallback)
-      lerent_logo_url: process.env.LERENT_LOGO_URL || 'https://storage.googleapis.com/carflow-reservation-system.appspot.com/lerent-logo.png'
+      lerent_logo_url: process.env.LERENT_LOGO_URL || 'https://storage.googleapis.com/car_rental_carflow/tenant-5e482191fe5890cb9f9ad402/user-5e482191fe5890cb9f9ad402/logoRENT.png'
     };
 
     console.log('🔍 [EMAIL DEBUG] Final template variables:', {
