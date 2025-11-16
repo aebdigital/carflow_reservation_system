@@ -90,7 +90,10 @@ function prepareReservationEmailData(reservation, car, customer) {
     qr_section_display: (reservation.qrCodes && (reservation.qrCodes.payBySquareRental || reservation.qrCodes.payBySquare)) ? 'block' : 'none',
     qr_rental_display: (reservation.qrCodes?.payBySquareRental || reservation.qrCodes?.payBySquare) ? 'block' : 'none',
     qr_deposit_display: (reservation.qrCodes?.payBySquareDeposit || reservation.qrCodes?.qrPlatbaCz) ? 'block' : 'none',
-    
+
+    // LeRent logo URL (from environment variable or fallback)
+    lerent_logo_url: process.env.LERENT_LOGO_URL || 'https://storage.googleapis.com/carflow-reservation-system.appspot.com/lerent-logo.png',
+
     // Tenant info for settings lookup
     tenantId: reservation.tenantId || customer.tenantId || car.tenantId
   };

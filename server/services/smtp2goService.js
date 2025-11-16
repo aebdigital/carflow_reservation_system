@@ -145,15 +145,16 @@ class SMTP2GOService {
     const isNitraCarUser = user && user.email === 'nitra-car@nitra-car.sk';
     const isLeRentUser = user && user.email === 'lerent@lerent.sk';
 
-    // Pass the user's email to getIconAttachments if it's a recognized tenant, otherwise use senderEmail
-    const emailForAttachments = (isNitraCarUser || isLeRentUser) ? user.email : senderEmail;
+    // LeRent uses hosted logo URL instead of CID attachments, so only get attachments for NitraCar
+    const emailForAttachments = isNitraCarUser ? user.email : senderEmail;
 
     console.log('📎 [EMAIL DEBUG] Checking attachments for:', {
       senderEmail,
       userEmail: user?.email,
       isNitraCarUser,
       isLeRentUser,
-      emailForAttachments
+      emailForAttachments,
+      note: isLeRentUser ? 'LeRent uses hosted logo URL' : 'Using CID attachments'
     });
 
     const inlineAttachments = emailIconHelper.getIconAttachments(emailForAttachments);
