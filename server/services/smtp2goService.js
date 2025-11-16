@@ -737,7 +737,9 @@ class SMTP2GOService {
       company_email: emailConfig.emailFrom,
       company_phone: user?.phoneNumber || user?.phone || '+421 XXX XXX XXX',
       link_view: `https://pozicauto.sk/reservations/${reservationData.reservationNumber}`,
-      link_cancel: `https://pozicauto.sk/reservations/${reservationData.reservationNumber}/cancel`
+      link_cancel: `https://pozicauto.sk/reservations/${reservationData.reservationNumber}/cancel`,
+      // LeRent logo URL (from environment variable or fallback)
+      lerent_logo_url: process.env.LERENT_LOGO_URL || 'https://storage.googleapis.com/carflow-reservation-system.appspot.com/lerent-logo.png'
     };
 
     console.log('🔍 [EMAIL DEBUG] Final template variables:', {
