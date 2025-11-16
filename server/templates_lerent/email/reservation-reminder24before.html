@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upomienka platby rezervácie</title>
+    <title>Pripomienka: Vrátenie vozidla zajtra</title>
     <style>
         /* Mobile-specific styles */
         @media only screen and (max-width: 600px) {
@@ -42,7 +42,7 @@
                     <!-- Header -->
                     <tr>
                         <td style="padding: 80px 20px 30px 20px; text-align: center;">
-                            <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #fa9208;">💳 UPOMIENKA PLATBY</h1>
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #fa9208;">⏰ PRIPOMIENKA: VRÁTENIE VOZIDLA ZAJTRA</h1>
                         </td>
                     </tr>
 
@@ -61,42 +61,54 @@
                             <h2 style="font-size: 22px; margin-bottom: 20px; color: #ffffff;">Dobrý deň {{customer_name}},</h2>
 
                             <p style="color: #ffffff; line-height: 1.6;">
-                                Vaša rezervácia bola úspešne potvrdená, ale zatiaľ sme nezaznamenali úhradu platby. Pripomíname Vám, že pre dokončenie rezervácie je potrebné uhradiť platbu.
+                                Pripomíname Vám, že <strong>zajtra</strong> je termín vrátenia rezervovaného vozidla.
                             </p>
 
-                            <!-- Reservation Details Box -->
+                            <!-- Return Info Box -->
                             <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 20px 0; background-color: rgba(250, 146, 8, 0.1); border-left: 4px solid #fa9208; border-radius: 4px;">
                                 <tr>
                                     <td style="padding: 20px;">
-                                        <h3 style="font-size: 18px; margin-top: 0; margin-bottom: 15px; color: #fa9208;">DETAILY REZERVÁCIE</h3>
+                                        <h3 style="font-size: 18px; margin-top: 0; margin-bottom: 15px; color: #fa9208;">VRÁTENIE VOZIDLA</h3>
                                         <div style="margin: 10px 0; font-size: 16px; color: #ffffff;">
-                                            <span style="color: #fa9208; font-weight: 600;">Vozidlo:</span> {{car_brand}} {{car_model}}
+                                            <span style="color: #fa9208; font-weight: 600;">Dátum:</span> {{end_date}}
                                         </div>
                                         <div style="margin: 10px 0; font-size: 16px; color: #ffffff;">
-                                            <span style="color: #fa9208; font-weight: 600;">Dátum vyzdvihnutia:</span> {{start_date}}
+                                            <span style="color: #fa9208; font-weight: 600;">Miesto vrátenia:</span> {{dropoff_location}}
                                         </div>
                                         <div style="margin: 10px 0; font-size: 16px; color: #ffffff;">
-                                            <span style="color: #fa9208; font-weight: 600;">Dátum vrátenia:</span> {{end_date}}
-                                        </div>
-                                        <div style="margin: 10px 0; font-size: 16px; color: #ffffff;">
-                                            <span style="color: #fa9208; font-weight: 600;">Miesto vyzdvihnutia:</span> {{pickup_location}}
+                                            <span style="color: #fa9208; font-weight: 600;">Čas:</span> {{end_time}}
                                         </div>
                                     </td>
                                 </tr>
                             </table>
 
-                            <!-- Deposit Amount -->
-                            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 20px 0; background-color: rgba(33, 150, 243, 0.1); border-left: 4px solid #2196F3; border-radius: 4px;">
+                            <!-- Important Notice -->
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 30px; background-color: rgba(33, 150, 243, 0.1); border-left: 4px solid #2196F3; border-radius: 4px;">
                                 <tr>
                                     <td style="padding: 20px;">
-                                        <h3 style="color: #2196F3; margin-top: 0; font-size: 18px;">💰 Suma k úhrade: {{deposit_amount}}</h3>
+                                        <h3 style="color: #2196F3; margin-top: 0; font-size: 18px;">💡 Dôležité upozornenie:</h3>
+                                        <div style="margin: 20px 0; color: #ffffff;">
+                                            <p style="margin: 8px 0; padding-left: 20px; color: #ffffff;">✓ Prosím naplňte nádrž na pôvodnú úroveň</p>
+                                            <p style="margin: 8px 0; padding-left: 20px; color: #ffffff;">✓ Skontrolujte vozidlo pred vrátením</p>
+                                            <p style="margin: 8px 0; padding-left: 20px; color: #ffffff;">✓ Nezabudnite si všetky osobné veci</p>
+                                            <p style="margin: 8px 0; padding-left: 20px; color: #ffffff;">✓ V prípade oneskorenia nás prosím kontaktujte vopred</p>
+                                        </div>
                                     </td>
                                 </tr>
                             </table>
 
-                            <p style="color: #ffffff; line-height: 1.6; margin-top: 20px;">Úhradu je potrebné zrealizovať podľa údajov uvedených na faktúre.</p>
+                            <p style="color: #ffffff; line-height: 1.6; margin-top: 20px;"><strong>Ďakujeme, že ste si vybrali naše služby!</strong></p>
 
-                            <p style="color: #ffffff; line-height: 1.6; margin-top: 20px;">V prípade otázok nás neváhajte kontaktovať.</p>
+                            <!-- Google Review Request -->
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 30px; background-color: rgba(250, 146, 8, 0.1); border-left: 4px solid #fa9208; border-radius: 4px;">
+                                <tr>
+                                    <td style="padding: 20px; text-align: center;">
+                                        <h3 style="color: #fa9208; margin-top: 0; font-size: 18px;">⭐ Boli ste s prenájmom spokojní?</h3>
+                                        <p style="color: #ffffff; margin: 10px 0 15px 0;">Zanechajte nám recenziu na Googli</p>
+                                        <a href="https://www.google.com/search?sa=X&sca_esv=3a311592578585b5&biw=1729&bih=921&tbm=lcl&sxsrf=AE3TifP8fKm79hxKxIi9mvgJuyTgHe6LjQ:1763309034317&q=lerent%20nitra%20reviews&rflfq=1&num=20&stick=H4sIAAAAAAAAAONgkxIyMTQ0sjA3MjIzMrS0NDYwNjXewMj4ilEkJ7UoNa9EIS-zpChRoSi1LDO1vHgRK1ZhAJlNqUJHAAAA&rldimm=411287226219930353&hl=en-SK&ved=0CA4Q5foLahcKEwiYw6uFhveQAxUAAAAAHQAAAAAQBQ#" style="display: inline-block; padding: 12px 30px; background-color: #fa9208; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; margin-top: 10px;">Napísať recenziu</a>
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
 

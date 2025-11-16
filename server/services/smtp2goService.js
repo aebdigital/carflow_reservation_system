@@ -1259,8 +1259,8 @@ class SMTP2GOService {
     // Get processed email template with sender-specific template folder
     // For vehicle return reminders, use the specific template for each tenant
     const templateName = senderEmail && senderEmail.includes('lerent')
-      ? 'reservation-reminder24after'  // LeRent specific return reminder template
-      : 'reminder-notification';       // Default/Rival template
+      ? 'reservation-reminder24before'  // LeRent specific return reminder template
+      : 'reminder-notification';        // Default/Rival template
 
     const emailData = await this.safeLoadEmailTemplate(templateName, templateVariables, senderEmail);
     if (!emailData) {
