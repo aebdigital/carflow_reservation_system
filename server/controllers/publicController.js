@@ -1263,11 +1263,11 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       .populate('car', 'brand model year registrationNumber images')
       .populate('appliedDiscountCodes.discountCode', 'code description discountType discountValue');
 
-    // 🧾 Create SuperFaktura invoice for LeRent tenants immediately
+    // 🧾 Create SuperFaktura invoice for LeRent tenants with bank transfer payment only
     let invoicePdfBuffer = null;
-    if (tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk') {
+    if (tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk' && savedReservation.paymentType === 'prevod') {
       try {
-        console.log('🧾 [SUPERFAKTURA] Creating invoice for new LeRent reservation:', populatedReservation._id);
+        console.log('🧾 [SUPERFAKTURA] Creating invoice for new LeRent bank transfer reservation:', populatedReservation._id);
 
         const superfakturaService = require('../services/superfakturaService');
         const invoiceResult = await superfakturaService.createInvoiceFromReservation(populatedReservation);
@@ -1289,12 +1289,12 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
             );
             console.log('✅ [SUPERFAKTURA] Invoice PDF downloaded for email attachment');
 
-            // Update variable symbol to match invoice number
+            // Update variable symbol to match reservation number
             await superfakturaService.updateInvoiceVariable(
               invoiceResult.data.data.Invoice.id,
-              invoiceResult.data.data.Invoice.invoice_no_formatted
+              populatedReservation.reservationNumber
             );
-            console.log('✅ [SUPERFAKTURA] Variable symbol updated to match invoice number');
+            console.log('✅ [SUPERFAKTURA] Variable symbol updated to match reservation number:', populatedReservation.reservationNumber);
           } catch (pdfError) {
             console.error('❌ [SUPERFAKTURA] Failed to download invoice PDF:', pdfError.message);
           }
@@ -2110,7 +2110,7 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       .populate('customer', 'firstName lastName email phone')
       .populate('car', 'brand model year registrationNumber dailyRate images');
 
-    // 🧾 Create SuperFaktura invoice for LeRent tenants immediately
+    // 🧾 Create SuperFaktura invoice for LeRent tenants with bank transfer payment only
     let invoicePdfBuffer = null;
     // Get tenant admin user first to check if it's LeRent
     let tenantAdminUser = null;
@@ -2124,9 +2124,9 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       console.warn('⚠️ [INVOICE] Could not fetch tenant admin user:', userError.message);
     }
 
-    if (tenantAdminUser && tenantAdminUser.email.toLowerCase() === 'lerent@lerent.sk') {
+    if (tenantAdminUser && tenantAdminUser.email.toLowerCase() === 'lerent@lerent.sk' && savedReservation.paymentType === 'prevod') {
       try {
-        console.log('🧾 [SUPERFAKTURA] Creating invoice for new LeRent general public reservation:', populatedReservation._id);
+        console.log('🧾 [SUPERFAKTURA] Creating invoice for new LeRent bank transfer reservation:', populatedReservation._id);
 
         const superfakturaService = require('../services/superfakturaService');
         const invoiceResult = await superfakturaService.createInvoiceFromReservation(populatedReservation);
@@ -2148,12 +2148,12 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
             );
             console.log('✅ [SUPERFAKTURA] Invoice PDF downloaded for email attachment');
 
-            // Update variable symbol to match invoice number
+            // Update variable symbol to match reservation number
             await superfakturaService.updateInvoiceVariable(
               invoiceResult.data.data.Invoice.id,
-              invoiceResult.data.data.Invoice.invoice_no_formatted
+              populatedReservation.reservationNumber
             );
-            console.log('✅ [SUPERFAKTURA] Variable symbol updated to match invoice number');
+            console.log('✅ [SUPERFAKTURA] Variable symbol updated to match reservation number:', populatedReservation.reservationNumber);
           } catch (pdfError) {
             console.error('❌ [SUPERFAKTURA] Failed to download invoice PDF:', pdfError.message);
           }
