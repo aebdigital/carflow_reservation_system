@@ -972,7 +972,43 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     const defaultDropoff = dropoffLocation || defaultPickup;
 
     // Generate unique reservation number
-    const reservationNumber = `RES-${tenantId.toString().slice(-4).toUpperCase()}-${Date.now()}`;
+    // For LeRent: Format YYYYMMNN (year + month + sequential number)
+    // For others: RES-XXXX-timestamp
+    let reservationNumber;
+
+    // Get tenant admin user to check if this is LeRent
+    const tenantAdminUser = await User.findOne({
+      tenantId,
+      role: 'admin'
+    });
+
+    if (tenantAdminUser && tenantAdminUser.email.toLowerCase() === 'lerent@lerent.sk') {
+      // LeRent-specific reservation number format: YYYYMMNN
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+
+      // Get count of reservations for this month in this tenant
+      const startOfMonth = new Date(year, now.getMonth(), 1);
+      const endOfMonth = new Date(year, now.getMonth() + 1, 0, 23, 59, 59);
+
+      const monthlyReservationCount = await Reservation.countDocuments({
+        tenantId,
+        createdAt: {
+          $gte: startOfMonth,
+          $lte: endOfMonth
+        }
+      });
+
+      // Sequential number for this month (2 digits, starting from 01)
+      const sequentialNumber = String(monthlyReservationCount + 1).padStart(2, '0');
+
+      reservationNumber = `${year}${month}${sequentialNumber}`;
+      console.log(`🔢 [LERENT] Generated reservation number: ${reservationNumber} (Year: ${year}, Month: ${month}, #${sequentialNumber})`);
+    } else {
+      // Default format for other tenants
+      reservationNumber = `RES-${tenantId.toString().slice(-4).toUpperCase()}-${Date.now()}`;
+    }
 
     // 🔧 PROCESS INSURANCE: Look up insurance documents and calculate prices
     const processedAdditionalInsurance = [];
@@ -1145,11 +1181,13 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
           const depositAmount = car.pricing?.deposit || 0;
           const totalAmount = rentalAmount + depositAmount;
           
-          // Generate variable symbol from reservation number and ID
-          const reservationDigits = reservation.reservationNumber ? 
-            reservation.reservationNumber.replace(/[^0-9]/g, '') : 
+          // Generate variable symbol from reservation number
+          // For LeRent: use reservation number directly (e.g., 20251101)
+          // For others: extract digits
+          const reservationDigits = reservation.reservationNumber ?
+            reservation.reservationNumber.replace(/[^0-9]/g, '') :
             reservation._id.toString().slice(-8);
-          const variableSymbol = reservationDigits.slice(-10).padStart(10, '0');
+          const variableSymbol = reservationDigits; // Use reservation number as-is
           
           // Update reservation with QR codes
           reservation.qrCodes = {
@@ -1922,7 +1960,43 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     const defaultDropoff = dropoffLocation || defaultPickup;
 
     // Generate unique reservation number
-    const reservationNumber = `RES-${tenantId.toString().slice(-4).toUpperCase()}-${Date.now()}`;
+    // For LeRent: Format YYYYMMNN (year + month + sequential number)
+    // For others: RES-XXXX-timestamp
+    let reservationNumber;
+
+    // Get tenant admin user to check if this is LeRent
+    const tenantAdminUserForNumber = await User.findOne({
+      tenantId,
+      role: 'admin'
+    });
+
+    if (tenantAdminUserForNumber && tenantAdminUserForNumber.email.toLowerCase() === 'lerent@lerent.sk') {
+      // LeRent-specific reservation number format: YYYYMMNN
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+
+      // Get count of reservations for this month in this tenant
+      const startOfMonth = new Date(year, now.getMonth(), 1);
+      const endOfMonth = new Date(year, now.getMonth() + 1, 0, 23, 59, 59);
+
+      const monthlyReservationCount = await Reservation.countDocuments({
+        tenantId,
+        createdAt: {
+          $gte: startOfMonth,
+          $lte: endOfMonth
+        }
+      });
+
+      // Sequential number for this month (2 digits, starting from 01)
+      const sequentialNumber = String(monthlyReservationCount + 1).padStart(2, '0');
+
+      reservationNumber = `${year}${month}${sequentialNumber}`;
+      console.log(`🔢 [LERENT] Generated reservation number: ${reservationNumber} (Year: ${year}, Month: ${month}, #${sequentialNumber})`);
+    } else {
+      // Default format for other tenants
+      reservationNumber = `RES-${tenantId.toString().slice(-4).toUpperCase()}-${Date.now()}`;
+    }
 
     // Create reservation
     const reservation = await Reservation.create({
@@ -1980,11 +2054,13 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
           const depositAmount = car.pricing?.deposit || 0;
           const totalAmount = rentalAmount + depositAmount;
           
-          // Generate variable symbol from reservation number and ID
-          const reservationDigits = reservation.reservationNumber ? 
-            reservation.reservationNumber.replace(/[^0-9]/g, '') : 
+          // Generate variable symbol from reservation number
+          // For LeRent: use reservation number directly (e.g., 20251101)
+          // For others: extract digits
+          const reservationDigits = reservation.reservationNumber ?
+            reservation.reservationNumber.replace(/[^0-9]/g, '') :
             reservation._id.toString().slice(-8);
-          const variableSymbol = reservationDigits.slice(-10).padStart(10, '0');
+          const variableSymbol = reservationDigits; // Use reservation number as-is
           
           // Update reservation with QR codes
           reservation.qrCodes = {
@@ -4293,11 +4369,11 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
               variableSymbol = qrResult.metadata.variableSymbol;
               console.log('🔢 [QR VS] Using variable symbol from QR metadata:', variableSymbol);
             } else {
-              // Fallback for other tenants: Use reservation-based variable symbol
+              // Fallback for other tenants: Use reservation number as variable symbol
               const reservationDigits = reservation.reservationNumber ?
                 reservation.reservationNumber.replace(/[^0-9]/g, '') :
                 reservation._id.toString().slice(-8);
-              variableSymbol = reservationDigits.slice(-10).padStart(10, '0');
+              variableSymbol = reservationDigits; // Use reservation number as-is
             }
 
             // Payment note based on tenant

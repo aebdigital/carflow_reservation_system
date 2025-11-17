@@ -54,7 +54,7 @@ class SuperFakturaService {
           quantity: item.quantity || 1,
           unit: item.unit || 'ks', // ks = pieces, hod = hours, dni = days
           unit_price: item.unit_price,
-          tax: item.tax || 20, // VAT rate in %
+          tax: item.tax || 23, // VAT rate in % (Slovakia standard rate)
           discount: item.discount || 0,
           discount_description: item.discount_description || ''
         })),
@@ -123,7 +123,7 @@ class SuperFakturaService {
   async createInvoiceFromReservation(reservation) {
     // Get total price including VAT from reservation
     const totalPriceWithVat = reservation.pricing?.totalAmount || reservation.totalPrice || 0;
-    const vatRate = 20; // 20% VAT
+    const vatRate = 23; // 23% VAT (Slovakia standard rate)
 
     // Calculate price without VAT (SuperFaktura expects unit_price without VAT)
     const unitPriceWithoutVat = Math.round((totalPriceWithVat / (1 + vatRate / 100)) * 100) / 100;
@@ -154,7 +154,7 @@ class SuperFakturaService {
           quantity: 1,
           unit: 'ks',
           unit_price: unitPriceWithoutVat, // Price WITHOUT VAT
-          tax: vatRate, // 20% VAT
+          tax: vatRate, // 23% VAT (Slovakia)
           discount: 0
         }
       ],
