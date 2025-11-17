@@ -2022,11 +2022,11 @@ function Reservations() {
                           )}
 
                           {/* Variable Symbol - show for bank transfers */}
-                          {selectedReservation.paymentType === 'prevod' && selectedReservation.qrCodes?.variableSymbol && (
+                          {selectedReservation.paymentType === 'prevod' && (selectedReservation.qrCodes?.variableSymbol || selectedReservation.reservationNumber) && (
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
                               <Typography variant="body2" color="text.secondary">Variabilný symbol:</Typography>
                               <Typography variant="body2" fontWeight="medium" color="primary">
-                                {selectedReservation.qrCodes.variableSymbol}
+                                {selectedReservation.qrCodes?.variableSymbol || selectedReservation.reservationNumber}
                               </Typography>
                             </Box>
                           )}
