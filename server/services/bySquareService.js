@@ -513,18 +513,8 @@ class BySquareService {
       rentalAmount
     });
 
-    // Generate sequential variable symbol for LeRent
-    const QRCounter = require('../models/QRCounter');
-    const User = require('../models/User');
-
-    let variableSymbol;
-    const tenantUser = await User.findOne({ email: tenantEmail.toLowerCase() });
-    if (tenantUser) {
-      variableSymbol = await QRCounter.getNextVariableSymbol(tenantUser._id);
-    } else {
-      // Fallback if user not found
-      variableSymbol = `${new Date().getFullYear()}0001`;
-    }
+    // Use reservation number as variable symbol for LeRent
+    const variableSymbol = reservation.reservationNumber || `${new Date().getFullYear()}0001`;
 
     return {
       invoiceId: invoiceNumber + '-TOTAL',
