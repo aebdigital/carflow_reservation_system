@@ -4280,7 +4280,7 @@ const getReservationQR = asyncHandler(async (req, res, next) => {
         paymentDetails: {
           amount: reservation.qrCodes.amount,
           bankAccount: reservation.qrCodes.bankAccount,
-          variableSymbol: reservation.qrCodes.variableSymbol,
+          variableSymbol: reservation.qrCodes.variableSymbol || reservation.reservationNumber,
           constantSymbol: reservation.qrCodes.constantSymbol,
           specificSymbol: reservation.qrCodes.specificSymbol,
           beneficiaryName: reservation.qrCodes.beneficiaryName,
@@ -4514,7 +4514,7 @@ const getReservationQRByUser = asyncHandler(async (req, res, next) => {
         paymentDetails: {
           amount: reservation.qrCodes.amount,
           bankAccount: reservation.qrCodes.bankAccount,
-          variableSymbol: reservation.qrCodes.variableSymbol,
+          variableSymbol: reservation.qrCodes.variableSymbol || reservation.reservationNumber,
           constantSymbol: reservation.qrCodes.constantSymbol,
           specificSymbol: reservation.qrCodes.specificSymbol,
           beneficiaryName: reservation.qrCodes.beneficiaryName,
