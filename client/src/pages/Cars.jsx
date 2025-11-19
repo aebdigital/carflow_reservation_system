@@ -1174,23 +1174,42 @@ function Cars() {
     }
   }
 
-  const renderCarCard = (car) => (
-    <Grid item xs={12} sm={6} md={4} lg={3} xl={3} key={car._id}>
-      <Card 
-        onClick={() => handleOpenDialog('view', car)}
-        sx={{ 
-          height: 400, // Increased height for better photo display
-          display: 'flex', 
-          flexDirection: 'column',
-          boxShadow: 2,
-          cursor: 'pointer', // Show pointer cursor
-          '&:hover': {
-            boxShadow: 4,
-            transform: 'translateY(-2px)',
-            transition: 'all 0.2s ease-in-out'
-          }
-        }}
-      >
+  // Check if STK+EK is expiring within 30 days (for Rival only)
+  const isStkExpiringSoon = (car) => {
+    const isRival = user?.email?.toLowerCase() === 'rival@test.sk';
+    if (!isRival) return false;
+
+    const stkDate = car.documentValidity?.technicalInspection?.expiryDate;
+    if (!stkDate) return false;
+
+    const expiryDate = new Date(stkDate);
+    const today = new Date();
+    const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+
+    return daysUntilExpiry <= 30 && daysUntilExpiry >= 0;
+  };
+
+  const renderCarCard = (car) => {
+    const hasExpiringStkEk = isStkExpiringSoon(car);
+
+    return (
+      <Grid item xs={12} sm={6} md={4} lg={3} xl={3} key={car._id}>
+        <Card
+          onClick={() => handleOpenDialog('view', car)}
+          sx={{
+            height: 400, // Increased height for better photo display
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: 2,
+            cursor: 'pointer', // Show pointer cursor
+            border: hasExpiringStkEk ? '3px solid red' : 'none',
+            '&:hover': {
+              boxShadow: 4,
+              transform: 'translateY(-2px)',
+              transition: 'all 0.2s ease-in-out'
+            }
+          }}
+        >
         <CardMedia
           component="img"
           height="200" // Increased image height for much better photo display
@@ -1358,7 +1377,8 @@ function Cars() {
         </CardContent>
       </Card>
     </Grid>
-  )
+    );
+  };
 
   return (
     <Box>
