@@ -886,8 +886,8 @@ export default function BannerSettings() {
                     </FormControl>
                   </Grid>
 
-                  {/* Title and Subtitle - Only for LeRent user */}
-                  {isLeRentUser && (
+                  {/* Title and Subtitle - Only for non-LeRent users */}
+                  {!isLeRentUser && (
                     <>
                       <Grid item xs={12}>
                         <TextField
