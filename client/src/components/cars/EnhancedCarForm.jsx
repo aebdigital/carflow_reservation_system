@@ -289,6 +289,7 @@ const EnhancedCarForm = ({
 
   // Enhanced options with new categories (tenant-specific)
   const isLeRent = user?.email?.toLowerCase() === 'lerent@lerent.sk';
+  const isRival = user?.email?.toLowerCase() === 'rival@test.sk';
 
   const categoryOptions = isLeRent ? [
     // LeRent-specific categories
@@ -1301,7 +1302,7 @@ const EnhancedCarForm = ({
           <Grid item xs={12} md={4}>
             <TextField
               fullWidth
-              label="Platnosť STK"
+              label={isRival ? "Platnosť STK+EK" : "Platnosť STK"}
               type="date"
               value={formData.documentValidity?.technicalInspection?.expiryDate?.split('T')[0] || ''}
               onChange={(e) => handleNestedChange('documentValidity.technicalInspection.expiryDate', e.target.value)}
@@ -1315,22 +1316,24 @@ const EnhancedCarForm = ({
             />
           </Grid>
 
-          <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              label="Platnosť EK"
-              type="date"
-              value={formData.documentValidity?.emissionInspection?.expiryDate?.split('T')[0] || ''}
-              onChange={(e) => handleNestedChange('documentValidity.emissionInspection.expiryDate', e.target.value)}
-              disabled={dialogMode === 'view'}
-              InputLabelProps={{ shrink: true }}
-              helperText={
-                <a href="https://www.stkonline.sk/overenie-stk" target="_blank" rel="noopener noreferrer">
-                  Overiť EK online
-                </a>
-              }
-            />
-          </Grid>
+          {!isRival && (
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="Platnosť EK"
+                type="date"
+                value={formData.documentValidity?.emissionInspection?.expiryDate?.split('T')[0] || ''}
+                onChange={(e) => handleNestedChange('documentValidity.emissionInspection.expiryDate', e.target.value)}
+                disabled={dialogMode === 'view'}
+                InputLabelProps={{ shrink: true }}
+                helperText={
+                  <a href="https://www.stkonline.sk/overenie-stk" target="_blank" rel="noopener noreferrer">
+                    Overiť EK online
+                  </a>
+                }
+              />
+            </Grid>
+          )}
 
           <Grid item xs={12}>
             <Divider sx={{ my: 3 }} />
