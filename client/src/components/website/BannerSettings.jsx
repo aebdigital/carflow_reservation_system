@@ -72,7 +72,7 @@ const positionOptions = [
 ]
 
 // Drag and Drop Image Component
-const DraggableImage = ({ image, index, onRemove, onTranslate, onDragStart, onDragOver, onDrop, isEditing }) => {
+const DraggableImage = ({ image, index, onRemove, onTranslate, onEdit, onDragStart, onDragOver, onDrop, isEditing, isLeRent }) => {
   const [isDragOver, setIsDragOver] = useState(false)
 
   const handleDragStart = (e) => {
@@ -153,36 +153,55 @@ const DraggableImage = ({ image, index, onRemove, onTranslate, onDragStart, onDr
               gap: 0.5
             }}
           >
-            <Tooltip title="English Translation">
-              <IconButton
-                size="small"
-                onClick={() => onTranslate && onTranslate(image)}
-                sx={{
-                  backgroundColor: 'rgba(25, 118, 210, 0.8)',
-                  color: 'white',
-                  position: 'relative',
-                  '&:hover': {
-                    backgroundColor: 'rgba(25, 118, 210, 1)'
-                  }
-                }}
-              >
-                <LanguageIcon fontSize="small" />
-                {(image.altEn || image.titleEn || image.descriptionEn) && (
-                  <Box
-                    component="span"
-                    sx={{
-                      position: 'absolute',
-                      top: 2,
-                      right: 2,
-                      width: 6,
-                      height: 6,
-                      bgcolor: '#4caf50',
-                      borderRadius: '50%',
-                    }}
-                  />
-                )}
-              </IconButton>
-            </Tooltip>
+            {isLeRent && (
+              <Tooltip title="Upraviť nadpis, podnadpis a odkaz">
+                <IconButton
+                  size="small"
+                  onClick={() => onEdit && onEdit(image, index)}
+                  sx={{
+                    backgroundColor: 'rgba(76, 175, 80, 0.8)',
+                    color: 'white',
+                    '&:hover': {
+                      backgroundColor: 'rgba(76, 175, 80, 1)'
+                    }
+                  }}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            {!isLeRent && (
+              <Tooltip title="English Translation">
+                <IconButton
+                  size="small"
+                  onClick={() => onTranslate && onTranslate(image)}
+                  sx={{
+                    backgroundColor: 'rgba(25, 118, 210, 0.8)',
+                    color: 'white',
+                    position: 'relative',
+                    '&:hover': {
+                      backgroundColor: 'rgba(25, 118, 210, 1)'
+                    }
+                  }}
+                >
+                  <LanguageIcon fontSize="small" />
+                  {(image.altEn || image.titleEn || image.descriptionEn) && (
+                    <Box
+                      component="span"
+                      sx={{
+                        position: 'absolute',
+                        top: 2,
+                        right: 2,
+                        width: 6,
+                        height: 6,
+                        bgcolor: '#4caf50',
+                        borderRadius: '50%',
+                      }}
+                    />
+                  )}
+                </IconButton>
+              </Tooltip>
+            )}
             <IconButton
               size="small"
               onClick={() => onRemove(image._id)}
@@ -227,6 +246,7 @@ export default function BannerSettings() {
   const [imagePreviews, setImagePreviews] = useState([])
   const [alert, setAlert] = useState(null)
   const [translationDialog, setTranslationDialog] = useState({ open: false, image: null, bannerId: null })
+  const [imageMetadataDialog, setImageMetadataDialog] = useState({ open: false, image: null, index: null })
   const [formData, setFormData] = useState({
     position: 'hero-section',
     isActive: true,
@@ -236,6 +256,7 @@ export default function BannerSettings() {
   })
 
   const { data: bannersData, isLoading: bannersLoading, error: bannersError, refetch } = useGetBannersQuery()
+  const { data: carsData } = useGetCarsQuery()
   const [createBanner, { isLoading: creating }] = useCreateBannerMutation()
   const [updateBanner, { isLoading: updating }] = useUpdateBannerMutation()
   const [deleteBanner, { isLoading: deleting }] = useDeleteBannerMutation()
@@ -387,6 +408,20 @@ export default function BannerSettings() {
       return
     }
     setTranslationDialog({ open: true, image, bannerId: selectedBanner.id })
+  }
+
+  const handleEditImageMetadata = (image, index) => {
+    setImageMetadataDialog({ open: true, image, index })
+  }
+
+  const handleSaveImageMetadata = (updatedImage) => {
+    const { index } = imageMetadataDialog
+    setImagePreviews(prev => {
+      const newImages = [...prev]
+      newImages[index] = { ...newImages[index], ...updatedImage }
+      return newImages
+    })
+    setImageMetadataDialog({ open: false, image: null, index: null })
   }
 
   const handleDragAndDrop = useCallback((draggedIndex, targetIndex) => {
@@ -812,10 +847,12 @@ export default function BannerSettings() {
                                   index={index}
                                   onRemove={handleRemoveImage}
                                   onTranslate={handleTranslateImage}
+                                  onEdit={handleEditImageMetadata}
                                   onDragStart={() => {}}
                                   onDragOver={() => {}}
                                   onDrop={handleDragAndDrop}
                                   isEditing={true}
+                                  isLeRent={isLeRentUser}
                                 />
                               </Grid>
                             ))}
@@ -933,6 +970,73 @@ export default function BannerSettings() {
               setAlert({ type: 'success', message: 'Preklad bol úspešne uložený!' })
             }}
           />
+
+          {/* Image Metadata Dialog for LeRent */}
+          <Dialog
+            open={imageMetadataDialog.open}
+            onClose={() => setImageMetadataDialog({ open: false, image: null, index: null })}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>Upraviť obrázok</DialogTitle>
+            <DialogContent>
+              <Stack spacing={2} sx={{ mt: 1 }}>
+                <TextField
+                  fullWidth
+                  label="Nadpis"
+                  value={imageMetadataDialog.image?.title || ''}
+                  onChange={(e) => setImageMetadataDialog(prev => ({
+                    ...prev,
+                    image: { ...prev.image, title: e.target.value }
+                  }))}
+                  helperText="Hlavný nadpis pre tento obrázok"
+                />
+                <TextField
+                  fullWidth
+                  label="Podnadpis"
+                  multiline
+                  rows={2}
+                  value={imageMetadataDialog.image?.description || ''}
+                  onChange={(e) => setImageMetadataDialog(prev => ({
+                    ...prev,
+                    image: { ...prev.image, description: e.target.value }
+                  }))}
+                  helperText="Popis alebo podnadpis pre tento obrázok"
+                />
+                <FormControl fullWidth>
+                  <InputLabel>Odkaz na auto</InputLabel>
+                  <Select
+                    value={imageMetadataDialog.image?.carId || ''}
+                    onChange={(e) => setImageMetadataDialog(prev => ({
+                      ...prev,
+                      image: { ...prev.image, carId: e.target.value }
+                    }))}
+                    label="Odkaz na auto"
+                  >
+                    <MenuItem value="">
+                      <em>Žiadny odkaz</em>
+                    </MenuItem>
+                    {carsData?.data?.map((car) => (
+                      <MenuItem key={car._id} value={car._id}>
+                        {car.brand} {car.model} {car.year}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Stack>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setImageMetadataDialog({ open: false, image: null, index: null })}>
+                Zrušiť
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => handleSaveImageMetadata(imageMetadataDialog.image)}
+              >
+                Uložiť
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Box>
       )
     } 
