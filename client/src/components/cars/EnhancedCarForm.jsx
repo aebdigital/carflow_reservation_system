@@ -301,6 +301,17 @@ const EnhancedCarForm = ({
     { value: 'viacmiestne', label: 'Viacmiestne' },
     { value: 'elektro', label: 'Elektro' },
     { value: 'uzitkove', label: 'Úžitkové' }
+  ] : isRival ? [
+    // Rival-specific categories
+    { value: 'economy', label: 'Ekonomická trieda' },
+    { value: 'midsize', label: 'Stredná trieda' },
+    { value: 'fullsize', label: 'Vyššia trieda' },
+    { value: 'minivan', label: 'Viacmiestne vozidlá' },
+    { value: 'utility', label: 'Úžitkové vozidlá' },
+    { value: 'caravan', label: 'Karavany' },
+    { value: 'motorcycle', label: 'Motorky' },
+    { value: 'sports', label: 'Športové autá' },
+    { value: 'electric', label: 'Elektromobily' }
   ] : [
     // Default categories (for other tenants)
     { value: 'economy', label: 'Ekonomická trieda' },
