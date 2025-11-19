@@ -1402,11 +1402,26 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
               const smsData = {
                 ...emailData,
                 startDate: populatedReservation.startDate,
-                endDate: populatedReservation.endDate
+                endDate: populatedReservation.endDate,
+                customerName: `${customer.firstName} ${customer.lastName}`,
+                customerPhone: customer.phone
               };
+
+              // Send SMS to customer
               const smsResult = await bulkGateService.sendReservationConfirmation(customer.phone, smsData);
               results.push({ type: 'customer_sms', success: true, result: smsResult });
               console.log('✅ [SMS] Customer confirmation SMS sent to:', customer.phone);
+
+              // Send SMS to Rival admin
+              try {
+                const adminPhone = '+421907633517';
+                const adminSmsResult = await bulkGateService.sendAdminNewReservation(adminPhone, smsData);
+                results.push({ type: 'admin_sms', success: true, result: adminSmsResult });
+                console.log('✅ [SMS] Admin notification SMS sent to:', adminPhone);
+              } catch (adminSmsError) {
+                console.error('❌ [SMS] Failed to send admin notification SMS:', adminSmsError.message);
+                results.push({ type: 'admin_sms', success: false, error: adminSmsError.message });
+              }
             } else {
               console.warn('⚠️ [SMS] BulkGate not configured, skipping SMS');
               results.push({ type: 'customer_sms', success: false, error: 'BulkGate not configured' });
@@ -2244,11 +2259,26 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
               const smsData = {
                 ...emailData,
                 startDate: populatedReservation.startDate,
-                endDate: populatedReservation.endDate
+                endDate: populatedReservation.endDate,
+                customerName: `${customer.firstName} ${customer.lastName}`,
+                customerPhone: customer.phone
               };
+
+              // Send SMS to customer
               const smsResult = await bulkGateService.sendReservationConfirmation(customer.phone, smsData);
               results.push({ type: 'customer_sms', success: true, result: smsResult });
               console.log('✅ [SMS] Customer confirmation SMS sent to:', customer.phone);
+
+              // Send SMS to Rival admin
+              try {
+                const adminPhone = '+421907633517';
+                const adminSmsResult = await bulkGateService.sendAdminNewReservation(adminPhone, smsData);
+                results.push({ type: 'admin_sms', success: true, result: adminSmsResult });
+                console.log('✅ [SMS] Admin notification SMS sent to:', adminPhone);
+              } catch (adminSmsError) {
+                console.error('❌ [SMS] Failed to send admin notification SMS:', adminSmsError.message);
+                results.push({ type: 'admin_sms', success: false, error: adminSmsError.message });
+              }
             } else {
               console.warn('⚠️ [SMS] BulkGate not configured, skipping SMS');
               results.push({ type: 'customer_sms', success: false, error: 'BulkGate not configured' });

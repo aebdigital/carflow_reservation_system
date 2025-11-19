@@ -206,6 +206,25 @@ class BulkGateService {
   }
 
   /**
+   * Send admin notification SMS for new reservation
+   */
+  async sendAdminNewReservation(phoneNumber, reservationData) {
+    const variables = {
+      car_brand: reservationData.carInfo?.split(' ')[0] || '',
+      car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || '',
+      date: this.formatDate(reservationData.startDate),
+      date_to: this.formatDate(reservationData.endDate),
+      customer_name: reservationData.customerName || '',
+      customer_phone: reservationData.customerPhone || ''
+    };
+
+    const message = this.getSMSTemplate('admin-new-reservation', variables);
+    return this.sendSMS(phoneNumber, message, {
+      campaign_id: 'admin_new_reservation'
+    });
+  }
+
+  /**
    * Send reservation cancelled SMS
    */
   async sendReservationCancelled(phoneNumber, reservationData) {

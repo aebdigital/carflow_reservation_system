@@ -1,0 +1,1 @@
+RIVAL: Nova rezervacia - {car_brand} {car_model} od {date} do {date_to}. Zakaznik: {customer_name}, tel: {customer_phone}
