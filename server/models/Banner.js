@@ -40,6 +40,11 @@ const bannerImageSchema = new mongoose.Schema({
     trim: true,
     maxlength: [500, 'English image description cannot exceed 500 characters']
   },
+  carId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Car',
+    required: false
+  },
   sortOrder: {
     type: Number,
     default: 0,

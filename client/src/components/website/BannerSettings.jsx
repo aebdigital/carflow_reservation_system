@@ -60,7 +60,8 @@ import {
   useDeleteBannerMutation,
   useAddBannerImagesMutation,
   useRemoveBannerImageMutation,
-  useReorderBannerImagesMutation
+  useReorderBannerImagesMutation,
+  useGetCarsQuery
 } from '../../store/store'
 import BannerImageEnglishTranslation from '../admin/BannerImageEnglishTranslation'
 
@@ -839,7 +840,7 @@ export default function BannerSettings() {
                         onChange={handleChange('position')}
                         label="Pozícia na webstránke"
                       >
-                        {positionOptions.map((option) => (
+                        {(isLeRentUser ? positionOptions.filter(opt => opt.value === 'hero-section') : positionOptions).map((option) => (
                           <MenuItem key={option.value} value={option.value}>
                             {option.label}
                           </MenuItem>
