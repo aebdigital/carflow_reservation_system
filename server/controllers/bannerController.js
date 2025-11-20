@@ -475,10 +475,11 @@ const updateBannerImage = asyncHandler(async (req, res, next) => {
     }
 
     // Update image details
-    const { title, description, alt } = req.body;
+    const { title, description, alt, carId } = req.body;
     if (title !== undefined) image.title = title;
     if (description !== undefined) image.description = description;
     if (alt !== undefined) image.alt = alt;
+    if (carId !== undefined) image.carId = carId || null;
 
     await banner.save();
 

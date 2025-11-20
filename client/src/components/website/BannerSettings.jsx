@@ -61,6 +61,7 @@ import {
   useAddBannerImagesMutation,
   useRemoveBannerImageMutation,
   useReorderBannerImagesMutation,
+  useUpdateBannerImageMutation,
   useGetCarsQuery
 } from '../../store/store'
 import BannerImageEnglishTranslation from '../admin/BannerImageEnglishTranslation'
@@ -263,6 +264,7 @@ export default function BannerSettings() {
   const [addBannerImages] = useAddBannerImagesMutation()
   const [removeBannerImage] = useRemoveBannerImageMutation()
   const [reorderBannerImages] = useReorderBannerImagesMutation()
+  const [updateBannerImage] = useUpdateBannerImageMutation()
 
   useEffect(() => {
     if (bannersData?.data) {
@@ -414,31 +416,87 @@ export default function BannerSettings() {
     setImageMetadataDialog({ open: true, image, index })
   }
 
-  const handleSaveImageMetadata = (updatedImage) => {
+  const handleSaveImageMetadata = async (updatedImage) => {
+    if (!selectedBanner) {
+      setAlert({ type: 'error', message: 'Uložte banner pred úpravou obrázka.' })
+      return
+    }
+
     const { index } = imageMetadataDialog
-    setImagePreviews(prev => {
-      const newImages = [...prev]
-      newImages[index] = { ...newImages[index], ...updatedImage }
-      return newImages
-    })
-    setImageMetadataDialog({ open: false, image: null, index: null })
+    const imageToUpdate = imagePreviews[index]
+
+    if (!imageToUpdate?._id || imageToUpdate.isNew) {
+      setAlert({ type: 'error', message: 'Tento obrázok ešte nebol uložený na server.' })
+      return
+    }
+
+    try {
+      // Call API to update image metadata
+      await updateBannerImage({
+        bannerId: selectedBanner.id,
+        imageId: imageToUpdate._id,
+        imageData: {
+          title: updatedImage.title || '',
+          description: updatedImage.description || '',
+          carId: updatedImage.carId || null
+        }
+      }).unwrap()
+
+      // Update local state for preview
+      setImagePreviews(prev => {
+        const newImages = [...prev]
+        newImages[index] = { ...newImages[index], ...updatedImage }
+        return newImages
+      })
+
+      setAlert({ type: 'success', message: 'Metadata obrázka boli úspešne uložené!' })
+      setImageMetadataDialog({ open: false, image: null, index: null })
+      refetch()
+    } catch (error) {
+      setAlert({
+        type: 'error',
+        message: `Chyba pri ukladaní metadata: ${error.data?.message || error.message}`
+      })
+    }
   }
 
-  const handleDragAndDrop = useCallback((draggedIndex, targetIndex) => {
+  const handleDragAndDrop = useCallback(async (draggedIndex, targetIndex) => {
     if (draggedIndex === targetIndex) return
+    if (!selectedBanner) return
 
+    // Update local state first for immediate UI feedback
     setImagePreviews(prev => {
       const newImages = [...prev]
       const [draggedImage] = newImages.splice(draggedIndex, 1)
       newImages.splice(targetIndex, 0, draggedImage)
 
       // Update sort order immutably
-      return newImages.map((img, index) => ({
+      const reorderedImages = newImages.map((img, index) => ({
         ...img,
         sortOrder: index
       }))
+
+      // Auto-save the new order to server
+      const existingImages = reorderedImages.filter(img => !img.isNew && img._id !== 'existing')
+      if (existingImages.length > 0) {
+        const imageIds = existingImages.map(img => img._id)
+        reorderBannerImages({ bannerId: selectedBanner.id, imageIds })
+          .unwrap()
+          .then(() => {
+            setAlert({ type: 'success', message: 'Poradie obrázkov uložené!' })
+            refetch()
+          })
+          .catch((error) => {
+            setAlert({
+              type: 'error',
+              message: `Chyba pri ukladaní poradia: ${error.data?.message || error.message}`
+            })
+          })
+      }
+
+      return reorderedImages
     })
-  }, [])
+  }, [selectedBanner, reorderBannerImages, refetch])
 
   const handleSaveImageOrder = async () => {
     if (!selectedBanner) return
