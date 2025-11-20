@@ -298,7 +298,7 @@ const handleStripeWebhook = asyncHandler(async (req, res, next) => {
             const reservation = await Reservation.findById(payment.reservation)
               .populate('customer')
               .populate('car');
-            if (reservation && reservation.status === 'pending') {
+            if (reservation && (reservation.status === 'pending' || reservation.status === 'awaiting_payment')) {
               reservation.status = 'confirmed';
               await reservation.save();
 
@@ -373,7 +373,7 @@ const verifyPayment = asyncHandler(async (req, res, next) => {
         // Update reservation status
         if (payment.reservation) {
           const reservation = await Reservation.findById(payment.reservation);
-          if (reservation && reservation.status === 'pending') {
+          if (reservation && (reservation.status === 'pending' || reservation.status === 'awaiting_payment')) {
             reservation.status = 'confirmed';
             await reservation.save();
           }
