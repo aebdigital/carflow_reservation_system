@@ -1140,13 +1140,27 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       extendedCount: processedExtendedInsurance.length
     });
 
-    // 🔧 TENANT EMAIL LOOKUP: Get tenant email for status determination
+    // 🔧 TENANT EMAIL LOOKUP: Map known tenant IDs to emails
     console.log('🔧 [TENANT LOOKUP] tenantId value:', tenantId);
-    console.log('🔧 [TENANT LOOKUP] tenantId type:', typeof tenantId);
-    const tenantUser = await User.findById(tenantId);
-    console.log('🔧 [TENANT LOOKUP] tenantUser found:', tenantUser ? `${tenantUser.email} (${tenantUser._id})` : 'NULL');
-    const tenantEmail = tenantUser?.email || null;
-    console.log('🔧 [TENANT] Tenant email for status check:', tenantEmail);
+
+    // Map of known tenant IDs to their emails
+    const KNOWN_TENANT_IDS = {
+      '5e482191fe5890cb9f9ad402': 'lerent@lerent.sk',
+      // Add other known tenant IDs here as needed
+    };
+
+    let tenantEmail = null;
+    const tenantIdString = tenantId.toString();
+
+    if (KNOWN_TENANT_IDS[tenantIdString]) {
+      tenantEmail = KNOWN_TENANT_IDS[tenantIdString];
+      console.log('🔧 [TENANT] Found tenant email from known ID map:', tenantEmail);
+    } else {
+      // Fallback: try to find user by ID
+      const tenantUser = await User.findById(tenantId);
+      tenantEmail = tenantUser?.email || null;
+      console.log('🔧 [TENANT] Tenant email from User lookup:', tenantEmail);
+    }
 
     // Determine initial status based on payment type for LeRent
     let initialStatus = 'pending'; // 🔧 ADMIN APPROVAL: Set to pending, requires admin confirmation
