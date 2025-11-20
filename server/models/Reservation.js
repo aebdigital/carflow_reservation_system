@@ -94,7 +94,7 @@ const reservationSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'zaplatene', 'ongoing', 'completed', 'cancelled', 'no-show'],
+    enum: ['pending', 'awaiting_payment', 'confirmed', 'zaplatene', 'ongoing', 'completed', 'cancelled', 'no-show'],
     default: 'pending'
   },
   pricing: {

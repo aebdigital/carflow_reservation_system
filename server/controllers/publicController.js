@@ -1145,6 +1145,13 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       extendedCount: processedExtendedInsurance.length
     });
 
+    // Determine initial status based on payment type for LeRent
+    let initialStatus = 'pending'; // 🔧 ADMIN APPROVAL: Set to pending, requires admin confirmation
+    if (tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk' && paymentType === 'stripe') {
+      initialStatus = 'awaiting_payment'; // For LeRent Stripe payments, wait for payment completion
+      console.log('💳 [LERENT] Setting status to awaiting_payment for Stripe payment');
+    }
+
     // Create reservation
     const reservation = await Reservation.create({
       tenantId,
@@ -1155,7 +1162,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       endDate: end,
       pickupLocation: defaultPickup,
       dropoffLocation: defaultDropoff,
-      status: 'pending', // 🔧 ADMIN APPROVAL: Set to pending, requires admin confirmation
+      status: initialStatus,
       pricing: finalPricing, // Use calculated or frontend pricing
       appliedDiscountCodes,
       // Company/Firma information

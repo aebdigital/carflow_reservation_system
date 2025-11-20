@@ -430,6 +430,7 @@ function Reservations() {
   const getStatusColor = (status) => {
     const colors = {
       pending: 'warning',
+      awaiting_payment: 'warning',
       confirmed: 'info',
       zaplatene: 'success',
       ongoing: 'primary',
@@ -444,6 +445,7 @@ function Reservations() {
   const getStatusText = (status) => {
     const statusTexts = {
       pending: t('pending'),
+      awaiting_payment: 'Čakajúce na platbu',
       confirmed: t('confirmed'),
       zaplatene: 'Zaplatené',
       ongoing: t('ongoing'),
@@ -1153,7 +1155,7 @@ function Reservations() {
                               <EditIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          {reservation.status === 'pending' && (
+                          {(reservation.status === 'pending' || reservation.status === 'awaiting_payment') && (
                             <Tooltip title="Potvrdiť rezerváciu">
                               <IconButton
                                 size="small"
@@ -1560,7 +1562,7 @@ function Reservations() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {getPaginatedReservations(reservations.filter(r => r.status === 'pending')).map((reservation) => (
+                  {getPaginatedReservations(reservations.filter(r => r.status === 'pending' || r.status === 'awaiting_payment')).map((reservation) => (
                     <TableRow key={reservation._id}>
                       <TableCell>
                         <Typography variant="body2" fontWeight="medium">
@@ -1738,7 +1740,7 @@ function Reservations() {
           {!reservationsLoading && !reservationsError && (
             <TablePagination
               component="div"
-              count={reservations.filter(r => r.status === 'pending').length}
+              count={reservations.filter(r => r.status === 'pending' || r.status === 'awaiting_payment').length}
               page={page}
               onPageChange={handleChangePage}
               rowsPerPage={rowsPerPage}
