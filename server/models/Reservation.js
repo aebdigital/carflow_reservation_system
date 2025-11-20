@@ -356,6 +356,10 @@ const reservationSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  superfakturaToken: {
+    type: String,
+    default: null
+  },
 
   // 24-hour reminder tracking (before pickup)
   reminder24h: {

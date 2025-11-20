@@ -918,6 +918,7 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
           if (invoiceResult.data?.Invoice?.id) {
             reservation.superfakturaInvoiceId = invoiceResult.data.Invoice.id;
             reservation.superfakturaInvoiceNumber = invoiceResult.data.Invoice.invoice_number;
+            reservation.superfakturaToken = invoiceResult.data.Invoice.token;
             await reservation.save();
 
             // Download invoice PDF for email attachment
@@ -2119,6 +2120,66 @@ const createInvoice = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Download SuperFaktura invoice PDF
+// @route   GET /api/reservations/:id/invoice-pdf
+// @access  Private/Staff (LeRent only)
+const downloadInvoicePdf = asyncHandler(async (req, res, next) => {
+  console.log('📥 [DOWNLOAD INVOICE PDF] PDF download requested');
+  console.log('📥 [DOWNLOAD INVOICE PDF] Reservation ID:', req.params.id);
+  console.log('📥 [DOWNLOAD INVOICE PDF] User:', req.user?.email);
+
+  try {
+    // Check if user is LeRent tenant
+    if (!req.user || req.user.email.toLowerCase() !== 'lerent@lerent.sk') {
+      console.log('❌ [DOWNLOAD INVOICE PDF] Access denied - not LeRent tenant');
+      return next(new AppError('Sťahovanie faktúr je dostupné len pre LeRent', 403));
+    }
+
+    // Find reservation with invoice info
+    const reservation = await Reservation.findOne({
+      _id: req.params.id,
+      tenantId: req.user.tenantId
+    });
+
+    if (!reservation) {
+      console.log('❌ [DOWNLOAD INVOICE PDF] Reservation not found');
+      return next(new AppError('Rezervácia nenájdená', 404));
+    }
+
+    // Check if invoice exists
+    if (!reservation.superfakturaInvoiceId || !reservation.superfakturaToken) {
+      console.log('❌ [DOWNLOAD INVOICE PDF] Invoice not found for this reservation');
+      return next(new AppError('Pre túto rezerváciu neexistuje faktúra', 404));
+    }
+
+    console.log('📥 [DOWNLOAD INVOICE PDF] Invoice ID:', reservation.superfakturaInvoiceId);
+    console.log('📥 [DOWNLOAD INVOICE PDF] Invoice Number:', reservation.superfakturaInvoiceNumber);
+
+    // Download PDF from SuperFaktura
+    const superfakturaService = require('../services/superfakturaService');
+    const pdfBuffer = await superfakturaService.getInvoicePdf(
+      reservation.superfakturaInvoiceId,
+      reservation.superfakturaToken
+    );
+
+    console.log('✅ [DOWNLOAD INVOICE PDF] PDF downloaded successfully, size:', pdfBuffer.length, 'bytes');
+
+    // Set headers for PDF download
+    const filename = `Faktura_${reservation.superfakturaInvoiceNumber || reservation.reservationNumber}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+
+    // Send PDF
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    console.error('❌ [DOWNLOAD INVOICE PDF] Error:', error.message);
+    console.error('❌ [DOWNLOAD INVOICE PDF] Stack:', error.stack);
+    return next(new AppError(`Chyba pri sťahovaní faktúry: ${error.message}`, 500));
+  }
+});
+
 module.exports = {
   getReservations,
   getReservation,
@@ -2135,5 +2196,6 @@ module.exports = {
   getPDFTemplateFields,
   confirmPayment,
   sendPaymentNotification,
-  createInvoice
+  createInvoice,
+  downloadInvoicePdf
 }; 

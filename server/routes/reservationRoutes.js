@@ -15,7 +15,8 @@ const {
   getPDFTemplateFields,
   confirmPayment,
   sendPaymentNotification,
-  createInvoice
+  createInvoice,
+  downloadInvoicePdf
 } = require('../controllers/reservationController');
 
 const { protect, requireStaff, addTenantFilter, restrictRivalDomain } = require('../middleware/authMiddleware');
@@ -57,5 +58,8 @@ router.get('/:id/slovak-agreement', generateSlovakAgreement);
 
 // SuperFaktura invoice creation (LeRent only)
 router.post('/:id/create-invoice', requireStaff, createInvoice);
+
+// SuperFaktura invoice PDF download (LeRent only)
+router.get('/:id/invoice-pdf', requireStaff, downloadInvoicePdf);
 
 module.exports = router; 

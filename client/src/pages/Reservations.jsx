@@ -713,6 +713,53 @@ function Reservations() {
     }
   }
 
+  const handleDownloadInvoicePdf = async (reservation) => {
+    try {
+      console.log('📥 [INVOICE PDF] Downloading PDF for reservation:', reservation._id)
+
+      // Create download link
+      const token = localStorage.getItem('token')
+      const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/reservations/${reservation._id}/invoice-pdf`
+
+      // Download file
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Chyba pri sťahovaní PDF')
+      }
+
+      // Get filename from header or use default
+      const contentDisposition = response.headers.get('Content-Disposition')
+      let filename = `Faktura_${reservation.superfakturaInvoiceNumber || reservation.reservationNumber}.pdf`
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+)"/)
+        if (match) filename = match[1]
+      }
+
+      // Create blob and download
+      const blob = await response.blob()
+      const downloadUrl = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = downloadUrl
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(downloadUrl)
+      document.body.removeChild(a)
+
+      console.log('✅ [INVOICE PDF] PDF downloaded successfully')
+    } catch (error) {
+      console.error('❌ [INVOICE PDF] Error downloading PDF:', error)
+      alert('Chyba pri sťahovaní PDF faktúry: ' + error.message)
+    }
+  }
+
   const handleCheckIn = async (reservation) => {
     try {
       const result = await checkInReservation({
@@ -1120,19 +1167,37 @@ function Reservations() {
                             </Tooltip>
                           )}
                           {auth.user?.email === 'lerent@lerent.sk' && (
-                            <Tooltip title="Vytvoriť faktúru (SuperFaktura)">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleCreateInvoice(reservation)}
-                                color="primary"
-                                sx={{
-                                  backgroundColor: reservation.superfakturaInvoiceId ? 'success.light' : 'primary.light',
-                                  '&:hover': { backgroundColor: reservation.superfakturaInvoiceId ? 'success.main' : 'primary.main' }
-                                }}
-                              >
-                                <InvoiceIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
+                            <>
+                              <Tooltip title="Vytvoriť faktúru (SuperFaktura)">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleCreateInvoice(reservation)}
+                                  color="primary"
+                                  sx={{
+                                    backgroundColor: reservation.superfakturaInvoiceId ? 'success.light' : 'primary.light',
+                                    '&:hover': { backgroundColor: reservation.superfakturaInvoiceId ? 'success.main' : 'primary.main' }
+                                  }}
+                                >
+                                  <InvoiceIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              {reservation.superfakturaInvoiceId && (
+                                <Tooltip title="Stiahnuť faktúru PDF">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleDownloadInvoicePdf(reservation)}
+                                    color="secondary"
+                                    sx={{
+                                      backgroundColor: 'secondary.light',
+                                      '&:hover': { backgroundColor: 'secondary.main' },
+                                      ml: 0.5
+                                    }}
+                                  >
+                                    <DownloadIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </>
                           )}
                         </Box>
                       </TableCell>
@@ -1289,19 +1354,37 @@ function Reservations() {
                             </Tooltip>
                           )}
                           {auth.user?.email === 'lerent@lerent.sk' && (
-                            <Tooltip title="Vytvoriť faktúru (SuperFaktura)">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleCreateInvoice(reservation)}
-                                color="primary"
-                                sx={{
-                                  backgroundColor: reservation.superfakturaInvoiceId ? 'success.light' : 'primary.light',
-                                  '&:hover': { backgroundColor: reservation.superfakturaInvoiceId ? 'success.main' : 'primary.main' }
-                                }}
-                              >
-                                <InvoiceIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
+                            <>
+                              <Tooltip title="Vytvoriť faktúru (SuperFaktura)">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleCreateInvoice(reservation)}
+                                  color="primary"
+                                  sx={{
+                                    backgroundColor: reservation.superfakturaInvoiceId ? 'success.light' : 'primary.light',
+                                    '&:hover': { backgroundColor: reservation.superfakturaInvoiceId ? 'success.main' : 'primary.main' }
+                                  }}
+                                >
+                                  <InvoiceIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              {reservation.superfakturaInvoiceId && (
+                                <Tooltip title="Stiahnuť faktúru PDF">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleDownloadInvoicePdf(reservation)}
+                                    color="secondary"
+                                    sx={{
+                                      backgroundColor: 'secondary.light',
+                                      '&:hover': { backgroundColor: 'secondary.main' },
+                                      ml: 0.5
+                                    }}
+                                  >
+                                    <DownloadIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </>
                           )}
                         </Box>
                       </TableCell>
@@ -1473,19 +1556,37 @@ function Reservations() {
                             </Tooltip>
                           )}
                           {auth.user?.email === 'lerent@lerent.sk' && (
-                            <Tooltip title="Vytvoriť faktúru (SuperFaktura)">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleCreateInvoice(reservation)}
-                                color="primary"
-                                sx={{
-                                  backgroundColor: reservation.superfakturaInvoiceId ? 'success.light' : 'primary.light',
-                                  '&:hover': { backgroundColor: reservation.superfakturaInvoiceId ? 'success.main' : 'primary.main' }
-                                }}
-                              >
-                                <InvoiceIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
+                            <>
+                              <Tooltip title="Vytvoriť faktúru (SuperFaktura)">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleCreateInvoice(reservation)}
+                                  color="primary"
+                                  sx={{
+                                    backgroundColor: reservation.superfakturaInvoiceId ? 'success.light' : 'primary.light',
+                                    '&:hover': { backgroundColor: reservation.superfakturaInvoiceId ? 'success.main' : 'primary.main' }
+                                  }}
+                                >
+                                  <InvoiceIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              {reservation.superfakturaInvoiceId && (
+                                <Tooltip title="Stiahnuť faktúru PDF">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleDownloadInvoicePdf(reservation)}
+                                    color="secondary"
+                                    sx={{
+                                      backgroundColor: 'secondary.light',
+                                      '&:hover': { backgroundColor: 'secondary.main' },
+                                      ml: 0.5
+                                    }}
+                                  >
+                                    <DownloadIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </>
                           )}
                         </Box>
                       </TableCell>
@@ -1631,19 +1732,37 @@ function Reservations() {
                             </Tooltip>
                           )}
                           {auth.user?.email === 'lerent@lerent.sk' && (
-                            <Tooltip title="Vytvoriť faktúru (SuperFaktura)">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleCreateInvoice(reservation)}
-                                color="primary"
-                                sx={{
-                                  backgroundColor: reservation.superfakturaInvoiceId ? 'success.light' : 'primary.light',
-                                  '&:hover': { backgroundColor: reservation.superfakturaInvoiceId ? 'success.main' : 'primary.main' }
-                                }}
-                              >
-                                <InvoiceIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
+                            <>
+                              <Tooltip title="Vytvoriť faktúru (SuperFaktura)">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleCreateInvoice(reservation)}
+                                  color="primary"
+                                  sx={{
+                                    backgroundColor: reservation.superfakturaInvoiceId ? 'success.light' : 'primary.light',
+                                    '&:hover': { backgroundColor: reservation.superfakturaInvoiceId ? 'success.main' : 'primary.main' }
+                                  }}
+                                >
+                                  <InvoiceIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              {reservation.superfakturaInvoiceId && (
+                                <Tooltip title="Stiahnuť faktúru PDF">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleDownloadInvoicePdf(reservation)}
+                                    color="secondary"
+                                    sx={{
+                                      backgroundColor: 'secondary.light',
+                                      '&:hover': { backgroundColor: 'secondary.main' },
+                                      ml: 0.5
+                                    }}
+                                  >
+                                    <DownloadIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </>
                           )}
                         </Box>
                       </TableCell>
