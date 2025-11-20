@@ -1141,7 +1141,10 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     });
 
     // 🔧 TENANT EMAIL LOOKUP: Get tenant email for status determination
+    console.log('🔧 [TENANT LOOKUP] tenantId value:', tenantId);
+    console.log('🔧 [TENANT LOOKUP] tenantId type:', typeof tenantId);
     const tenantUser = await User.findById(tenantId);
+    console.log('🔧 [TENANT LOOKUP] tenantUser found:', tenantUser ? `${tenantUser.email} (${tenantUser._id})` : 'NULL');
     const tenantEmail = tenantUser?.email || null;
     console.log('🔧 [TENANT] Tenant email for status check:', tenantEmail);
 
