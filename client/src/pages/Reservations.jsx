@@ -17,6 +17,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   Paper,
   Autocomplete,
   Chip,
@@ -218,6 +219,8 @@ function Reservations() {
   const [selectedReservationForQR, setSelectedReservationForQR] = useState(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [reservationToDelete, setReservationToDelete] = useState(null)
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(20)
 
   // Helper function to format date and time for Slovak locale
   const formatDateTime = (dateString) => {
@@ -969,6 +972,26 @@ function Reservations() {
     setSelectedReservationForQR(null)
   }
 
+  // Pagination handlers
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage)
+  }
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10))
+    setPage(0)
+  }
+
+  // Paginate reservations based on current tab
+  const getPaginatedReservations = (filteredReservations) => {
+    return filteredReservations.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+  }
+
+  // Reset page when tab changes
+  React.useEffect(() => {
+    setPage(0)
+  }, [tabValue])
+
   return (
     <Box>
       <Box sx={{ 
@@ -1037,7 +1060,7 @@ function Reservations() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {reservations.map((reservation) => (
+                  {getPaginatedReservations(reservations).map((reservation) => (
                     <TableRow key={reservation._id}>
                       <TableCell>
                         <Typography variant="body2" fontWeight="medium">
@@ -1296,6 +1319,19 @@ function Reservations() {
                 </TableBody>
               </Table>
             </DualScrollbarTableContainer>
+            {!reservationsLoading && !reservationsError && (
+              <TablePagination
+                component="div"
+                count={reservations.length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[10, 20, 50, 100]}
+                labelRowsPerPage="Riadkov na stránku:"
+                labelDisplayedRows={({ from, to, count }) => `${from}-${to} z ${count}`}
+              />
+            )}
           )}
         </TabPanel>
 
@@ -1326,7 +1362,7 @@ function Reservations() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {reservations.filter(r => r.status === 'ongoing').map((reservation) => (
+                  {getPaginatedReservations(reservations.filter(r => r.status === 'ongoing')).map((reservation) => (
                     <TableRow key={reservation._id}>
                       <TableCell>
                         <Typography variant="body2" fontWeight="medium">
@@ -1483,6 +1519,19 @@ function Reservations() {
                 </TableBody>
               </Table>
             </DualScrollbarTableContainer>
+            {!reservationsLoading && !reservationsError && (
+              <TablePagination
+                component="div"
+                count={reservations.filter(r => r.status === 'ongoing').length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[10, 20, 50, 100]}
+                labelRowsPerPage="Riadkov na stránku:"
+                labelDisplayedRows={({ from, to, count }) => `${from}-${to} z ${count}`}
+              />
+            )}
           )}
         </TabPanel>
         <TabPanel value={tabValue} index={2}>
@@ -1511,7 +1560,7 @@ function Reservations() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {reservations.filter(r => r.status === 'pending').map((reservation) => (
+                  {getPaginatedReservations(reservations.filter(r => r.status === 'pending')).map((reservation) => (
                     <TableRow key={reservation._id}>
                       <TableCell>
                         <Typography variant="body2" fontWeight="medium">
@@ -1685,6 +1734,19 @@ function Reservations() {
                 </TableBody>
               </Table>
             </DualScrollbarTableContainer>
+            {!reservationsLoading && !reservationsError && (
+              <TablePagination
+                component="div"
+                count={reservations.filter(r => r.status === 'pending').length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[10, 20, 50, 100]}
+                labelRowsPerPage="Riadkov na stránku:"
+                labelDisplayedRows={({ from, to, count }) => `${from}-${to} z ${count}`}
+              />
+            )}
           )}
         </TabPanel>
         <TabPanel value={tabValue} index={3}>
@@ -1713,7 +1775,7 @@ function Reservations() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {reservations.filter(r => r.status === 'completed').map((reservation) => (
+                  {getPaginatedReservations(reservations.filter(r => r.status === 'completed')).map((reservation) => (
                     <TableRow key={reservation._id}>
                       <TableCell>
                         <Typography variant="body2" fontWeight="medium">
@@ -1861,6 +1923,19 @@ function Reservations() {
                 </TableBody>
               </Table>
             </DualScrollbarTableContainer>
+            {!reservationsLoading && !reservationsError && (
+              <TablePagination
+                component="div"
+                count={reservations.filter(r => r.status === 'completed').length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[10, 20, 50, 100]}
+                labelRowsPerPage="Riadkov na stránku:"
+                labelDisplayedRows={({ from, to, count }) => `${from}-${to} z ${count}`}
+              />
+            )}
           )}
         </TabPanel>
       </Card>
