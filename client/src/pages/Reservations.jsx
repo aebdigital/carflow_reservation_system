@@ -717,9 +717,10 @@ function Reservations() {
     try {
       console.log('📥 [INVOICE PDF] Downloading PDF for reservation:', reservation._id)
 
-      // Create download link
+      // Create download link - use same base URL as RTK Query
       const token = localStorage.getItem('token')
-      const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/reservations/${reservation._id}/invoice-pdf`
+      const baseUrl = (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, '')
+      const url = `${baseUrl}/reservations/${reservation._id}/invoice-pdf`
 
       // Download file
       const response = await fetch(url, {
