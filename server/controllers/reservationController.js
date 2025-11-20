@@ -393,7 +393,42 @@ const createReservation = asyncHandler(async (req, res, next) => {
     pricing.totalAmount = (calculatedTotal || (subtotal + taxes + additionalServicesTotal + insuranceTotal)) - discountAmount;
   }
 
+  // Generate unique reservation number (same logic as public API)
+  // For LeRent: Format YYYYMMNN (year + month + sequential number)
+  // For others: RES-XXXX-timestamp
+  let reservationNumber;
+
+  // Check if this is LeRent
+  if (req.user.email.toLowerCase() === 'lerent@lerent.sk') {
+    // LeRent-specific reservation number format: YYYYMMNN
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+
+    // Get count of reservations for this month in this tenant
+    const startOfMonth = new Date(year, now.getMonth(), 1);
+    const endOfMonth = new Date(year, now.getMonth() + 1, 0, 23, 59, 59);
+
+    const monthlyReservationCount = await Reservation.countDocuments({
+      tenantId: req.user.tenantId,
+      createdAt: {
+        $gte: startOfMonth,
+        $lte: endOfMonth
+      }
+    });
+
+    // Sequential number for this month (2 digits, starting from 01)
+    const sequentialNumber = String(monthlyReservationCount + 1).padStart(2, '0');
+
+    reservationNumber = `${year}${month}${sequentialNumber}`;
+    console.log(`🔢 [LERENT ADMIN] Generated reservation number: ${reservationNumber} (Year: ${year}, Month: ${month}, #${sequentialNumber})`);
+  } else {
+    // Default format for other tenants
+    reservationNumber = `RES-${req.user.tenantId.toString().slice(-4).toUpperCase()}-${Date.now()}`;
+  }
+
   const reservationData = {
+    reservationNumber,
     customer: customerDoc._id,
     car,
     startDate: start, // Now includes proper time information
