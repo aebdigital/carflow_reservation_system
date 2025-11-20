@@ -1279,7 +1279,7 @@ function Reservations() {
                               </IconButton>
                             </Tooltip>
                           )}
-                          {auth.user?.email === 'lerent@lerent.sk' && (
+                          {false && auth.user?.email === 'lerent@lerent.sk' && (
                             <>
                               <Tooltip title="Vytvoriť faktúru (SuperFaktura)">
                                 <IconButton
@@ -1479,7 +1479,7 @@ function Reservations() {
                               </IconButton>
                             </Tooltip>
                           )}
-                          {auth.user?.email === 'lerent@lerent.sk' && (
+                          {false && auth.user?.email === 'lerent@lerent.sk' && (
                             <>
                               <Tooltip title="Vytvoriť faktúru (SuperFaktura)">
                                 <IconButton
@@ -1694,7 +1694,7 @@ function Reservations() {
                               </IconButton>
                             </Tooltip>
                           )}
-                          {auth.user?.email === 'lerent@lerent.sk' && (
+                          {false && auth.user?.email === 'lerent@lerent.sk' && (
                             <>
                               <Tooltip title="Vytvoriť faktúru (SuperFaktura)">
                                 <IconButton
@@ -1883,7 +1883,7 @@ function Reservations() {
                               </IconButton>
                             </Tooltip>
                           )}
-                          {auth.user?.email === 'lerent@lerent.sk' && (
+                          {false && auth.user?.email === 'lerent@lerent.sk' && (
                             <>
                               <Tooltip title="Vytvoriť faktúru (SuperFaktura)">
                                 <IconButton
