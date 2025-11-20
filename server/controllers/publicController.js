@@ -654,11 +654,6 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
   console.log('🔧 [TENANT FIX] Car:', `${car.brand} ${car.model} (${car._id})`);
   console.log('🔧 [TENANT FIX] Customer email:', finalCustomerEmail);
 
-  // 🔧 BYSQUARE FIX: Look up tenant email for QR generation
-  const tenantUser = await User.findById(tenantId);
-  const tenantEmail = tenantUser?.email || null;
-  console.log('🔧 [BYSQUARE TENANT] Tenant email for QR generation:', tenantEmail);
-
   // Validate required fields
   if (!firstName || !lastName || !finalCustomerEmail || !phone || !carId || !startDate || !endDate) {
     return next(new AppError('Missing required fields: firstName, lastName, email, phone, carId, startDate, endDate', 400));
@@ -1144,6 +1139,11 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       additionalCount: processedAdditionalInsurance.length,
       extendedCount: processedExtendedInsurance.length
     });
+
+    // 🔧 TENANT EMAIL LOOKUP: Get tenant email for status determination
+    const tenantUser = await User.findById(tenantId);
+    const tenantEmail = tenantUser?.email || null;
+    console.log('🔧 [TENANT] Tenant email for status check:', tenantEmail);
 
     // Determine initial status based on payment type for LeRent
     let initialStatus = 'pending'; // 🔧 ADMIN APPROVAL: Set to pending, requires admin confirmation
