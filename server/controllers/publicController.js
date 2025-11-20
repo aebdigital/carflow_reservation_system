@@ -381,20 +381,20 @@ const getCarAvailabilityByUser = asyncHandler(async (req, res, next) => {
     isAvailable: car.status === 'active',
     status: car.status
   };
-  
+
   // If dates are provided, check for overlapping reservations
   if (startDate && endDate) {
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
+
     if (start >= end) {
       return next(new AppError('End date must be after start date', 400));
     }
-    
+
     const overlappingReservations = await Reservation.find({
       car: carId,
       tenantId,
-      status: { $in: ['pending', 'confirmed', 'ongoing'] },
+      status: { $in: ['pending', 'confirmed', 'zaplatene', 'ongoing'] },
       $or: [
         {
           startDate: { $lte: start },
@@ -409,12 +409,33 @@ const getCarAvailabilityByUser = asyncHandler(async (req, res, next) => {
           endDate: { $lte: end }
         }
       ]
-    });
-    
+    }).select('startDate endDate');
+
     availability.isAvailableForDates = overlappingReservations.length === 0 && car.status === 'active';
     availability.conflictingReservations = overlappingReservations.length;
+
+    // Generate array of all unavailable dates within the requested range
+    const unavailableDates = [];
+    overlappingReservations.forEach(reservation => {
+      const reservationStart = new Date(reservation.startDate);
+      const reservationEnd = new Date(reservation.endDate);
+
+      // Generate all dates in this reservation range
+      const currentDate = new Date(reservationStart);
+      currentDate.setHours(0, 0, 0, 0);
+
+      while (currentDate <= reservationEnd) {
+        // Only include dates within the requested range
+        if (currentDate >= start && currentDate <= end) {
+          unavailableDates.push(currentDate.toISOString().split('T')[0]); // YYYY-MM-DD format
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    });
+
+    availability.unavailableDates = [...new Set(unavailableDates)]; // Remove duplicates
   }
-  
+
   res.status(200).json({
     success: true,
     data: availability

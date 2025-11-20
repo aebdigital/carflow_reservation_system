@@ -329,7 +329,27 @@ function Reservations() {
   const [generateSlovakAgreement] = useGenerateReservationSlovakAgreementMutation()
   const [createUser, { isLoading: creatingUser }] = useCreateUserMutation()
 
-  // Check car availability when car and dates are selected
+  // Fetch availability for next 6 months when car is selected (for calendar disabled dates)
+  const sixMonthsAhead = useMemo(() => {
+    const start = new Date()
+    const end = new Date()
+    end.setMonth(end.getMonth() + 6)
+    return { start, end }
+  }, [])
+
+  const { data: calendarAvailability } = useGetCarAvailabilityQuery(
+    {
+      userEmail: auth.user?.email,
+      carId: formData.car?._id,
+      startDate: sixMonthsAhead.start.toISOString(),
+      endDate: sixMonthsAhead.end.toISOString(),
+    },
+    {
+      skip: !auth.user?.email || !formData.car?._id || dialogMode === 'view' || dialogMode === 'edit'
+    }
+  )
+
+  // Check car availability for selected dates (validation)
   const { data: availabilityData } = useGetCarAvailabilityQuery(
     {
       userEmail: auth.user?.email,
@@ -347,50 +367,29 @@ function Reservations() {
   const users = usersData?.data || []
   const payments = paymentsData?.data || []
 
-  // Calculate disabled dates for the selected car
+  // Get disabled dates from API response (for next 6 months)
   const disabledDates = useMemo(() => {
     if (!formData.car?._id || dialogMode === 'view' || dialogMode === 'edit') return []
 
-    // Get all active reservations for the selected car
-    const carReservations = reservations.filter(r =>
-      r.car?._id === formData.car._id &&
-      ['pending', 'confirmed', 'zaplatene', 'ongoing'].includes(r.status)
-    )
+    const unavailableDates = calendarAvailability?.data?.unavailableDates || []
 
     console.log('🚗 [CALENDAR] Selected car:', formData.car?.brand, formData.car?.model)
-    console.log('📅 [CALENDAR] Found reservations for this car:', carReservations.length)
+    console.log('📅 [CALENDAR API] Fetched unavailable dates from API:', unavailableDates.length)
 
-    // Create array of all disabled dates
-    const disabled = []
-    carReservations.forEach(reservation => {
-      try {
-        const start = new Date(reservation.startDate)
-        const end = new Date(reservation.endDate)
-
-        console.log('🔒 [CALENDAR] Blocking dates from', start.toLocaleDateString('sk-SK'), 'to', end.toLocaleDateString('sk-SK'))
-
-        // Add all dates in this reservation range
-        const currentDate = new Date(start)
-        currentDate.setHours(0, 0, 0, 0) // Normalize to start of day
-
-        while (currentDate <= end) {
-          disabled.push(new Date(currentDate))
-          currentDate.setDate(currentDate.getDate() + 1)
-        }
-      } catch (error) {
-        console.error('❌ [CALENDAR] Error parsing reservation dates:', error)
-      }
+    // Convert YYYY-MM-DD strings to Date objects
+    const disabled = unavailableDates.map(dateStr => {
+      const date = new Date(dateStr + 'T00:00:00')
+      return date
     })
 
-    console.log('🔒 [CALENDAR] Total disabled dates:', disabled.length)
     if (disabled.length > 0) {
-      console.log('🔒 [CALENDAR] First disabled date:', disabled[0].toLocaleDateString('sk-SK'))
-      console.log('🔒 [CALENDAR] Last disabled date:', disabled[disabled.length - 1].toLocaleDateString('sk-SK'))
-      console.log('🔒 [CALENDAR] All disabled dates:', disabled.map(d => d.toLocaleDateString('sk-SK')).join(', '))
+      console.log('🔒 [CALENDAR API] First disabled date:', disabled[0].toLocaleDateString('sk-SK'))
+      console.log('🔒 [CALENDAR API] Last disabled date:', disabled[disabled.length - 1].toLocaleDateString('sk-SK'))
+      console.log('🔒 [CALENDAR API] Sample disabled dates:', disabled.slice(0, 10).map(d => d.toLocaleDateString('sk-SK')).join(', '))
     }
 
     return disabled
-  }, [formData.car?._id, reservations, dialogMode])
+  }, [formData.car?._id, calendarAvailability, dialogMode])
 
   // Function to check if a date should be disabled
   const shouldDisableDate = (date) => {
