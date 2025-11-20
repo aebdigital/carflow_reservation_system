@@ -2782,9 +2782,9 @@ function Reservations() {
                 <TextField
                   fullWidth
                   label="Začiatok prenájmu"
-                  type="datetime-local"
-                  value={formData.startDate ? formData.startDate.toISOString().slice(0, 16) : ''}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value ? new Date(e.target.value) : null })}
+                  type="date"
+                  value={formData.startDate ? formData.startDate.toISOString().split('T')[0] : ''}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value ? new Date(e.target.value + 'T00:00:00') : null })}
                   disabled={dialogMode === 'view'}
                   error={!!formErrors.startDate}
                   helperText={formErrors.startDate}
@@ -2799,12 +2799,12 @@ function Reservations() {
                 <TextField
                   fullWidth
                   label="Koniec prenájmu"
-                  type="datetime-local"
-                  value={formData.endDate ? formData.endDate.toISOString().slice(0, 16) : ''}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value ? new Date(e.target.value) : null })}
+                  type="date"
+                  value={formData.endDate ? formData.endDate.toISOString().split('T')[0] : ''}
+                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value ? new Date(e.target.value + 'T23:59:59') : null })}
                   disabled={dialogMode === 'view'}
                   inputProps={{
-                    min: formData.startDate ? formData.startDate.toISOString().slice(0, 16) : ''
+                    min: formData.startDate ? formData.startDate.toISOString().split('T')[0] : ''
                   }}
                   error={!!formErrors.endDate}
                   helperText={formErrors.endDate}
