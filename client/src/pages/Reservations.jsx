@@ -68,6 +68,7 @@ import {
   useGenerateReservationSlovakAgreementMutation,
   useCreateUserMutation,
   useGetPickupLocationsByUserQuery,
+  useGetCarAvailabilityQuery,
 } from '../store/store'
 import { useNavigate } from 'react-router-dom'
 import { t } from '../utils/translations'
@@ -322,6 +323,19 @@ function Reservations() {
   const [checkOutReservation] = useCheckOutReservationMutation()
   const [generateSlovakAgreement] = useGenerateReservationSlovakAgreementMutation()
   const [createUser, { isLoading: creatingUser }] = useCreateUserMutation()
+
+  // Check car availability when car and dates are selected
+  const { data: availabilityData } = useGetCarAvailabilityQuery(
+    {
+      userEmail: auth.user?.email,
+      carId: formData.car?._id,
+      startDate: formData.startDate?.toISOString(),
+      endDate: formData.endDate?.toISOString(),
+    },
+    {
+      skip: !auth.user?.email || !formData.car?._id || !formData.startDate || !formData.endDate || dialogMode === 'view' || dialogMode === 'edit'
+    }
+  )
 
   const reservations = reservationsData?.data || []
   const cars = carsData?.data || []
@@ -2801,6 +2815,18 @@ function Reservations() {
                 />
               </Grid>
 
+              {/* Availability Warning */}
+              {availabilityData?.data && !availabilityData.data.isAvailableForDates && formData.car && formData.startDate && formData.endDate && dialogMode === 'create' && (
+                <Grid item xs={12}>
+                  <Alert severity="error">
+                    <strong>Auto nie je dostupné pre zvolené dátumy!</strong>
+                    <br />
+                    {availabilityData.data.conflictingReservations > 0 && (
+                      <>Pre tieto dátumy existuje {availabilityData.data.conflictingReservations} konfliktná rezervácia. Prosím, zvoľte iné dátumy.</>
+                    )}
+                  </Alert>
+                </Grid>
+              )}
 
               {/* Pickup Location */}
               <Grid item xs={12}>

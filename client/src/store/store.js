@@ -723,6 +723,14 @@ export const api = createApi({
       providesTags: ['Banner'],
     }),
 
+    // Car availability check
+    getCarAvailability: builder.query({
+      query: ({ userEmail, carId, startDate, endDate }) => ({
+        url: `public/users/${userEmail}/cars/${carId}/availability`,
+        params: { startDate, endDate },
+      }),
+    }),
+
     // Contract endpoints
     getContracts: builder.query({
       query: (params = {}) => ({
@@ -1152,6 +1160,9 @@ export const {
   useGetActiveBannersQuery,
   useGetPublicBannersQuery,
   useGetPublicBannersByUserQuery,
+
+  // Car availability hooks
+  useGetCarAvailabilityQuery,
 
   // Contract hooks
   useGetContractsQuery,
