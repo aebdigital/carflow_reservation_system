@@ -1147,9 +1147,17 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
 
     // Determine initial status based on payment type for LeRent
     let initialStatus = 'pending'; // 🔧 ADMIN APPROVAL: Set to pending, requires admin confirmation
+
+    console.log('💳 [STATUS CHECK] Tenant email:', tenantEmail);
+    console.log('💳 [STATUS CHECK] Payment type:', paymentType);
+    console.log('💳 [STATUS CHECK] Is LeRent?', tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk');
+    console.log('💳 [STATUS CHECK] Is Stripe?', paymentType === 'stripe');
+
     if (tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk' && paymentType === 'stripe') {
       initialStatus = 'awaiting_payment'; // For LeRent Stripe payments, wait for payment completion
       console.log('💳 [LERENT] Setting status to awaiting_payment for Stripe payment');
+    } else {
+      console.log('💳 [STATUS] Keeping default pending status');
     }
 
     // Create reservation
