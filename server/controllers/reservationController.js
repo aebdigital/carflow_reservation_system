@@ -2036,8 +2036,8 @@ const createInvoice = asyncHandler(async (req, res, next) => {
     console.log('🧾 [CREATE INVOICE] Customer:', reservation.customer?.email);
     console.log('🧾 [CREATE INVOICE] Car:', reservation.car?.brand, reservation.car?.model);
 
-    // Check if invoice already exists
-    if (reservation.superfakturaInvoiceId) {
+    // Check if invoice already exists and has token
+    if (reservation.superfakturaInvoiceId && reservation.superfakturaToken) {
       console.log('⚠️ [CREATE INVOICE] Invoice already exists:', reservation.superfakturaInvoiceId);
       return res.status(200).json({
         success: true,
@@ -2048,6 +2048,11 @@ const createInvoice = asyncHandler(async (req, res, next) => {
           alreadyExists: true
         }
       });
+    }
+
+    // If invoice exists but token is missing, allow re-creation to get token
+    if (reservation.superfakturaInvoiceId && !reservation.superfakturaToken) {
+      console.log('⚠️ [CREATE INVOICE] Invoice exists but token missing, will re-create to get token');
     }
 
     // Create invoice via SuperFaktura
@@ -2148,14 +2153,23 @@ const downloadInvoicePdf = asyncHandler(async (req, res, next) => {
       return next(new AppError('Rezervácia nenájdená', 404));
     }
 
-    // Check if invoice exists
-    if (!reservation.superfakturaInvoiceId || !reservation.superfakturaToken) {
-      console.log('❌ [DOWNLOAD INVOICE PDF] Invoice not found for this reservation');
-      return next(new AppError('Pre túto rezerváciu neexistuje faktúra', 404));
-    }
-
+    // Log what we have
+    console.log('📥 [DOWNLOAD INVOICE PDF] Checking invoice data...');
     console.log('📥 [DOWNLOAD INVOICE PDF] Invoice ID:', reservation.superfakturaInvoiceId);
     console.log('📥 [DOWNLOAD INVOICE PDF] Invoice Number:', reservation.superfakturaInvoiceNumber);
+    console.log('📥 [DOWNLOAD INVOICE PDF] Invoice Token:', reservation.superfakturaToken ? 'EXISTS' : 'MISSING');
+
+    // Check if invoice exists
+    if (!reservation.superfakturaInvoiceId || !reservation.superfakturaToken) {
+      console.log('❌ [DOWNLOAD INVOICE PDF] Invoice data incomplete');
+      if (!reservation.superfakturaInvoiceId) {
+        console.log('❌ [DOWNLOAD INVOICE PDF] Missing: Invoice ID');
+      }
+      if (!reservation.superfakturaToken) {
+        console.log('❌ [DOWNLOAD INVOICE PDF] Missing: Invoice Token - Invoice was created before token-saving was implemented');
+      }
+      return next(new AppError('Pre túto rezerváciu chýba token faktúry. Vytvorte faktúru znova.', 404));
+    }
 
     // Download PDF from SuperFaktura
     const superfakturaService = require('../services/superfakturaService');
