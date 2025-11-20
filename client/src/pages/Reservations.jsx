@@ -552,13 +552,15 @@ function Reservations() {
 
   const validateCustomerForm = () => {
     const errors = {}
-    
+
     if (!customerFormData.firstName) errors.firstName = 'First name is required'
     if (!customerFormData.lastName) errors.lastName = 'Last name is required'
     if (!customerFormData.email) errors.email = 'Email is required'
     if (!customerFormData.phone) errors.phone = 'Phone is required'
+    if (!customerFormData.dateOfBirth) errors.dateOfBirth = 'Date of birth is required'
     if (!customerFormData.licenseNumber) errors.licenseNumber = 'License number is required'
-    
+    if (!customerFormData.licenseExpiry) errors.licenseExpiry = 'License expiry is required'
+
     setCustomerFormErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -569,6 +571,9 @@ function Reservations() {
     try {
       const customerData = {
         ...customerFormData,
+        // Convert Date objects to ISO strings for API
+        dateOfBirth: customerFormData.dateOfBirth ? customerFormData.dateOfBirth.toISOString() : null,
+        licenseExpiry: customerFormData.licenseExpiry ? customerFormData.licenseExpiry.toISOString() : null,
         role: 'customer',
         password: 'customer123' // Default password
       }
@@ -3185,6 +3190,21 @@ function Reservations() {
                   onChange={(e) => setCustomerFormData({ ...customerFormData, phone: e.target.value })}
                   error={!!customerFormErrors.phone}
                   helperText={customerFormErrors.phone}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Dátum narodenia"
+                  type="date"
+                  value={customerFormData.dateOfBirth ? customerFormData.dateOfBirth.toISOString().split('T')[0] : ''}
+                  onChange={(e) => setCustomerFormData({ ...customerFormData, dateOfBirth: e.target.value ? new Date(e.target.value) : null })}
+                  error={!!customerFormErrors.dateOfBirth}
+                  helperText={customerFormErrors.dateOfBirth}
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
                   required
                 />
               </Grid>
