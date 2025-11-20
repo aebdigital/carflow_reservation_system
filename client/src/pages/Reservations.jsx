@@ -1319,19 +1319,19 @@ function Reservations() {
                 </TableBody>
               </Table>
             </DualScrollbarTableContainer>
-            {!reservationsLoading && !reservationsError && (
-              <TablePagination
-                component="div"
-                count={reservations.length}
-                page={page}
-                onPageChange={handleChangePage}
-                rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[10, 20, 50, 100]}
-                labelRowsPerPage="Riadkov na stránku:"
-                labelDisplayedRows={({ from, to, count }) => `${from}-${to} z ${count}`}
-              />
-            )}
+          )}
+          {!reservationsLoading && !reservationsError && (
+            <TablePagination
+              component="div"
+              count={reservations.length}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[10, 20, 50, 100]}
+              labelRowsPerPage="Riadkov na stránku:"
+              labelDisplayedRows={({ from, to, count }) => `${from}-${to} z ${count}`}
+            />
           )}
         </TabPanel>
 
@@ -1519,19 +1519,19 @@ function Reservations() {
                 </TableBody>
               </Table>
             </DualScrollbarTableContainer>
-            {!reservationsLoading && !reservationsError && (
-              <TablePagination
-                component="div"
-                count={reservations.filter(r => r.status === 'ongoing').length}
-                page={page}
-                onPageChange={handleChangePage}
-                rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[10, 20, 50, 100]}
-                labelRowsPerPage="Riadkov na stránku:"
-                labelDisplayedRows={({ from, to, count }) => `${from}-${to} z ${count}`}
-              />
-            )}
+          )}
+          {!reservationsLoading && !reservationsError && (
+            <TablePagination
+              component="div"
+              count={reservations.filter(r => r.status === 'ongoing').length}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[10, 20, 50, 100]}
+              labelRowsPerPage="Riadkov na stránku:"
+              labelDisplayedRows={({ from, to, count }) => `${from}-${to} z ${count}`}
+            />
           )}
         </TabPanel>
         <TabPanel value={tabValue} index={2}>
@@ -1734,19 +1734,19 @@ function Reservations() {
                 </TableBody>
               </Table>
             </DualScrollbarTableContainer>
-            {!reservationsLoading && !reservationsError && (
-              <TablePagination
-                component="div"
-                count={reservations.filter(r => r.status === 'pending').length}
-                page={page}
-                onPageChange={handleChangePage}
-                rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[10, 20, 50, 100]}
-                labelRowsPerPage="Riadkov na stránku:"
-                labelDisplayedRows={({ from, to, count }) => `${from}-${to} z ${count}`}
-              />
-            )}
+          )}
+          {!reservationsLoading && !reservationsError && (
+            <TablePagination
+              component="div"
+              count={reservations.filter(r => r.status === 'pending').length}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[10, 20, 50, 100]}
+              labelRowsPerPage="Riadkov na stránku:"
+              labelDisplayedRows={({ from, to, count }) => `${from}-${to} z ${count}`}
+            />
           )}
         </TabPanel>
         <TabPanel value={tabValue} index={3}>
@@ -1923,19 +1923,19 @@ function Reservations() {
                 </TableBody>
               </Table>
             </DualScrollbarTableContainer>
-            {!reservationsLoading && !reservationsError && (
-              <TablePagination
-                component="div"
-                count={reservations.filter(r => r.status === 'completed').length}
-                page={page}
-                onPageChange={handleChangePage}
-                rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[10, 20, 50, 100]}
-                labelRowsPerPage="Riadkov na stránku:"
-                labelDisplayedRows={({ from, to, count }) => `${from}-${to} z ${count}`}
-              />
-            )}
+          )}
+          {!reservationsLoading && !reservationsError && (
+            <TablePagination
+              component="div"
+              count={reservations.filter(r => r.status === 'completed').length}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[10, 20, 50, 100]}
+              labelRowsPerPage="Riadkov na stránku:"
+              labelDisplayedRows={({ from, to, count }) => `${from}-${to} z ${count}`}
+            />
           )}
         </TabPanel>
       </Card>
