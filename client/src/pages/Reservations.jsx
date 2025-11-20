@@ -1160,7 +1160,7 @@ function Reservations() {
                                   <PaymentIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
-                              {auth.user?.email !== 'rival@test.sk' && (
+                              {auth.user?.email !== 'rival@test.sk' && auth.user?.email !== 'lerent@lerent.sk' && (
                                 <Tooltip title="Poslať upomienku platby">
                                   <IconButton
                                     size="small"
