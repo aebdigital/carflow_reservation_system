@@ -357,30 +357,46 @@ function Reservations() {
       ['pending', 'confirmed', 'zaplatene', 'ongoing'].includes(r.status)
     )
 
+    console.log('🚗 [CALENDAR] Selected car:', formData.car?.brand, formData.car?.model)
+    console.log('📅 [CALENDAR] Found reservations for this car:', carReservations.length)
+
     // Create array of all disabled dates
     const disabled = []
     carReservations.forEach(reservation => {
       try {
-        const start = parseISO(reservation.startDate)
-        const end = parseISO(reservation.endDate)
+        const start = new Date(reservation.startDate)
+        const end = new Date(reservation.endDate)
+
+        console.log('🔒 [CALENDAR] Blocking dates from', start.toLocaleDateString('sk-SK'), 'to', end.toLocaleDateString('sk-SK'))
 
         // Add all dates in this reservation range
         const currentDate = new Date(start)
+        currentDate.setHours(0, 0, 0, 0) // Normalize to start of day
+
         while (currentDate <= end) {
           disabled.push(new Date(currentDate))
           currentDate.setDate(currentDate.getDate() + 1)
         }
       } catch (error) {
-        console.error('Error parsing reservation dates:', error)
+        console.error('❌ [CALENDAR] Error parsing reservation dates:', error)
       }
     })
+
+    console.log('🔒 [CALENDAR] Total disabled dates:', disabled.length)
+    if (disabled.length > 0) {
+      console.log('🔒 [CALENDAR] First disabled date:', disabled[0].toLocaleDateString('sk-SK'))
+      console.log('🔒 [CALENDAR] Last disabled date:', disabled[disabled.length - 1].toLocaleDateString('sk-SK'))
+    }
 
     return disabled
   }, [formData.car?._id, reservations, dialogMode])
 
   // Function to check if a date should be disabled
   const shouldDisableDate = (date) => {
-    return disabledDates.some(disabledDate => isSameDay(date, disabledDate))
+    const isDisabled = disabledDates.some(disabledDate => isSameDay(date, disabledDate))
+    // Uncomment for detailed debugging:
+    // if (isDisabled) console.log('❌ Date disabled:', date.toLocaleDateString('sk-SK'))
+    return isDisabled
   }
 
   // Debug: Log all reservation statuses
