@@ -672,8 +672,9 @@ const getPublicBannersByUser = asyncHandler(async (req, res, next) => {
   
   const banners = await Banner.find(query)
     .sort({ position: 1, sortOrder: 1 })
-    .populate('createdBy', 'name email');
-  
+    .populate('createdBy', 'name email')
+    .populate('images.carId', 'brand model year registrationNumber category status');
+
   // Filter out banners with no images to prevent frontend errors
   const validBanners = banners.filter((banner) => {
     return banner.images && banner.images.length > 0 && banner.images[0] && banner.images[0].url;
