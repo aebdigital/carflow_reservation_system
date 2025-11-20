@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   Box,
   Typography,
@@ -33,6 +33,11 @@ import {
   IconButton,
   Tooltip
 } from '@mui/material'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
+import { sk } from 'date-fns/locale'
+import { isSameDay, isWithinInterval, parseISO } from 'date-fns'
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -341,6 +346,42 @@ function Reservations() {
   const cars = carsData?.data || []
   const users = usersData?.data || []
   const payments = paymentsData?.data || []
+
+  // Calculate disabled dates for the selected car
+  const disabledDates = useMemo(() => {
+    if (!formData.car?._id || dialogMode === 'view' || dialogMode === 'edit') return []
+
+    // Get all active reservations for the selected car
+    const carReservations = reservations.filter(r =>
+      r.car?._id === formData.car._id &&
+      ['pending', 'confirmed', 'zaplatene', 'ongoing'].includes(r.status)
+    )
+
+    // Create array of all disabled dates
+    const disabled = []
+    carReservations.forEach(reservation => {
+      try {
+        const start = parseISO(reservation.startDate)
+        const end = parseISO(reservation.endDate)
+
+        // Add all dates in this reservation range
+        const currentDate = new Date(start)
+        while (currentDate <= end) {
+          disabled.push(new Date(currentDate))
+          currentDate.setDate(currentDate.getDate() + 1)
+        }
+      } catch (error) {
+        console.error('Error parsing reservation dates:', error)
+      }
+    })
+
+    return disabled
+  }, [formData.car?._id, reservations, dialogMode])
+
+  // Function to check if a date should be disabled
+  const shouldDisableDate = (date) => {
+    return disabledDates.some(disabledDate => isSameDay(date, disabledDate))
+  }
 
   // Debug: Log all reservation statuses
   React.useEffect(() => {
@@ -2779,40 +2820,61 @@ function Reservations() {
 
               {/* Date Selection */}
               <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Začiatok prenájmu"
-                  type="date"
-                  value={formData.startDate ? formData.startDate.toISOString().split('T')[0] : ''}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value ? new Date(e.target.value + 'T00:00:00') : null })}
-                  disabled={dialogMode === 'view'}
-                  error={!!formErrors.startDate}
-                  helperText={formErrors.startDate}
-                  required
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                />
+                <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={sk}>
+                  <DatePicker
+                    label="Začiatok prenájmu"
+                    value={formData.startDate}
+                    onChange={(newValue) => {
+                      if (newValue) {
+                        const dateWithTime = new Date(newValue)
+                        dateWithTime.setHours(0, 0, 0, 0)
+                        setFormData({ ...formData, startDate: dateWithTime })
+                      } else {
+                        setFormData({ ...formData, startDate: null })
+                      }
+                    }}
+                    disabled={dialogMode === 'view'}
+                    shouldDisableDate={shouldDisableDate}
+                    minDate={new Date()}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        required: true,
+                        error: !!formErrors.startDate,
+                        helperText: formErrors.startDate,
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
               </Grid>
 
               <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Koniec prenájmu"
-                  type="date"
-                  value={formData.endDate ? formData.endDate.toISOString().split('T')[0] : ''}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value ? new Date(e.target.value + 'T23:59:59') : null })}
-                  disabled={dialogMode === 'view'}
-                  inputProps={{
-                    min: formData.startDate ? formData.startDate.toISOString().split('T')[0] : ''
-                  }}
-                  error={!!formErrors.endDate}
-                  helperText={formErrors.endDate}
-                  required
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                />
+                <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={sk}>
+                  <DatePicker
+                    label="Koniec prenájmu"
+                    value={formData.endDate}
+                    onChange={(newValue) => {
+                      if (newValue) {
+                        const dateWithTime = new Date(newValue)
+                        dateWithTime.setHours(23, 59, 59, 999)
+                        setFormData({ ...formData, endDate: dateWithTime })
+                      } else {
+                        setFormData({ ...formData, endDate: null })
+                      }
+                    }}
+                    disabled={dialogMode === 'view'}
+                    shouldDisableDate={shouldDisableDate}
+                    minDate={formData.startDate || new Date()}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        required: true,
+                        error: !!formErrors.endDate,
+                        helperText: formErrors.endDate,
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
               </Grid>
 
               {/* Availability Warning */}
