@@ -2066,11 +2066,13 @@ const createInvoice = asyncHandler(async (req, res, next) => {
     const invoice = invoiceResult.data.data.Invoice;
     reservation.superfakturaInvoiceId = invoice.id;
     reservation.superfakturaInvoiceNumber = invoice.invoice_no_formatted;
+    reservation.superfakturaToken = invoice.token;
     await reservation.save();
 
     console.log('✅ [CREATE INVOICE] Invoice created and saved successfully');
     console.log('🧾 [CREATE INVOICE] Invoice ID:', invoice.id);
     console.log('🧾 [CREATE INVOICE] Invoice Number:', invoice.invoice_no_formatted);
+    console.log('🧾 [CREATE INVOICE] Invoice Token:', invoice.token);
 
     // Update variable symbol to match invoice number
     try {
