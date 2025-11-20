@@ -1288,13 +1288,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
               invoiceResult.data.data.Invoice.token
             );
             console.log('✅ [SUPERFAKTURA] Invoice PDF downloaded for email attachment');
-
-            // Update variable symbol to match reservation number
-            await superfakturaService.updateInvoiceVariable(
-              invoiceResult.data.data.Invoice.id,
-              populatedReservation.reservationNumber
-            );
-            console.log('✅ [SUPERFAKTURA] Variable symbol updated to match reservation number:', populatedReservation.reservationNumber);
+            console.log('🧾 [SUPERFAKTURA] Variable symbol set to reservation number:', populatedReservation.reservationNumber);
           } catch (pdfError) {
             console.error('❌ [SUPERFAKTURA] Failed to download invoice PDF:', pdfError.message);
           }
@@ -2162,13 +2156,7 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
               invoiceResult.data.data.Invoice.token
             );
             console.log('✅ [SUPERFAKTURA] Invoice PDF downloaded for email attachment');
-
-            // Update variable symbol to match reservation number
-            await superfakturaService.updateInvoiceVariable(
-              invoiceResult.data.data.Invoice.id,
-              populatedReservation.reservationNumber
-            );
-            console.log('✅ [SUPERFAKTURA] Variable symbol updated to match reservation number:', populatedReservation.reservationNumber);
+            console.log('🧾 [SUPERFAKTURA] Variable symbol set to reservation number:', populatedReservation.reservationNumber);
           } catch (pdfError) {
             console.error('❌ [SUPERFAKTURA] Failed to download invoice PDF:', pdfError.message);
           }

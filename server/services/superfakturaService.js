@@ -136,8 +136,8 @@ class SuperFakturaService {
       reservationId: reservation._id,
       invoice: {
         name: `Faktúra - Rezervácia ${reservation.reservationNumber || reservation._id}`,
-        // Variable symbol will be set after invoice creation to match invoice number
-        variable: '',
+        // Use reservation number as variable symbol
+        variable: reservation.reservationNumber || reservation._id.toString(),
         payment_type: reservation.paymentMethod === 'card' ? 'card' :
                      reservation.paymentMethod === 'cash' ? 'cash' : 'transfer',
         currency: 'EUR',

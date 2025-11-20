@@ -2078,22 +2078,7 @@ const createInvoice = asyncHandler(async (req, res, next) => {
     console.log('🧾 [CREATE INVOICE] Invoice ID:', invoice.id);
     console.log('🧾 [CREATE INVOICE] Invoice Number:', invoice.invoice_no_formatted);
     console.log('🧾 [CREATE INVOICE] Invoice Token:', invoice.token);
-
-    // Update variable symbol to match invoice number
-    try {
-      console.log('🔄 [CREATE INVOICE] Updating variable symbol to match invoice number...');
-      const updateResult = await superfakturaService.updateInvoiceVariable(
-        invoice.id,
-        invoice.invoice_no_formatted
-      );
-      if (updateResult.success) {
-        console.log('✅ [CREATE INVOICE] Variable symbol updated successfully');
-      } else {
-        console.log('⚠️ [CREATE INVOICE] Variable symbol update failed:', updateResult.error);
-      }
-    } catch (updateError) {
-      console.error('❌ [CREATE INVOICE] Variable symbol update error:', updateError.message);
-    }
+    console.log('🧾 [CREATE INVOICE] Variable Symbol:', reservation.reservationNumber);
 
     // Try to download PDF
     let pdfDownloaded = false;
