@@ -1263,11 +1263,11 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       .populate('car', 'brand model year registrationNumber images')
       .populate('appliedDiscountCodes.discountCode', 'code description discountType discountValue');
 
-    // 🧾 Create SuperFaktura invoice for LeRent tenants with bank transfer payment only
+    // 🧾 Create SuperFaktura invoice for all LeRent reservations
     let invoicePdfBuffer = null;
-    if (tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk' && savedReservation.paymentType === 'prevod') {
+    if (tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk') {
       try {
-        console.log('🧾 [SUPERFAKTURA] Creating invoice for new LeRent bank transfer reservation:', populatedReservation._id);
+        console.log('🧾 [SUPERFAKTURA] Creating invoice for new LeRent reservation:', populatedReservation._id);
 
         const superfakturaService = require('../services/superfakturaService');
         const invoiceResult = await superfakturaService.createInvoiceFromReservation(populatedReservation);
@@ -1278,6 +1278,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
           // Save invoice info to reservation
           populatedReservation.superfakturaInvoiceId = invoiceResult.data.data.Invoice.id;
           populatedReservation.superfakturaInvoiceNumber = invoiceResult.data.data.Invoice.invoice_no_formatted;
+          populatedReservation.superfakturaToken = invoiceResult.data.data.Invoice.token;
           await populatedReservation.save();
 
           // Download invoice PDF for email attachment
@@ -2146,6 +2147,7 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
           // Save invoice info to reservation
           populatedReservation.superfakturaInvoiceId = invoiceResult.data.data.Invoice.id;
           populatedReservation.superfakturaInvoiceNumber = invoiceResult.data.data.Invoice.invoice_no_formatted;
+          populatedReservation.superfakturaToken = invoiceResult.data.data.Invoice.token;
           await populatedReservation.save();
 
           // Download invoice PDF for email attachment
