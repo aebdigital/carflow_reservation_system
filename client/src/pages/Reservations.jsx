@@ -386,6 +386,7 @@ function Reservations() {
     if (disabled.length > 0) {
       console.log('🔒 [CALENDAR] First disabled date:', disabled[0].toLocaleDateString('sk-SK'))
       console.log('🔒 [CALENDAR] Last disabled date:', disabled[disabled.length - 1].toLocaleDateString('sk-SK'))
+      console.log('🔒 [CALENDAR] All disabled dates:', disabled.map(d => d.toLocaleDateString('sk-SK')).join(', '))
     }
 
     return disabled
@@ -393,9 +394,22 @@ function Reservations() {
 
   // Function to check if a date should be disabled
   const shouldDisableDate = (date) => {
-    const isDisabled = disabledDates.some(disabledDate => isSameDay(date, disabledDate))
-    // Uncomment for detailed debugging:
-    // if (isDisabled) console.log('❌ Date disabled:', date.toLocaleDateString('sk-SK'))
+    if (!date || !formData.car?._id) return false
+
+    // Normalize the input date to midnight for comparison
+    const checkDate = new Date(date)
+    checkDate.setHours(0, 0, 0, 0)
+
+    const isDisabled = disabledDates.some(disabledDate => {
+      const normalizedDisabled = new Date(disabledDate)
+      normalizedDisabled.setHours(0, 0, 0, 0)
+      return checkDate.getTime() === normalizedDisabled.getTime()
+    })
+
+    if (isDisabled) {
+      console.log('🚫 [CALENDAR] Date is DISABLED:', checkDate.toLocaleDateString('sk-SK'))
+    }
+
     return isDisabled
   }
 
@@ -2849,7 +2863,7 @@ function Reservations() {
                         setFormData({ ...formData, startDate: null })
                       }
                     }}
-                    disabled={dialogMode === 'view'}
+                    disabled={dialogMode === 'view' || !formData.car}
                     shouldDisableDate={shouldDisableDate}
                     minDate={new Date()}
                     slotProps={{
@@ -2857,7 +2871,7 @@ function Reservations() {
                         fullWidth: true,
                         required: true,
                         error: !!formErrors.startDate,
-                        helperText: formErrors.startDate,
+                        helperText: formErrors.startDate || (!formData.car ? 'Najprv vyberte auto' : ''),
                       },
                     }}
                   />
@@ -2878,7 +2892,7 @@ function Reservations() {
                         setFormData({ ...formData, endDate: null })
                       }
                     }}
-                    disabled={dialogMode === 'view'}
+                    disabled={dialogMode === 'view' || !formData.car}
                     shouldDisableDate={shouldDisableDate}
                     minDate={formData.startDate || new Date()}
                     slotProps={{
@@ -2886,7 +2900,7 @@ function Reservations() {
                         fullWidth: true,
                         required: true,
                         error: !!formErrors.endDate,
-                        helperText: formErrors.endDate,
+                        helperText: formErrors.endDate || (!formData.car ? 'Najprv vyberte auto' : ''),
                       },
                     }}
                   />
