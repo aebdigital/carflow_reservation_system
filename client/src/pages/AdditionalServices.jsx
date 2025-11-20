@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import {
   Box,
   Typography,
@@ -110,6 +111,7 @@ const additionalServicesAPI = {
 };
 
 function AdditionalServices() {
+  const auth = useSelector((state) => state.auth);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -163,7 +165,7 @@ function AdditionalServices() {
   const [submitting, setSubmitting] = useState(false);
 
   // Category mapping
-  const categoryConfig = {
+  const allCategoryConfig = {
     driving_comfort: {
       label: 'Jazda a komfort',
       icon: <DriveEtaIcon />,
@@ -205,6 +207,16 @@ function AdditionalServices() {
       color: '#607d8b'
     }
   };
+
+  // Filter out insurance categories for LeRent
+  const isLeRent = auth.user?.email?.toLowerCase() === 'lerent@lerent.sk';
+  const categoryConfig = isLeRent
+    ? Object.fromEntries(
+        Object.entries(allCategoryConfig).filter(
+          ([key]) => !['poistenie', 'poistenie_asistencia_rozsierene'].includes(key)
+        )
+      )
+    : allCategoryConfig;
 
   useEffect(() => {
     fetchServices();
