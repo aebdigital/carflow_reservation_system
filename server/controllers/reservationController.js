@@ -552,23 +552,130 @@ const createReservation = asyncHandler(async (req, res, next) => {
     { path: 'appliedDiscountCodes.discountCode', select: 'code description discountType discountValue' }
   ]);
 
+  // 🧾 Create SuperFaktura invoice for all LeRent reservations (before sending emails)
+  let invoicePdfBuffer = null;
+  if (req.user.email.toLowerCase() === 'lerent@lerent.sk') {
+    try {
+      console.log('🧾 [SUPERFAKTURA ADMIN] Creating invoice for new LeRent admin reservation:', reservation._id);
+
+      const superfakturaService = require('../services/superfakturaService');
+      const invoiceResult = await superfakturaService.createInvoiceFromReservation(reservation);
+
+      if (invoiceResult.success) {
+        console.log('✅ [SUPERFAKTURA ADMIN] Invoice created successfully');
+
+        // Save invoice info to reservation
+        reservation.superfakturaInvoiceId = invoiceResult.data.data.Invoice.id;
+        reservation.superfakturaInvoiceNumber = invoiceResult.data.data.Invoice.invoice_no_formatted;
+        reservation.superfakturaToken = invoiceResult.data.data.Invoice.token;
+        await reservation.save();
+
+        // Download invoice PDF for email attachment
+        try {
+          console.log('📥 [SUPERFAKTURA ADMIN] Downloading invoice PDF for email attachment...');
+          invoicePdfBuffer = await superfakturaService.getInvoicePdf(
+            invoiceResult.data.data.Invoice.id,
+            invoiceResult.data.data.Invoice.token
+          );
+          console.log('✅ [SUPERFAKTURA ADMIN] Invoice PDF downloaded for email attachment');
+          console.log('🧾 [SUPERFAKTURA ADMIN] Variable symbol set to reservation number:', reservation.reservationNumber);
+        } catch (pdfError) {
+          console.error('❌ [SUPERFAKTURA ADMIN] Failed to download invoice PDF:', pdfError.message);
+        }
+      } else {
+        console.error('❌ [SUPERFAKTURA ADMIN] Invoice creation failed:', invoiceResult.error);
+      }
+    } catch (superfakturaError) {
+      console.error('❌ [SUPERFAKTURA ADMIN] Error during invoice creation:', superfakturaError.message);
+      console.error('❌ [SUPERFAKTURA ADMIN] Full error:', superfakturaError);
+    }
+  } else {
+    console.log('ℹ️ [SUPERFAKTURA ADMIN] Not LeRent tenant, skipping invoice creation');
+  }
+
   // 📧 Send admin notification and customer confirmation emails
   try {
-    const { sendReservationEmails } = require('../utils/emailHelpers');
-    
     console.log('📧 [EMAIL] Sending reservation emails for new admin reservation...');
     console.log('📧 [EMAIL] Environment:', process.env.NODE_ENV || 'development');
     console.log('📧 [EMAIL] Email provider:', process.env.EMAIL_PROVIDER || 'nodemailer');
     console.log('📧 [EMAIL] SMTP2GO configured:', process.env.SMTP2GO_API_KEY ? 'YES' : 'NO');
-    
-    // Send email notifications to both admin and customer
-    const emailResult = await sendReservationEmails(reservation, carDoc, customerDoc, req.user);
-    
-    if (emailResult.success) {
-      console.log('✅ [EMAIL] Reservation emails sent successfully');
-      console.log('📧 [EMAIL] Results:', emailResult.results);
+    console.log('📧 [EMAIL] Invoice PDF available:', invoicePdfBuffer ? 'YES' : 'NO');
+
+    // Prepare email attachments if SuperFaktura PDF was downloaded
+    let attachments = [];
+    if (invoicePdfBuffer) {
+      attachments.push({
+        filename: `Faktura_${reservation.superfakturaInvoiceNumber || reservation.reservationNumber}.pdf`,
+        content: invoicePdfBuffer,
+        contentType: 'application/pdf'
+      });
+      console.log('📎 [EMAIL] Adding SuperFaktura invoice PDF attachment to admin reservation email');
+    }
+
+    // Send emails with or without attachment
+    if (attachments.length > 0) {
+      console.log('📧 [EMAIL] Sending emails with SuperFaktura PDF attachment');
+
+      // Import email service for direct calls with attachments
+      const emailService = require('../services/emailService');
+      const { prepareReservationEmailData, getAdminEmailForTenant } = require('../utils/emailHelpers');
+
+      // Prepare email data
+      const emailData = prepareReservationEmailData(reservation, carDoc, customerDoc);
+      const results = [];
+
+      // Send admin notification (without attachment)
+      try {
+        const adminEmail = getAdminEmailForTenant(req.user);
+        const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData, req.user);
+        results.push({ type: 'admin', success: true, result: adminResult });
+        console.log('✅ [EMAIL] Admin notification sent to:', adminEmail);
+      } catch (adminError) {
+        console.error('❌ [EMAIL] Failed to send admin notification:', adminError.message);
+        results.push({ type: 'admin', success: false, error: adminError.message });
+      }
+
+      // Send customer confirmation with PDF attachment
+      try {
+        await emailService.sendCustomerReservationConfirmation(
+          customerDoc.email,
+          emailData,
+          req.user,
+          reservation
+        );
+        console.log('✅ [EMAIL] Customer confirmation (without attachment) sent to:', customerDoc.email);
+
+        // Also send the "confirmed" email with attachment for LeRent
+        if (req.user.email.toLowerCase() === 'lerent@lerent.sk') {
+          await emailService.sendCustomerReservationConfirmed(
+            customerDoc.email,
+            emailData,
+            req.user,
+            reservation,
+            attachments
+          );
+          console.log('✅ [EMAIL] Customer confirmation email with PDF attachment sent to:', customerDoc.email);
+        }
+
+        results.push({ type: 'customer_email', success: true, result: { success: true } });
+      } catch (customerError) {
+        console.error('❌ [EMAIL] Failed to send customer confirmation:', customerError.message);
+        results.push({ type: 'customer_email', success: false, error: customerError.message });
+      }
+
+      const successCount = results.filter(r => r.success).length;
+      console.log(`📧 [EMAIL] Reservation emails completed: ${successCount}/${results.length} successful`);
     } else {
-      console.warn('⚠️ [EMAIL] Reservation emails failed:', emailResult.error);
+      // No attachments - use standard helper
+      const { sendReservationEmails } = require('../utils/emailHelpers');
+      const emailResult = await sendReservationEmails(reservation, carDoc, customerDoc, req.user);
+
+      if (emailResult.success) {
+        console.log('✅ [EMAIL] Reservation emails sent successfully');
+        console.log('📧 [EMAIL] Results:', emailResult.results);
+      } else {
+        console.warn('⚠️ [EMAIL] Reservation emails failed:', emailResult.error);
+      }
     }
   } catch (emailError) {
     console.error('❌ [EMAIL] Error sending reservation emails:', emailError.message);
