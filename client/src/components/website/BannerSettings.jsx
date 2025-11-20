@@ -426,18 +426,17 @@ export default function BannerSettings() {
 
   const handleDragAndDrop = useCallback((draggedIndex, targetIndex) => {
     if (draggedIndex === targetIndex) return
-    
+
     setImagePreviews(prev => {
       const newImages = [...prev]
       const [draggedImage] = newImages.splice(draggedIndex, 1)
       newImages.splice(targetIndex, 0, draggedImage)
-      
-      // Update sort order
-      newImages.forEach((img, index) => {
-        img.sortOrder = index
-      })
-      
-      return newImages
+
+      // Update sort order immutably
+      return newImages.map((img, index) => ({
+        ...img,
+        sortOrder: index
+      }))
     })
   }, [])
 
