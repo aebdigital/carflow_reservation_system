@@ -1,6 +1,6 @@
 const Brand = require('../models/Brand');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
-const { uploadToGCS, deleteFromGCS } = require('../services/cloudStorageService');
+const { uploadToGCS, deleteFromGCS } = require('../services/cloudStorage');
 const sharp = require('sharp');
 
 // @desc    Get all brands for tenant
