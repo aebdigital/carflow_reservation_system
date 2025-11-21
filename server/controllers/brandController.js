@@ -1,6 +1,6 @@
 const Brand = require('../models/Brand');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
-const { uploadToGCS, deleteFromGCS } = require('../services/cloudStorage');
+const cloudStorage = require('../services/cloudStorage');
 const sharp = require('sharp');
 
 // @desc    Get all brands for tenant
@@ -56,7 +56,7 @@ const createBrand = asyncHandler(async (req, res, next) => {
 
       // Upload to GCS
       const fileName = `brands/${req.user.tenantId}/${Date.now()}-${name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}.png`;
-      logoUrl = await uploadToGCS(optimizedBuffer, fileName, 'image/png');
+      logoUrl = await cloudStorage.uploadToGCS(optimizedBuffer, fileName, 'image/png');
 
       console.log('✅ [BRAND] Logo uploaded to GCS:', logoUrl);
     } catch (error) {
@@ -118,7 +118,7 @@ const updateBrand = asyncHandler(async (req, res, next) => {
       // Delete old logo from GCS if exists
       if (brand.logo) {
         try {
-          await deleteFromGCS(brand.logo);
+          await cloudStorage.deleteFromGCS(brand.logo);
           console.log('✅ [BRAND] Old logo deleted from GCS');
         } catch (deleteError) {
           console.warn('⚠️ [BRAND] Could not delete old logo:', deleteError.message);
@@ -135,7 +135,7 @@ const updateBrand = asyncHandler(async (req, res, next) => {
         .toBuffer();
 
       const fileName = `brands/${req.user.tenantId}/${Date.now()}-${brand.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}.png`;
-      brand.logo = await uploadToGCS(optimizedBuffer, fileName, 'image/png');
+      brand.logo = await cloudStorage.uploadToGCS(optimizedBuffer, fileName, 'image/png');
 
       console.log('✅ [BRAND] New logo uploaded to GCS:', brand.logo);
     } catch (error) {
