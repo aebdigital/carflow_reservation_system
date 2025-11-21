@@ -112,7 +112,9 @@ function Cars() {
         '4-10days': '',
         '10-25days': '', // Nitra-car-specific rate
         '11-17days': '',
+        '11-20days': '', // LeRent-specific rate
         '18-24days': '',
+        '21-29days': '', // LeRent-specific rate
         '25-29days': '',
         '26plus': '', // Nitra-car-specific rate
         '30-60days': '', // LeRent-specific rate
@@ -585,7 +587,9 @@ function Cars() {
               '4-10days': car.pricing?.rates?.['4-10days'] || '',
               '10-25days': car.pricing?.rates?.['10-25days'] || '', // Nitra-car-specific rate
               '11-17days': car.pricing?.rates?.['11-17days'] || '',
+              '11-20days': car.pricing?.rates?.['11-20days'] || '', // LeRent-specific rate
               '18-24days': car.pricing?.rates?.['18-24days'] || '',
+              '21-29days': car.pricing?.rates?.['21-29days'] || '', // LeRent-specific rate
               '25-29days': car.pricing?.rates?.['25-29days'] || '',
               '26plus': car.pricing?.rates?.['26plus'] || '', // Nitra-car-specific rate
               '30-60days': car.pricing?.rates?.['30-60days'] || '', // LeRent-specific rate
@@ -682,7 +686,9 @@ function Cars() {
               '4-10days': car.pricing?.rates?.['4-10days'] || '',
               '10-25days': car.pricing?.rates?.['10-25days'] || '', // Nitra-car-specific rate
               '11-17days': car.pricing?.rates?.['11-17days'] || '',
+              '11-20days': car.pricing?.rates?.['11-20days'] || '', // LeRent-specific rate
               '18-24days': car.pricing?.rates?.['18-24days'] || '',
+              '21-29days': car.pricing?.rates?.['21-29days'] || '', // LeRent-specific rate
               '25-29days': car.pricing?.rates?.['25-29days'] || '',
               '26plus': car.pricing?.rates?.['26plus'] || '', // Nitra-car-specific rate
               '30-60days': car.pricing?.rates?.['30-60days'] || '', // LeRent-specific rate
