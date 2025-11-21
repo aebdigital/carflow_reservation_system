@@ -83,7 +83,8 @@ const createBrand = asyncHandler(async (req, res, next) => {
       const fileName = `brands/${req.user.tenantId}/${Date.now()}-${name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}.png`;
       console.log('☁️ [BRAND] Uploading to GCS:', fileName);
 
-      logoUrl = await cloudStorage.uploadToGCS(optimizedBuffer, fileName, 'image/png');
+      const uploadResult = await cloudStorage.uploadToGCS(optimizedBuffer, fileName, 'image/png');
+      logoUrl = uploadResult.url; // Extract just the URL string
 
       console.log('✅ [BRAND] Logo uploaded to GCS:', logoUrl);
     } catch (error) {
@@ -172,7 +173,8 @@ const updateBrand = asyncHandler(async (req, res, next) => {
         .toBuffer();
 
       const fileName = `brands/${req.user.tenantId}/${Date.now()}-${brand.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}.png`;
-      brand.logo = await cloudStorage.uploadToGCS(optimizedBuffer, fileName, 'image/png');
+      const uploadResult = await cloudStorage.uploadToGCS(optimizedBuffer, fileName, 'image/png');
+      brand.logo = uploadResult.url; // Extract just the URL string
 
       console.log('✅ [BRAND] New logo uploaded to GCS:', brand.logo);
     } catch (error) {
