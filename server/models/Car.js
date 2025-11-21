@@ -197,14 +197,18 @@ const carSchema = new mongoose.Schema({
       default: 0
     },
     rates: {
-      '1day': Number,
+      // LeRent pricing structure
       '2-3days': Number,
       '4-10days': Number,
+      '11-20days': Number,
+      '21-29days': Number,
+      '30-60days': Number,
+      '60plus': String, // "dohoda - volať/písať mail" (LeRent only)
+      // Legacy structure for other tenants
+      '1day': Number,
       '11-17days': Number,
       '18-24days': Number,
       '25-29days': Number,
-      '30-60days': Number, // For LeRent only
-      '60plus': String, // "dohoda - volať/písať mail" (LeRent only)
       '30plus': String // "dohoda - volať/písať mail" (for other tenants)
     },
     weeklyRate: Number,
@@ -647,14 +651,18 @@ carSchema.methods.isAvailableForBooking = function() {
 carSchema.methods.calculateRate = function(days) {
   const rates = this.pricing?.rates || {};
 
-  // Check specific day ranges first
-  if (days === 1 && rates['1day']) return rates['1day'];
+  // Check specific day ranges - LeRent structure (no 1 day rate)
   if (days >= 2 && days <= 3 && rates['2-3days']) return rates['2-3days'] * days;
   if (days >= 4 && days <= 10 && rates['4-10days']) return rates['4-10days'] * days;
+  if (days >= 11 && days <= 20 && rates['11-20days']) return rates['11-20days'] * days;
+  if (days >= 21 && days <= 29 && rates['21-29days']) return rates['21-29days'] * days;
+  if (days >= 30 && days <= 60 && rates['30-60days']) return rates['30-60days'] * days;
+
+  // Legacy structure for other tenants
+  if (days === 1 && rates['1day']) return rates['1day'];
   if (days >= 11 && days <= 17 && rates['11-17days']) return rates['11-17days'] * days;
   if (days >= 18 && days <= 24 && rates['18-24days']) return rates['18-24days'] * days;
   if (days >= 25 && days <= 29 && rates['25-29days']) return rates['25-29days'] * days;
-  if (days >= 30 && days <= 60 && rates['30-60days']) return rates['30-60days'] * days;
 
   // Fallback to pricing rates or legacy fields
   const dailyRate = this.pricing?.dailyRate || this.dailyRate || 0;
