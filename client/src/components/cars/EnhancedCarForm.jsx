@@ -1975,6 +1975,90 @@ const EnhancedCarForm = ({
                   />
                 </Grid>
               </>
+            ) : user?.email?.toLowerCase() === 'lerent@lerent.sk' ? (
+              <>
+                {/* LeRent: Custom pricing tiers (no 1 day) */}
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="2-3 dni"
+                    type="number"
+                    value={formData.pricing?.rates?.['2-3days'] || ''}
+                    onChange={(e) => handleNestedChange('pricing.rates.2-3days', parseFloat(e.target.value))}
+                    disabled={dialogMode === 'view'}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="4-10 dní"
+                    type="number"
+                    value={formData.pricing?.rates?.['4-10days'] || ''}
+                    onChange={(e) => handleNestedChange('pricing.rates.4-10days', parseFloat(e.target.value))}
+                    disabled={dialogMode === 'view'}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="11-20 dní"
+                    type="number"
+                    value={formData.pricing?.rates?.['11-20days'] || ''}
+                    onChange={(e) => handleNestedChange('pricing.rates.11-20days', parseFloat(e.target.value))}
+                    disabled={dialogMode === 'view'}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="21-29 dní"
+                    type="number"
+                    value={formData.pricing?.rates?.['21-29days'] || ''}
+                    onChange={(e) => handleNestedChange('pricing.rates.21-29days', parseFloat(e.target.value))}
+                    disabled={dialogMode === 'view'}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="30-60 dní"
+                    type="number"
+                    value={formData.pricing?.rates?.['30-60days'] || ''}
+                    onChange={(e) => handleNestedChange('pricing.rates.30-60days', parseFloat(e.target.value))}
+                    disabled={dialogMode === 'view'}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
+                    }}
+                  />
+                </Grid>
+
+                {/* LeRent: 60+ days (contact message) */}
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="60+ dní"
+                    value="dohoda - volať/písať mail"
+                    disabled
+                    helperText="Pre veľmi dlhodobé prenájmy"
+                  />
+                </Grid>
+              </>
             ) : (
               <>
                 {/* Default tenants: 6 pricing tiers */}
@@ -2064,37 +2148,8 @@ const EnhancedCarForm = ({
               </>
             )}
 
-            {/* Conditional rendering based on user email */}
-            {user?.email?.toLowerCase() === 'lerent@lerent.sk' ? (
-              <>
-                {/* LeRent: 30-60 days (number input) */}
-                <Grid item xs={12} md={4}>
-                  <TextField
-                    fullWidth
-                    label="30-60 dní"
-                    type="number"
-                    value={formData.pricing?.rates?.['30-60days'] || ''}
-                    onChange={(e) => handleNestedChange('pricing.rates.30-60days', parseFloat(e.target.value))}
-                    disabled={dialogMode === 'view'}
-                    InputProps={{
-                      endAdornment: <InputAdornment position="end">€/deň</InputAdornment>,
-                    }}
-                  />
-                </Grid>
-
-                {/* LeRent: 60+ days (contact message) */}
-                <Grid item xs={12} md={4}>
-                  <TextField
-                    fullWidth
-                    label="60+ dní"
-                    value="dohoda - volať/písať mail"
-                    disabled
-                    helperText="Pre veľmi dlhodobé prenájmy"
-                  />
-                </Grid>
-              </>
-            ) : (
-              /* Other tenants: 30+ days (contact message) */
+            {/* Other tenants: 30+ days (contact message) */}
+            {user?.email?.toLowerCase() !== 'lerent@lerent.sk' && user?.email?.toLowerCase() !== 'nitra-car@nitra-car.sk' && (
               <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
