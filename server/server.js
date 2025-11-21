@@ -209,6 +209,7 @@ app.use('/api/contracts', contractRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/email-subscriptions', emailSubscriptionRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/brands', require('./routes/brandRoutes')); // Brand management
 app.use('/api/campaigns', require('./routes/campaigns'));
 app.use('/api/test', testRoutes); // Test routes for debugging
 app.use('/api/test', krosTestRoutes); // Kros integration test routes

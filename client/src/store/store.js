@@ -18,7 +18,7 @@ const baseQuery = fetchBaseQuery({
 export const api = createApi({
   reducerPath: 'api',
   baseQuery,
-  tagTypes: ['User', 'Car', 'Reservation', 'Payment', 'WebsiteSettings', 'DiscountCode', 'Banner', 'Contract', 'Blog', 'PublicBlog', 'BlogCategory', 'BlogTag', 'Settings'],
+  tagTypes: ['User', 'Car', 'Reservation', 'Payment', 'WebsiteSettings', 'DiscountCode', 'Banner', 'Contract', 'Blog', 'PublicBlog', 'BlogCategory', 'BlogTag', 'Settings', 'Brand'],
   endpoints: (builder) => ({
     // Auth endpoints
     login: builder.mutation({
@@ -1065,6 +1065,35 @@ export const api = createApi({
       }),
       invalidatesTags: (result, error, { bannerId }) => [{ type: 'Banner', id: bannerId }, 'Banner'],
     }),
+
+    // Brand endpoints
+    getBrands: builder.query({
+      query: () => 'brands',
+      providesTags: ['Brand'],
+    }),
+    createBrand: builder.mutation({
+      query: (formData) => ({
+        url: 'brands',
+        method: 'POST',
+        body: formData, // FormData with name and logo file
+      }),
+      invalidatesTags: ['Brand'],
+    }),
+    updateBrand: builder.mutation({
+      query: ({ id, formData }) => ({
+        url: `brands/${id}`,
+        method: 'PUT',
+        body: formData, // FormData with name and/or logo file
+      }),
+      invalidatesTags: ['Brand'],
+    }),
+    deleteBrand: builder.mutation({
+      query: (id) => ({
+        url: `brands/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Brand'],
+    }),
   }),
 })
 
@@ -1223,6 +1252,12 @@ export const {
   useUpdateInfoBarEnglishMutation,
   useUpdateModalEnglishMutation,
   useUpdateBannerImageEnglishMutation,
+
+  // Brand hooks
+  useGetBrandsQuery,
+  useCreateBrandMutation,
+  useUpdateBrandMutation,
+  useDeleteBrandMutation,
 } = api
 
 export const store = configureStore({

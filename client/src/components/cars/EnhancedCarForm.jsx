@@ -53,7 +53,7 @@ import {
   Image as ImageIcon
 } from '@mui/icons-material';
 import DamageModal from './DamageModal';
-import { useGetCarQuery, useGetGlobalEquipmentQuery } from '../../store/store';
+import { useGetCarQuery, useGetGlobalEquipmentQuery, useGetBrandsQuery, useCreateBrandMutation, useDeleteBrandMutation } from '../../store/store';
 
 // Enhanced car form with comprehensive features
 const EnhancedCarForm = ({
@@ -99,7 +99,15 @@ const EnhancedCarForm = ({
   const [newBrandName, setNewBrandName] = useState('');
   const [brandIcon, setBrandIcon] = useState(null);
   const [brandIconPreview, setBrandIconPreview] = useState(null);
-  const [customBrands, setCustomBrands] = useState([]);
+
+  // Fetch brands from API (RTK Query)
+  const { data: brandsData, isLoading: isLoadingBrands } = useGetBrandsQuery(undefined, {
+    skip: !user || user.email?.toLowerCase() !== 'lerent@lerent.sk'
+  });
+  const [createBrand] = useCreateBrandMutation();
+  const [deleteBrand] = useDeleteBrandMutation();
+
+  const customBrands = brandsData?.data || [];
 
   // Add ref for file input
   const fileInputRef = useRef(null);
@@ -287,35 +295,6 @@ const EnhancedCarForm = ({
   const isLeRent = user?.email?.toLowerCase() === 'lerent@lerent.sk';
   const isRival = user?.email?.toLowerCase() === 'rival@test.sk';
 
-  // Fetch brands from API for LeRent users
-  useEffect(() => {
-    const fetchBrands = async () => {
-      if (!isLeRent) return;
-
-      try {
-        console.log('🏷️ [BRANDS] Fetching brands from API...');
-        const response = await fetch('/api/public/users/lerent@lerent.sk/brands');
-        const result = await response.json();
-
-        if (result.success && result.data) {
-          // Extract brand objects with name and logo
-          const brandObjects = result.data;
-          console.log('🏷️ [BRANDS] Fetched brands:', brandObjects);
-
-          // Store as objects with name and logo
-          setCustomBrands(brandObjects);
-
-          // Also save to localStorage for persistence
-          localStorage.setItem('lerent_custom_brands', JSON.stringify(brandObjects));
-        }
-      } catch (error) {
-        console.error('❌ [BRANDS] Error fetching brands:', error);
-      }
-    };
-
-    fetchBrands();
-  }, [isLeRent]);
-
   const categoryOptions = isLeRent ? [
     // LeRent-specific categories
     { value: 'sedan', label: 'Sedan' },
@@ -478,7 +457,7 @@ const EnhancedCarForm = ({
     }
   }, [onShowNotification]);
 
-  const handleAddNewBrand = useCallback(() => {
+  const handleAddNewBrand = useCallback(async () => {
     if (!newBrandName.trim()) {
       return;
     }
@@ -493,71 +472,77 @@ const EnhancedCarForm = ({
       return;
     }
 
-    // Add to custom brands with logo data (use 'logo' to match API format)
-    const brandData = {
-      name: brandToAdd,
-      logo: brandIconPreview || null // Store base64 logo data or null
-    };
+    try {
+      // Create FormData for brand with logo file
+      const formData = new FormData();
+      formData.append('name', brandToAdd);
 
-    const updatedBrands = [...customBrands, brandData];
-    setCustomBrands(updatedBrands);
+      if (brandIcon) {
+        formData.append('logo', brandIcon);
+      }
 
-    // Save to localStorage
-    localStorage.setItem('lerent_custom_brands', JSON.stringify(updatedBrands));
+      // Call API to create brand
+      await createBrand(formData).unwrap();
 
-    // Set as selected brand
-    handleChange('brand', brandToAdd);
+      // Set as selected brand
+      handleChange('brand', brandToAdd);
 
-    // Close dialog and reset
-    setBrandDialogOpen(false);
-    setNewBrandName('');
-    setBrandIcon(null);
-    setBrandIconPreview(null);
+      // Close dialog and reset
+      setBrandDialogOpen(false);
+      setNewBrandName('');
+      setBrandIcon(null);
+      setBrandIconPreview(null);
 
-    if (onShowNotification) {
-      onShowNotification(`Značka "${brandToAdd}" bola pridaná`, 'success');
+      if (onShowNotification) {
+        onShowNotification(`Značka "${brandToAdd}" bola pridaná`, 'success');
+      }
+    } catch (error) {
+      console.error('❌ [BRAND] Error creating brand:', error);
+      if (onShowNotification) {
+        onShowNotification('Chyba pri vytváraní značky', 'error');
+      }
     }
-  }, [newBrandName, brandIconPreview, customBrands, carBrands, handleChange, onShowNotification]);
+  }, [newBrandName, brandIcon, carBrands, handleChange, onShowNotification, createBrand]);
 
   // Handle deleting a brand (LeRent only)
-  const handleDeleteBrand = useCallback((brandNameToDelete, event) => {
+  const handleDeleteBrand = useCallback(async (brandNameToDelete, event) => {
     // Prevent the option from being selected when clicking delete
     if (event) {
       event.stopPropagation();
       event.preventDefault();
     }
 
-    // Check if brand exists in custom brands (handle both string and object formats)
-    const brandExists = customBrands.some(brand =>
+    // Find brand by name
+    const brandToDelete = customBrands.find(brand =>
       typeof brand === 'object' ? brand.name === brandNameToDelete : brand === brandNameToDelete
     );
 
-    // Only allow deleting custom brands, not preset ones
-    if (!brandExists) {
+    if (!brandToDelete || !brandToDelete._id) {
       if (onShowNotification) {
-        onShowNotification('Nemôžete vymazať prednastaveú značku', 'warning');
+        onShowNotification('Značka nebola nájdená', 'warning');
       }
       return;
     }
 
-    // Remove from custom brands (handle both formats)
-    const updatedBrands = customBrands.filter(brand =>
-      typeof brand === 'object' ? brand.name !== brandNameToDelete : brand !== brandNameToDelete
-    );
-    setCustomBrands(updatedBrands);
+    try {
+      // Call API to delete brand
+      await deleteBrand(brandToDelete._id).unwrap();
 
-    // Save to localStorage
-    localStorage.setItem('lerent_custom_brands', JSON.stringify(updatedBrands));
+      // If the deleted brand was selected, clear the selection
+      if (formData.brand === brandNameToDelete) {
+        handleChange('brand', '');
+      }
 
-    // If the deleted brand was selected, clear the selection
-    if (formData.brand === brandNameToDelete) {
-      handleChange('brand', '');
+      if (onShowNotification) {
+        onShowNotification(`Značka "${brandNameToDelete}" bola odstránená`, 'success');
+      }
+    } catch (error) {
+      console.error('❌ [BRAND] Error deleting brand:', error);
+      if (onShowNotification) {
+        onShowNotification('Chyba pri mazaní značky', 'error');
+      }
     }
-
-    if (onShowNotification) {
-      onShowNotification(`Značka "${brandNameToDelete}" bola odstránená`, 'success');
-    }
-  }, [customBrands, formData.brand, handleChange, onShowNotification]);
+  }, [customBrands, formData.brand, handleChange, onShowNotification, deleteBrand]);
 
   // Tab panel component - memoized to prevent re-renders
   const TabPanel = useCallback(({ children, value, index, ...other }) => (
