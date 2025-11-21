@@ -28,8 +28,15 @@ const brandSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Compound index for tenant + brand name uniqueness
-brandSchema.index({ tenantId: 1, name: 1 }, { unique: true });
+// Compound index for tenant + brand name uniqueness (only for active brands)
+// This allows the same brand name to be reused after deletion (soft delete)
+brandSchema.index(
+  { tenantId: 1, name: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { isActive: true }
+  }
+);
 
 // Index for querying active brands
 brandSchema.index({ tenantId: 1, isActive: 1 });
