@@ -23,20 +23,35 @@ const getBrands = asyncHandler(async (req, res, next) => {
 // @route   POST /api/brands
 // @access  Private
 const createBrand = asyncHandler(async (req, res, next) => {
+  console.log('🔍 [BRAND] Create brand request:', {
+    name: req.body.name,
+    hasFile: !!req.file,
+    userId: req.user?._id,
+    tenantId: req.user?.tenantId
+  });
+
   const { name } = req.body;
   const logoFile = req.file;
 
   if (!name) {
+    console.error('❌ [BRAND] Name is missing from request body');
     return next(new AppError('Brand name is required', 400));
+  }
+
+  if (!req.user || !req.user.tenantId) {
+    console.error('❌ [BRAND] User or tenantId is missing');
+    return next(new AppError('Authentication required', 401));
   }
 
   // Check if brand already exists for this tenant
   const existingBrand = await Brand.findOne({
     tenantId: req.user.tenantId,
-    name: name.trim()
+    name: name.trim(),
+    isActive: true
   });
 
   if (existingBrand) {
+    console.error('❌ [BRAND] Brand already exists:', name.trim());
     return next(new AppError('Brand with this name already exists', 400));
   }
 
@@ -72,7 +87,12 @@ const createBrand = asyncHandler(async (req, res, next) => {
     logo: logoUrl
   });
 
-  console.log('✅ [BRAND] Brand created:', brand.name);
+  console.log('✅ [BRAND] Brand created successfully:', {
+    id: brand._id,
+    name: brand.name,
+    hasLogo: !!brand.logo,
+    tenantId: brand.tenantId
+  });
 
   res.status(201).json({
     success: true,
@@ -172,7 +192,7 @@ const deleteBrand = asyncHandler(async (req, res, next) => {
   // Delete logo from GCS if exists
   if (brand.logo) {
     try {
-      await deleteFromGCS(brand.logo);
+      await cloudStorage.deleteFromGCS(brand.logo);
       console.log('✅ [BRAND] Logo deleted from GCS');
     } catch (deleteError) {
       console.warn('⚠️ [BRAND] Could not delete logo:', deleteError.message);
