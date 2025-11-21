@@ -102,7 +102,31 @@ const EnhancedCarForm = ({
   const [customBrands, setCustomBrands] = useState(() => {
     // Load custom brands from localStorage
     const saved = localStorage.getItem('lerent_custom_brands');
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    // Default brands for LeRent if none exist
+    const defaultBrands = [
+      'Škoda',
+      'Volkswagen',
+      'Audi',
+      'BMW',
+      'Mercedes-Benz',
+      'Toyota',
+      'Honda',
+      'Mazda',
+      'Ford',
+      'Renault',
+      'Peugeot',
+      'Citroën',
+      'Hyundai',
+      'Kia',
+      'Nissan',
+      'Volvo'
+    ];
+    // Save default brands to localStorage
+    localStorage.setItem('lerent_custom_brands', JSON.stringify(defaultBrands));
+    return defaultBrands;
   });
 
   // Add ref for file input
