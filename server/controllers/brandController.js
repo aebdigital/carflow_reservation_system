@@ -59,8 +59,16 @@ const createBrand = asyncHandler(async (req, res, next) => {
 
   // Upload logo to Google Cloud Storage if provided
   if (logoFile) {
+    console.log('📁 [BRAND] Processing logo file:', {
+      originalname: logoFile.originalname,
+      mimetype: logoFile.mimetype,
+      size: logoFile.size,
+      hasBuffer: !!logoFile.buffer
+    });
+
     try {
       // Optimize image with sharp (resize to 200x200, maintain aspect ratio)
+      console.log('🖼️ [BRAND] Starting Sharp optimization...');
       const optimizedBuffer = await sharp(logoFile.buffer)
         .resize(200, 200, {
           fit: 'inside',
@@ -69,14 +77,23 @@ const createBrand = asyncHandler(async (req, res, next) => {
         .png({ quality: 90 })
         .toBuffer();
 
+      console.log('✅ [BRAND] Image optimized, size:', optimizedBuffer.length, 'bytes');
+
       // Upload to GCS
       const fileName = `brands/${req.user.tenantId}/${Date.now()}-${name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}.png`;
+      console.log('☁️ [BRAND] Uploading to GCS:', fileName);
+
       logoUrl = await cloudStorage.uploadToGCS(optimizedBuffer, fileName, 'image/png');
 
       console.log('✅ [BRAND] Logo uploaded to GCS:', logoUrl);
     } catch (error) {
       console.error('❌ [BRAND] Error uploading logo:', error);
-      return next(new AppError('Failed to upload brand logo', 500));
+      console.error('❌ [BRAND] Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      return next(new AppError(`Failed to upload brand logo: ${error.message}`, 500));
     }
   }
 

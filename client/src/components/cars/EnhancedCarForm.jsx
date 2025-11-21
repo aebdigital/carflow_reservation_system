@@ -498,8 +498,12 @@ const EnhancedCarForm = ({
       }
     } catch (error) {
       console.error('❌ [BRAND] Error creating brand:', error);
+
+      // Try to get the error message from the response
+      const errorMessage = error?.data?.message || error?.message || 'Neznáma chyba';
+
       if (onShowNotification) {
-        onShowNotification('Chyba pri vytváraní značky', 'error');
+        onShowNotification(`Chyba pri vytváraní značky: ${errorMessage}`, 'error');
       }
     }
   }, [newBrandName, brandIcon, carBrands, handleChange, onShowNotification, createBrand]);
