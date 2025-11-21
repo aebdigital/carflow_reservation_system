@@ -99,35 +99,7 @@ const EnhancedCarForm = ({
   const [newBrandName, setNewBrandName] = useState('');
   const [brandIcon, setBrandIcon] = useState(null);
   const [brandIconPreview, setBrandIconPreview] = useState(null);
-  const [customBrands, setCustomBrands] = useState(() => {
-    // Load custom brands from localStorage
-    const saved = localStorage.getItem('lerent_custom_brands');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Default brands for LeRent if none exist
-    const defaultBrands = [
-      'Škoda',
-      'Volkswagen',
-      'Audi',
-      'BMW',
-      'Mercedes-Benz',
-      'Toyota',
-      'Honda',
-      'Mazda',
-      'Ford',
-      'Renault',
-      'Peugeot',
-      'Citroën',
-      'Hyundai',
-      'Kia',
-      'Nissan',
-      'Volvo'
-    ];
-    // Save default brands to localStorage
-    localStorage.setItem('lerent_custom_brands', JSON.stringify(defaultBrands));
-    return defaultBrands;
-  });
+  const [customBrands, setCustomBrands] = useState([]);
 
   // Add ref for file input
   const fileInputRef = useRef(null);
@@ -315,6 +287,35 @@ const EnhancedCarForm = ({
   const isLeRent = user?.email?.toLowerCase() === 'lerent@lerent.sk';
   const isRival = user?.email?.toLowerCase() === 'rival@test.sk';
 
+  // Fetch brands from API for LeRent users
+  useEffect(() => {
+    const fetchBrands = async () => {
+      if (!isLeRent) return;
+
+      try {
+        console.log('🏷️ [BRANDS] Fetching brands from API...');
+        const response = await fetch('/api/public/users/lerent@lerent.sk/brands');
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          // Extract brand objects with name and logo
+          const brandObjects = result.data;
+          console.log('🏷️ [BRANDS] Fetched brands:', brandObjects);
+
+          // Store as objects with name and logo
+          setCustomBrands(brandObjects);
+
+          // Also save to localStorage for persistence
+          localStorage.setItem('lerent_custom_brands', JSON.stringify(brandObjects));
+        }
+      } catch (error) {
+        console.error('❌ [BRANDS] Error fetching brands:', error);
+      }
+    };
+
+    fetchBrands();
+  }, [isLeRent]);
+
   const categoryOptions = isLeRent ? [
     // LeRent-specific categories
     { value: 'sedan', label: 'Sedan' },
@@ -394,7 +395,7 @@ const EnhancedCarForm = ({
     const customBrand = customBrands.find(brand =>
       typeof brand === 'object' ? brand.name === brandName : brand === brandName
     );
-    return typeof customBrand === 'object' ? customBrand.icon : null;
+    return typeof customBrand === 'object' ? (customBrand.logo || customBrand.icon) : null;
   }, [customBrands]);
 
   // Handle form field changes - memoized to prevent re-renders
@@ -492,10 +493,10 @@ const EnhancedCarForm = ({
       return;
     }
 
-    // Add to custom brands with icon data
+    // Add to custom brands with logo data (use 'logo' to match API format)
     const brandData = {
       name: brandToAdd,
-      icon: brandIconPreview || null // Store base64 icon data or null
+      logo: brandIconPreview || null // Store base64 logo data or null
     };
 
     const updatedBrands = [...customBrands, brandData];
