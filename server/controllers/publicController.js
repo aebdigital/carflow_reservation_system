@@ -5553,6 +5553,42 @@ const getBrandsWithLogosByUser = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Get all brands from Brand collection (public)
+// @route   GET /api/public/users/:email/brands-catalog
+// @access  Public
+const getBrandsCatalog = asyncHandler(async (req, res, next) => {
+  const { email } = req.params;
+
+  console.log(`[BRANDS CATALOG API] Fetching brands catalog for: ${email}`);
+
+  // Get tenant ID from user email
+  const tenantId = await getTenantByUserEmail(email);
+
+  if (!tenantId) {
+    return next(new AppError('Tenant not found', 404));
+  }
+
+  // Import Brand model
+  const Brand = require('../models/Brand');
+
+  // Get all active brands for this tenant with logos
+  const brands = await Brand.find({
+    tenantId,
+    isActive: true
+  })
+    .select('name logo usageCount')
+    .sort({ name: 1 })
+    .lean();
+
+  console.log(`[BRANDS CATALOG API] Found ${brands.length} brands for ${email}`);
+
+  res.status(200).json({
+    success: true,
+    count: brands.length,
+    data: brands
+  });
+});
+
 module.exports = {
   createPublicReservation,
   getCarsByUser,
@@ -5590,5 +5626,6 @@ module.exports = {
   getCarModelsByBrandByUser,
   getCarsByEquipmentByUser,
   searchCarsByUser,
-  getBrandsWithLogosByUser
+  getBrandsWithLogosByUser,
+  getBrandsCatalog
 }; 

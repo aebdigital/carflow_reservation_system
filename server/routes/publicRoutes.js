@@ -41,7 +41,8 @@ const {
   getCarModelsByBrandByUser,
   getCarsByEquipmentByUser,
   searchCarsByUser,
-  getBrandsWithLogosByUser
+  getBrandsWithLogosByUser,
+  getBrandsCatalog
 } = require('../controllers/publicController');
 
 // Import blog controller functions
@@ -95,7 +96,8 @@ router.get('/banners/page/:page', getPublicBanners); // Get banners by page
 
 // Tenant-specific endpoints (identified by user email)
 // Note: Order matters! More specific routes must come before parameterized routes
-router.get('/users/:email/brands', getBrandsWithLogosByUser); // Get all car brands with logos (LeRent only)
+router.get('/users/:email/brands-catalog', getBrandsCatalog); // Get all brands from Brand collection (with GCS logos)
+router.get('/users/:email/brands', getBrandsWithLogosByUser); // Get all car brands with logos (from cars, LeRent only)
 router.get('/users/:email/cars/brands', getCarBrandsByUser); // Get all available car brands
 router.get('/users/:email/cars/search', searchCarsByUser); // Advanced car search with filters
 router.get('/users/:email/cars/reserved-dates', getReservedDatesByUser); // Get reserved dates for multiple cars
