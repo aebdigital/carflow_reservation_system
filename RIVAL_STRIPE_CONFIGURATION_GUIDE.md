@@ -46,7 +46,10 @@ Test Secret Key: sk_test_...
 ### 3.1 Create Webhook Endpoint
 1. In Stripe Dashboard, go to **Developers** → **Webhooks**
 2. Click **"+ Add endpoint"**
-3. Set endpoint URL: `https://your-domain.com/api/payments/stripe-webhook`
+3. Set endpoint URL: **Backend URL** (examples):
+   - **Render**: `https://your-backend-app-name.onrender.com/api/payments/stripe-webhook`
+   - **Custom domain**: `https://api.rivalcars.sk/api/payments/stripe-webhook`
+   - **Local testing**: `https://your-ngrok-url.ngrok.io/api/payments/stripe-webhook`
 4. Select events to send:
    - `checkout.session.completed`
    - `checkout.session.expired`
@@ -220,7 +223,9 @@ db.settings.updateOne(
 
 ### 8.2 Production Webhook
 1. Create new webhook endpoint for production
-2. Use production domain: `https://your-production-domain.com/api/payments/stripe-webhook`
+2. Use production **backend** domain:
+   - **Render**: `https://your-backend-app-name.onrender.com/api/payments/stripe-webhook`
+   - **Custom API domain**: `https://api.rivalcars.sk/api/payments/stripe-webhook`
 3. Same events: `checkout.session.completed`, `checkout.session.expired`, `payment_intent.payment_failed`
 
 ## Security Best Practices
@@ -248,19 +253,24 @@ RIVAL_STRIPE_WEBHOOK_SECRET=whsec_...
 ### Common Issues
 
 1. **Webhook not received**
-   - Check webhook URL is accessible
+   - **Wrong URL**: Ensure webhook points to **backend**, not frontend
+     - ✅ Correct: `https://your-backend-app.onrender.com/api/payments/stripe-webhook`
+     - ❌ Wrong: `https://your-frontend-app.netlify.app/api/payments/stripe-webhook`
+   - Check webhook URL is publicly accessible
    - Verify HTTPS is properly configured
-   - Check Stripe webhook logs
+   - Check Stripe webhook logs in dashboard
 
 2. **Payment not confirming**
    - Verify webhook signature verification
    - Check database connection
    - Review server logs for errors
+   - Ensure webhook endpoint returns 200 status
 
 3. **Session creation fails**
    - Verify API keys are correct
-   - Check tenant configuration
+   - Check tenant configuration in database
    - Ensure amount is valid (> 0)
+   - Confirm Stripe is enabled for tenant
 
 ### Debug Logs
 Monitor these log messages:
