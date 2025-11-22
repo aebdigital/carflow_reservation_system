@@ -1167,12 +1167,14 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
 
     console.log('💳 [STATUS CHECK] Tenant email:', tenantEmail);
     console.log('💳 [STATUS CHECK] Payment type:', paymentType);
-    console.log('💳 [STATUS CHECK] Is LeRent?', tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk');
+    const supportedStripeEmails = ['lerent@lerent.sk', 'rival@test.sk'];
+    const isStripeEnabledTenant = tenantEmail && supportedStripeEmails.includes(tenantEmail.toLowerCase());
+    console.log('💳 [STATUS CHECK] Is Stripe-enabled tenant?', isStripeEnabledTenant);
     console.log('💳 [STATUS CHECK] Is Stripe?', paymentType === 'stripe');
 
-    if (tenantEmail && tenantEmail.toLowerCase() === 'lerent@lerent.sk' && paymentType === 'stripe') {
-      initialStatus = 'awaiting_payment'; // For LeRent Stripe payments, wait for payment completion
-      console.log('💳 [LERENT] Setting status to awaiting_payment for Stripe payment');
+    if (isStripeEnabledTenant && paymentType === 'stripe') {
+      initialStatus = 'awaiting_payment'; // For Stripe payments, wait for payment completion
+      console.log('💳 [STRIPE] Setting status to awaiting_payment for Stripe payment');
     } else {
       console.log('💳 [STATUS] Keeping default pending status');
     }
