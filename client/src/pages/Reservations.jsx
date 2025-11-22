@@ -2307,8 +2307,8 @@ function Reservations() {
                             </Box>
                           )}
 
-                          {/* Variable Symbol */}
-                          {selectedReservation.reservationNumber && (
+                          {/* Variable Symbol - Hidden for Rival tenant */}
+                          {selectedReservation.reservationNumber && auth.user?.email !== 'rival@test.sk' && (
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
                               <Typography variant="body2" color="text.secondary">Variabilný symbol:</Typography>
                               <Typography variant="body2" fontWeight="medium" color="primary">
