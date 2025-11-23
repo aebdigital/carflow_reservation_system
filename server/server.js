@@ -75,6 +75,7 @@ const allowedOrigins = [
   'https://www.pozicauto.sk',
   'https://lerent.sk',
   'https://www.lerent.sk',
+  'https://lerent-dev.netlify.app',
   'http://lerent.sk',
   'http://www.lerent.sk',
   'http://localhost:5173',
