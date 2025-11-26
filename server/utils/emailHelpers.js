@@ -111,6 +111,11 @@ function getAdminEmailForTenant(user) {
     if (userEmail === 'rival@test.sk') {
       return 'rivalautopozicovna@gmail.com';
     }
+
+    // Special case for lerent tenant
+    if (userEmail === 'lerent@lerent.sk') {
+      return 'info@lerent.sk';
+    }
   }
 
   // Default admin email for all other tenants
