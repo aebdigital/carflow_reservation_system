@@ -164,7 +164,6 @@ function AdditionalServiceForm({
             value={formData.description}
             onChange={(e) => handleChange('description', e.target.value)}
             disabled={dialogMode === 'view'}
-            required
             multiline
             rows={3}
             helperText="Stručný popis služby, ktorý sa zobrazí zákazníkom"

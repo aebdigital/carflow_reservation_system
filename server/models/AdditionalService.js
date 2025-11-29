@@ -22,7 +22,6 @@ const additionalServiceSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: [true, 'Service description is required'],
     trim: true,
     maxLength: [500, 'Service description cannot exceed 500 characters']
   },
