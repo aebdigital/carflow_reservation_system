@@ -1003,21 +1003,27 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       const now = new Date();
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+      const yearMonthPrefix = `${year}${month}`;
 
-      // Get count of reservations for this month in this tenant
-      const startOfMonth = new Date(year, now.getMonth(), 1);
-      const endOfMonth = new Date(year, now.getMonth() + 1, 0, 23, 59, 59);
-
-      const monthlyReservationCount = await Reservation.countDocuments({
+      // Find the highest existing reservation number for this month
+      const existingReservations = await Reservation.find({
         tenantId,
-        createdAt: {
-          $gte: startOfMonth,
-          $lte: endOfMonth
-        }
-      });
+        reservationNumber: { $regex: `^${yearMonthPrefix}` }
+      })
+      .sort({ reservationNumber: -1 })
+      .limit(1)
+      .select('reservationNumber');
+
+      let nextSequentialNumber = 1;
+      if (existingReservations.length > 0) {
+        const lastReservationNumber = existingReservations[0].reservationNumber;
+        // Extract the last 2 digits (sequential number)
+        const lastSequentialNumber = parseInt(lastReservationNumber.slice(-2), 10);
+        nextSequentialNumber = lastSequentialNumber + 1;
+      }
 
       // Sequential number for this month (2 digits, starting from 01)
-      const sequentialNumber = String(monthlyReservationCount + 1).padStart(2, '0');
+      const sequentialNumber = String(nextSequentialNumber).padStart(2, '0');
 
       reservationNumber = `${year}${month}${sequentialNumber}`;
       console.log(`🔢 [LERENT] Generated reservation number: ${reservationNumber} (Year: ${year}, Month: ${month}, #${sequentialNumber})`);
