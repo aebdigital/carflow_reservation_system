@@ -56,6 +56,8 @@ import {
   Payment as PaymentIcon,
   Email as EmailIcon,
   Description as InvoiceIcon,
+  Check as CheckIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material'
 import {
   useGetReservationsQuery,
@@ -255,6 +257,10 @@ function Reservations() {
     }
   })
   const [customerFormErrors, setCustomerFormErrors] = useState({})
+
+  // Price editing state (for Lerent only)
+  const [editingPrice, setEditingPrice] = useState(false)
+  const [editedPrice, setEditedPrice] = useState('')
 
   // Initial form state
   const initialFormState = {
@@ -854,6 +860,48 @@ function Reservations() {
       console.error('❌ [INVOICE PDF] Error downloading PDF:', error)
       alert('Chyba pri sťahovaní PDF faktúry: ' + error.message)
     }
+  }
+
+  const handleSaveEditedPrice = async () => {
+    try {
+      const newPrice = parseFloat(editedPrice)
+      if (isNaN(newPrice) || newPrice < 0) {
+        alert('Prosím zadajte platnú cenu')
+        return
+      }
+
+      console.log('💰 [PRICE EDIT] Updating price for reservation:', selectedReservation._id, 'New price:', newPrice)
+
+      await updateReservation({
+        id: selectedReservation._id,
+        pricing: {
+          ...selectedReservation.pricing,
+          totalAmount: newPrice
+        }
+      }).unwrap()
+
+      console.log('✅ [PRICE EDIT] Price updated successfully')
+      setEditingPrice(false)
+      setEditedPrice('')
+
+      // Refresh the selected reservation data
+      const updatedReservation = { ...selectedReservation }
+      updatedReservation.pricing.totalAmount = newPrice
+      setSelectedReservation(updatedReservation)
+    } catch (error) {
+      console.error('❌ [PRICE EDIT] Error updating price:', error)
+      alert('Chyba pri úprave ceny: ' + (error?.data?.message || error.message))
+    }
+  }
+
+  const handleStartEditingPrice = () => {
+    setEditedPrice(selectedReservation.pricing?.totalAmount?.toString() || '0')
+    setEditingPrice(true)
+  }
+
+  const handleCancelEditingPrice = () => {
+    setEditingPrice(false)
+    setEditedPrice('')
   }
 
   const handleCheckIn = async (reservation) => {
@@ -2293,9 +2341,68 @@ function Reservations() {
 
                           <Divider sx={{ my: 1 }} />
 
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Typography variant="body1" fontWeight="bold">{t('totalAmount')}:</Typography>
-                            <Typography variant="body1" fontWeight="bold" color="primary">{selectedReservation.pricing.totalAmount?.toFixed(2) || '0.00'}€</Typography>
+
+                            {/* Price editing for Lerent only */}
+                            {auth.user?.email === 'lerent@lerent.sk' ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                {editingPrice ? (
+                                  <>
+                                    <TextField
+                                      value={editedPrice}
+                                      onChange={(e) => setEditedPrice(e.target.value)}
+                                      size="small"
+                                      type="number"
+                                      inputProps={{ step: '0.01', min: '0' }}
+                                      sx={{ width: '120px' }}
+                                      autoFocus
+                                      onKeyPress={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleSaveEditedPrice()
+                                        } else if (e.key === 'Escape') {
+                                          handleCancelEditingPrice()
+                                        }
+                                      }}
+                                    />
+                                    <Typography variant="body1" fontWeight="bold">€</Typography>
+                                    <IconButton
+                                      size="small"
+                                      color="success"
+                                      onClick={handleSaveEditedPrice}
+                                      title="Uložiť"
+                                    >
+                                      <CheckIcon fontSize="small" />
+                                    </IconButton>
+                                    <IconButton
+                                      size="small"
+                                      color="error"
+                                      onClick={handleCancelEditingPrice}
+                                      title="Zrušiť"
+                                    >
+                                      <CloseIcon fontSize="small" />
+                                    </IconButton>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Typography variant="body1" fontWeight="bold" color="primary">
+                                      {selectedReservation.pricing.totalAmount?.toFixed(2) || '0.00'}€
+                                    </Typography>
+                                    <IconButton
+                                      size="small"
+                                      onClick={handleStartEditingPrice}
+                                      title="Upraviť cenu"
+                                    >
+                                      <EditIcon fontSize="small" />
+                                    </IconButton>
+                                  </>
+                                )}
+                              </Box>
+                            ) : (
+                              <Typography variant="body1" fontWeight="bold" color="primary">
+                                {selectedReservation.pricing.totalAmount?.toFixed(2) || '0.00'}€
+                              </Typography>
+                            )}
                           </Box>
 
                           {/* Payment Type */}
