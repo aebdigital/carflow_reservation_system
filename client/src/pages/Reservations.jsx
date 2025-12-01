@@ -35,6 +35,7 @@ import {
   Tooltip
 } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import { TimePicker } from '@mui/x-date-pickers/TimePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { sk } from 'date-fns/locale'
@@ -2928,12 +2929,17 @@ function Reservations() {
               <Grid item xs={12} md={6}>
                 <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={sk}>
                   <DatePicker
-                    label="Začiatok prenájmu"
+                    label="Dátum vyzdvihnutia"
                     value={formData.startDate}
                     onChange={(newValue) => {
                       if (newValue) {
                         const dateWithTime = new Date(newValue)
-                        dateWithTime.setHours(0, 0, 0, 0)
+                        // Preserve existing time if already set, otherwise default to 10:00
+                        if (formData.startDate) {
+                          dateWithTime.setHours(formData.startDate.getHours(), formData.startDate.getMinutes(), 0, 0)
+                        } else {
+                          dateWithTime.setHours(10, 0, 0, 0)
+                        }
                         setFormData({ ...formData, startDate: dateWithTime })
                       } else {
                         setFormData({ ...formData, startDate: null })
@@ -2956,13 +2962,43 @@ function Reservations() {
 
               <Grid item xs={12} md={6}>
                 <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={sk}>
+                  <TimePicker
+                    label="Čas vyzdvihnutia"
+                    value={formData.startDate}
+                    onChange={(newValue) => {
+                      if (newValue && formData.startDate) {
+                        const dateWithTime = new Date(formData.startDate)
+                        dateWithTime.setHours(newValue.getHours(), newValue.getMinutes(), 0, 0)
+                        setFormData({ ...formData, startDate: dateWithTime })
+                      }
+                    }}
+                    disabled={dialogMode === 'view' || !formData.startDate}
+                    ampm={false}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        required: true,
+                        helperText: !formData.startDate ? 'Najprv vyberte dátum' : '',
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={sk}>
                   <DatePicker
-                    label="Koniec prenájmu"
+                    label="Dátum vrátenia"
                     value={formData.endDate}
                     onChange={(newValue) => {
                       if (newValue) {
                         const dateWithTime = new Date(newValue)
-                        dateWithTime.setHours(23, 59, 59, 999)
+                        // Preserve existing time if already set, otherwise default to 18:00
+                        if (formData.endDate) {
+                          dateWithTime.setHours(formData.endDate.getHours(), formData.endDate.getMinutes(), 0, 0)
+                        } else {
+                          dateWithTime.setHours(18, 0, 0, 0)
+                        }
                         setFormData({ ...formData, endDate: dateWithTime })
                       } else {
                         setFormData({ ...formData, endDate: null })
@@ -2977,6 +3013,31 @@ function Reservations() {
                         required: true,
                         error: !!formErrors.endDate,
                         helperText: formErrors.endDate || (!formData.car ? 'Najprv vyberte auto' : ''),
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={sk}>
+                  <TimePicker
+                    label="Čas vrátenia"
+                    value={formData.endDate}
+                    onChange={(newValue) => {
+                      if (newValue && formData.endDate) {
+                        const dateWithTime = new Date(formData.endDate)
+                        dateWithTime.setHours(newValue.getHours(), newValue.getMinutes(), 0, 0)
+                        setFormData({ ...formData, endDate: dateWithTime })
+                      }
+                    }}
+                    disabled={dialogMode === 'view' || !formData.endDate}
+                    ampm={false}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        required: true,
+                        helperText: !formData.endDate ? 'Najprv vyberte dátum' : '',
                       },
                     }}
                   />
