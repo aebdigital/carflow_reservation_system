@@ -872,21 +872,27 @@ function Reservations() {
 
       console.log('💰 [PRICE EDIT] Updating price for reservation:', selectedReservation._id, 'New price:', newPrice)
 
+      // Create a new pricing object to avoid read-only property errors
+      const updatedPricing = JSON.parse(JSON.stringify(selectedReservation.pricing || {}))
+      updatedPricing.totalAmount = newPrice
+
       await updateReservation({
         id: selectedReservation._id,
-        pricing: {
-          ...selectedReservation.pricing,
-          totalAmount: newPrice
-        }
+        pricing: updatedPricing
       }).unwrap()
 
       console.log('✅ [PRICE EDIT] Price updated successfully')
       setEditingPrice(false)
       setEditedPrice('')
 
-      // Refresh the selected reservation data
-      const updatedReservation = { ...selectedReservation }
-      updatedReservation.pricing.totalAmount = newPrice
+      // Refresh the selected reservation data with new pricing object
+      const updatedReservation = {
+        ...selectedReservation,
+        pricing: {
+          ...selectedReservation.pricing,
+          totalAmount: newPrice
+        }
+      }
       setSelectedReservation(updatedReservation)
     } catch (error) {
       console.error('❌ [PRICE EDIT] Error updating price:', error)
