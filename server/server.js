@@ -31,6 +31,7 @@ const settingsRoutes = require('./routes/settingsRoutes');
 const testRoutes = require('./routes/testRoutes');
 const krosTestRoutes = require('./routes/krosTestRoutes');
 const carServicesRoutes = require('./routes/carServices');
+const lerentStatsRoutes = require('./routes/lerentStatsRoutes');
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
@@ -218,6 +219,7 @@ app.use('/api/brands', require('./routes/brandRoutes')); // Brand management
 app.use('/api/campaigns', require('./routes/campaigns'));
 app.use('/api/test', testRoutes); // Test routes for debugging
 app.use('/api/test', krosTestRoutes); // Kros integration test routes
+app.use('/api/lerent-stats', publicLimiter, lerentStatsRoutes); // Public LeRent stats endpoints
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
