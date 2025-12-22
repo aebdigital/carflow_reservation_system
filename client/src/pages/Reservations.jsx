@@ -2414,9 +2414,10 @@ function Reservations() {
                           {/* Payment Type */}
                           {selectedReservation.paymentType && (
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-                              <Typography variant="body2" color="text.secondary">Typ platby:</Typography>
+                              <Typography variant="body2" color="text.secondary">Spôsob platby:</Typography>
                               <Typography variant="body2" fontWeight="medium" color="text.secondary">
-                                {selectedReservation.paymentType === 'stripe' ? 'Stripe (Karta)' : 'Bankový prevod'}
+                                {selectedReservation.paymentType === 'stripe' ? 'Stripe (Karta)' :
+                                 selectedReservation.paymentType === 'hotovost' ? 'Hotovosť' : 'Bankový prevod'}
                               </Typography>
                             </Box>
                           )}
