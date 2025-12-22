@@ -165,7 +165,7 @@ const reservationSchema = new mongoose.Schema({
   // Payment type - optional field for frontend to specify payment method
   paymentType: {
     type: String,
-    enum: ['stripe', 'prevod'],
+    enum: ['stripe', 'prevod', 'hotovost'],
     required: false
   },
 
