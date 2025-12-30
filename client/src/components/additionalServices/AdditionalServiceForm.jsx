@@ -45,8 +45,11 @@ function AdditionalServiceForm({
   selectedImage,
   imagePreview,
   onImageChange,
-  categoryConfig
+  categoryConfig,
+  userEmail
 }) {
+  // Check if user is nitracar
+  const isNitraCar = userEmail?.toLowerCase() === 'nitra-car@nitra-car.sk';
   const [activeTab, setActiveTab] = useState(0);
   const [showColorPicker, setShowColorPicker] = useState(false);
 
@@ -578,6 +581,30 @@ function AdditionalServiceForm({
             helperText="Maximálny počet kusov na jednu rezerváciu"
           />
         </Grid>
+
+        {/* Quantity selection toggle - only for NitraCar */}
+        {isNitraCar && (
+          <Grid item xs={12}>
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="h6" gutterBottom color="primary">
+              Výber množstva na webe
+            </Typography>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.behavior.allowQuantitySelection || false}
+                  onChange={(e) => handleChange('behavior.allowQuantitySelection', e.target.checked)}
+                  disabled={dialogMode === 'view'}
+                  color="primary"
+                />
+              }
+              label="Povoliť zákazníkovi vybrať množstvo (1-4 ks)"
+            />
+            <Typography variant="caption" color="text.secondary" display="block">
+              Zákazník si bude môcť na webe vybrať počet kusov tejto služby (napr. 2x detská sedačka)
+            </Typography>
+          </Grid>
+        )}
       </Grid>
     </Box>
   );

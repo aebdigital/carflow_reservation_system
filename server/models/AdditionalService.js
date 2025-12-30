@@ -125,6 +125,10 @@ const additionalServiceSchema = new mongoose.Schema({
       type: Number,
       default: 1 // Maximum quantity per reservation
     },
+    allowQuantitySelection: {
+      type: Boolean,
+      default: false // Allow user to select quantity (1, 2, 3, 4) on frontend
+    },
     dependsOn: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'AdditionalService' // Services that must be selected first

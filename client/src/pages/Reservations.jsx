@@ -2451,12 +2451,13 @@ function Reservations() {
                     selectedReservation.selectedServices.forEach(service => {
                       allServices.push({
                         ...service,
-                        displayName: service.name || service.service?.name || 'Služba',
+                        displayName: service.quantity > 1 ? `${service.quantity}x ${service.name || service.service?.name || 'Služba'}` : (service.name || service.service?.name || 'Služba'),
                         displayPrice: service.totalPrice,
                         serviceType: 'service',
                         categoryLabel: service.category || 'služba',
                         unitPriceLabel: service.pricing?.amount || service.unitPrice,
-                        pricingTypeLabel: service.pricing?.type || service.pricingType || 'fixed'
+                        pricingTypeLabel: service.pricing?.type || service.pricingType || 'fixed',
+                        quantity: service.quantity || 1
                       });
                     });
                   }
@@ -3324,27 +3325,28 @@ function Reservations() {
                   selectedReservation.selectedServices.forEach(service => {
                     allServices.push({
                       ...service,
-                      displayName: service.name || service.service?.name || 'Služba',
+                      displayName: service.quantity > 1 ? `${service.quantity}x ${service.name || service.service?.name || 'Služba'}` : (service.name || service.service?.name || 'Služba'),
                       displayPrice: service.totalPrice,
                       serviceType: 'service',
                       categoryLabel: service.category || 'služba',
                       unitPriceLabel: service.pricing?.amount || service.unitPrice,
-                      pricingTypeLabel: service.pricing?.type || service.pricingType || 'fixed'
+                      pricingTypeLabel: service.pricing?.type || service.pricingType || 'fixed',
+                      quantity: service.quantity || 1
                     });
                   });
                 }
-                
+
                 // Add additional insurance as services
                 if (selectedReservation.selectedAdditionalInsurance && selectedReservation.selectedAdditionalInsurance.length > 0) {
                   const totalDays = Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24));
-                  
+
                   selectedReservation.selectedAdditionalInsurance.forEach(insurance => {
                     // Calculate total price: use calculatedPrice if available, otherwise calculate from baseAmount/price * days
-                    const totalPrice = insurance.calculatedPrice || 
-                                      (insurance.pricingType === 'per_day' ? 
-                                       (insurance.baseAmount || insurance.price || 0) * totalDays : 
+                    const totalPrice = insurance.calculatedPrice ||
+                                      (insurance.pricingType === 'per_day' ?
+                                       (insurance.baseAmount || insurance.price || 0) * totalDays :
                                        (insurance.baseAmount || insurance.price || 0));
-                    
+
                     allServices.push({
                       ...insurance,
                       displayName: insurance.name || insurance.insuranceId?.name || 'Poistenie',
@@ -3357,7 +3359,7 @@ function Reservations() {
                     });
                   });
                 }
-                
+
                 // Add extended insurance as services
                 if (selectedReservation.selectedExtendedInsurance && selectedReservation.selectedExtendedInsurance.length > 0) {
                   const totalDays = Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24));

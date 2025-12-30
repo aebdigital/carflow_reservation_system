@@ -267,6 +267,7 @@ function AdditionalServices() {
           isRequired: false,
           requiresApproval: false,
           maxQuantity: 1,
+          allowQuantitySelection: false,
           dependsOn: []
         },
         dynamicPricing: {
@@ -303,12 +304,13 @@ function AdditionalServices() {
             endMonth: 12
           }
         },
-        behavior: service.behavior || {
-          isAutoSelected: false,
-          isRequired: false,
-          requiresApproval: false,
-          maxQuantity: 1,
-          dependsOn: []
+        behavior: {
+          isAutoSelected: service.behavior?.isAutoSelected || false,
+          isRequired: service.behavior?.isRequired || false,
+          requiresApproval: service.behavior?.requiresApproval || false,
+          maxQuantity: service.behavior?.maxQuantity || 1,
+          allowQuantitySelection: service.behavior?.allowQuantitySelection || false,
+          dependsOn: service.behavior?.dependsOn || []
         },
         dynamicPricing: service.dynamicPricing || {
           isEnabled: false,
@@ -360,6 +362,7 @@ function AdditionalServices() {
         isRequired: false,
         requiresApproval: false,
         maxQuantity: 1,
+        allowQuantitySelection: false,
         dependsOn: []
       },
       dynamicPricing: {
@@ -867,6 +870,7 @@ function AdditionalServices() {
             imagePreview={imagePreview}
             onImageChange={handleImageChange}
             categoryConfig={categoryConfig}
+            userEmail={auth.user?.email}
           />
         </DialogContent>
         
