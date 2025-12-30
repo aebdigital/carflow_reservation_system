@@ -71,6 +71,10 @@ function Layout() {
       console.log('🔐 [MENU FILTER] Hiding payments for user:', user?.email);
       return false;
     }
+    // Hide campaigns and website for NitraCar
+    if ((item.path === '/campaigns' || item.path === '/website') && user?.email === 'nitra-car@nitra-car.sk') {
+      return false;
+    }
     return true;
   })
   
