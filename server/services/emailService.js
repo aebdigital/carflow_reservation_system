@@ -114,18 +114,23 @@ class EmailService {
       // Get tenant-specific email configuration to determine sender
       const senderEmail = user ? smtp2goService.getTenantEmailConfig(user).emailFrom : null;
 
+      // Get language from data for NitraCar (defaults to 'sk')
+      const language = data.websiteLanguage || 'sk';
+      const isNitraCar = senderEmail && (senderEmail.includes('nitra-car') || senderEmail.includes('nitracar'));
+
       console.log('📧 [EMAIL SERVICE] sendTemplatedEmail called:', {
         to,
         templateName,
         senderEmail,
+        language,
         isNitraCarUser: user?.email === 'nitra-car@nitra-car.sk',
         isLeRentUser: user?.email === 'lerent@lerent.sk'
       });
 
-      // Load template using tenant-aware service
+      // Load template using tenant-aware service with language support
       let template;
       try {
-        template = await emailTemplateService.loadTemplate(templateName, senderEmail);
+        template = await emailTemplateService.loadTemplate(templateName, senderEmail, language);
       } catch (error) {
         // Check if this is a LeRent template not found error
         if (error.message && error.message.includes('LERENT_TEMPLATE_NOT_FOUND')) {
@@ -133,6 +138,16 @@ class EmailService {
           return { success: false, skipped: true, reason: 'LeRent template not found' };
         }
         throw error;
+      }
+
+      // Override subject for English NitraCar emails
+      if (isNitraCar && language === 'en') {
+        const englishSubjects = {
+          'payment-notification': 'Payment Reminder'
+        };
+        if (englishSubjects[templateName]) {
+          subject = englishSubjects[templateName];
+        }
       }
 
       // Handle conditional blocks (simple if/else logic)

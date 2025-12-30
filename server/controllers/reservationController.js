@@ -884,7 +884,10 @@ const cancelReservation = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/reservations/:id/confirm
 // @access  Private
 const confirmReservation = asyncHandler(async (req, res, next) => {
-  const { notes } = req.body;
+  const { notes, skipEmail } = req.body;
+
+  // For NitraCar: skipEmail=true means "Potvrdiť bez zálohy" (no email sent)
+  const shouldSkipEmail = skipEmail === true;
 
   const reservation = await Reservation.findOne({
     _id: req.params.id,
@@ -1097,59 +1100,64 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
   }
 
   // 📧 Send customer confirmation email using new template system
-  try {
-    const emailService = require('../services/emailService');
-    const emailHelpers = require('../utils/emailHelpers');
-    
-    console.log('📧 [EMAIL DEBUG] Starting confirmation email process...');
-    console.log('📧 [EMAIL DEBUG] Email service configured:', !!emailService.isConfigured);
-    console.log('📧 [EMAIL DEBUG] Customer exists:', !!reservation.customer);
-    console.log('📧 [EMAIL DEBUG] Customer email:', reservation.customer?.email);
-    console.log('📧 [EMAIL DEBUG] Reservation QR codes exist:', !!reservation.qrCodes);
-    console.log('📧 [EMAIL DEBUG] QR codes content:', {
-      hasQrCodes: !!reservation.qrCodes,
-      qrCodesKeys: reservation.qrCodes ? Object.keys(reservation.qrCodes) : [],
-      payBySquareRental: !!reservation.qrCodes?.payBySquareRental,
-      payBySquareDeposit: !!reservation.qrCodes?.payBySquareDeposit,
-      payBySquare: !!reservation.qrCodes?.payBySquare
-    });
-    
-    if (emailService.isConfigured && reservation.customer && reservation.customer.email) {
-      // Prepare reservation data using existing helper
-      const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
-      console.log('📧 [EMAIL DEBUG] Email data prepared:', {
-        hasEmailData: !!emailData,
-        carBrand: emailData?.car_brand,
-        carModel: emailData?.car_model,
-        customerName: `${emailData?.first_name} ${emailData?.last_name}`
-      });
-      
-      // Prepare attachments array (invoice PDF for LeRent)
-      const attachments = [];
-      if (invoicePdfBuffer) {
-        attachments.push({
-          filename: `Faktura_${reservation.superfakturaInvoiceNumber || reservation.reservationNumber}.pdf`,
-          content: invoicePdfBuffer,
-          contentType: 'application/pdf'
-        });
-        console.log('📎 [EMAIL] Adding SuperFaktura invoice PDF attachment');
-      }
+  // For NitraCar: skipEmail=true skips email (used for "Potvrdiť bez zálohy")
+  if (shouldSkipEmail) {
+    console.log('📧 [EMAIL] Skipping confirmation email - skipEmail=true (Potvrdiť bez zálohy)');
+  } else {
+    try {
+      const emailService = require('../services/emailService');
+      const emailHelpers = require('../utils/emailHelpers');
 
-      // Send confirmation email using new template, pass both emailData and raw reservation
-      console.log('📧 [EMAIL DEBUG] Calling sendCustomerReservationConfirmed...');
-      await emailService.sendCustomerReservationConfirmed(reservation.customer.email, emailData, req.user, reservation, attachments);
-      console.log('✅ [EMAIL] Confirmation notification sent to customer:', reservation.customer.email);
-    } else {
-      console.log('❌ [EMAIL DEBUG] Email not sent due to missing requirements:', {
-        emailConfigured: !!emailService.isConfigured,
-        hasCustomer: !!reservation.customer,
-        hasEmail: !!reservation.customer?.email
+      console.log('📧 [EMAIL DEBUG] Starting confirmation email process...');
+      console.log('📧 [EMAIL DEBUG] Email service configured:', !!emailService.isConfigured);
+      console.log('📧 [EMAIL DEBUG] Customer exists:', !!reservation.customer);
+      console.log('📧 [EMAIL DEBUG] Customer email:', reservation.customer?.email);
+      console.log('📧 [EMAIL DEBUG] Reservation QR codes exist:', !!reservation.qrCodes);
+      console.log('📧 [EMAIL DEBUG] QR codes content:', {
+        hasQrCodes: !!reservation.qrCodes,
+        qrCodesKeys: reservation.qrCodes ? Object.keys(reservation.qrCodes) : [],
+        payBySquareRental: !!reservation.qrCodes?.payBySquareRental,
+        payBySquareDeposit: !!reservation.qrCodes?.payBySquareDeposit,
+        payBySquare: !!reservation.qrCodes?.payBySquare
       });
+
+      if (emailService.isConfigured && reservation.customer && reservation.customer.email) {
+        // Prepare reservation data using existing helper
+        const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
+        console.log('📧 [EMAIL DEBUG] Email data prepared:', {
+          hasEmailData: !!emailData,
+          carBrand: emailData?.car_brand,
+          carModel: emailData?.car_model,
+          customerName: `${emailData?.first_name} ${emailData?.last_name}`
+        });
+
+        // Prepare attachments array (invoice PDF for LeRent)
+        const attachments = [];
+        if (invoicePdfBuffer) {
+          attachments.push({
+            filename: `Faktura_${reservation.superfakturaInvoiceNumber || reservation.reservationNumber}.pdf`,
+            content: invoicePdfBuffer,
+            contentType: 'application/pdf'
+          });
+          console.log('📎 [EMAIL] Adding SuperFaktura invoice PDF attachment');
+        }
+
+        // Send confirmation email using new template, pass both emailData and raw reservation
+        console.log('📧 [EMAIL DEBUG] Calling sendCustomerReservationConfirmed...');
+        await emailService.sendCustomerReservationConfirmed(reservation.customer.email, emailData, req.user, reservation, attachments);
+        console.log('✅ [EMAIL] Confirmation notification sent to customer:', reservation.customer.email);
+      } else {
+        console.log('❌ [EMAIL DEBUG] Email not sent due to missing requirements:', {
+          emailConfigured: !!emailService.isConfigured,
+          hasCustomer: !!reservation.customer,
+          hasEmail: !!reservation.customer?.email
+        });
+      }
+    } catch (emailError) {
+      console.error('❌ [EMAIL] Failed to send confirmation notification:', emailError.message);
+      console.error('❌ [EMAIL] Full error:', emailError);
+      // Don't fail the confirmation if email fails
     }
-  } catch (emailError) {
-    console.error('❌ [EMAIL] Failed to send confirmation notification:', emailError.message);
-    console.error('❌ [EMAIL] Full error:', emailError);
-    // Don't fail the confirmation if email fails
   }
 
   // Populate reservation with car and customer data for response
@@ -2057,7 +2065,10 @@ const sendPaymentNotification = asyncHandler(async (req, res, next) => {
       // Additional
       google_maps_link: businessUser?.googleMapsUrl || '',
       company_website: businessUser?.website || 'https://www.nitra-car.sk',
-      current_year: new Date().getFullYear()
+      current_year: new Date().getFullYear(),
+
+      // Language for NitraCar email template selection
+      websiteLanguage: reservation.websiteLanguage || 'sk'
     };
 
     // For nitra-car users: Generate Stripe payment link for €50

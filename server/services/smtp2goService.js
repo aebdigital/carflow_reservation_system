@@ -109,11 +109,12 @@ class SMTP2GOService {
    * @param {string} templateName - Template name
    * @param {Object} templateVariables - Template variables
    * @param {string} senderEmail - Sender email
+   * @param {string} language - Language code ('sk' or 'en') for NitraCar templates
    */
-  async safeLoadEmailTemplate(templateName, templateVariables, senderEmail) {
+  async safeLoadEmailTemplate(templateName, templateVariables, senderEmail, language = 'sk') {
     const emailTemplateService = require('./emailTemplateService');
     try {
-      return await emailTemplateService.getEmailTemplate(templateName, templateVariables, senderEmail);
+      return await emailTemplateService.getEmailTemplate(templateName, templateVariables, senderEmail, language);
     } catch (error) {
       // For LeRent, if template doesn't exist, skip email completely (no fallback)
       if (this.isLeRentTemplateError(error)) {
@@ -675,8 +676,12 @@ class SMTP2GOService {
       show_bank_details: templateVariables.show_bank_details
     });
 
+    // Get language from reservation for NitraCar (defaults to 'sk')
+    const language = rawReservation?.websiteLanguage || 'sk';
+    console.log('📧 [EMAIL] Reservation confirmation language:', language);
+
     // Get processed email template with sender-specific template folder (safe for LeRent)
-    const emailData = await this.safeLoadEmailTemplate('reservation-confirmation', templateVariables, senderEmail);
+    const emailData = await this.safeLoadEmailTemplate('reservation-confirmation', templateVariables, senderEmail, language);
 
     // If LeRent template doesn't exist, skip email (no fallback)
     if (!emailData) {
@@ -684,8 +689,9 @@ class SMTP2GOService {
       return { success: false, skipped: true, reason: 'LeRent template not found' };
     }
 
-    // Override subject to match exact specification
-    const subject = '📥 Rezervácia prijatá';
+    // Override subject to match exact specification (use English for NitraCar English reservations)
+    const isNitraCar = senderEmail && (senderEmail.includes('nitra-car') || senderEmail.includes('nitracar'));
+    const subject = (isNitraCar && language === 'en') ? 'Reservation Received' : '📥 Rezervácia prijatá';
 
     return this.sendEmail(to, subject, emailData.html, null, user);
   }
@@ -915,17 +921,22 @@ class SMTP2GOService {
       templateVariables.stripe_payment_url = '';
     }
 
+    // Get language from reservation for NitraCar (defaults to 'sk')
+    const language = rawReservation?.websiteLanguage || 'sk';
+    console.log('📧 [EMAIL] Reservation confirmed language:', language);
+
     // Get processed email template with sender-specific template folder
     console.log('📧 [EMAIL DEBUG] Getting email template with variables...');
-    const emailData = await this.safeLoadEmailTemplate('reservation-confirmed', templateVariables, senderEmail);
+    const emailData = await this.safeLoadEmailTemplate('reservation-confirmed', templateVariables, senderEmail, language);
     if (!emailData) {
       console.warn(`⚠️ [LERENT] Skipping reservation confirmed email - template not found`);
       return { success: false, skipped: true, reason: 'LeRent template not found' };
     }
     console.log('📧 [EMAIL DEBUG] Email template processed successfully');
-    
-    // Set subject to match exact specification
-    const subject = '✅ Potvrdenie rezervácie';
+
+    // Set subject to match exact specification (use English for NitraCar English reservations)
+    const isNitraCar = senderEmail && (senderEmail.includes('nitra-car') || senderEmail.includes('nitracar'));
+    const subject = (isNitraCar && language === 'en') ? 'Reservation Confirmed' : '✅ Potvrdenie rezervácie';
     
     // Generate contract PDF if rawReservation is available
     let attachments = [];
@@ -1062,15 +1073,20 @@ class SMTP2GOService {
       link_view: `https://pozicauto.sk/reservations/${reservationData.reservationNumber}`
     };
 
+    // Get language from reservation for NitraCar (defaults to 'sk')
+    const language = rawReservation?.websiteLanguage || 'sk';
+    console.log('📧 [EMAIL] Reservation edited language:', language);
+
     // Get processed email template with sender-specific template folder
-    const emailData = await this.safeLoadEmailTemplate('reservation-edited', templateVariables, senderEmail);
+    const emailData = await this.safeLoadEmailTemplate('reservation-edited', templateVariables, senderEmail, language);
     if (!emailData) {
       console.warn(`⚠️ [LERENT] Skipping reservation edited email - template not found`);
       return { success: false, skipped: true, reason: 'LeRent template not found' };
     }
-    
-    // Set subject to match exact specification
-    const subject = '🔄 Zmena rezervácie';
+
+    // Set subject to match exact specification (use English for NitraCar English reservations)
+    const isNitraCar = senderEmail && (senderEmail.includes('nitra-car') || senderEmail.includes('nitracar'));
+    const subject = (isNitraCar && language === 'en') ? 'Reservation Updated' : '🔄 Zmena rezervácie';
     
     // Send email
     const emailResult = await this.sendEmail(to, subject, emailData.html, null, user);
@@ -1125,15 +1141,20 @@ class SMTP2GOService {
       link_new: `https://www.pozicauto.sk`
     };
 
+    // Get language from reservation for NitraCar (defaults to 'sk')
+    const language = rawReservation?.websiteLanguage || 'sk';
+    console.log('📧 [EMAIL] Reservation cancelled language:', language);
+
     // Get processed email template with sender-specific template folder
-    const emailData = await this.safeLoadEmailTemplate('reservation-cancelled', templateVariables, senderEmail);
+    const emailData = await this.safeLoadEmailTemplate('reservation-cancelled', templateVariables, senderEmail, language);
     if (!emailData) {
       console.warn(`⚠️ [LERENT] Skipping reservation cancelled email - template not found`);
       return { success: false, skipped: true, reason: 'LeRent template not found' };
     }
-    
-    // Set subject to match exact specification
-    const subject = '❌ Rezervácia zrušená';
+
+    // Set subject to match exact specification (use English for NitraCar English reservations)
+    const isNitraCar = senderEmail && (senderEmail.includes('nitra-car') || senderEmail.includes('nitracar'));
+    const subject = (isNitraCar && language === 'en') ? 'Reservation Cancelled' : '❌ Rezervácia zrušená';
     
     // Send email
     const emailResult = await this.sendEmail(to, subject, emailData.html, null, user);
@@ -1188,20 +1209,32 @@ class SMTP2GOService {
       company_phone: user?.phoneNumber || user?.phone || '+421 XXX XXX XXX'
     };
 
+    // Get language from reservation for NitraCar (defaults to 'sk')
+    const language = rawReservation?.websiteLanguage || reservationData.websiteLanguage || 'sk';
+    console.log('📧 [EMAIL] Reservation reminder24 language:', language);
+
     // Get processed email template with sender-specific template folder
     // For pickup reminders, use the specific template for each tenant
-    const templateName = senderEmail && senderEmail.includes('lerent')
-      ? 'reservation-reminder24'       // LeRent specific pickup reminder template
-      : 'reminder-notification';       // Default/Rival template
+    const isNitraCar = senderEmail && (senderEmail.includes('nitra-car') || senderEmail.includes('nitracar'));
+    const isLeRent = senderEmail && senderEmail.includes('lerent');
 
-    const emailData = await this.safeLoadEmailTemplate(templateName, templateVariables, senderEmail);
+    let templateName;
+    if (isLeRent) {
+      templateName = 'reservation-reminder24';       // LeRent specific pickup reminder template
+    } else if (isNitraCar) {
+      templateName = 'reservation-reminder24';       // NitraCar specific pickup reminder template
+    } else {
+      templateName = 'reminder-notification';        // Default/Rival template
+    }
+
+    const emailData = await this.safeLoadEmailTemplate(templateName, templateVariables, senderEmail, language);
     if (!emailData) {
       console.warn(`⚠️ [LERENT] Skipping email for template '${templateName}' - template not found`);
       return { success: false, skipped: true, reason: 'LeRent template not found' };
     }
 
-    // Set subject to match exact specification
-    const subject = '⏰ Pripomienka: Rezervácia zajtra';
+    // Set subject to match exact specification (use English for NitraCar English reservations)
+    const subject = (isNitraCar && language === 'en') ? 'Reminder: Your Reservation is Tomorrow' : '⏰ Pripomienka: Rezervácia zajtra';
     
     // Send email
     const emailResult = await this.sendEmail(to, subject, emailData.html, null, user);
@@ -1256,20 +1289,32 @@ class SMTP2GOService {
       company_phone: user?.phoneNumber || user?.phone || '+421 XXX XXX XXX'
     };
 
+    // Get language from reservation for NitraCar (defaults to 'sk')
+    const language = rawReservation?.websiteLanguage || reservationData.websiteLanguage || 'sk';
+    console.log('📧 [EMAIL] Return reminder24 language:', language);
+
     // Get processed email template with sender-specific template folder
     // For vehicle return reminders, use the specific template for each tenant
-    const templateName = senderEmail && senderEmail.includes('lerent')
-      ? 'reservation-reminder24before'  // LeRent specific return reminder template
-      : 'reminder-notification';        // Default/Rival template
+    const isNitraCar = senderEmail && (senderEmail.includes('nitra-car') || senderEmail.includes('nitracar'));
+    const isLeRent = senderEmail && senderEmail.includes('lerent');
 
-    const emailData = await this.safeLoadEmailTemplate(templateName, templateVariables, senderEmail);
+    let templateName;
+    if (isLeRent) {
+      templateName = 'reservation-reminder24before';  // LeRent specific return reminder template
+    } else if (isNitraCar) {
+      templateName = 'reservation-reminder24after';   // NitraCar specific return reminder template
+    } else {
+      templateName = 'reminder-notification';         // Default/Rival template
+    }
+
+    const emailData = await this.safeLoadEmailTemplate(templateName, templateVariables, senderEmail, language);
     if (!emailData) {
       console.warn(`⚠️ [LERENT] Skipping email for template '${templateName}' - template not found`);
       return { success: false, skipped: true, reason: 'LeRent template not found' };
     }
-    
-    // Set subject to match exact specification
-    const subject = '⏰ Pripomienka: Vrátenie vozidla zajtra';
+
+    // Set subject to match exact specification (use English for NitraCar English reservations)
+    const subject = (isNitraCar && language === 'en') ? 'Reminder: Vehicle Return Tomorrow' : '⏰ Pripomienka: Vrátenie vozidla zajtra';
     
     // Send email
     const emailResult = await this.sendEmail(to, subject, emailData.html, null, user);

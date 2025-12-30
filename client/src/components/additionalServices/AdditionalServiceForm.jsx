@@ -519,68 +519,76 @@ function AdditionalServiceForm({
           </Alert>
         </Grid>
 
-        <Grid item xs={12} md={6}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={formData.behavior.isAutoSelected}
-                onChange={(e) => handleChange('behavior.isAutoSelected', e.target.checked)}
-                disabled={dialogMode === 'view'}
+        {/* Hide these behavior options for NitraCar - they manage this on frontend */}
+        {!isNitraCar && (
+          <>
+            <Grid item xs={12} md={6}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.behavior.isAutoSelected}
+                    onChange={(e) => handleChange('behavior.isAutoSelected', e.target.checked)}
+                    disabled={dialogMode === 'view'}
+                  />
+                }
+                label="Automaticky vybraté"
               />
-            }
-            label="Automaticky vybraté"
-          />
-          <Typography variant="caption" color="text.secondary" display="block">
-            Služba bude automaticky označená pri rezervácii
-          </Typography>
-        </Grid>
+              <Typography variant="caption" color="text.secondary" display="block">
+                Služba bude automaticky označená pri rezervácii
+              </Typography>
+            </Grid>
 
-        <Grid item xs={12} md={6}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={formData.behavior.isRequired}
-                onChange={(e) => handleChange('behavior.isRequired', e.target.checked)}
-                disabled={dialogMode === 'view'}
+            <Grid item xs={12} md={6}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.behavior.isRequired}
+                    onChange={(e) => handleChange('behavior.isRequired', e.target.checked)}
+                    disabled={dialogMode === 'view'}
+                  />
+                }
+                label="Povinná služba"
               />
-            }
-            label="Povinná služba"
-          />
-          <Typography variant="caption" color="text.secondary" display="block">
-            Zákazník nemôže zrušiť výber tejto služby
-          </Typography>
-        </Grid>
+              <Typography variant="caption" color="text.secondary" display="block">
+                Zákazník nemôže zrušiť výber tejto služby
+              </Typography>
+            </Grid>
 
-        <Grid item xs={12} md={6}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={formData.behavior.requiresApproval}
-                onChange={(e) => handleChange('behavior.requiresApproval', e.target.checked)}
-                disabled={dialogMode === 'view'}
+            <Grid item xs={12} md={6}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.behavior.requiresApproval}
+                    onChange={(e) => handleChange('behavior.requiresApproval', e.target.checked)}
+                    disabled={dialogMode === 'view'}
+                  />
+                }
+                label="Vyžaduje schválenie"
               />
-            }
-            label="Vyžaduje schválenie"
-          />
-          <Typography variant="caption" color="text.secondary" display="block">
-            Služba musí byť schválená administrátorom
-          </Typography>
-        </Grid>
+              <Typography variant="caption" color="text.secondary" display="block">
+                Služba musí byť schválená administrátorom
+              </Typography>
+            </Grid>
+          </>
+        )}
 
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            label="Maximálne množstvo"
-            type="number"
-            value={formData.behavior.maxQuantity}
-            onChange={(e) => handleChange('behavior.maxQuantity', parseInt(e.target.value) || 1)}
-            disabled={dialogMode === 'view'}
-            InputProps={{
-              inputProps: { min: 1, max: 10 }
-            }}
-            helperText="Maximálny počet kusov na jednu rezerváciu"
-          />
-        </Grid>
+        {/* Max quantity field - hide for NitraCar (they use frontend quantity selection instead) */}
+        {!isNitraCar && (
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Maximálne množstvo"
+              type="number"
+              value={formData.behavior.maxQuantity}
+              onChange={(e) => handleChange('behavior.maxQuantity', parseInt(e.target.value) || 1)}
+              disabled={dialogMode === 'view'}
+              InputProps={{
+                inputProps: { min: 1, max: 10 }
+              }}
+              helperText="Maximálny počet kusov na jednu rezerváciu"
+            />
+          </Grid>
+        )}
 
         {/* Quantity selection toggle - only for NitraCar */}
         {isNitraCar && (
@@ -711,21 +719,55 @@ function AdditionalServiceForm({
     </Box>
   );
 
+  // For NitraCar, we have fewer tabs (no Dynamic Pricing tab)
+  const nitraCarTabs = [
+    { label: "Základné info", icon: <InfoIcon /> },
+    { label: "Cena", icon: <EuroIcon /> },
+    { label: "Dostupnosť", icon: <SettingsIcon /> },
+    { label: "Správanie", icon: <ScheduleIcon /> }
+  ];
+
+  const defaultTabs = [
+    { label: "Základné info", icon: <InfoIcon /> },
+    { label: "Cena", icon: <EuroIcon /> },
+    { label: "Dostupnosť", icon: <SettingsIcon /> },
+    { label: "Správanie", icon: <ScheduleIcon /> },
+    { label: "Dynamická cena", icon: <TrendingUpIcon /> }
+  ];
+
+  const tabs = isNitraCar ? nitraCarTabs : defaultTabs;
+
+  // Map tab index to content for NitraCar (same order, just without dynamic pricing)
+  const renderTabContent = () => {
+    if (isNitraCar) {
+      switch (activeTab) {
+        case 0: return renderBasicInfoTab();
+        case 1: return renderPricingTab();
+        case 2: return renderAvailabilityTab();
+        case 3: return renderBehaviorTab();
+        default: return null;
+      }
+    } else {
+      switch (activeTab) {
+        case 0: return renderBasicInfoTab();
+        case 1: return renderPricingTab();
+        case 2: return renderAvailabilityTab();
+        case 3: return renderBehaviorTab();
+        case 4: return renderDynamicPricingTab();
+        default: return null;
+      }
+    }
+  };
+
   return (
     <Box>
       <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-        <Tab label="Základné info" icon={<InfoIcon />} iconPosition="start" />
-        <Tab label="Cena" icon={<EuroIcon />} iconPosition="start" />
-        <Tab label="Dostupnosť" icon={<SettingsIcon />} iconPosition="start" />
-        <Tab label="Správanie" icon={<ScheduleIcon />} iconPosition="start" />
-        <Tab label="Dynamická cena" icon={<TrendingUpIcon />} iconPosition="start" />
+        {tabs.map((tab, index) => (
+          <Tab key={index} label={tab.label} icon={tab.icon} iconPosition="start" />
+        ))}
       </Tabs>
 
-      {activeTab === 0 && renderBasicInfoTab()}
-      {activeTab === 1 && renderPricingTab()}
-      {activeTab === 2 && renderAvailabilityTab()}
-      {activeTab === 3 && renderBehaviorTab()}
-      {activeTab === 4 && renderDynamicPricingTab()}
+      {renderTabContent()}
     </Box>
   );
 }

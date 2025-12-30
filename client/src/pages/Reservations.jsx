@@ -756,16 +756,27 @@ function Reservations() {
     setReservationToDelete(null)
   }
 
-  const handleConfirm = async (reservation) => {
+  const handleConfirm = async (reservation, skipEmail = false) => {
     try {
       await confirmReservation({
         id: reservation._id,
         date: new Date(),
-        notes: 'Confirmed by admin'
+        notes: skipEmail ? 'Confirmed without deposit email' : 'Confirmed by admin',
+        skipEmail: skipEmail
       }).unwrap()
     } catch (error) {
       console.error('Error confirming reservation:', error)
     }
+  }
+
+  // NitraCar specific: Confirm with deposit email
+  const handleConfirmWithDeposit = async (reservation) => {
+    await handleConfirm(reservation, false)
+  }
+
+  // NitraCar specific: Confirm without deposit email
+  const handleConfirmWithoutDeposit = async (reservation) => {
+    await handleConfirm(reservation, true)
   }
 
   const handleConfirmPayment = async (reservation) => {
@@ -1211,15 +1222,39 @@ function Reservations() {
                             </IconButton>
                           </Tooltip>
                           {(reservation.status === 'pending' || reservation.status === 'awaiting_payment') && (
-                            <Tooltip title="Potvrdiť rezerváciu">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleConfirm(reservation)}
-                                color="success"
-                              >
-                                <ConfirmIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
+                            auth.user?.email === 'nitra-car@nitra-car.sk' ? (
+                              <>
+                                <Tooltip title="Potvrdiť so zálohou (pošle email)">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleConfirmWithDeposit(reservation)}
+                                    color="success"
+                                  >
+                                    <ConfirmIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Potvrdiť bez zálohy (nepošle email)">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleConfirmWithoutDeposit(reservation)}
+                                    color="warning"
+                                    sx={{ ml: 0.5 }}
+                                  >
+                                    <ConfirmIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </>
+                            ) : (
+                              <Tooltip title="Potvrdiť rezerváciu">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleConfirm(reservation)}
+                                  color="success"
+                                >
+                                  <ConfirmIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )
                           )}
                           {reservation.status === 'confirmed' && (
                             <>
@@ -1709,15 +1744,39 @@ function Reservations() {
                               <EditIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Potvrdiť rezerváciu">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleConfirm(reservation)}
-                              color="success"
-                            >
-                              <ConfirmIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                          {auth.user?.email === 'nitra-car@nitra-car.sk' ? (
+                            <>
+                              <Tooltip title="Potvrdiť so zálohou (pošle email)">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleConfirmWithDeposit(reservation)}
+                                  color="success"
+                                >
+                                  <ConfirmIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Potvrdiť bez zálohy (nepošle email)">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleConfirmWithoutDeposit(reservation)}
+                                  color="warning"
+                                  sx={{ ml: 0.5 }}
+                                >
+                                  <ConfirmIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </>
+                          ) : (
+                            <Tooltip title="Potvrdiť rezerváciu">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleConfirm(reservation)}
+                                color="success"
+                              >
+                                <ConfirmIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                           <Tooltip title={auth.user?.email === 'lerent@lerent.sk' ? 'Funkcia dočasne nedostupná' : 'Stiahnuť slovenskú zmluvu'}>
                             <span>
                               <IconButton

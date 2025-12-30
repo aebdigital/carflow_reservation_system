@@ -47,9 +47,10 @@ class EmailTemplateService {
    * Load and cache email template
    * @param {string} templateName - Name of the template file (without .html extension)
    * @param {string} senderEmail - The sender email to determine template folder
+   * @param {string} language - Language code ('sk' or 'en') for NitraCar templates
    * @returns {Promise<string>} Template HTML content
    */
-  async loadTemplate(templateName, senderEmail = null) {
+  async loadTemplate(templateName, senderEmail = null, language = 'sk') {
     try {
       // Create cache key that includes the template source
       const isLerent = senderEmail && (
@@ -68,7 +69,9 @@ class EmailTemplateService {
       if (isLerent) templateSource = 'lerent';
       else if (isNitracar) templateSource = 'nitracar';
 
-      const cacheKey = `${templateName}_${templateSource}`;
+      // For NitraCar, include language in cache key
+      const langSuffix = isNitracar && language === 'en' ? '_en' : '';
+      const cacheKey = `${templateName}${langSuffix}_${templateSource}`;
 
       // Check cache first
       if (this.templateCache.has(cacheKey)) {
@@ -76,8 +79,27 @@ class EmailTemplateService {
       }
 
       const templatesPath = this.getTemplatePath(senderEmail);
-      const templatePath = path.join(templatesPath, `${templateName}.html`);
-      const templateContent = await fs.readFile(templatePath, 'utf8');
+
+      // For NitraCar with English language, try to load the -en version first
+      let templatePath;
+      let templateContent;
+
+      if (isNitracar && language === 'en') {
+        const englishTemplatePath = path.join(templatesPath, `${templateName}-en.html`);
+        try {
+          templateContent = await fs.readFile(englishTemplatePath, 'utf8');
+          templatePath = englishTemplatePath;
+          console.log(`📧 [NITRACAR] Using English template: ${templateName}-en.html`);
+        } catch (engError) {
+          // Fallback to Slovak template if English not found
+          templatePath = path.join(templatesPath, `${templateName}.html`);
+          templateContent = await fs.readFile(templatePath, 'utf8');
+          console.log(`📧 [NITRACAR] English template not found, using Slovak: ${templateName}.html`);
+        }
+      } else {
+        templatePath = path.join(templatesPath, `${templateName}.html`);
+        templateContent = await fs.readFile(templatePath, 'utf8');
+      }
 
       // Cache the template for future use
       this.templateCache.set(cacheKey, templateContent);
@@ -133,15 +155,16 @@ class EmailTemplateService {
    * @param {string} templateName - Template name (without .html)
    * @param {Object} variables - Variables to replace
    * @param {string} senderEmail - Sender email to determine template folder
+   * @param {string} language - Language code ('sk' or 'en') for NitraCar templates
    * @returns {Promise<Object>} Email data with subject, html, and headers
    */
-  async getEmailTemplate(templateName, variables = {}, senderEmail = null) {
+  async getEmailTemplate(templateName, variables = {}, senderEmail = null, language = 'sk') {
     try {
-      const template = await this.loadTemplate(templateName, senderEmail);
+      const template = await this.loadTemplate(templateName, senderEmail, language);
       const processedHtml = this.processTemplate(template, variables, senderEmail);
 
       // Extract subject from variables or use default based on template
-      const subject = this.getSubjectForTemplate(templateName, variables);
+      const subject = this.getSubjectForTemplate(templateName, variables, language);
 
       return {
         subject,
@@ -158,18 +181,44 @@ class EmailTemplateService {
    * Get appropriate subject line for template
    * @param {string} templateName - Template name
    * @param {Object} variables - Template variables
+   * @param {string} language - Language code ('sk' or 'en')
    * @returns {string} Email subject
    */
-  getSubjectForTemplate(templateName, variables) {
-    const subjects = {
+  getSubjectForTemplate(templateName, variables, language = 'sk') {
+    // Slovak subjects
+    const subjectsSk = {
       'welcome': `🎉 Vitajte v ${variables.company_name || 'našej službe'}!`,
-      'reservation-confirmation': `✅ Potvrdenie rezervácie #${variables.reservation_id || 'XXX'}`,
+      'reservation-confirmation': `✅ Rezervácia prijatá - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'reservation-confirmed': `✅ Rezervácia potvrdená - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'reservation-cancelled': `❌ Rezervácia zrušená - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'reservation-edited': `📝 Rezervácia upravená - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'reservation-reminder24': `⏰ Pripomienka: Rezervácia zajtra - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'reservation-reminder24after': `⏰ Pripomienka: Vrátenie vozidla zajtra - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'payment-notification': `💰 Upomienka platby - ${variables.car_brand || ''} ${variables.car_model || ''}`,
       'payment-receipt': `💳 Potvrdenie platby - Faktúra ${variables.invoice_number || 'XXX'}`,
       'reminder-notification': `🔔 ${variables.reminder_type || 'Pripomienka'} - ${variables.days_remaining || 'X'} dní zostáva!`,
       'newsletter': `📰 ${variables.newsletter_title || 'Newsletter'} - ${variables.company_name || 'Novinky'}`
     };
 
-    return variables.custom_subject || subjects[templateName] || `📧 ${variables.company_name || 'Email'}`;
+    // English subjects
+    const subjectsEn = {
+      'welcome': `🎉 Welcome to ${variables.company_name || 'our service'}!`,
+      'reservation-confirmation': `✅ Reservation Received - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'reservation-confirmed': `✅ Reservation Confirmed - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'reservation-cancelled': `❌ Reservation Cancelled - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'reservation-edited': `📝 Reservation Updated - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'reservation-reminder24': `⏰ Reminder: Your Reservation is Tomorrow - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'reservation-reminder24after': `⏰ Reminder: Vehicle Return Tomorrow - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'payment-notification': `💰 Payment Reminder - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'payment-receipt': `💳 Payment Confirmation - Invoice ${variables.invoice_number || 'XXX'}`,
+      'reminder-notification': `🔔 ${variables.reminder_type || 'Reminder'} - ${variables.days_remaining || 'X'} days remaining!`,
+      'newsletter': `📰 ${variables.newsletter_title || 'Newsletter'} - ${variables.company_name || 'News'}`
+    };
+
+    const subjects = language === 'en' ? subjectsEn : subjectsSk;
+    const defaultSubject = language === 'en' ? `📧 ${variables.company_name || 'Email'}` : `📧 ${variables.company_name || 'Email'}`;
+
+    return variables.custom_subject || subjects[templateName] || defaultSubject;
   }
 
   /**

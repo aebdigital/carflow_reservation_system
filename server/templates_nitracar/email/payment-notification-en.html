@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Reminder - NITRA-CAR</title>
+    <style>
+        @media only screen and (max-width: 600px) {
+            .main-table {
+                width: 100% !important;
+            }
+            .payment-box {
+                padding: 15px !important;
+            }
+            .logo-img {
+                max-width: 200px !important;
+            }
+            .footer-social td {
+                width: 50% !important;
+                display: inline-block !important;
+                text-align: center !important;
+                padding: 5px 0 !important;
+            }
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+    <table class="main-table" style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-collapse: collapse;">
+        <!-- Header -->
+        <tr>
+            <td style="background-color: #22D3EE; padding: 30px 20px; text-align: center;">
+                <img class="logo-img" src="https://www.nitra-car.sk/templates/responsive-nitracar/assets/img/logo.png" alt="NITRA-CAR" style="max-width: 250px; width: 100%; height: auto;" />
+            </td>
+        </tr>
+
+        <!-- Title -->
+        <tr>
+            <td style="padding: 30px 20px 20px 20px; text-align: center;">
+                <div style="width: 60px; height: 60px; background-color: #FF9800; border-radius: 50%; display: inline-block; position: relative; margin-bottom: 15px;">
+                    <span style="color: white; font-size: 30px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">💰</span>
+                </div>
+                <h2 style="color: #666666; font-size: 24px; font-weight: bold; margin: 10px 0 0 0;">PAYMENT REMINDER</h2>
+            </td>
+        </tr>
+
+        <!-- Greeting -->
+        <tr>
+            <td style="padding: 0 20px 20px 20px; text-align: center;">
+                <p style="color: #666666; font-size: 16px; margin: 0;">
+                    Dear <strong style="color: #22D3EE;">{{customer_name}}</strong>,
+                </p>
+                <p style="color: #666666; font-size: 16px; margin: 10px 0 0 0;">
+                    Your reservation has been successfully confirmed, but we have not yet received the deposit payment. Please note that the deposit must be paid to complete your reservation.
+                </p>
+            </td>
+        </tr>
+
+        <!-- Reservation Details Box -->
+        <tr>
+            <td style="padding: 20px;">
+                <table style="width: 100%; border-collapse: collapse; background-color: #f9f9f9; border-left: 4px solid #22D3EE;">
+                    <tr>
+                        <td class="payment-box" style="padding: 20px;">
+                            <h3 style="color: #22D3EE; font-size: 18px; margin: 0 0 15px 0;">Reservation Details</h3>
+                            <p style="margin: 5px 0; color: #333333;"><strong>Vehicle:</strong> {{car_brand}} {{car_model}}</p>
+                            <p style="margin: 5px 0; color: #333333;"><strong>Pick-up Date:</strong> {{start_date}}</p>
+                            <p style="margin: 5px 0; color: #333333;"><strong>Return Date:</strong> {{end_date}}</p>
+                            <p style="margin: 5px 0; color: #333333;"><strong>Pick-up Location:</strong> {{pickup_location}}</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
+        <!-- Price Total - Fixed €50 -->
+        <tr>
+            <td style="padding: 0 20px 20px 20px; text-align: center;">
+                <div style="background-color: #fff3e0; padding: 15px; border-radius: 8px;">
+                    <p style="margin: 0; color: #666666; font-size: 14px;">Reservation fee to be paid:</p>
+                    <p style="margin: 5px 0 0 0; color: #FF9800; font-size: 28px; font-weight: bold;">50€</p>
+                </div>
+            </td>
+        </tr>
+
+        <!-- Stripe Payment Button -->
+        <tr>
+            <td style="padding: 20px; text-align: center;">
+                <table style="width: 100%; max-width: 500px; margin: 0 auto; background: linear-gradient(135deg, #22D3EE 0%, #1BA3C3 100%); border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                    <tr>
+                        <td style="padding: 25px; text-align: center;">
+                            <h3 style="color: #ffffff; font-size: 20px; font-weight: bold; margin: 0 0 10px 0;">💳 Reservation Fee</h3>
+                            <p style="color: #ffffff; font-size: 16px; margin: 0 0 20px 0;">
+                                To complete your reservation, please pay the reservation fee of <strong style="font-size: 24px;">50€</strong>
+                            </p>
+                            <a href="{{stripe_payment_url}}" target="_blank" style="display: inline-block; padding: 15px 40px; background-color: #ffffff; color: #22D3EE; text-decoration: none; font-size: 18px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); transition: all 0.3s ease;">
+                                Pay Now
+                            </a>
+                            <p style="color: #ffffff; font-size: 12px; margin: 15px 0 0 0; opacity: 0.9;">
+                                Secure payment via Stripe
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
+        <!-- Important Notice -->
+        <tr>
+            <td style="padding: 0 20px 20px 20px;">
+                <div style="background-color: #ffebee; padding: 15px; border-radius: 8px; border-left: 4px solid #ff4444;">
+                    <p style="margin: 0; color: #c62828; font-weight: bold; font-size: 14px;">
+                        <span style="font-size: 18px;">⚠️</span> Important
+                    </p>
+                    <p style="margin: 10px 0 0 0; color: #666666; font-size: 14px;">
+                        Without payment of the deposit, your selected vehicle will continue to be offered to other customers and may no longer be available for your requested dates.
+                    </p>
+                    <p style="margin: 10px 0 0 0; color: #666666; font-size: 14px;">
+                        If the reservation is cancelled by the client, the reservation deposit is non-refundable.
+                    </p>
+                </div>
+            </td>
+        </tr>
+
+        <!-- Contact Section -->
+        <tr>
+            <td style="padding: 0 20px 20px 20px; text-align: center;">
+                <p style="color: #666666; font-size: 14px; margin: 0;">
+                    If you have any questions, please do not hesitate to contact us.
+                </p>
+            </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+            <td style="background-color: #22D3EE; padding: 20px; text-align: center;">
+                <p style="color: white; font-size: 18px; font-weight: bold; margin: 0 0 10px 0;">{{company_phone}}</p>
+                <p style="color: white; font-size: 16px; margin: 0 0 15px 0;">{{company_email}}</p>
+
+                <table class="footer-social" style="width: 100%; max-width: 400px; margin: 15px auto;">
+                    <tr>
+                        <td style="width: 50%; text-align: center; padding: 0 10px;">
+                            <a href="{{instagram_url}}" target="_blank" style="text-decoration: none; color: white; display: inline-block;">
+                                <img src="https://img.icons8.com/ios-filled/50/FFFFFF/instagram-new.png" alt="Instagram" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 8px;" />
+                                <span style="color: white; font-size: 14px;">INSTAGRAM</span>
+                            </a>
+                        </td>
+                        <td style="width: 50%; text-align: center; padding: 0 10px;">
+                            <a href="{{facebook_url}}" target="_blank" style="text-decoration: none; color: white; display: inline-block;">
+                                <img src="https://img.icons8.com/ios-filled/50/FFFFFF/facebook.png" alt="Facebook" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 8px;" />
+                                <span style="color: white; font-size: 14px;">FACEBOOK</span>
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+
+                <hr style="border: 1px solid white; margin: 15px 0;">
+
+                <p style="color: white; font-size: 16px; font-weight: bold; margin: 0; letter-spacing: 1px;">CAR/MOTORCYCLE RENTAL NITRA-CAR</p>
+                <p style="color: white; font-size: 12px; margin: 5px 0 0 0;">© {{current_year}} NITRA-CAR. All rights reserved.</p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

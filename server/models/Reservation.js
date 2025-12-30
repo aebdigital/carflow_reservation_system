@@ -169,6 +169,13 @@ const reservationSchema = new mongoose.Schema({
     required: false
   },
 
+  // Website language - tracks which language version the reservation was made from (NitraCar only)
+  websiteLanguage: {
+    type: String,
+    enum: ['sk', 'en'],
+    default: 'sk'
+  },
+
   // BySquare QR payment codes
   qrCodes: {
     payBySquare: {
