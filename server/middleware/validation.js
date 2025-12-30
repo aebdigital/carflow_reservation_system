@@ -27,10 +27,11 @@ const serviceValidation = {
       .withMessage('Service name must be between 1 and 100 characters'),
     
     body('description')
+      .optional()
       .trim()
-      .isLength({ min: 1, max: 500 })
-      .withMessage('Service description must be between 1 and 500 characters'),
-    
+      .isLength({ max: 500 })
+      .withMessage('Service description cannot exceed 500 characters'),
+
     body('category')
       .isIn([
         'driving_comfort', 'insurance_assistance', 'time_services', 'delivery_pickup', 'family_accessories', 'specialized',
