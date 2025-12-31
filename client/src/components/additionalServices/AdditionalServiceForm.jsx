@@ -93,21 +93,6 @@ function AdditionalServiceForm({
     { value: 'electric_car', label: 'Elektromobil', icon: 'electric_car' }
   ];
 
-  const months = [
-    { value: 1, label: 'Január' },
-    { value: 2, label: 'Február' },
-    { value: 3, label: 'Marec' },
-    { value: 4, label: 'Apríl' },
-    { value: 5, label: 'Máj' },
-    { value: 6, label: 'Jún' },
-    { value: 7, label: 'Júl' },
-    { value: 8, label: 'August' },
-    { value: 9, label: 'September' },
-    { value: 10, label: 'Október' },
-    { value: 11, label: 'November' },
-    { value: 12, label: 'December' }
-  ];
-
   const handleChange = (field, value) => {
     if (field.includes('.')) {
       const keys = field.split('.');
@@ -427,8 +412,8 @@ function AdditionalServiceForm({
                 renderValue={(selected) => (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                     {selected.map((value) => (
-                      <Chip 
-                        key={value} 
+                      <Chip
+                        key={value}
                         label={vehicleCategories.find(cat => cat.value === value)?.label || value}
                         size="small"
                       />
@@ -438,8 +423,8 @@ function AdditionalServiceForm({
               >
                 {vehicleCategories.map((category) => (
                   <MenuItem key={category.value} value={category.value}>
-                    <Checkbox 
-                      checked={formData.availability.vehicleCategories.indexOf(category.value) > -1} 
+                    <Checkbox
+                      checked={formData.availability.vehicleCategories.indexOf(category.value) > -1}
                     />
                     <ListItemText primary={category.label} />
                   </MenuItem>
@@ -447,64 +432,6 @@ function AdditionalServiceForm({
               </Select>
             </FormControl>
           </Grid>
-        )}
-
-        <Grid item xs={12}>
-          <Divider sx={{ my: 2 }} />
-          <Typography variant="h6" gutterBottom>
-            Sezónna dostupnosť
-          </Typography>
-        </Grid>
-
-        <Grid item xs={12}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={formData.availability.seasonal.isActive}
-                onChange={(e) => handleChange('availability.seasonal.isActive', e.target.checked)}
-                disabled={dialogMode === 'view'}
-              />
-            }
-            label="Aktivovať sezónnu dostupnosť"
-          />
-        </Grid>
-
-        {formData.availability.seasonal.isActive && (
-          <>
-            <Grid item xs={12} md={6}>
-              <TextField
-                select
-                fullWidth
-                label="Začiatok sezóny"
-                value={formData.availability.seasonal.startMonth}
-                onChange={(e) => handleChange('availability.seasonal.startMonth', parseInt(e.target.value))}
-                disabled={dialogMode === 'view'}
-              >
-                {months.map((month) => (
-                  <MenuItem key={month.value} value={month.value}>
-                    {month.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <TextField
-                select
-                fullWidth
-                label="Koniec sezóny"
-                value={formData.availability.seasonal.endMonth}
-                onChange={(e) => handleChange('availability.seasonal.endMonth', parseInt(e.target.value))}
-                disabled={dialogMode === 'view'}
-              >
-                {months.map((month) => (
-                  <MenuItem key={month.value} value={month.value}>
-                    {month.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-          </>
         )}
       </Grid>
     </Box>
