@@ -49,9 +49,13 @@ const contractSchema = new mongoose.Schema({
     idNumber: {
       type: String, // Číslo OP (ID card number)
       sparse: true
+    },
+    licenseNumber: {
+      type: String, // Číslo vodičského preukazu
+      sparse: true
     }
   },
-  
+
   // Vehicle information (Vozidlo)
   vehicle: {
     brand: {
@@ -226,9 +230,103 @@ const contractSchema = new mongoose.Schema({
     default: false
   },
   pdfUrl: String,
-  
+
   // Notes
-  notes: String
+  notes: String,
+
+  // ============ NitraCar-specific fields ============
+
+  // Payment method
+  paymentMethod: {
+    type: String,
+    enum: ['hotovost', 'karta', 'faktura', 'prevod', 'stripe'],
+    default: 'hotovost'
+  },
+
+  // Deposit amount
+  deposit: {
+    type: Number,
+    default: 0
+  },
+
+  // Customer additional identification (NitraCar)
+  customerIdentification: {
+    idCardNumber: String,      // Cislo obcianskeho preukazu
+    passportNumber: String,    // Cislo pasu
+    driverLicenseNumber: String // Cislo vodicskeho preukazu
+  },
+
+  // Handover protocol - when vehicle is picked up by customer
+  handover: {
+    registrationCard: {
+      type: Boolean,
+      default: false // Osvedcenie o evidencii, biela karta
+    },
+    mandatoryEquipment: {
+      type: Boolean,
+      default: false // Povinna vybava, rezerva
+    },
+    damages: {
+      type: String,
+      default: '' // Popis poskodeni alebo 'Bez poskodenia'
+    },
+    fuelLevel: {
+      type: String,
+      enum: ['empty', 'quarter', 'third', 'half', 'three-quarters', 'full'],
+      default: 'full' // Stav PHM v nadrzi
+    },
+    depositPaid: {
+      type: Number,
+      default: 0 // Depozit uhradeny (200, 500, 1000 EUR)
+    },
+    mileage: {
+      type: Number,
+      default: 0 // Stav pocitadla v km
+    },
+    handoverDate: Date,
+    handoverByStaff: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    customerSignature: String, // Base64 encoded signature
+    staffSignature: String     // Base64 encoded signature
+  },
+
+  // Return protocol - when vehicle is returned by customer
+  return: {
+    registrationCard: {
+      type: Boolean,
+      default: false // Osvedcenie o evidencii, biela karta
+    },
+    mandatoryEquipment: {
+      type: Boolean,
+      default: false // Povinna vybava
+    },
+    damages: {
+      type: String,
+      default: '' // Popis poskodeni alebo 'Bez poskodenia'
+    },
+    fuelLevel: {
+      type: String,
+      enum: ['empty', 'quarter', 'third', 'half', 'three-quarters', 'full'],
+      default: 'full' // Stav PHM v nadrzi
+    },
+    depositReturned: {
+      type: Number,
+      default: 0 // Depozit vrateny (200, 500, 1000 EUR)
+    },
+    mileage: {
+      type: Number,
+      default: 0 // Stav pocitadla v km
+    },
+    returnDate: Date,
+    returnByStaff: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    customerSignature: String, // Base64 encoded signature
+    staffSignature: String     // Base64 encoded signature
+  }
 }, {
   timestamps: true
 });
@@ -369,8 +467,8 @@ contractSchema.statics.createFromReservation = async function(reservationId, ten
   console.log('🔖 [CONTRACT MODEL] Created by:', createdBy);
   
   const reservation = await Reservation.findById(reservationId)
-    .populate('customer', 'firstName lastName email phone address idNumber licenseNumber licenseExpiry')
-    .populate('car', 'brand model year registrationNumber vin category fuelType transmission color');
+    .populate('customer', 'firstName lastName email phone address idNumber licenseNumber licenseExpiry dateOfBirth')
+    .populate('car', 'brand model year registrationNumber vin category fuelType transmission color mileage');
   
   if (!reservation) {
     throw new Error('Reservation not found');
@@ -425,7 +523,8 @@ contractSchema.statics.createFromReservation = async function(reservationId, ten
       phone: reservation.customer.phone || 'Neuvedené',
       email: reservation.customer.email || 'neuvedene@email.sk',
       address: formatSlovakAddress(reservation.customer.address),
-      idNumber: reservation.customer.idNumber || reservation.customer.licenseNumber || 'Neuvedené'
+      idNumber: reservation.customer.idNumber || 'Neuvedené',
+      licenseNumber: reservation.customer.licenseNumber || 'Neuvedené'
     },
     vehicle: {
       brand: reservation.car.brand || 'Neuvedené',
@@ -448,7 +547,19 @@ contractSchema.statics.createFromReservation = async function(reservationId, ten
       totalAmount: reservation.pricing?.totalAmount || 0
     },
     additionalServices: [], // Will be populated from reservation if needed
-    createdBy
+    createdBy,
+    // NitraCar-specific fields
+    paymentMethod: reservation.paymentType || 'hotovost',
+    deposit: reservation.pricing?.deposit || 0,
+    customerIdentification: {
+      idCardNumber: reservation.customer.idNumber || '',
+      driverLicenseNumber: reservation.customer.licenseNumber || ''
+    },
+    // Initialize handover with car's current mileage
+    handover: {
+      mileage: reservation.car.mileage?.current || 0,
+      depositPaid: reservation.pricing?.deposit || 0
+    }
   };
   
   console.log('🔖 [CONTRACT MODEL] Contract data prepared:', JSON.stringify(contractData, null, 2));

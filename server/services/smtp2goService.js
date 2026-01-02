@@ -944,7 +944,6 @@ class SMTP2GOService {
       try {
         console.log('📎 [EMAIL] Generating contract PDF for confirmed reservation:', rawReservation._id);
 
-        const pdfService = require('./pdfService');
         const Contract = require('../models/Contract');
 
         // Find the contract for this reservation
@@ -955,32 +954,85 @@ class SMTP2GOService {
             path: 'reservation',
             populate: [
               { path: 'customer', select: 'firstName lastName email phone address licenseNumber idNumber' },
-              { path: 'car', select: 'brand model year registrationNumber vin color category' }
+              { path: 'car', select: 'brand model year registrationNumber vin color category mileage' }
             ]
           }
         ]);
 
-        if (contract && contract.reservation.customer && contract.reservation.car) {
-          // Generate the PDF using the PDF service
-          const pdfBuffer = await pdfService.generateRentalAgreement(
-            contract.reservation,
-            contract.reservation.car,
-            contract.reservation.customer
-          );
+        if (contract) {
+          let pdfBuffer;
 
-          // Convert PDF buffer to base64 for attachment
-          const pdfBase64 = pdfBuffer.toString('base64');
-          const filename = `zmluva-${contract.contractNumber || reservationData.reservationNumber}.pdf`;
+          // Use NitraCar dynamic PDF generator for NitraCar tenant
+          if (isNitraCar) {
+            console.log('📄 [EMAIL] Using NitraCar dynamic PDF generator');
+            const nitracarContractPdfService = require('./nitracarContractPdfService');
 
-          attachments.push({
-            filename: filename,
-            content: pdfBase64,
-            type: 'application/pdf'
-          });
+            // Prepare contract data for NitraCar PDF
+            const contractData = {
+              contractNumber: contract.contractNumber,
+              customer: {
+                firstName: contract.customer?.firstName,
+                lastName: contract.customer?.lastName,
+                phone: contract.customer?.phone,
+                email: contract.customer?.email,
+                address: contract.customer?.address,
+                idNumber: contract.customer?.idNumber || contract.customerIdentification?.idCardNumber,
+                licenseNumber: contract.customer?.licenseNumber || contract.customerIdentification?.driverLicenseNumber
+              },
+              vehicle: {
+                brand: contract.vehicle?.brand,
+                model: contract.vehicle?.model,
+                year: contract.vehicle?.year,
+                registrationNumber: contract.vehicle?.registrationNumber,
+                vin: contract.vehicle?.vin,
+                color: contract.vehicle?.color
+              },
+              rental: {
+                startDate: contract.rental?.startDate,
+                endDate: contract.rental?.endDate,
+                pickupLocation: contract.rental?.pickupLocation,
+                returnLocation: contract.rental?.returnLocation,
+                totalDays: contract.rental?.totalDays,
+                dailyRate: contract.rental?.dailyRate,
+                totalAmount: contract.rental?.totalAmount
+              },
+              additionalServices: contract.additionalServices || [],
+              rentalRules: contract.rentalRules || {},
+              paymentMethod: contract.paymentMethod,
+              deposit: contract.deposit,
+              handover: contract.handover || {},
+              return: contract.return || {}
+            };
 
-          console.log('✅ [EMAIL] Contract PDF generated and attached:', filename);
+            pdfBuffer = await nitracarContractPdfService.generateContract(contractData);
+          } else if (contract.reservation?.customer && contract.reservation?.car) {
+            // Use template-based PDF service for other tenants
+            console.log('📄 [EMAIL] Using template-based PDF generator');
+            const pdfService = require('./pdfService');
+
+            pdfBuffer = await pdfService.generateRentalAgreement(
+              contract.reservation,
+              contract.reservation.car,
+              contract.reservation.customer,
+              senderEmail
+            );
+          }
+
+          if (pdfBuffer) {
+            // Convert PDF buffer to base64 for attachment
+            const pdfBase64 = pdfBuffer.toString('base64');
+            const filename = `zmluva-${contract.contractNumber || reservationData.reservationNumber}.pdf`;
+
+            attachments.push({
+              filename: filename,
+              content: pdfBase64,
+              type: 'application/pdf'
+            });
+
+            console.log('✅ [EMAIL] Contract PDF generated and attached:', filename);
+          }
         } else {
-          console.warn('⚠️ [EMAIL] Contract or related data not found for PDF generation');
+          console.warn('⚠️ [EMAIL] Contract not found for PDF generation');
         }
       } catch (pdfError) {
         console.error('❌ [EMAIL] Failed to generate contract PDF:', pdfError.message);

@@ -2,6 +2,10 @@ const Contract = require('../models/Contract');
 const Reservation = require('../models/Reservation');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const pdfService = require('../services/pdfService');
+const nitracarContractPdfService = require('../services/nitracarContractPdfService');
+
+// NitraCar tenant email for feature detection
+const NITRACAR_EMAIL = 'nitra-car@nitra-car.sk';
 
 // @desc    Get all contracts (tenant-scoped)
 // @route   GET /api/contracts
@@ -359,29 +363,20 @@ const generateContractPDF = asyncHandler(async (req, res, next) => {
   }).populate([
     {
       path: 'reservation',
-      select: 'reservationNumber status startDate endDate pricing customer car'
+      select: 'reservationNumber status startDate endDate pricing customer car paymentType selectedServices'
     },
     {
       path: 'createdBy',
       select: 'firstName lastName'
     }
   ]);
-  
+
   if (!contract) {
     return next(new AppError(`Contract not found with id of ${req.params.id}`, 404));
   }
 
   try {
-    console.log('🔄 [CONTRACT PDF] Generating Slovak rental agreement for contract:', req.params.id);
-
-    // Get the reservation data with populated customer and car
-    const reservation = await Reservation.findById(contract.reservation._id)
-      .populate('customer', 'firstName lastName email phone address licenseNumber idNumber')
-      .populate('car', 'brand model year registrationNumber vin color category mileageLimit idCardNumber technicalInspection');
-
-    if (!reservation) {
-      return next(new AppError('Reservation not found for this contract', 404));
-    }
+    console.log('🔄 [CONTRACT PDF] Generating rental agreement for contract:', req.params.id);
 
     // Get tenant user to determine which template to use
     const User = require('../models/User');
@@ -390,18 +385,79 @@ const generateContractPDF = asyncHandler(async (req, res, next) => {
       role: 'admin'
     });
 
-    // Generate the PDF using the PDF service (Slovak template) - pass tenant email for template selection
-    const pdfBuffer = await pdfService.generateRentalAgreement(
-      reservation,
-      reservation.car,
-      reservation.customer,
-      tenantAdmin?.email || req.user.email
-    );
+    const tenantEmail = tenantAdmin?.email || req.user.email;
+    const isNitraCar = tenantEmail?.toLowerCase() === NITRACAR_EMAIL.toLowerCase();
+
+    let pdfBuffer;
+
+    if (isNitraCar) {
+      // Use NitraCar dynamic PDF generator
+      console.log('📄 [CONTRACT PDF] Using NitraCar dynamic PDF generator');
+
+      // Prepare contract data for NitraCar PDF
+      const contractData = {
+        contractNumber: contract.contractNumber,
+        customer: {
+          firstName: contract.customer?.firstName,
+          lastName: contract.customer?.lastName,
+          phone: contract.customer?.phone,
+          email: contract.customer?.email,
+          address: contract.customer?.address,
+          idNumber: contract.customer?.idNumber || contract.customerIdentification?.idCardNumber,
+          licenseNumber: contract.customer?.licenseNumber || contract.customerIdentification?.driverLicenseNumber
+        },
+        vehicle: {
+          brand: contract.vehicle?.brand,
+          model: contract.vehicle?.model,
+          year: contract.vehicle?.year,
+          registrationNumber: contract.vehicle?.registrationNumber,
+          vin: contract.vehicle?.vin,
+          color: contract.vehicle?.color
+        },
+        rental: {
+          startDate: contract.rental?.startDate,
+          endDate: contract.rental?.endDate,
+          pickupLocation: contract.rental?.pickupLocation,
+          returnLocation: contract.rental?.returnLocation,
+          totalDays: contract.rental?.totalDays,
+          dailyRate: contract.rental?.dailyRate,
+          totalAmount: contract.rental?.totalAmount
+        },
+        additionalServices: contract.additionalServices || [],
+        rentalRules: contract.rentalRules || {},
+        paymentMethod: contract.paymentMethod,
+        deposit: contract.deposit,
+        handover: contract.handover || {},
+        return: contract.return || {}
+      };
+
+      pdfBuffer = await nitracarContractPdfService.generateContract(contractData);
+
+    } else {
+      // Use original template-based PDF service for other tenants
+      console.log('📄 [CONTRACT PDF] Using template-based PDF generator');
+
+      // Get the reservation data with populated customer and car
+      const reservation = await Reservation.findById(contract.reservation._id)
+        .populate('customer', 'firstName lastName email phone address licenseNumber idNumber')
+        .populate('car', 'brand model year registrationNumber vin color category mileageLimit idCardNumber technicalInspection');
+
+      if (!reservation) {
+        return next(new AppError('Reservation not found for this contract', 404));
+      }
+
+      pdfBuffer = await pdfService.generateRentalAgreement(
+        reservation,
+        reservation.car,
+        reservation.customer,
+        tenantEmail
+      );
+    }
 
     // Set response headers for PDF
     const isPreviewing = req.query.preview === 'true';
     const filename = `zmluva-${contract.contractNumber}.pdf`;
-    
+
     if (isPreviewing) {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
@@ -409,13 +465,13 @@ const generateContractPDF = asyncHandler(async (req, res, next) => {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     }
-    
+
     res.setHeader('Content-Length', pdfBuffer.length);
-    
+
     // Send the PDF
     res.send(pdfBuffer);
 
-    console.log('✅ [CONTRACT PDF] Slovak rental agreement sent successfully');
+    console.log('✅ [CONTRACT PDF] Rental agreement sent successfully');
 
   } catch (error) {
     console.error('❌ [CONTRACT PDF] Error generating contract PDF:', error);
