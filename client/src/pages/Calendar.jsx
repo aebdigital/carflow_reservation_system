@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react'
+import { useSelector } from 'react-redux'
 import {
   Box,
   Typography,
@@ -24,7 +25,13 @@ import {
   IconButton,
   Tooltip,
   Divider,
-  Stack
+  Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Snackbar
 } from '@mui/material'
 import {
   CalendarToday as CalendarIcon,
@@ -36,13 +43,21 @@ import {
   ChevronRight as NextIcon,
   Today as TodayIcon,
   ViewWeek as WeekIcon,
-  ViewModule as MonthIcon
+  ViewModule as MonthIcon,
+  CalendarMonth as SubscribeIcon,
+  ContentCopy as CopyIcon,
+  Check as CheckIcon
 } from '@mui/icons-material'
 import {
   useGetCarsQuery,
-  useGetReservationsQuery
+  useGetReservationsQuery,
+  useCreateCalendarTokenMutation,
+  useGetCalendarTokensQuery
 } from '../store/store'
 import { t } from '../utils/translations'
+
+// NitraCar email for feature visibility
+const NITRACAR_EMAIL = 'nitra-car@nitra-car.sk'
 
 function Calendar() {
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -51,18 +66,32 @@ function Calendar() {
   const [filterCarType, setFilterCarType] = useState('all')
   const [filterCar, setFilterCar] = useState('all')
 
+  // Calendar subscription state (NitraCar only)
+  const [subscribeDialogOpen, setSubscribeDialogOpen] = useState(false)
+  const [subscriptionUrl, setSubscriptionUrl] = useState('')
+  const [copied, setCopied] = useState(false)
+  const [snackbarOpen, setSnackbarOpen] = useState(false)
+
+  // Get current user from Redux store
+  const { user } = useSelector((state) => state.auth)
+  const isNitraCar = user?.email?.toLowerCase() === NITRACAR_EMAIL.toLowerCase()
+
   // API hooks
-  const { 
-    data: carsData, 
-    isLoading: carsLoading, 
-    error: carsError 
+  const {
+    data: carsData,
+    isLoading: carsLoading,
+    error: carsError
   } = useGetCarsQuery({})
 
-  const { 
-    data: reservationsData, 
-    isLoading: reservationsLoading, 
-    error: reservationsError 
+  const {
+    data: reservationsData,
+    isLoading: reservationsLoading,
+    error: reservationsError
   } = useGetReservationsQuery({ populate: 'customer,car' })
+
+  // Calendar subscription hooks (NitraCar only)
+  const [createCalendarToken, { isLoading: isCreatingToken }] = useCreateCalendarTokenMutation()
+  const { data: existingTokens } = useGetCalendarTokensQuery(undefined, { skip: !isNitraCar })
 
   const cars = carsData?.data || []
   const reservations = reservationsData?.data || []
@@ -219,14 +248,60 @@ function Calendar() {
 
   const calendarDays = generateCalendarDays()
 
+  // Calendar subscription handlers (NitraCar only)
+  const handleOpenSubscribeDialog = async () => {
+    try {
+      const result = await createCalendarToken('NitraCar Calendar').unwrap()
+      if (result?.data?.urls?.https) {
+        setSubscriptionUrl(result.data.urls.https)
+        setSubscribeDialogOpen(true)
+      }
+    } catch (error) {
+      console.error('Error creating calendar token:', error)
+    }
+  }
+
+  const handleCopyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(subscriptionUrl)
+      setCopied(true)
+      setSnackbarOpen(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (error) {
+      console.error('Error copying to clipboard:', error)
+    }
+  }
+
+  const handleCloseSubscribeDialog = () => {
+    setSubscribeDialogOpen(false)
+    setSubscriptionUrl('')
+    setCopied(false)
+  }
+
   return (
     <Box>
-              <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
-        {t('calendar')}
-      </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        {t('trackAllocations')}
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+        <Box>
+          <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
+            {t('calendar')}
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            {t('trackAllocations')}
+          </Typography>
+        </Box>
+
+        {/* Calendar Subscription Button - NitraCar only */}
+        {isNitraCar && (
+          <Button
+            variant="outlined"
+            startIcon={<SubscribeIcon />}
+            onClick={handleOpenSubscribeDialog}
+            disabled={isCreatingToken}
+          >
+            {isCreatingToken ? 'Generujem...' : 'Pridať do Apple Calendar'}
+          </Button>
+        )}
+      </Box>
 
       {/* Calendar Controls */}
       <Card sx={{ mb: 3 }}>
@@ -699,6 +774,85 @@ function Calendar() {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Calendar Subscription Dialog - NitraCar only */}
+      {isNitraCar && (
+        <>
+          <Dialog
+            open={subscribeDialogOpen}
+            onClose={handleCloseSubscribeDialog}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>
+              Pridať kalendár do Apple Calendar
+            </DialogTitle>
+            <DialogContent>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Skopírujte tento odkaz a pridajte ho do Apple Calendar, Google Calendar alebo Outlook
+                ako odber kalendára. Rezervácie sa budú automaticky synchronizovať.
+              </Typography>
+
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  URL pre odber kalendára:
+                </Typography>
+                <TextField
+                  fullWidth
+                  value={subscriptionUrl}
+                  InputProps={{
+                    readOnly: true,
+                    endAdornment: (
+                      <IconButton onClick={handleCopyUrl} edge="end">
+                        {copied ? <CheckIcon color="success" /> : <CopyIcon />}
+                      </IconButton>
+                    )
+                  }}
+                  size="small"
+                  sx={{ fontFamily: 'monospace' }}
+                />
+              </Box>
+
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+                  Ako pridať do Apple Calendar:
+                </Typography>
+                <Typography variant="body2" component="div">
+                  1. Otvorte Apple Calendar<br />
+                  2. Vyberte Súbor → Nový odber kalendára<br />
+                  3. Prilepte skopírovaný odkaz<br />
+                  4. Kliknite na Odoberať
+                </Typography>
+              </Alert>
+
+              <Alert severity="warning">
+                <Typography variant="body2">
+                  Tento odkaz je súkromný. Nezdieľajte ho s inými osobami.
+                </Typography>
+              </Alert>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseSubscribeDialog}>
+                Zavrieť
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleCopyUrl}
+                startIcon={copied ? <CheckIcon /> : <CopyIcon />}
+              >
+                {copied ? 'Skopírované!' : 'Kopírovať URL'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          <Snackbar
+            open={snackbarOpen}
+            autoHideDuration={3000}
+            onClose={() => setSnackbarOpen(false)}
+            message="URL skopírované do schránky"
+          />
+        </>
+      )}
     </Box>
   )
 }

@@ -32,6 +32,7 @@ const testRoutes = require('./routes/testRoutes');
 const krosTestRoutes = require('./routes/krosTestRoutes');
 const carServicesRoutes = require('./routes/carServices');
 const lerentStatsRoutes = require('./routes/lerentStatsRoutes');
+const calendarRoutes = require('./routes/calendarRoutes');
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
@@ -220,6 +221,7 @@ app.use('/api/campaigns', require('./routes/campaigns'));
 app.use('/api/test', testRoutes); // Test routes for debugging
 app.use('/api/test', krosTestRoutes); // Kros integration test routes
 app.use('/api/lerent-stats', publicLimiter, lerentStatsRoutes); // Public LeRent stats endpoints
+app.use('/api/calendar', calendarRoutes); // ICS calendar feed for NitraCar
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

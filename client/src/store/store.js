@@ -1094,6 +1094,33 @@ export const api = createApi({
       }),
       invalidatesTags: ['Brand'],
     }),
+
+    // ========== CALENDAR SUBSCRIPTION ENDPOINTS (NitraCar only) ==========
+
+    // Create a new calendar subscription token
+    createCalendarToken: builder.mutation({
+      query: (name) => ({
+        url: 'calendar/token',
+        method: 'POST',
+        body: { name },
+      }),
+      invalidatesTags: ['CalendarToken'],
+    }),
+
+    // Get all calendar tokens for the current user
+    getCalendarTokens: builder.query({
+      query: () => 'calendar/tokens',
+      providesTags: ['CalendarToken'],
+    }),
+
+    // Revoke/delete a calendar token
+    deleteCalendarToken: builder.mutation({
+      query: (id) => ({
+        url: `calendar/token/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['CalendarToken'],
+    }),
   }),
 })
 
@@ -1258,6 +1285,11 @@ export const {
   useCreateBrandMutation,
   useUpdateBrandMutation,
   useDeleteBrandMutation,
+
+  // Calendar subscription hooks (NitraCar only)
+  useCreateCalendarTokenMutation,
+  useGetCalendarTokensQuery,
+  useDeleteCalendarTokenMutation,
 } = api
 
 export const store = configureStore({
