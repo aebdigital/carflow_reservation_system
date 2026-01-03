@@ -15,7 +15,7 @@ class NitraCarContractPdfService {
     // Company details (static)
     this.companyInfo = {
       name: 'NITRA CAR s.r.o.',
-      address: 'Stefanikova trieda 79',
+      address: 'Štefánikova trieda 79',
       city: '949 01 Nitra',
       ico: '50 229 486',
       dic: '2120258502',
@@ -40,9 +40,9 @@ class NitraCarContractPdfService {
           size: 'A4',
           margins: { top: 40, bottom: 40, left: 40, right: 40 },
           info: {
-            Title: `Zmluva o prenajme vozidla - ${contractData.contractNumber}`,
+            Title: `Zmluva o prenájme vozidla - ${contractData.contractNumber}`,
             Author: 'NitraCar s.r.o.',
-            Subject: 'Zmluva o prenajme motoroveho vozidla',
+            Subject: 'Zmluva o prenájme motorového vozidla',
             Creator: 'CarFlow Reservation System'
           }
         });
@@ -101,28 +101,28 @@ class NitraCarContractPdfService {
 
     // Contract number and date on the right (use reservation number)
     doc.fontSize(10).font('Helvetica').fillColor('black');
-    doc.text(`Cislo zmluvy: ${contractData.reservationNumber || contractData.contractNumber || 'N/A'}`, doc.page.width - 200, 40, { width: 160, align: 'right' });
-    doc.text(`Datum: ${this.formatDate(new Date())}`, doc.page.width - 200, 70, { width: 160, align: 'right' });
+    doc.text(`Číslo zmluvy: ${contractData.reservationNumber || contractData.contractNumber || 'N/A'}`, doc.page.width - 200, 40, { width: 160, align: 'right' });
+    doc.text(`Dátum: ${this.formatDate(new Date())}`, doc.page.width - 200, 70, { width: 160, align: 'right' });
 
     // Title - single line centered (reset x position to left margin first)
     doc.x = doc.page.margins.left;
     doc.y = 100;
     doc.fontSize(14).font('Helvetica-Bold').fillColor('black');
-    doc.text('ZMLUVA O PRENAJME MOTOROVEHO VOZIDLA', doc.page.margins.left, doc.y, { width: pageWidth, align: 'center' });
+    doc.text('ZMLUVA O PRENÁJME MOTOROVÉHO VOZIDLA', doc.page.margins.left, doc.y, { width: pageWidth, align: 'center' });
 
     // Sposob uhrady - blank for pen filling
     doc.moveDown(0.5);
     doc.fontSize(10).font('Helvetica');
-    doc.text('Sposob uhrady: _______________________', doc.page.margins.left, doc.y, { width: pageWidth, align: 'center' });
+    doc.text('Spôsob úhrady: _______________________', doc.page.margins.left, doc.y, { width: pageWidth, align: 'center' });
 
     doc.moveDown(1.5);
   }
 
   /**
-   * Section I - Prenajimatel (Lessor)
+   * Section I - Prenajímateľ (Lessor)
    */
   generateSection1_Prenajimatel(doc) {
-    this.drawSectionHeaderLeft(doc, 'I. Prenajimatel');
+    this.drawSectionHeaderLeft(doc, 'I. Prenajímateľ');
 
     const info = this.companyInfo;
     const leftCol = doc.page.margins.left;
@@ -130,22 +130,22 @@ class NitraCarContractPdfService {
 
     doc.fontSize(9).font('Helvetica');
 
-    this.drawLabelValue(doc, 'Nazov spolocnosti:', info.name, leftCol, rightCol);
+    this.drawLabelValue(doc, 'Názov spoločnosti:', info.name, leftCol, rightCol);
     this.drawLabelValue(doc, 'Adresa:', `${info.address}, ${info.city}`, leftCol, rightCol);
-    this.drawLabelValue(doc, 'ICO:', info.ico, leftCol, rightCol);
-    this.drawLabelValue(doc, 'DIC:', info.dic, leftCol, rightCol);
+    this.drawLabelValue(doc, 'IČO:', info.ico, leftCol, rightCol);
+    this.drawLabelValue(doc, 'DIČ:', info.dic, leftCol, rightCol);
     this.drawLabelValue(doc, 'E-mail:', info.email, leftCol, rightCol);
     this.drawLabelValue(doc, 'Web:', info.website, leftCol, rightCol);
-    this.drawLabelValue(doc, 'Telefon:', info.phone, leftCol, rightCol);
+    this.drawLabelValue(doc, 'Telefón:', info.phone, leftCol, rightCol);
 
     doc.moveDown(1);
   }
 
   /**
-   * Section II - Najomca (Tenant/Customer)
+   * Section II - Nájomca (Tenant/Customer)
    */
   generateSection2_Najomca(doc, contractData) {
-    this.drawSectionHeaderLeft(doc, 'II. Najomca');
+    this.drawSectionHeaderLeft(doc, 'II. Nájomca');
 
     const customer = contractData.customer || {};
     const leftCol = doc.page.margins.left;
@@ -153,23 +153,23 @@ class NitraCarContractPdfService {
 
     doc.fontSize(9).font('Helvetica');
 
-    const fullName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Neuvedene';
+    const fullName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Neuvedené';
     const address = this.formatAddress(customer.address);
 
-    this.drawLabelValue(doc, 'Meno / Nazov:', fullName, leftCol, rightCol);
-    this.drawLabelValue(doc, 'Bydlisko / Sidlo:', address, leftCol, rightCol);
-    this.drawLabelValue(doc, 'Cislo OP / Pas:', customer.idNumber || 'Neuvedene', leftCol, rightCol);
-    this.drawLabelValue(doc, 'Telefon:', customer.phone || 'Neuvedene', leftCol, rightCol);
-    this.drawLabelValue(doc, 'E-mail:', customer.email || 'Neuvedene', leftCol, rightCol);
+    this.drawLabelValue(doc, 'Meno / Názov:', fullName, leftCol, rightCol);
+    this.drawLabelValue(doc, 'Bydlisko / Sídlo:', address, leftCol, rightCol);
+    this.drawLabelValue(doc, 'Číslo OP / Pas:', customer.idNumber || 'Neuvedené', leftCol, rightCol);
+    this.drawLabelValue(doc, 'Telefón:', customer.phone || 'Neuvedené', leftCol, rightCol);
+    this.drawLabelValue(doc, 'E-mail:', customer.email || 'Neuvedené', leftCol, rightCol);
 
     doc.moveDown(1);
   }
 
   /**
-   * Section III - Predmet najmu (Vehicle)
+   * Section III - Predmet nájmu (Vehicle)
    */
   generateSection3_PredmetNajmu(doc, contractData) {
-    this.drawSectionHeaderLeft(doc, 'III. Predmet najmu (Udaje o vozidle)');
+    this.drawSectionHeaderLeft(doc, 'III. Predmet nájmu (Údaje o vozidle)');
 
     const vehicle = contractData.vehicle || {};
     const leftCol = doc.page.margins.left;
@@ -177,21 +177,21 @@ class NitraCarContractPdfService {
 
     doc.fontSize(9).font('Helvetica');
 
-    const vehicleType = `${vehicle.brand || ''} ${vehicle.model || ''}`.trim() || 'Neuvedene';
+    const vehicleType = `${vehicle.brand || ''} ${vehicle.model || ''}`.trim() || 'Neuvedené';
 
     this.drawLabelValue(doc, 'Typ vozidla:', vehicleType, leftCol, rightCol);
-    this.drawLabelValue(doc, 'ECV:', vehicle.registrationNumber || 'Neuvedene', leftCol, rightCol);
-    this.drawLabelValue(doc, 'VIN:', vehicle.vin || 'Neuvedene', leftCol, rightCol);
-    this.drawLabelValue(doc, 'Rok vyroby:', vehicle.year?.toString() || 'Neuvedene', leftCol, rightCol);
+    this.drawLabelValue(doc, 'EČV:', vehicle.registrationNumber || 'Neuvedené', leftCol, rightCol);
+    this.drawLabelValue(doc, 'VIN:', vehicle.vin || 'Neuvedené', leftCol, rightCol);
+    this.drawLabelValue(doc, 'Rok výroby:', vehicle.year?.toString() || 'Neuvedené', leftCol, rightCol);
 
     doc.moveDown(1);
   }
 
   /**
-   * Section IV - Doba najmu (Rental Period)
+   * Section IV - Doba nájmu (Rental Period)
    */
   generateSection4_DobaNajmu(doc, contractData) {
-    this.drawSectionHeaderLeft(doc, 'IV. Doba najmu');
+    this.drawSectionHeaderLeft(doc, 'IV. Doba nájmu');
 
     const rental = contractData.rental || {};
     const leftCol = doc.page.margins.left;
@@ -202,20 +202,20 @@ class NitraCarContractPdfService {
     const startDateTime = this.formatDateTime(rental.startDate);
     const endDateTime = this.formatDateTime(rental.endDate);
 
-    this.drawLabelValue(doc, 'Zaciatok najmu:', startDateTime, leftCol, rightCol);
-    this.drawLabelValue(doc, 'Ukoncenie najmu:', endDateTime, leftCol, rightCol);
-    this.drawLabelValue(doc, 'Pocet dni:', rental.totalDays?.toString() || 'Neuvedene', leftCol, rightCol);
-    this.drawLabelValue(doc, 'Miesto prevzatia:', rental.pickupLocation || 'Neuvedene', leftCol, rightCol);
-    this.drawLabelValue(doc, 'Miesto vratenia:', rental.returnLocation || 'Neuvedene', leftCol, rightCol);
+    this.drawLabelValue(doc, 'Začiatok nájmu:', startDateTime, leftCol, rightCol);
+    this.drawLabelValue(doc, 'Ukončenie nájmu:', endDateTime, leftCol, rightCol);
+    this.drawLabelValue(doc, 'Počet dní:', rental.totalDays?.toString() || 'Neuvedené', leftCol, rightCol);
+    this.drawLabelValue(doc, 'Miesto prevzatia:', rental.pickupLocation || 'Neuvedené', leftCol, rightCol);
+    this.drawLabelValue(doc, 'Miesto vrátenia:', rental.returnLocation || 'Neuvedené', leftCol, rightCol);
 
     doc.moveDown(1);
   }
 
   /**
-   * Section V - Najomne (Rental Fee)
+   * Section V - Nájomné (Rental Fee)
    */
   generateSection5_Najomne(doc, contractData) {
-    this.drawSectionHeaderLeft(doc, 'V. Najomne');
+    this.drawSectionHeaderLeft(doc, 'V. Nájomné');
 
     const rental = contractData.rental || {};
     const rentalRules = contractData.rentalRules || {};
@@ -229,15 +229,15 @@ class NitraCarContractPdfService {
     const totalDays = rental.totalDays || 1;
     const totalKmLimit = dailyKmLimit * totalDays;
 
-    this.drawLabelValue(doc, 'Denna sadzba:', `${this.formatPrice(rental.dailyRate)} EUR`, leftCol, rightCol);
-    this.drawLabelValue(doc, 'Kilometrovy limit za den:', `${dailyKmLimit} km`, leftCol, rightCol);
+    this.drawLabelValue(doc, 'Denná sadzba:', `${this.formatPrice(rental.dailyRate)} EUR`, leftCol, rightCol);
+    this.drawLabelValue(doc, 'Kilometrový limit za deň:', `${dailyKmLimit} km`, leftCol, rightCol);
     this.drawLabelValue(doc, 'Celkovo km:', `${totalKmLimit} km`, leftCol, rightCol);
     this.drawLabelValue(doc, 'Sadzba nad limit:', `${this.formatPrice(rentalRules.excessKmFee || 0.25)} EUR/km`, leftCol, rightCol);
 
     // Additional services
     if (additionalServices.length > 0) {
       doc.moveDown(0.5);
-      doc.font('Helvetica-Bold').text('Sluzby a priplatky:', leftCol);
+      doc.font('Helvetica-Bold').text('Služby a príplatky:', leftCol);
       doc.font('Helvetica');
 
       additionalServices.forEach(service => {
@@ -252,7 +252,7 @@ class NitraCarContractPdfService {
     const totalAmount = (rental.totalAmount || 0);
 
     doc.font('Helvetica-Bold');
-    this.drawLabelValue(doc, 'Spolu k uhrade:', `${this.formatPrice(totalAmount)} EUR`, leftCol, rightCol);
+    this.drawLabelValue(doc, 'Spolu k úhrade:', `${this.formatPrice(totalAmount)} EUR`, leftCol, rightCol);
     doc.font('Helvetica');
 
     // Deposit info
@@ -265,10 +265,10 @@ class NitraCarContractPdfService {
   }
 
   /**
-   * Section VI - Preberaci protokol (Handover Protocol)
+   * Section VI - Preberací protokol (Handover Protocol)
    */
   generateSection6_PreberaciProtokol(doc, contractData) {
-    this.drawSectionHeaderLeft(doc, 'VI. Preberaci protokol');
+    this.drawSectionHeaderLeft(doc, 'VI. Preberací protokol');
 
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const colWidth = (pageWidth - 20) / 2;
@@ -277,8 +277,8 @@ class NitraCarContractPdfService {
 
     // Two-column layout
     doc.fontSize(10).font('Helvetica-Bold');
-    doc.text('Pri prevzati vozidla:', leftCol, doc.y, { width: colWidth });
-    doc.text('Pri vrateni vozidla:', rightCol, doc.y - 12, { width: colWidth });
+    doc.text('Pri prevzatí vozidla:', leftCol, doc.y, { width: colWidth });
+    doc.text('Pri vrátení vozidla:', rightCol, doc.y - 12, { width: colWidth });
 
     doc.moveDown(0.5);
     doc.fontSize(9).font('Helvetica');
@@ -286,35 +286,35 @@ class NitraCarContractPdfService {
 
     // Left column - Handover (from lessor) - blank for pen filling
     let y = startY;
-    y = this.drawBlankTextItem(doc, 'Poskodenia:', leftCol, y, colWidth);
-    y = this.drawBlankTextItem(doc, 'Stav PHM v nadrzi:', leftCol, y, colWidth);
-    y = this.drawBlankTextItem(doc, 'Depozit uhradeny:', leftCol, y, colWidth);
-    y = this.drawBlankTextItem(doc, 'Stav pocitadla v km:', leftCol, y, colWidth);
+    y = this.drawBlankTextItem(doc, 'Poškodenia:', leftCol, y, colWidth);
+    y = this.drawBlankTextItem(doc, 'Stav PHM v nádrži:', leftCol, y, colWidth);
+    y = this.drawBlankTextItem(doc, 'Depozit uhradený:', leftCol, y, colWidth);
+    y = this.drawBlankTextItem(doc, 'Stav počítadla v km:', leftCol, y, colWidth);
     y += 25;
-    doc.text('Podpis odovzdavajuceho: ________________', leftCol, y);
+    doc.text('Podpis odovzdávajúceho: ________________', leftCol, y);
     y += 18;
-    doc.text('Podpis preberajuceho: ________________', leftCol, y);
+    doc.text('Podpis preberajúceho: ________________', leftCol, y);
 
     // Right column - Return (from tenant) - blank for pen filling
     y = startY;
-    y = this.drawBlankTextItem(doc, 'Poskodenia:', rightCol, y, colWidth);
-    y = this.drawBlankTextItem(doc, 'Stav PHM v nadrzi:', rightCol, y, colWidth);
-    y = this.drawBlankTextItem(doc, 'Depozit vrateny:', rightCol, y, colWidth);
-    y = this.drawBlankTextItem(doc, 'Stav pocitadla v km:', rightCol, y, colWidth);
+    y = this.drawBlankTextItem(doc, 'Poškodenia:', rightCol, y, colWidth);
+    y = this.drawBlankTextItem(doc, 'Stav PHM v nádrži:', rightCol, y, colWidth);
+    y = this.drawBlankTextItem(doc, 'Depozit vrátený:', rightCol, y, colWidth);
+    y = this.drawBlankTextItem(doc, 'Stav počítadla v km:', rightCol, y, colWidth);
     y += 25;
-    doc.text('Podpis odovzdavajuceho: ________________', rightCol, y);
+    doc.text('Podpis odovzdávajúceho: ________________', rightCol, y);
     y += 18;
-    doc.text('Podpis preberajuceho: ________________', rightCol, y);
+    doc.text('Podpis preberajúceho: ________________', rightCol, y);
 
     doc.y = Math.max(doc.y, y + 30);
   }
 
   /**
-   * Notes Section - Poznamky
+   * Notes Section - Poznámky
    */
   generateSectionNotes(doc, contractData) {
     doc.moveDown(1.5);
-    this.drawSectionHeaderLeft(doc, 'Poznamky');
+    this.drawSectionHeaderLeft(doc, 'Poznámky');
 
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const leftCol = doc.page.margins.left;
@@ -343,7 +343,7 @@ class NitraCarContractPdfService {
    */
   generateSection7_Podpisy(doc, contractData) {
     doc.moveDown(1);
-    this.drawSectionHeaderLeft(doc, 'VII. Podpisy zmluvnych stran');
+    this.drawSectionHeaderLeft(doc, 'VII. Podpisy zmluvných strán');
 
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const colWidth = pageWidth / 2 - 20;
@@ -355,20 +355,20 @@ class NitraCarContractPdfService {
 
     // Left - Lessor signature
     doc.fontSize(9).font('Helvetica');
-    doc.text('Za prenajimatel:', leftCol, y);
+    doc.text('Za prenajímateľa:', leftCol, y);
     doc.moveDown(2);
     doc.text('_________________________________', leftCol);
     doc.text('Podpis', leftCol);
 
     // Right - Tenant signature
-    doc.text('Najomca:', rightCol, y);
+    doc.text('Nájomca:', rightCol, y);
     doc.y = y + 30;
     doc.text('_________________________________', rightCol);
     doc.text('Podpis', rightCol);
 
     // Date and place
     doc.moveDown(2);
-    doc.text(`V Nitre, dna ${this.formatDate(new Date())}`, leftCol);
+    doc.text(`V Nitre, dňa ${this.formatDate(new Date())}`, leftCol);
   }
 
   // Helper methods
@@ -388,7 +388,7 @@ class NitraCarContractPdfService {
   drawLabelValue(doc, label, value, leftCol, rightCol) {
     const y = doc.y;
     doc.font('Helvetica-Bold').text(label, leftCol, y, { continued: false });
-    doc.font('Helvetica').text(value || 'Neuvedene', rightCol, y);
+    doc.font('Helvetica').text(value || 'Neuvedené', rightCol, y);
   }
 
   drawCheckboxItem(doc, label, checked, x, y) {
@@ -399,7 +399,7 @@ class NitraCarContractPdfService {
 
   drawTextItem(doc, label, value, x, y, width) {
     doc.font('Helvetica-Bold').text(label, x, y, { continued: true, width: width });
-    doc.font('Helvetica').text(` ${value || 'Neuvedene'}`);
+    doc.font('Helvetica').text(` ${value || 'Neuvedené'}`);
     return doc.y + 2;
   }
 
@@ -410,13 +410,13 @@ class NitraCarContractPdfService {
   }
 
   formatDate(date) {
-    if (!date) return 'Neuvedene';
+    if (!date) return 'Neuvedené';
     const d = new Date(date);
     return d.toLocaleDateString('sk-SK', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
   formatDateTime(date) {
-    if (!date) return 'Neuvedene';
+    if (!date) return 'Neuvedené';
     const d = new Date(date);
     return `${d.toLocaleDateString('sk-SK', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${d.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}`;
   }
@@ -427,7 +427,7 @@ class NitraCarContractPdfService {
   }
 
   formatAddress(address) {
-    if (!address) return 'Neuvedene';
+    if (!address) return 'Neuvedené';
     if (typeof address === 'string') return address;
 
     const parts = [
@@ -437,33 +437,33 @@ class NitraCarContractPdfService {
       address.country
     ].filter(Boolean);
 
-    return parts.length > 0 ? parts.join(', ') : 'Neuvedene';
+    return parts.length > 0 ? parts.join(', ') : 'Neuvedené';
   }
 
   getFuelLevelText(level) {
     const levels = {
-      'empty': 'Prazdna',
+      'empty': 'Prázdna',
       'quarter': '1/4',
       'third': '1/3',
       'half': '1/2',
       'three-quarters': '3/4',
-      'full': 'Plna (1/1)'
+      'full': 'Plná (1/1)'
     };
     return levels[level] || level || '______';
   }
 
   getPaymentMethodText(method) {
     const methods = {
-      'cash': 'Hotovost',
-      'hotovost': 'Hotovost',
+      'cash': 'Hotovosť',
+      'hotovost': 'Hotovosť',
       'card': 'Karta',
       'karta': 'Karta',
-      'invoice': 'Faktura',
-      'faktura': 'Faktura',
-      'prevod': 'Bankovy prevod',
+      'invoice': 'Faktúra',
+      'faktura': 'Faktúra',
+      'prevod': 'Bankový prevod',
       'stripe': 'Online platba (Stripe)'
     };
-    return methods[method?.toLowerCase()] || method || 'Neuvedene';
+    return methods[method?.toLowerCase()] || method || 'Neuvedené';
   }
 }
 
