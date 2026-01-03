@@ -99,22 +99,20 @@ class NitraCarContractPdfService {
       doc.fontSize(20).font('Helvetica-Bold').fillColor('#0891B2').text('NITRA CAR', doc.page.margins.left, 40);
     }
 
-    // Contract number on the right (use reservation number)
+    // Contract number and date on the right (use reservation number)
     doc.fontSize(10).font('Helvetica').fillColor('black');
     doc.text(`Cislo zmluvy: ${contractData.reservationNumber || contractData.contractNumber || 'N/A'}`, doc.page.width - 200, 40, { width: 160, align: 'right' });
-    doc.text(`Datum: ${this.formatDate(new Date())}`, doc.page.width - 200, 55, { width: 160, align: 'right' });
+    doc.text(`Datum: ${this.formatDate(new Date())}`, doc.page.width - 200, 70, { width: 160, align: 'right' });
 
-    // Title
-    doc.moveDown(3);
-    doc.fontSize(16).font('Helvetica-Bold').fillColor('black');
+    // Title - single line centered
+    doc.y = 100;
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('black');
     doc.text('ZMLUVA O PRENAJME MOTOROVEHO VOZIDLA', { align: 'center' });
 
-    // Subtitle with payment method
-    if (contractData.paymentMethod) {
-      doc.moveDown(0.5);
-      doc.fontSize(10).font('Helvetica');
-      doc.text(`Sposob uhrady: ${this.getPaymentMethodText(contractData.paymentMethod)}`, { align: 'center' });
-    }
+    // Sposob uhrady - blank for pen filling
+    doc.moveDown(0.5);
+    doc.fontSize(10).font('Helvetica');
+    doc.text('Sposob uhrady: _______________________', { align: 'center' });
 
     doc.moveDown(1.5);
   }
