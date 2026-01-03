@@ -358,7 +358,7 @@ class NitraCarContractPdfService {
     doc.text('Za prenajimatel:', leftCol, y);
     doc.moveDown(2);
     doc.text('_________________________________', leftCol);
-    doc.text('Podpis a peciatka', leftCol);
+    doc.text('Podpis', leftCol);
 
     // Right - Tenant signature
     doc.text('Najomca:', rightCol, y);
