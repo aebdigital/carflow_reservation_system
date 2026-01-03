@@ -1,6 +1,7 @@
 /**
  * NitraCar Dynamic Contract PDF Generator
  * Generates rental contracts from scratch without using templates
+ * Uses Roboto font for proper Slovak diacritics support
  */
 
 const PDFDocument = require('pdfkit');
@@ -11,6 +12,10 @@ class NitraCarContractPdfService {
   constructor() {
     // NitraCar logo path (from email templates)
     this.logoPath = path.join(__dirname, '../templates_nitracar/email/nitracarlogo.png');
+
+    // Font paths for Slovak diacritics support
+    this.fontPath = path.join(__dirname, '../fonts/Roboto-Regular.ttf');
+    this.fontBoldPath = path.join(__dirname, '../fonts/Roboto-Bold.ttf');
 
     // Company details (static)
     this.companyInfo = {
@@ -23,6 +28,22 @@ class NitraCarContractPdfService {
       website: 'www.nitra-car.sk',
       phone: '+421 911 123 456'
     };
+  }
+
+  /**
+   * Register custom fonts for Slovak diacritics support
+   */
+  registerFonts(doc) {
+    // Register Roboto fonts if available
+    if (fs.existsSync(this.fontPath) && fs.existsSync(this.fontBoldPath)) {
+      doc.registerFont('Roboto', this.fontPath);
+      doc.registerFont('Roboto-Bold', this.fontBoldPath);
+      console.log('📄 [NITRACAR PDF] Custom fonts registered successfully');
+      return true;
+    } else {
+      console.log('📄 [NITRACAR PDF] Custom fonts not found, using Helvetica (diacritics may not display correctly)');
+      return false;
+    }
   }
 
   /**
@@ -46,6 +67,11 @@ class NitraCarContractPdfService {
             Creator: 'CarFlow Reservation System'
           }
         });
+
+        // Register custom fonts
+        const hasCustomFonts = this.registerFonts(doc);
+        this.fontRegular = hasCustomFonts ? 'Roboto' : 'Helvetica';
+        this.fontBold = hasCustomFonts ? 'Roboto-Bold' : 'Helvetica-Bold';
 
         const buffers = [];
         doc.on('data', buffers.push.bind(buffers));
@@ -92,27 +118,27 @@ class NitraCarContractPdfService {
         doc.image(this.logoPath, doc.page.margins.left, 30, { width: 120 });
       } catch (e) {
         console.log('📄 [NITRACAR PDF] Could not load logo, using text instead');
-        doc.fontSize(20).font('Helvetica-Bold').text('NITRA CAR', doc.page.margins.left, 40);
+        doc.fontSize(20).font(this.fontBold).text('NITRA CAR', doc.page.margins.left, 40);
       }
     } else {
       // Fallback to text logo
-      doc.fontSize(20).font('Helvetica-Bold').fillColor('#0891B2').text('NITRA CAR', doc.page.margins.left, 40);
+      doc.fontSize(20).font(this.fontBold).fillColor('#0891B2').text('NITRA CAR', doc.page.margins.left, 40);
     }
 
     // Contract number and date on the right (use reservation number)
-    doc.fontSize(10).font('Helvetica').fillColor('black');
+    doc.fontSize(10).font(this.fontRegular).fillColor('black');
     doc.text(`Číslo zmluvy: ${contractData.reservationNumber || contractData.contractNumber || 'N/A'}`, doc.page.width - 200, 40, { width: 160, align: 'right' });
     doc.text(`Dátum: ${this.formatDate(new Date())}`, doc.page.width - 200, 70, { width: 160, align: 'right' });
 
     // Title - single line centered (reset x position to left margin first)
     doc.x = doc.page.margins.left;
     doc.y = 100;
-    doc.fontSize(14).font('Helvetica-Bold').fillColor('black');
+    doc.fontSize(14).font(this.fontBold).fillColor('black');
     doc.text('ZMLUVA O PRENÁJME MOTOROVÉHO VOZIDLA', doc.page.margins.left, doc.y, { width: pageWidth, align: 'center' });
 
     // Sposob uhrady - blank for pen filling
     doc.moveDown(0.5);
-    doc.fontSize(10).font('Helvetica');
+    doc.fontSize(10).font(this.fontRegular);
     doc.text('Spôsob úhrady: _______________________', doc.page.margins.left, doc.y, { width: pageWidth, align: 'center' });
 
     doc.moveDown(1.5);
@@ -128,7 +154,7 @@ class NitraCarContractPdfService {
     const leftCol = doc.page.margins.left;
     const rightCol = doc.page.margins.left + 150;
 
-    doc.fontSize(9).font('Helvetica');
+    doc.fontSize(9).font(this.fontRegular);
 
     this.drawLabelValue(doc, 'Názov spoločnosti:', info.name, leftCol, rightCol);
     this.drawLabelValue(doc, 'Adresa:', `${info.address}, ${info.city}`, leftCol, rightCol);
@@ -151,7 +177,7 @@ class NitraCarContractPdfService {
     const leftCol = doc.page.margins.left;
     const rightCol = doc.page.margins.left + 150;
 
-    doc.fontSize(9).font('Helvetica');
+    doc.fontSize(9).font(this.fontRegular);
 
     const fullName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Neuvedené';
     const address = this.formatAddress(customer.address);
@@ -175,7 +201,7 @@ class NitraCarContractPdfService {
     const leftCol = doc.page.margins.left;
     const rightCol = doc.page.margins.left + 150;
 
-    doc.fontSize(9).font('Helvetica');
+    doc.fontSize(9).font(this.fontRegular);
 
     const vehicleType = `${vehicle.brand || ''} ${vehicle.model || ''}`.trim() || 'Neuvedené';
 
@@ -197,7 +223,7 @@ class NitraCarContractPdfService {
     const leftCol = doc.page.margins.left;
     const rightCol = doc.page.margins.left + 150;
 
-    doc.fontSize(9).font('Helvetica');
+    doc.fontSize(9).font(this.fontRegular);
 
     const startDateTime = this.formatDateTime(rental.startDate);
     const endDateTime = this.formatDateTime(rental.endDate);
@@ -223,7 +249,7 @@ class NitraCarContractPdfService {
     const leftCol = doc.page.margins.left;
     const rightCol = doc.page.margins.left + 200;
 
-    doc.fontSize(9).font('Helvetica');
+    doc.fontSize(9).font(this.fontRegular);
 
     const dailyKmLimit = rentalRules.dailyKmLimit || 200;
     const totalDays = rental.totalDays || 1;
@@ -237,8 +263,8 @@ class NitraCarContractPdfService {
     // Additional services
     if (additionalServices.length > 0) {
       doc.moveDown(0.5);
-      doc.font('Helvetica-Bold').text('Služby a príplatky:', leftCol);
-      doc.font('Helvetica');
+      doc.font(this.fontBold).text('Služby a príplatky:', leftCol);
+      doc.font(this.fontRegular);
 
       additionalServices.forEach(service => {
         const servicePrice = (service.price || 0) * (service.quantity || 1);
@@ -251,9 +277,9 @@ class NitraCarContractPdfService {
     const servicesTotal = additionalServices.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0);
     const totalAmount = (rental.totalAmount || 0);
 
-    doc.font('Helvetica-Bold');
+    doc.font(this.fontBold);
     this.drawLabelValue(doc, 'Spolu k úhrade:', `${this.formatPrice(totalAmount)} EUR`, leftCol, rightCol);
-    doc.font('Helvetica');
+    doc.font(this.fontRegular);
 
     // Deposit info
     if (contractData.deposit) {
@@ -276,12 +302,12 @@ class NitraCarContractPdfService {
     const rightCol = doc.page.margins.left + colWidth + 20;
 
     // Two-column layout
-    doc.fontSize(10).font('Helvetica-Bold');
+    doc.fontSize(10).font(this.fontBold);
     doc.text('Pri prevzatí vozidla:', leftCol, doc.y, { width: colWidth });
     doc.text('Pri vrátení vozidla:', rightCol, doc.y - 12, { width: colWidth });
 
     doc.moveDown(0.5);
-    doc.fontSize(9).font('Helvetica');
+    doc.fontSize(9).font(this.fontRegular);
     const startY = doc.y;
 
     // Left column - Handover (from lessor) - blank for pen filling
@@ -319,7 +345,7 @@ class NitraCarContractPdfService {
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const leftCol = doc.page.margins.left;
 
-    doc.fontSize(9).font('Helvetica');
+    doc.fontSize(9).font(this.fontRegular);
 
     // Draw lines for handwritten notes
     const lineSpacing = 20;
@@ -354,7 +380,7 @@ class NitraCarContractPdfService {
     const y = doc.y;
 
     // Left - Lessor signature
-    doc.fontSize(9).font('Helvetica');
+    doc.fontSize(9).font(this.fontRegular);
     doc.text('Za prenajímateľa:', leftCol, y);
     doc.moveDown(2);
     doc.text('_________________________________', leftCol);
@@ -374,7 +400,7 @@ class NitraCarContractPdfService {
   // Helper methods
 
   drawSectionHeaderLeft(doc, title) {
-    doc.fontSize(11).font('Helvetica-Bold').fillColor('#0891B2');
+    doc.fontSize(11).font(this.fontBold).fillColor('#0891B2');
     doc.text(title, doc.page.margins.left, doc.y, { align: 'left' });
     doc.moveTo(doc.page.margins.left, doc.y)
        .lineTo(doc.page.width - doc.page.margins.right, doc.y)
@@ -387,8 +413,8 @@ class NitraCarContractPdfService {
 
   drawLabelValue(doc, label, value, leftCol, rightCol) {
     const y = doc.y;
-    doc.font('Helvetica-Bold').text(label, leftCol, y, { continued: false });
-    doc.font('Helvetica').text(value || 'Neuvedené', rightCol, y);
+    doc.font(this.fontBold).text(label, leftCol, y, { continued: false });
+    doc.font(this.fontRegular).text(value || 'Neuvedené', rightCol, y);
   }
 
   drawCheckboxItem(doc, label, checked, x, y) {
@@ -398,14 +424,14 @@ class NitraCarContractPdfService {
   }
 
   drawTextItem(doc, label, value, x, y, width) {
-    doc.font('Helvetica-Bold').text(label, x, y, { continued: true, width: width });
-    doc.font('Helvetica').text(` ${value || 'Neuvedené'}`);
+    doc.font(this.fontBold).text(label, x, y, { continued: true, width: width });
+    doc.font(this.fontRegular).text(` ${value || 'Neuvedené'}`);
     return doc.y + 2;
   }
 
   drawBlankTextItem(doc, label, x, y, width) {
-    doc.font('Helvetica-Bold').text(label, x, y, { continued: true, width: width });
-    doc.font('Helvetica').text(' _______________________');
+    doc.font(this.fontBold).text(label, x, y, { continued: true, width: width });
+    doc.font(this.fontRegular).text(' _______________________');
     return doc.y + 8; // Extra space for pen filling
   }
 
