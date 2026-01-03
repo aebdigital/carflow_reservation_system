@@ -104,15 +104,16 @@ class NitraCarContractPdfService {
     doc.text(`Cislo zmluvy: ${contractData.reservationNumber || contractData.contractNumber || 'N/A'}`, doc.page.width - 200, 40, { width: 160, align: 'right' });
     doc.text(`Datum: ${this.formatDate(new Date())}`, doc.page.width - 200, 70, { width: 160, align: 'right' });
 
-    // Title - single line centered
+    // Title - single line centered (reset x position to left margin first)
+    doc.x = doc.page.margins.left;
     doc.y = 100;
     doc.fontSize(14).font('Helvetica-Bold').fillColor('black');
-    doc.text('ZMLUVA O PRENAJME MOTOROVEHO VOZIDLA', { align: 'center' });
+    doc.text('ZMLUVA O PRENAJME MOTOROVEHO VOZIDLA', doc.page.margins.left, doc.y, { width: pageWidth, align: 'center' });
 
     // Sposob uhrady - blank for pen filling
     doc.moveDown(0.5);
     doc.fontSize(10).font('Helvetica');
-    doc.text('Sposob uhrady: _______________________', { align: 'center' });
+    doc.text('Sposob uhrady: _______________________', doc.page.margins.left, doc.y, { width: pageWidth, align: 'center' });
 
     doc.moveDown(1.5);
   }
