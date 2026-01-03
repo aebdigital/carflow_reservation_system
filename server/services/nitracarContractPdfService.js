@@ -159,7 +159,6 @@ class NitraCarContractPdfService {
     this.drawLabelValue(doc, 'Meno / Nazov:', fullName, leftCol, rightCol);
     this.drawLabelValue(doc, 'Bydlisko / Sidlo:', address, leftCol, rightCol);
     this.drawLabelValue(doc, 'Cislo OP / Pas:', customer.idNumber || 'Neuvedene', leftCol, rightCol);
-    this.drawLabelValue(doc, 'Cislo VP:', customer.licenseNumber || 'Neuvedene', leftCol, rightCol);
     this.drawLabelValue(doc, 'Telefon:', customer.phone || 'Neuvedene', leftCol, rightCol);
     this.drawLabelValue(doc, 'E-mail:', customer.email || 'Neuvedene', leftCol, rightCol);
 
@@ -184,7 +183,6 @@ class NitraCarContractPdfService {
     this.drawLabelValue(doc, 'ECV:', vehicle.registrationNumber || 'Neuvedene', leftCol, rightCol);
     this.drawLabelValue(doc, 'VIN:', vehicle.vin || 'Neuvedene', leftCol, rightCol);
     this.drawLabelValue(doc, 'Rok vyroby:', vehicle.year?.toString() || 'Neuvedene', leftCol, rightCol);
-    this.drawLabelValue(doc, 'Farba:', vehicle.color || 'Neuvedene', leftCol, rightCol);
 
     doc.moveDown(1);
   }
@@ -227,8 +225,13 @@ class NitraCarContractPdfService {
 
     doc.fontSize(9).font('Helvetica');
 
+    const dailyKmLimit = rentalRules.dailyKmLimit || 200;
+    const totalDays = rental.totalDays || 1;
+    const totalKmLimit = dailyKmLimit * totalDays;
+
     this.drawLabelValue(doc, 'Denna sadzba:', `${this.formatPrice(rental.dailyRate)} EUR`, leftCol, rightCol);
-    this.drawLabelValue(doc, 'Kilometrovy limit za den:', `${rentalRules.dailyKmLimit || 200} km`, leftCol, rightCol);
+    this.drawLabelValue(doc, 'Kilometrovy limit za den:', `${dailyKmLimit} km`, leftCol, rightCol);
+    this.drawLabelValue(doc, 'Celkovo km:', `${totalKmLimit} km`, leftCol, rightCol);
     this.drawLabelValue(doc, 'Sadzba nad limit:', `${this.formatPrice(rentalRules.excessKmFee || 0.25)} EUR/km`, leftCol, rightCol);
 
     // Additional services
@@ -265,10 +268,8 @@ class NitraCarContractPdfService {
    * Section VI - Preberaci protokol (Handover Protocol)
    */
   generateSection6_PreberaciProtokol(doc, contractData) {
-    this.drawSectionHeader(doc, 'VI. Preberaci protokol');
+    this.drawSectionHeaderLeft(doc, 'VI. Preberaci protokol');
 
-    const handover = contractData.handover || {};
-    const returnData = contractData.return || {};
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const colWidth = (pageWidth - 20) / 2;
     const leftCol = doc.page.margins.left;
@@ -283,30 +284,26 @@ class NitraCarContractPdfService {
     doc.fontSize(9).font('Helvetica');
     const startY = doc.y;
 
-    // Left column - Handover (from lessor)
+    // Left column - Handover (from lessor) - blank for pen filling
     let y = startY;
-    y = this.drawCheckboxItem(doc, 'Osvedcenie o evidencii, biela karta', handover.registrationCard, leftCol, y);
-    y = this.drawCheckboxItem(doc, 'Povinna vybava, rezerva', handover.mandatoryEquipment, leftCol, y);
-    y = this.drawTextItem(doc, 'Poskodenia:', handover.damages || 'Bez poskodenia', leftCol, y, colWidth);
-    y = this.drawTextItem(doc, 'Stav PHM v nadrzi:', this.getFuelLevelText(handover.fuelLevel), leftCol, y, colWidth);
-    y = this.drawTextItem(doc, 'Depozit uhradeny:', this.formatPrice(handover.depositPaid || 0) + ' EUR', leftCol, y, colWidth);
-    y = this.drawTextItem(doc, 'Stav pocitadla v km:', handover.mileage?.toString() || '______', leftCol, y, colWidth);
-    y += 20;
+    y = this.drawBlankTextItem(doc, 'Poskodenia:', leftCol, y, colWidth);
+    y = this.drawBlankTextItem(doc, 'Stav PHM v nadrzi:', leftCol, y, colWidth);
+    y = this.drawBlankTextItem(doc, 'Depozit uhradeny:', leftCol, y, colWidth);
+    y = this.drawBlankTextItem(doc, 'Stav pocitadla v km:', leftCol, y, colWidth);
+    y += 25;
     doc.text('Podpis odovzdavajuceho: ________________', leftCol, y);
-    y += 15;
+    y += 18;
     doc.text('Podpis preberajuceho: ________________', leftCol, y);
 
-    // Right column - Return (from tenant)
+    // Right column - Return (from tenant) - blank for pen filling
     y = startY;
-    y = this.drawCheckboxItem(doc, 'Osvedcenie o evidencii, biela karta', returnData.registrationCard, rightCol, y);
-    y = this.drawCheckboxItem(doc, 'Povinna vybava', returnData.mandatoryEquipment, rightCol, y);
-    y = this.drawTextItem(doc, 'Poskodenia:', returnData.damages || 'Bez poskodenia', rightCol, y, colWidth);
-    y = this.drawTextItem(doc, 'Stav PHM v nadrzi:', this.getFuelLevelText(returnData.fuelLevel), rightCol, y, colWidth);
-    y = this.drawTextItem(doc, 'Depozit vrateny:', this.formatPrice(returnData.depositReturned || 0) + ' EUR', rightCol, y, colWidth);
-    y = this.drawTextItem(doc, 'Stav pocitadla v km:', returnData.mileage?.toString() || '______', rightCol, y, colWidth);
-    y += 20;
+    y = this.drawBlankTextItem(doc, 'Poskodenia:', rightCol, y, colWidth);
+    y = this.drawBlankTextItem(doc, 'Stav PHM v nadrzi:', rightCol, y, colWidth);
+    y = this.drawBlankTextItem(doc, 'Depozit vrateny:', rightCol, y, colWidth);
+    y = this.drawBlankTextItem(doc, 'Stav pocitadla v km:', rightCol, y, colWidth);
+    y += 25;
     doc.text('Podpis odovzdavajuceho: ________________', rightCol, y);
-    y += 15;
+    y += 18;
     doc.text('Podpis preberajuceho: ________________', rightCol, y);
 
     doc.y = Math.max(doc.y, y + 30);
@@ -317,7 +314,7 @@ class NitraCarContractPdfService {
    */
   generateSection7_Podpisy(doc, contractData) {
     doc.moveDown(2);
-    this.drawSectionHeader(doc, 'VII. Podpisy zmluvnych stran');
+    this.drawSectionHeaderLeft(doc, 'VII. Podpisy zmluvnych stran');
 
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const colWidth = pageWidth / 2 - 20;
@@ -343,14 +340,6 @@ class NitraCarContractPdfService {
     // Date and place
     doc.moveDown(2);
     doc.text(`V Nitre, dna ${this.formatDate(new Date())}`, leftCol);
-
-    // Footer
-    doc.moveDown(2);
-    doc.fontSize(8).fillColor('gray');
-    doc.text('Najomca svojim podpisom potvrdzuje, ze sa oboznamil s Vseobecnymi obchodnymi podmienkami prenajmu a suhlasi s nimi.', leftCol, doc.y, {
-      width: pageWidth,
-      align: 'center'
-    });
   }
 
   // Helper methods
@@ -358,6 +347,18 @@ class NitraCarContractPdfService {
   drawSectionHeader(doc, title) {
     doc.fontSize(11).font('Helvetica-Bold').fillColor('#0891B2');
     doc.text(title);
+    doc.moveTo(doc.page.margins.left, doc.y)
+       .lineTo(doc.page.width - doc.page.margins.right, doc.y)
+       .strokeColor('#0891B2')
+       .lineWidth(0.5)
+       .stroke();
+    doc.fillColor('black');
+    doc.moveDown(0.5);
+  }
+
+  drawSectionHeaderLeft(doc, title) {
+    doc.fontSize(11).font('Helvetica-Bold').fillColor('#0891B2');
+    doc.text(title, doc.page.margins.left, doc.y, { align: 'left' });
     doc.moveTo(doc.page.margins.left, doc.y)
        .lineTo(doc.page.width - doc.page.margins.right, doc.y)
        .strokeColor('#0891B2')
@@ -383,6 +384,12 @@ class NitraCarContractPdfService {
     doc.font('Helvetica-Bold').text(label, x, y, { continued: true, width: width });
     doc.font('Helvetica').text(` ${value || 'Neuvedene'}`);
     return doc.y + 2;
+  }
+
+  drawBlankTextItem(doc, label, x, y, width) {
+    doc.font('Helvetica-Bold').text(label, x, y, { continued: true, width: width });
+    doc.font('Helvetica').text(' _______________________');
+    return doc.y + 8; // Extra space for pen filling
   }
 
   formatDate(date) {
