@@ -397,6 +397,7 @@ const generateContractPDF = asyncHandler(async (req, res, next) => {
       // Prepare contract data for NitraCar PDF
       const contractData = {
         contractNumber: contract.contractNumber,
+        reservationNumber: contract.reservation?.reservationNumber,
         customer: {
           firstName: contract.customer?.firstName,
           lastName: contract.customer?.lastName,

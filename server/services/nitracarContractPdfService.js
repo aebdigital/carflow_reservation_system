@@ -67,6 +67,7 @@ class NitraCarContractPdfService {
         // Add page break before handover protocol
         doc.addPage();
         this.generateSection6_PreberaciProtokol(doc, contractData);
+        this.generateSectionNotes(doc, contractData);
         this.generateSection7_Podpisy(doc, contractData);
 
         // Finalize the PDF
@@ -98,9 +99,9 @@ class NitraCarContractPdfService {
       doc.fontSize(20).font('Helvetica-Bold').fillColor('#0891B2').text('NITRA CAR', doc.page.margins.left, 40);
     }
 
-    // Contract number on the right
+    // Contract number on the right (use reservation number)
     doc.fontSize(10).font('Helvetica').fillColor('black');
-    doc.text(`Cislo zmluvy: ${contractData.contractNumber || 'N/A'}`, doc.page.width - 200, 40, { width: 160, align: 'right' });
+    doc.text(`Cislo zmluvy: ${contractData.reservationNumber || contractData.contractNumber || 'N/A'}`, doc.page.width - 200, 40, { width: 160, align: 'right' });
     doc.text(`Datum: ${this.formatDate(new Date())}`, doc.page.width - 200, 55, { width: 160, align: 'right' });
 
     // Title
@@ -122,7 +123,7 @@ class NitraCarContractPdfService {
    * Section I - Prenajimatel (Lessor)
    */
   generateSection1_Prenajimatel(doc) {
-    this.drawSectionHeader(doc, 'I. Prenajimatel');
+    this.drawSectionHeaderLeft(doc, 'I. Prenajimatel');
 
     const info = this.companyInfo;
     const leftCol = doc.page.margins.left;
@@ -145,7 +146,7 @@ class NitraCarContractPdfService {
    * Section II - Najomca (Tenant/Customer)
    */
   generateSection2_Najomca(doc, contractData) {
-    this.drawSectionHeader(doc, 'II. Najomca');
+    this.drawSectionHeaderLeft(doc, 'II. Najomca');
 
     const customer = contractData.customer || {};
     const leftCol = doc.page.margins.left;
@@ -169,7 +170,7 @@ class NitraCarContractPdfService {
    * Section III - Predmet najmu (Vehicle)
    */
   generateSection3_PredmetNajmu(doc, contractData) {
-    this.drawSectionHeader(doc, 'III. Predmet najmu (Udaje o vozidle)');
+    this.drawSectionHeaderLeft(doc, 'III. Predmet najmu (Udaje o vozidle)');
 
     const vehicle = contractData.vehicle || {};
     const leftCol = doc.page.margins.left;
@@ -191,7 +192,7 @@ class NitraCarContractPdfService {
    * Section IV - Doba najmu (Rental Period)
    */
   generateSection4_DobaNajmu(doc, contractData) {
-    this.drawSectionHeader(doc, 'IV. Doba najmu');
+    this.drawSectionHeaderLeft(doc, 'IV. Doba najmu');
 
     const rental = contractData.rental || {};
     const leftCol = doc.page.margins.left;
@@ -215,7 +216,7 @@ class NitraCarContractPdfService {
    * Section V - Najomne (Rental Fee)
    */
   generateSection5_Najomne(doc, contractData) {
-    this.drawSectionHeader(doc, 'V. Najomne');
+    this.drawSectionHeaderLeft(doc, 'V. Najomne');
 
     const rental = contractData.rental || {};
     const rentalRules = contractData.rentalRules || {};
@@ -310,10 +311,39 @@ class NitraCarContractPdfService {
   }
 
   /**
+   * Notes Section - Poznamky
+   */
+  generateSectionNotes(doc, contractData) {
+    doc.moveDown(1.5);
+    this.drawSectionHeaderLeft(doc, 'Poznamky');
+
+    const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const leftCol = doc.page.margins.left;
+
+    doc.fontSize(9).font('Helvetica');
+
+    // Draw lines for handwritten notes
+    const lineSpacing = 20;
+    const numLines = 4;
+    let y = doc.y + 5;
+
+    for (let i = 0; i < numLines; i++) {
+      doc.moveTo(leftCol, y)
+         .lineTo(leftCol + pageWidth, y)
+         .strokeColor('#cccccc')
+         .lineWidth(0.5)
+         .stroke();
+      y += lineSpacing;
+    }
+
+    doc.y = y + 10;
+  }
+
+  /**
    * Section VII - Podpisy (Signatures)
    */
   generateSection7_Podpisy(doc, contractData) {
-    doc.moveDown(2);
+    doc.moveDown(1);
     this.drawSectionHeaderLeft(doc, 'VII. Podpisy zmluvnych stran');
 
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
@@ -343,18 +373,6 @@ class NitraCarContractPdfService {
   }
 
   // Helper methods
-
-  drawSectionHeader(doc, title) {
-    doc.fontSize(11).font('Helvetica-Bold').fillColor('#0891B2');
-    doc.text(title);
-    doc.moveTo(doc.page.margins.left, doc.y)
-       .lineTo(doc.page.width - doc.page.margins.right, doc.y)
-       .strokeColor('#0891B2')
-       .lineWidth(0.5)
-       .stroke();
-    doc.fillColor('black');
-    doc.moveDown(0.5);
-  }
 
   drawSectionHeaderLeft(doc, title) {
     doc.fontSize(11).font('Helvetica-Bold').fillColor('#0891B2');
