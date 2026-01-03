@@ -13,6 +13,9 @@ class NitraCarContractPdfService {
     // NitraCar logo path (from email templates)
     this.logoPath = path.join(__dirname, '../templates_nitracar/email/nitracarlogo.png');
 
+    // QR code for terms and conditions
+    this.qrCodePath = path.join(__dirname, '../templates_nitracar/email/qr_nitracar.png');
+
     // Font paths for Slovak diacritics support
     this.fontPath = path.join(__dirname, '../fonts/Roboto-Regular.ttf');
     this.fontBoldPath = path.join(__dirname, '../fonts/Roboto-Bold.ttf');
@@ -95,6 +98,7 @@ class NitraCarContractPdfService {
         this.generateSection6_PreberaciProtokol(doc, contractData);
         this.generateSectionNotes(doc, contractData);
         this.generateSection7_Podpisy(doc, contractData);
+        this.generateTermsAcceptance(doc);
 
         // Finalize the PDF
         doc.end();
@@ -395,6 +399,38 @@ class NitraCarContractPdfService {
     // Date and place
     doc.moveDown(2);
     doc.text(`V Nitre, dňa ${this.formatDate(new Date())}`, leftCol);
+  }
+
+  /**
+   * Terms acceptance section with QR code
+   */
+  generateTermsAcceptance(doc) {
+    const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const leftCol = doc.page.margins.left;
+
+    doc.moveDown(2);
+
+    // Add QR code if available
+    if (fs.existsSync(this.qrCodePath)) {
+      try {
+        // Center the QR code
+        const qrSize = 80;
+        const qrX = leftCol + (pageWidth - qrSize) / 2;
+        doc.image(this.qrCodePath, qrX, doc.y, { width: qrSize });
+        doc.y += qrSize + 10;
+      } catch (e) {
+        console.log('📄 [NITRACAR PDF] Could not load QR code:', e.message);
+      }
+    }
+
+    // Terms acceptance text
+    doc.fontSize(8).font(this.fontRegular).fillColor('#666666');
+    doc.text(
+      'Svojím podpisom nájomca potvrdzuje, že sa oboznámil s Podmienkami nájmu (dostupné po naskenovaní QR kódu) a súhlasí s nimi.',
+      leftCol,
+      doc.y,
+      { width: pageWidth, align: 'center' }
+    );
   }
 
   // Helper methods
