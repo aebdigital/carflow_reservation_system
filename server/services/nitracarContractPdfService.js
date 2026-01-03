@@ -9,8 +9,8 @@ const fs = require('fs');
 
 class NitraCarContractPdfService {
   constructor() {
-    // NitraCar logo path
-    this.logoPath = path.join(__dirname, '../templates_nitracar/nitracar-logo.png');
+    // NitraCar logo path (from email templates)
+    this.logoPath = path.join(__dirname, '../templates_nitracar/email/nitracarlogo.png');
 
     // Company details (static)
     this.companyInfo = {
