@@ -1250,6 +1250,9 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
             reservation._id.toString().slice(-8);
           const variableSymbol = reservationDigits; // Use reservation number as-is
           
+          // Get tenant config for bank details
+          const tenantConfig = bySquareService.getTenantConfig(tenantEmail);
+
           // Update reservation with QR codes
           reservation.qrCodes = {
             payBySquareRental: qrResult.qrCodes.payBySquareRental,
@@ -1257,12 +1260,12 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
             generatedAt: new Date(),
             lastUpdated: new Date(),
             isActive: true,
-            bankAccount: 'SK1234567890123456789012',
+            bankAccount: tenantConfig.bankAccount,
             variableSymbol: variableSymbol,
-            constantSymbol: '0308',
+            constantSymbol: tenantConfig.constantSymbol || '0308',
             specificSymbol: '',
             amount: totalAmount,
-            beneficiaryName: 'CarFlow Rental',
+            beneficiaryName: tenantConfig.beneficiaryName,
             paymentNote: `Car rental + deposit: ${car.brand} ${car.model} (${start.toISOString().split('T')[0]} - ${end.toISOString().split('T')[0]})`
           };
           
@@ -2133,6 +2136,9 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
             reservation._id.toString().slice(-8);
           const variableSymbol = reservationDigits; // Use reservation number as-is
           
+          // Get tenant config for bank details
+          const tenantConfig = bySquareService.getTenantConfig(tenantEmail);
+
           // Update reservation with QR codes
           reservation.qrCodes = {
             payBySquareRental: qrResult.qrCodes.payBySquareRental,
@@ -2140,12 +2146,12 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
             generatedAt: new Date(),
             lastUpdated: new Date(),
             isActive: true,
-            bankAccount: 'SK1234567890123456789012',
+            bankAccount: tenantConfig.bankAccount,
             variableSymbol: variableSymbol,
-            constantSymbol: '0308',
+            constantSymbol: tenantConfig.constantSymbol || '0308',
             specificSymbol: '',
             amount: totalAmount,
-            beneficiaryName: 'CarFlow Rental',
+            beneficiaryName: tenantConfig.beneficiaryName,
             paymentNote: `Car rental + deposit: ${car.brand} ${car.model} (${start.toISOString().split('T')[0]} - ${end.toISOString().split('T')[0]})`
           };
           

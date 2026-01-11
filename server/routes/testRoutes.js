@@ -159,6 +159,9 @@ router.post('/regenerate-qr/:reservationId', async (req, res) => {
         reservation._id.toString().slice(-8);
       const variableSymbol = reservationDigits.slice(-10).padStart(10, '0');
       
+      // Get tenant config for bank details (use default/Rival config for test route)
+      const tenantConfig = bySquareService.getTenantConfig(null);
+
       // Update reservation with QR codes - use new separate structure
       reservation.qrCodes = {
         payBySquareRental: qrResult.qrCodes.payBySquareRental,
@@ -166,12 +169,12 @@ router.post('/regenerate-qr/:reservationId', async (req, res) => {
         generatedAt: new Date(),
         lastUpdated: new Date(),
         isActive: true,
-        bankAccount: 'SK1234567890123456789012',
+        bankAccount: tenantConfig.bankAccount,
         variableSymbol: variableSymbol,
-        constantSymbol: '0308',
+        constantSymbol: tenantConfig.constantSymbol || '0308',
         specificSymbol: '',
         amount: totalAmount,
-        beneficiaryName: 'CarFlow Rental',
+        beneficiaryName: tenantConfig.beneficiaryName,
         paymentNote: `Car rental + deposit: ${reservation.car.brand} ${reservation.car.model}`
       };
       
