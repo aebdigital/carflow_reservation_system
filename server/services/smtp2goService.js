@@ -591,25 +591,39 @@ class SMTP2GOService {
         const depositQRCode = qrCodes.payBySquareDeposit;
         
         if (rentalQRCode) {
-          templateVariables.qr_section_display = 'block';
-          templateVariables.qr_rental_display = 'block';
-          templateVariables.rental_amount = rentalAmount.toFixed(2);
-          templateVariables.qr_rental_url = await bySquareService.generateQRImageUrl(rentalQRCode, 'png', 300);
+          const rentalQRImageUrl = await bySquareService.generateQRImageUrl(rentalQRCode, 'png', 300);
 
-          const baseVariableSymbol = qrCodes.variableSymbol || rawReservation.reservationNumber?.replace(/[^0-9]/g, '')?.slice(-9)?.padStart(9, '0') || '000000000';
-          templateVariables.variable_symbol = baseVariableSymbol.slice(0, -1) + '1';
-          templateVariables.bank_account = qrCodes.bankAccount || 'SK6807200000000000000000';
-          templateVariables.total_amount = (rentalAmount + depositAmount).toFixed(2);
+          if (rentalQRImageUrl) {
+            templateVariables.qr_section_display = 'block';
+            templateVariables.qr_rental_display = 'block';
+            templateVariables.rental_amount = rentalAmount.toFixed(2);
+            templateVariables.qr_rental_url = rentalQRImageUrl;
 
-          console.log('✅ [EMAIL] Added rental QR code data');
+            const baseVariableSymbol = qrCodes.variableSymbol || rawReservation.reservationNumber?.replace(/[^0-9]/g, '')?.slice(-9)?.padStart(9, '0') || '000000000';
+            templateVariables.variable_symbol = baseVariableSymbol.slice(0, -1) + '1';
+            templateVariables.bank_account = qrCodes.bankAccount || 'SK6807200000000000000000';
+            templateVariables.total_amount = (rentalAmount + depositAmount).toFixed(2);
+
+            console.log('✅ [EMAIL] Added rental QR code data, URL length:', rentalQRImageUrl.length);
+          } else {
+            console.warn('⚠️ [EMAIL] Failed to generate rental QR image URL');
+            templateVariables.qr_rental_display = 'none';
+          }
         }
 
         if (depositQRCode && depositAmount > 0) {
-          templateVariables.qr_deposit_display = 'block';
-          templateVariables.deposit_amount = depositAmount.toFixed(2);
-          templateVariables.qr_deposit_url = await bySquareService.generateQRImageUrl(depositQRCode, 'png', 300);
+          const depositQRImageUrl = await bySquareService.generateQRImageUrl(depositQRCode, 'png', 300);
 
-          console.log('✅ [EMAIL] Added deposit QR code data');
+          if (depositQRImageUrl) {
+            templateVariables.qr_deposit_display = 'block';
+            templateVariables.deposit_amount = depositAmount.toFixed(2);
+            templateVariables.qr_deposit_url = depositQRImageUrl;
+
+            console.log('✅ [EMAIL] Added deposit QR code data, URL length:', depositQRImageUrl.length);
+          } else {
+            console.warn('⚠️ [EMAIL] Failed to generate deposit QR image URL');
+            templateVariables.qr_deposit_display = 'none';
+          }
         } else {
           templateVariables.qr_deposit_display = 'none';
         }

@@ -883,8 +883,17 @@ class BySquareService {
    */
   async generateQRImageUrl(qrCode, format = 'png', size = 300) {
     try {
+      // Validate input
+      if (!qrCode || typeof qrCode !== 'string' || qrCode.trim() === '') {
+        console.error('❌ [QR IMAGE] Invalid or empty QR code data provided');
+        return null;
+      }
+
+      console.log('🔄 [QR IMAGE] Generating QR image for data length:', qrCode.length);
+
       // If QR code is already a data URL (base64 image), return it directly
-      if (qrCode && qrCode.startsWith('data:image/')) {
+      if (qrCode.startsWith('data:image/')) {
+        console.log('✅ [QR IMAGE] Already a data URL, returning as-is');
         return qrCode;
       }
 
@@ -895,12 +904,22 @@ class BySquareService {
         errorCorrectionLevel: 'M'
       });
 
+      console.log('✅ [QR IMAGE] Generated base64 QR image, length:', qrDataUrl.length);
       return qrDataUrl;
     } catch (error) {
       console.error('❌ [QR IMAGE] Error generating QR code image:', error.message);
+      console.error('❌ [QR IMAGE] QR code data (first 50 chars):', qrCode?.substring(0, 50));
+
       // Fallback to external service
-      const encodedData = encodeURIComponent(qrCode);
-      return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodedData}&format=${format}`;
+      try {
+        const encodedData = encodeURIComponent(qrCode);
+        const fallbackUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodedData}&format=${format}`;
+        console.log('🔄 [QR IMAGE] Using fallback external QR service');
+        return fallbackUrl;
+      } catch (fallbackError) {
+        console.error('❌ [QR IMAGE] Fallback also failed:', fallbackError.message);
+        return null;
+      }
     }
   }
 }
