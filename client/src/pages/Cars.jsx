@@ -1180,23 +1180,41 @@ function Cars() {
     }
   }
 
-  // Check if STK+EK is expiring within 30 days (for Rival only)
-  const isStkExpiringSoon = (car) => {
+  // Check if any document (STK, EK, highway sticker) is expiring within 30 days (for Rival only)
+  const getExpiringDocuments = (car) => {
     const isRival = user?.email?.toLowerCase() === 'rival@test.sk';
-    if (!isRival) return false;
+    if (!isRival) return { hasExpiring: false, documents: [] };
 
-    const stkDate = car.documentValidity?.technicalInspection?.expiryDate;
-    if (!stkDate) return false;
-
-    const expiryDate = new Date(stkDate);
     const today = new Date();
-    const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+    const expiringDocs = [];
 
-    return daysUntilExpiry <= 30 && daysUntilExpiry >= 0;
+    const checkExpiry = (date, docName) => {
+      if (!date) return;
+      const expiryDate = new Date(date);
+      const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+      if (daysUntilExpiry <= 30) {
+        expiringDocs.push({
+          name: docName,
+          days: daysUntilExpiry,
+          expired: daysUntilExpiry < 0
+        });
+      }
+    };
+
+    // Check all three document types
+    checkExpiry(car.documentValidity?.technicalInspection?.expiryDate, 'STK');
+    checkExpiry(car.documentValidity?.emissionInspection?.expiryDate, 'EK');
+    checkExpiry(car.documentValidity?.highwayTollSticker?.expiryDate, 'Dialnicna znamka');
+
+    return {
+      hasExpiring: expiringDocs.length > 0,
+      documents: expiringDocs
+    };
   };
 
   const renderCarCard = (car) => {
-    const hasExpiringStkEk = isStkExpiringSoon(car);
+    const expiringInfo = getExpiringDocuments(car);
+    const hasExpiringStkEk = expiringInfo.hasExpiring;
 
     return (
       <Grid item xs={12} sm={6} md={4} lg={3} xl={3} key={car._id}>
@@ -1233,20 +1251,38 @@ function Cars() {
           {/* Header section - Fixed height */}
           <Box sx={{ height: 45, mb: 0.8 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 0.5 }}>
-              <Typography 
-                variant="body2" 
-                component="div" 
-                sx={{ 
-                  fontWeight: 600,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  maxWidth: '65%',
-                  fontSize: '0.95rem'
-                }}
-              >
-                {car.brand} {car.model}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, maxWidth: '65%' }}>
+                <Typography
+                  variant="body2"
+                  component="div"
+                  sx={{
+                    fontWeight: 600,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontSize: '0.95rem'
+                  }}
+                >
+                  {car.brand} {car.model}
+                </Typography>
+                {hasExpiringStkEk && (
+                  <Tooltip
+                    title={
+                      <Box>
+                        <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Expiruje do 30 dni:</Typography>
+                        {expiringInfo.documents.map((doc, idx) => (
+                          <Typography key={idx} variant="caption" component="div">
+                            {doc.name}: {doc.expired ? 'EXPIROVANE!' : `${doc.days} dni`}
+                          </Typography>
+                        ))}
+                      </Box>
+                    }
+                    arrow
+                  >
+                    <span style={{ cursor: 'help', fontSize: '16px' }}>⚠️</span>
+                  </Tooltip>
+                )}
+              </Box>
               <Chip
                 label={getStatusText(car.status)}
                 size="small"

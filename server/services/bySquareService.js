@@ -14,7 +14,7 @@ class BySquareService {
     this.serviceUserId = process.env.BYSQUARE_SERVICE_USER_ID || '';
 
     // Configurable bank details (Rival)
-    this.bankAccount = process.env.BYSQUARE_BANK_ACCOUNT || 'SK0483300000002202227202';
+    this.bankAccount = process.env.BYSQUARE_BANK_ACCOUNT || 'SK5783300000002303340503';
     this.bankBIC = process.env.BYSQUARE_BANK_BIC || 'FIOZSKBAXXX';
     this.constantSymbol = process.env.BYSQUARE_CONSTANT_SYMBOL || '0308';
     this.beneficiaryName = process.env.BYSQUARE_BENEFICIARY_NAME || 'Rival Slovakia s.r.o.';

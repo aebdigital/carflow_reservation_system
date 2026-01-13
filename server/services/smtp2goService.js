@@ -331,34 +331,22 @@ class SMTP2GOService {
   // Helper method to sanitize HTML content for JSON
   sanitizeHtmlForJson(html) {
     if (!html) return '';
-    
+
     // Clean up the HTML content and ensure proper encoding for SMTP2GO
+    // IMPORTANT: Preserve newlines to maintain HTML structure for email clients
     return html
       .replace(/\r\n/g, '\n')  // Normalize line endings
       .replace(/\r/g, '\n')    // Convert remaining \r to \n
       .replace(/\u2028/g, '\n') // Replace line separator
       .replace(/\u2029/g, '\n') // Replace paragraph separator
-      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, (char) => {
+        // Preserve newlines and tabs, remove other control characters
+        if (char === '\n' || char === '\t') return char;
+        return '';
+      })
       .replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '') // Remove emojis from HTML too
       .replace(/€/g, 'EUR')     // Replace € symbol with EUR to avoid encoding issues
-      // TESTING: Slovak special characters enabled with UTF-8 encoding
-      // .replace(/á/g, 'a').replace(/Á/g, 'A')
-      // .replace(/č/g, 'c').replace(/Č/g, 'C')
-      // .replace(/ď/g, 'd').replace(/Ď/g, 'D')
-      // .replace(/é/g, 'e').replace(/É/g, 'E')
-      // .replace(/í/g, 'i').replace(/Í/g, 'I')
-      // .replace(/ľ/g, 'l').replace(/Ľ/g, 'L')
-      // .replace(/ĺ/g, 'l').replace(/Ĺ/g, 'L')
-      // .replace(/ň/g, 'n').replace(/Ň/g, 'N')
-      // .replace(/ó/g, 'o').replace(/Ó/g, 'O')
-      // .replace(/ô/g, 'o').replace(/Ô/g, 'O')
-      // .replace(/ŕ/g, 'r').replace(/Ŕ/g, 'R')
-      // .replace(/š/g, 's').replace(/Š/g, 'S')
-      // .replace(/ť/g, 't').replace(/Ť/g, 'T')
-      // .replace(/ú/g, 'u').replace(/Ú/g, 'U')
-      // .replace(/ý/g, 'y').replace(/Ý/g, 'Y')
-      // .replace(/ž/g, 'z').replace(/Ž/g, 'Z')
-      .replace(/\s+/g, ' ') // Normalize multiple spaces
+      .replace(/[ \t]+/g, ' ') // Normalize multiple spaces/tabs within lines (preserve newlines)
       .trim();
   }
 
