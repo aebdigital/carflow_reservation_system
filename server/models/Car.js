@@ -204,6 +204,10 @@ const carSchema = new mongoose.Schema({
       '21-29days': Number,
       '30-60days': Number,
       '60plus': String, // "dohoda - volať/písať mail" (LeRent only)
+      // NitraCar pricing structure
+      '4-9days': Number,
+      '10-25days': Number,
+      '26plus': Number,
       // Legacy structure for other tenants
       '1day': Number,
       '11-17days': Number,
@@ -657,6 +661,11 @@ carSchema.methods.calculateRate = function(days) {
   if (days >= 11 && days <= 20 && rates['11-20days']) return rates['11-20days'] * days;
   if (days >= 21 && days <= 29 && rates['21-29days']) return rates['21-29days'] * days;
   if (days >= 30 && days <= 60 && rates['30-60days']) return rates['30-60days'] * days;
+
+  // NitraCar pricing structure
+  if (days >= 4 && days <= 9 && rates['4-9days']) return rates['4-9days'] * days;
+  if (days >= 10 && days <= 25 && rates['10-25days']) return rates['10-25days'] * days;
+  if (days >= 26 && rates['26plus']) return rates['26plus'] * days;
 
   // Legacy structure for other tenants
   if (days === 1 && rates['1day']) return rates['1day'];
