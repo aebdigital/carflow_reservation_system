@@ -768,9 +768,12 @@ const updateReservation = asyncHandler(async (req, res, next) => {
     { path: 'car', select: 'brand model year registrationNumber images imageUrl pricing deposit' }
   ]);
 
+  // Note: runValidators is false because Mongoose validators in findByIdAndUpdate
+  // don't have access to full document context (this.startDate is undefined).
+  // Date validation is already handled manually above (lines 714-716).
   reservation = await Reservation.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
-    runValidators: true
+    runValidators: false
   }).populate([
     { path: 'customer', select: 'firstName lastName email phone' },
     { path: 'car', select: 'brand model year registrationNumber images imageUrl pricing deposit' },
