@@ -1098,6 +1098,110 @@ class SMTP2GOService {
     return emailResult;
   }
 
+  // Customer deposit payment email (NitraCar only)
+  async sendCustomerDepositEmail(to, reservationData, user = null, rawReservation = null) {
+    console.log('📧 [SMTP2GO] sendCustomerDepositEmail called for:', to);
+
+    const emailTemplateService = require('./emailTemplateService');
+
+    // Get tenant-specific email configuration to determine template folder
+    const emailConfig = this.getTenantEmailConfig(user);
+    const senderEmail = emailConfig.emailFrom;
+
+    // Check if this is NitraCar tenant
+    const isNitraCar = senderEmail && (senderEmail.includes('nitra-car') || senderEmail.includes('nitracar'));
+    if (!isNitraCar) {
+      console.warn('⚠️ [EMAIL] Deposit email only available for NitraCar tenant');
+      return { success: false, error: 'Deposit email only available for NitraCar tenant' };
+    }
+
+    // Prepare template variables from actual backend data structure
+    const startDate = rawReservation?.startDate || reservationData.startDate;
+    const endDate = rawReservation?.endDate || reservationData.endDate;
+
+    const templateVariables = {
+      customer_name: reservationData.customerName || '',
+      car_brand: reservationData.carInfo?.split(' ')[0] || rawReservation?.car?.brand || '',
+      car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || rawReservation?.car?.model || reservationData.carInfo || '',
+      car_image: this.getCarImageUrl(reservationData, rawReservation),
+      start_date: startDate ? new Date(startDate).toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' }) : '',
+      end_date: endDate ? new Date(endDate).toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' }) : '',
+      start_time: startDate ? new Date(startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bratislava' }) : '',
+      end_time: endDate ? new Date(endDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bratislava' }) : '',
+      pickup_location: rawReservation?.pickupLocation?.name || reservationData.pickupLocation || 'Miesto vyzdvihnutia',
+      dropoff_location: rawReservation?.dropoffLocation?.name || reservationData.dropoffLocation || rawReservation?.pickupLocation?.name || reservationData.pickupLocation || 'Miesto vrátenia',
+      company_name: user?.businessName || user?.companyName || 'NITRA-CAR',
+      company_email: emailConfig.emailFrom,
+      company_phone: user?.phoneNumber || user?.phone || '+421 XXX XXX XXX',
+      instagram_url: 'https://www.instagram.com/nitracar/',
+      facebook_url: 'https://www.facebook.com/nitracar/',
+      current_year: new Date().getFullYear()
+    };
+
+    // Generate Stripe payment link for deposit
+    try {
+      const Settings = require('../models/Settings');
+      const stripeConfig = await Settings.getStripeConfig(user.tenantId);
+
+      if (stripeConfig && stripeConfig.secretKey) {
+        const stripe = require('stripe')(stripeConfig.secretKey);
+
+        // Get deposit amount from car or use default
+        const depositAmount = rawReservation?.car?.pricing?.deposit || rawReservation?.car?.deposit || reservationData.deposit || 500;
+        const depositInCents = Math.round(depositAmount * 100);
+
+        // Create a Stripe Payment Link for deposit
+        const paymentLink = await stripe.paymentLinks.create({
+          line_items: [
+            {
+              price_data: {
+                currency: 'eur',
+                product_data: {
+                  name: 'Depozit',
+                  description: `Rezervácia #${reservationData.reservationNumber || rawReservation?.reservationNumber || 'N/A'} - ${templateVariables.car_brand} ${templateVariables.car_model}`,
+                },
+                unit_amount: depositInCents,
+              },
+              quantity: 1,
+            },
+          ],
+          after_completion: {
+            type: 'hosted_confirmation',
+            hosted_confirmation: {
+              custom_message: 'Ďakujeme za úhradu depozitu!',
+            },
+          },
+        });
+
+        templateVariables.stripe_payment_url = paymentLink.url;
+        templateVariables.stripe_payment_amount = `${depositAmount}€`;
+        console.log('✅ [STRIPE] Deposit payment link created:', paymentLink.url);
+      } else {
+        console.error('❌ [STRIPE] No Stripe configuration found for nitra-car tenant');
+        return { success: false, error: 'Stripe not configured' };
+      }
+    } catch (error) {
+      console.error('❌ [STRIPE] Error creating deposit payment link:', error);
+      return { success: false, error: 'Failed to create Stripe payment link' };
+    }
+
+    // Get language from reservation for NitraCar (defaults to 'sk')
+    const language = rawReservation?.websiteLanguage || 'sk';
+    console.log('📧 [EMAIL] Deposit email language:', language);
+
+    // Get processed email template with sender-specific template folder
+    const emailData = await this.safeLoadEmailTemplate('reservation-deposit', templateVariables, senderEmail, language);
+    if (!emailData) {
+      console.warn('⚠️ [EMAIL] Skipping deposit email - template not found');
+      return { success: false, skipped: true, reason: 'Deposit template not found' };
+    }
+
+    // Set subject based on language
+    const subject = language === 'en' ? '💳 Deposit Payment' : '💳 Platba depozitu';
+
+    return this.sendEmail(to, subject, emailData.html, null, user);
+  }
+
   // Customer notification when admin edits reservation
   async sendCustomerReservationEdited(to, reservationData, user = null, rawReservation = null) {
     const emailTemplateService = require('./emailTemplateService');

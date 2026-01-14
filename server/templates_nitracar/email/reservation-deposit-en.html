@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="sk">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rezervácia potvrdená - NITRA-CAR</title>
+    <title>Deposit Payment - NITRA-CAR</title>
     <style>
         @media only screen and (max-width: 600px) {
             .main-table {
@@ -57,7 +57,7 @@
         <!-- Title -->
         <tr>
             <td style="padding: 30px 20px 20px 20px; text-align: center;">
-                <h2 style="color: #666666; font-size: 24px; font-weight: bold; margin: 0;">REZERVÁCIA POTVRDENÁ</h2>
+                <h2 style="color: #666666; font-size: 24px; font-weight: bold; margin: 0;">DEPOSIT PAYMENT</h2>
             </td>
         </tr>
 
@@ -75,7 +75,7 @@
         <tr>
             <td style="padding: 0 20px 20px 20px; text-align: center;">
                 <p style="color: #666666; font-size: 16px; margin: 0;">
-                    Dobrý deň <strong style="color: #22D3EE;">{{customer_name}}</strong>, Vaša rezervácia je <strong>potvrdená</strong>.
+                    Dear <strong style="color: #22D3EE;">{{customer_name}}</strong>, please pay the deposit for your reservation.
                 </p>
             </td>
         </tr>
@@ -90,7 +90,7 @@
                             <table style="width: 100%; border-collapse: collapse;">
                                 <tr>
                                     <td class="section-left" style="width: 30%; text-align: left; vertical-align: middle; padding-right: 20px;">
-                                        <h4 style="color: #22D3EE; font-size: 24px; font-weight: bold; margin: 0;">ZAČIATOK</h4>
+                                        <h4 style="color: #22D3EE; font-size: 24px; font-weight: bold; margin: 0;">START</h4>
                                     </td>
                                     <td class="section-right" style="width: 70%; text-align: left;">
                                         <table style="width: 100%; border-collapse: collapse;">
@@ -131,7 +131,7 @@
                             <table style="width: 100%; border-collapse: collapse;">
                                 <tr>
                                     <td class="section-left" style="width: 30%; text-align: left; vertical-align: middle; padding-right: 20px;">
-                                        <h4 style="color: #ff4444; font-size: 24px; font-weight: bold; margin: 0;">KONIEC</h4>
+                                        <h4 style="color: #ff4444; font-size: 24px; font-weight: bold; margin: 0;">END</h4>
                                     </td>
                                     <td class="section-right" style="width: 70%; text-align: left;">
                                         <table style="width: 100%; border-collapse: collapse;">
@@ -169,20 +169,36 @@
             </td>
         </tr>
 
+        <!-- Stripe Payment Button -->
+        <tr>
+            <td style="padding: 20px; text-align: center;">
+                <table style="width: 100%; max-width: 500px; margin: 0 auto; background: linear-gradient(135deg, #22D3EE 0%, #1BA3C3 100%); border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                    <tr>
+                        <td style="padding: 25px; text-align: center;">
+                            <h3 style="color: #ffffff; font-size: 20px; font-weight: bold; margin: 0 0 10px 0;">💳 Deposit</h3>
+                            <p style="color: #ffffff; font-size: 16px; margin: 0 0 20px 0;">
+                                Please pay the deposit of <strong style="font-size: 24px;">{{stripe_payment_amount}}</strong>
+                            </p>
+                            <a href="{{stripe_payment_url}}" target="_blank" style="display: inline-block; padding: 15px 40px; background-color: #ffffff; color: #22D3EE; text-decoration: none; font-size: 18px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); transition: all 0.3s ease;">
+                                Pay Now
+                            </a>
+                            <p style="color: #ffffff; font-size: 12px; margin: 15px 0 0 0; opacity: 0.9;">
+                                Secure payment via Stripe
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
         <!-- Important Information -->
         <tr>
             <td style="padding: 20px; text-align: center;">
                 <p style="color: #666666; font-size: 16px; margin: 0 0 10px 0;">
-                    Pri prevzatí vozidla bude potrebný <strong>Občiansky</strong> a <strong>Vodičšký</strong> preukaz. Nezabudnite vratný depozit <strong style="color: #ff4444;">{{deposit_amount}}</strong> (ak nebol uhradený dopredu). Ďakujeme
+                    The deposit will be refunded after the rental ends and the vehicle is returned in its original condition.
                 </p>
-            </td>
-        </tr>
-
-        <!-- Contact Info -->
-        <tr>
-            <td style="padding: 20px; text-align: center;">
                 <p style="color: #666666; font-size: 14px; margin: 0;">
-                    V prípade otázok nás neváhajte kontaktovať.
+                    If you have any questions, please don't hesitate to contact us.
                 </p>
             </td>
         </tr>
@@ -212,8 +228,8 @@
 
                 <hr style="border: 1px solid white; margin: 15px 0;">
 
-                <p style="color: white; font-size: 16px; font-weight: bold; margin: 0; letter-spacing: 1px;">AUTO/MOTOPOŽIČOVŇA NITRA-CAR</p>
-                <p style="color: white; font-size: 12px; margin: 5px 0 0 0;">© {{current_year}} NITRA-CAR. Všetky práva vyhradené.</p>
+                <p style="color: white; font-size: 16px; font-weight: bold; margin: 0; letter-spacing: 1px;">CAR/MOTORCYCLE RENTAL NITRA-CAR</p>
+                <p style="color: white; font-size: 12px; margin: 5px 0 0 0;">© {{current_year}} NITRA-CAR. All rights reserved.</p>
             </td>
         </tr>
     </table>

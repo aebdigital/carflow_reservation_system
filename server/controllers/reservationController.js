@@ -2340,6 +2340,59 @@ const downloadInvoicePdf = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Send deposit email (NitraCar only)
+// @route   POST /api/reservations/:id/send-deposit-email
+// @access  Private/Admin
+const sendDepositEmail = asyncHandler(async (req, res, next) => {
+  const reservation = await Reservation.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  }).populate([
+    { path: 'customer', select: 'firstName lastName email phone' },
+    { path: 'car', select: 'brand model year registrationNumber images imageUrl pricing deposit' }
+  ]);
+
+  if (!reservation) {
+    return next(new AppError('Reservation not found', 404));
+  }
+
+  // Check if customer has email
+  if (!reservation.customer || !reservation.customer.email) {
+    return next(new AppError('Customer email not found', 400));
+  }
+
+  try {
+    const emailService = require('../services/emailService');
+    const emailHelpers = require('../utils/emailHelpers');
+
+    // Prepare reservation data using existing helper
+    const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
+
+    // Send deposit email
+    const result = await emailService.sendCustomerDepositEmail(
+      reservation.customer.email,
+      emailData,
+      req.user,
+      reservation
+    );
+
+    if (result.success === false) {
+      return next(new AppError(result.error || 'Failed to send deposit email', 500));
+    }
+
+    console.log('✅ [EMAIL] Deposit email sent to:', reservation.customer.email);
+
+    res.status(200).json({
+      success: true,
+      message: 'Deposit email sent successfully',
+      data: { email: reservation.customer.email }
+    });
+  } catch (error) {
+    console.error('❌ [EMAIL] Failed to send deposit email:', error.message);
+    return next(new AppError(`Failed to send deposit email: ${error.message}`, 500));
+  }
+});
+
 module.exports = {
   getReservations,
   getReservation,
@@ -2357,5 +2410,6 @@ module.exports = {
   confirmPayment,
   sendPaymentNotification,
   createInvoice,
-  downloadInvoicePdf
+  downloadInvoicePdf,
+  sendDepositEmail
 }; 

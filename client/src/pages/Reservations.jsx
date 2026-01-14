@@ -68,6 +68,7 @@ import {
   useConfirmReservationMutation,
   useConfirmReservationPaymentMutation,
   useSendPaymentNotificationMutation,
+  useSendDepositEmailMutation,
   useCreateInvoiceMutation,
   useCheckInReservationMutation,
   useCheckOutReservationMutation,
@@ -333,6 +334,7 @@ function Reservations() {
   const [confirmReservation] = useConfirmReservationMutation()
   const [confirmReservationPayment] = useConfirmReservationPaymentMutation()
   const [sendPaymentNotification] = useSendPaymentNotificationMutation()
+  const [sendDepositEmail] = useSendDepositEmailMutation()
   const [createInvoice] = useCreateInvoiceMutation()
   const [checkInReservation] = useCheckInReservationMutation()
   const [checkOutReservation] = useCheckOutReservationMutation()
@@ -806,6 +808,19 @@ function Reservations() {
     }
   }
 
+  const handleSendDepositEmail = async (reservation) => {
+    try {
+      const result = await sendDepositEmail({
+        id: reservation._id
+      }).unwrap()
+      console.log('Deposit email sent successfully:', result)
+      alert('Email s platbou depozitu bol úspešne odoslaný na ' + result.data?.email)
+    } catch (error) {
+      console.error('Error sending deposit email:', error)
+      alert('Chyba pri odosielaní emailu: ' + (error?.data?.message || error.message))
+    }
+  }
+
   const handleCreateInvoice = async (reservation) => {
     try {
       console.log('🧾 [INVOICE] Creating invoice for reservation:', reservation._id)
@@ -1276,22 +1291,42 @@ function Reservations() {
                                 </IconButton>
                               </Tooltip>
                               {auth.user?.email !== 'rival@test.sk' && auth.user?.email !== 'lerent@lerent.sk' && (
-                                <Tooltip title="Poslať upomienku platby">
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => {
-                                      console.log('Payment notification clicked for:', reservation._id);
-                                      handleSendPaymentNotification(reservation);
-                                    }}
-                                    color="warning"
-                                    sx={{
-                                      backgroundColor: 'warning.light',
-                                      '&:hover': { backgroundColor: 'warning.main' }
-                                    }}
-                                  >
-                                    <EmailIcon fontSize="small" />
-                                  </IconButton>
-                                </Tooltip>
+                                <>
+                                  <Tooltip title="Poslať upomienku platby">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => {
+                                        console.log('Payment notification clicked for:', reservation._id);
+                                        handleSendPaymentNotification(reservation);
+                                      }}
+                                      color="warning"
+                                      sx={{
+                                        backgroundColor: 'warning.light',
+                                        '&:hover': { backgroundColor: 'warning.main' }
+                                      }}
+                                    >
+                                      <EmailIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                  {(auth.user?.email?.includes('nitra-car') || auth.user?.email?.includes('nitracar')) && (
+                                    <Tooltip title="Poslať email na úhradu depozitu">
+                                      <IconButton
+                                        size="small"
+                                        onClick={() => {
+                                          console.log('Deposit email clicked for:', reservation._id);
+                                          handleSendDepositEmail(reservation);
+                                        }}
+                                        color="info"
+                                        sx={{
+                                          backgroundColor: 'info.light',
+                                          '&:hover': { backgroundColor: 'info.main' }
+                                        }}
+                                      >
+                                        <PaymentIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
+                                </>
                               )}
                             </>
                           )}

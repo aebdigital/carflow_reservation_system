@@ -75,6 +75,12 @@ class EmailService {
     return await smtp2goService.sendCustomerReservationConfirmed(customerEmail, reservationData, rawReservation, user, attachments);
   }
 
+  // Customer deposit email (NitraCar only)
+  async sendCustomerDepositEmail(customerEmail, reservationData, user = null, rawReservation = null) {
+    // Use SMTP2GO service which has the correct implementation
+    return await smtp2goService.sendCustomerDepositEmail(customerEmail, reservationData, user, rawReservation);
+  }
+
   // Customer reservation edited notification (after admin edits)
   async sendCustomerReservationEdited(customerEmail, reservationData, user = null, rawReservation = null) {
     // Use SMTP2GO service which has the correct implementation

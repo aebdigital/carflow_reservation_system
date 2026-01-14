@@ -178,29 +178,14 @@
             </td>
         </tr>
 
-        <!-- Stripe Payment Button (only shown if stripe_payment_url exists) -->
-        {{#if stripe_payment_url}}
+        <!-- Contact Info -->
         <tr>
             <td style="padding: 20px; text-align: center;">
-                <table style="width: 100%; max-width: 500px; margin: 0 auto; background: linear-gradient(135deg, #22D3EE 0%, #1BA3C3 100%); border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                    <tr>
-                        <td style="padding: 25px; text-align: center;">
-                            <h3 style="color: #ffffff; font-size: 20px; font-weight: bold; margin: 0 0 10px 0;">💳 Reservation Fee</h3>
-                            <p style="color: #ffffff; font-size: 16px; margin: 0 0 20px 0;">
-                                To complete your reservation, please pay the reservation fee of <strong style="font-size: 24px;">{{stripe_payment_amount}}</strong>
-                            </p>
-                            <a href="{{stripe_payment_url}}" target="_blank" style="display: inline-block; padding: 15px 40px; background-color: #ffffff; color: #22D3EE; text-decoration: none; font-size: 18px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); transition: all 0.3s ease;">
-                                Pay Now
-                            </a>
-                            <p style="color: #ffffff; font-size: 12px; margin: 15px 0 0 0; opacity: 0.9;">
-                                Secure payment via Stripe
-                            </p>
-                        </td>
-                    </tr>
-                </table>
+                <p style="color: #666666; font-size: 14px; margin: 0;">
+                    If you have any questions, please don't hesitate to contact us.
+                </p>
             </td>
         </tr>
-        {{/if}}
 
         <!-- Footer -->
         <tr>
