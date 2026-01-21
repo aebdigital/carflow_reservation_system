@@ -655,9 +655,7 @@ function Reservations() {
     if (!customerFormData.lastName) errors.lastName = 'Last name is required'
     if (!customerFormData.email) errors.email = 'Email is required'
     if (!customerFormData.phone) errors.phone = 'Phone is required'
-    if (!customerFormData.dateOfBirth) errors.dateOfBirth = 'Date of birth is required'
-    if (!customerFormData.licenseNumber) errors.licenseNumber = 'License number is required'
-    if (!customerFormData.licenseExpiry) errors.licenseExpiry = 'License expiry is required'
+    // dateOfBirth, licenseNumber, and licenseExpiry are optional
 
     setCustomerFormErrors(errors)
     return Object.keys(errors).length === 0
@@ -3665,12 +3663,9 @@ function Reservations() {
                   type="date"
                   value={customerFormData.dateOfBirth ? customerFormData.dateOfBirth.toISOString().split('T')[0] : ''}
                   onChange={(e) => setCustomerFormData({ ...customerFormData, dateOfBirth: e.target.value ? new Date(e.target.value) : null })}
-                  error={!!customerFormErrors.dateOfBirth}
-                  helperText={customerFormErrors.dateOfBirth}
                   InputLabelProps={{
                     shrink: true,
                   }}
-                  required
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -3679,9 +3674,6 @@ function Reservations() {
                   label="Číslo vodičského preukazu"
                   value={customerFormData.licenseNumber}
                   onChange={(e) => setCustomerFormData({ ...customerFormData, licenseNumber: e.target.value })}
-                  error={!!customerFormErrors.licenseNumber}
-                  helperText={customerFormErrors.licenseNumber}
-                  required
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
