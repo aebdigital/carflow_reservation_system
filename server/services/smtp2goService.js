@@ -1211,24 +1211,40 @@ class SMTP2GOService {
     const senderEmail = emailConfig.emailFrom;
 
     // Prepare template variables from actual backend data structure
-    const startDate = reservationData.startDate;
-    const endDate = reservationData.endDate;
+    // IMPORTANT: Use rawReservation dates (ISO format) instead of reservationData dates (already formatted strings)
+    const startDate = rawReservation?.startDate || reservationData.startDate;
+    const endDate = rawReservation?.endDate || reservationData.endDate;
+
+    // Get deposit amount from car or reservation
+    const depositAmount = rawReservation?.car?.pricing?.deposit ||
+                          rawReservation?.car?.deposit ||
+                          reservationData.deposit_amount ||
+                          reservationData.deposit ||
+                          0;
+
+    // Get pickup/dropoff locations from rawReservation or fallback to reservationData
+    const pickupLocation = rawReservation?.pickupLocation?.name || reservationData.pickupLocation || 'Miesto vyzdvihnutia';
+    const dropoffLocation = rawReservation?.dropoffLocation?.name || rawReservation?.pickupLocation?.name || reservationData.dropoffLocation || pickupLocation;
 
     const templateVariables = {
-      customer_name: reservationData.customerName || '',
-      car_brand: reservationData.carInfo?.split(' ')[0] || rawReservation?.car?.brand || '',
-      car_model: reservationData.carInfo?.split(' ').slice(1).join(' ') || rawReservation?.car?.model || reservationData.carInfo || '',
+      customer_name: reservationData.customerName || rawReservation?.customer?.firstName + ' ' + rawReservation?.customer?.lastName || '',
+      car_brand: rawReservation?.car?.brand || reservationData.carInfo?.split(' ')[0] || reservationData.carBrand || '',
+      car_model: rawReservation?.car?.model || reservationData.carInfo?.split(' ').slice(1).join(' ') || reservationData.carModel || '',
       car_image: this.getCarImageUrl(reservationData, rawReservation),
       start_date: startDate ? new Date(startDate).toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' }) : '',
       end_date: endDate ? new Date(endDate).toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' }) : '',
       start_time: startDate ? new Date(startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bratislava' }) : '',
       end_time: endDate ? new Date(endDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bratislava' }) : '',
-      pickup_location: reservationData.pickupLocation || 'Miesto vyzdvihnutia',
-      dropoff_location: reservationData.dropoffLocation || reservationData.pickupLocation || 'Miesto vrátenia',
+      pickup_location: pickupLocation,
+      dropoff_location: dropoffLocation,
+      deposit_amount: `${Number(depositAmount).toFixed(2)} €`,
       company_name: user?.businessName || user?.companyName || 'Autopožičovňa',
       company_email: emailConfig.emailFrom,
       company_phone: user?.phoneNumber || user?.phone || '+421 XXX XXX XXX',
-      link_view: `https://pozicauto.sk/reservations/${reservationData.reservationNumber}`
+      instagram_url: 'https://www.instagram.com/nitracar/',
+      facebook_url: 'https://www.facebook.com/nitracar/',
+      current_year: new Date().getFullYear().toString(),
+      link_view: `https://pozicauto.sk/reservations/${reservationData.reservationNumber || rawReservation?.reservationNumber}`
     };
 
     // Get language from reservation for NitraCar (defaults to 'sk')
