@@ -202,14 +202,11 @@ const createUser = asyncHandler(async (req, res, next) => {
     userData.password = password;
   }
 
-  // Add customer-specific fields if role is customer
+  // Add customer-specific fields if role is customer (all optional)
   if (userData.role === 'customer') {
-    if (!licenseNumber || !licenseExpiry || !dateOfBirth) {
-      return next(new AppError('License number, license expiry, and date of birth are required for customers', 400));
-    }
-    userData.licenseNumber = licenseNumber;
-    userData.licenseExpiry = licenseExpiry;
-    userData.dateOfBirth = dateOfBirth;
+    if (licenseNumber) userData.licenseNumber = licenseNumber;
+    if (licenseExpiry) userData.licenseExpiry = licenseExpiry;
+    if (dateOfBirth) userData.dateOfBirth = dateOfBirth;
   }
 
   if (address) {
