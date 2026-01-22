@@ -234,14 +234,8 @@ function Customers() {
     if (!formData.phone.trim()) {
       errors.phone = 'Telefónne číslo je povinné'
     }
-    
-    
-    // Customer-specific validations
-    if (formData.role === 'customer') {
-      if (!formData.licenseNumber.trim()) errors.licenseNumber = 'Číslo vodičského preukazu je povinné pre zákazníkov'
-      if (!formData.licenseExpiry) errors.licenseExpiry = 'Platnosť vodičského preukazu je povinná pre zákazníkov'
-      if (!formData.dateOfBirth) errors.dateOfBirth = 'Dátum narodenia je povinný pre zákazníkov'
-    }
+
+    // Note: licenseNumber, licenseExpiry, and dateOfBirth are optional
 
     setFormErrors(errors)
     return Object.keys(errors).length === 0
@@ -266,19 +260,6 @@ function Customers() {
           delete customerData[key]
         }
       })
-
-      // For customers, ensure required fields are present
-      if (customerData.role === 'customer') {
-        if (!customerData.dateOfBirth) {
-          throw new Error('Dátum narodenia je povinný pre zákazníkov')
-        }
-        if (!customerData.licenseExpiry) {
-          throw new Error('Platnosť vodičského preukazu je povinná pre zákazníkov')
-        }
-        if (!customerData.licenseNumber) {
-          throw new Error('Číslo vodičského preukazu je povinné pre zákazníkov')
-        }
-      }
 
       console.log('Sending customer data:', customerData)
 
@@ -841,9 +822,6 @@ function Customers() {
                   value={formData.dateOfBirth || ''}
                   onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
                   disabled={dialogMode === 'view'}
-                  error={!!formErrors.dateOfBirth}
-                  helperText={formErrors.dateOfBirth}
-                  required={formData.role === 'customer'}
                   InputLabelProps={{
                     shrink: true,
                   }}
@@ -879,9 +857,6 @@ function Customers() {
                   value={formData.licenseNumber}
                   onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
                   disabled={dialogMode === 'view'}
-                  error={!!formErrors.licenseNumber}
-                  helperText={formErrors.licenseNumber}
-                  required={formData.role === 'customer'}
                 />
               </Grid>
               <Grid item xs={12} md={6}>
@@ -892,9 +867,6 @@ function Customers() {
                   value={formData.licenseExpiry || ''}
                   onChange={(e) => setFormData({ ...formData, licenseExpiry: e.target.value })}
                   disabled={dialogMode === 'view'}
-                  error={!!formErrors.licenseExpiry}
-                  helperText={formErrors.licenseExpiry}
-                  required={formData.role === 'customer'}
                   InputLabelProps={{
                     shrink: true,
                   }}
