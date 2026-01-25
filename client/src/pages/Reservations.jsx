@@ -1347,7 +1347,13 @@ function Reservations() {
                         />
                       </TableCell>
                       <TableCell>
-                        {(reservation.pricing?.totalAmount?.toFixed(2) || '0.00')}€
+                        {(() => {
+                          const rental = reservation.pricing?.totalAmount || 0;
+                          const services = reservation.servicesTotal || (reservation.selectedServices?.reduce((s, x) => s + (x.totalPrice || 0), 0) || 0);
+                          const addIns = reservation.selectedAdditionalInsurance?.reduce((s, x) => s + (x.calculatedPrice || x.totalPrice || 0), 0) || 0;
+                          const extIns = reservation.selectedExtendedInsurance?.reduce((s, x) => s + (x.calculatedPrice || x.totalPrice || 0), 0) || 0;
+                          return (rental + services + addIns + extIns).toFixed(2);
+                        })()}€
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -1693,7 +1699,13 @@ function Reservations() {
                         />
                       </TableCell>
                       <TableCell>
-                        {(reservation.pricing?.totalAmount?.toFixed(2) || '0.00')}€
+                        {(() => {
+                          const rental = reservation.pricing?.totalAmount || 0;
+                          const services = reservation.servicesTotal || (reservation.selectedServices?.reduce((s, x) => s + (x.totalPrice || 0), 0) || 0);
+                          const addIns = reservation.selectedAdditionalInsurance?.reduce((s, x) => s + (x.calculatedPrice || x.totalPrice || 0), 0) || 0;
+                          const extIns = reservation.selectedExtendedInsurance?.reduce((s, x) => s + (x.calculatedPrice || x.totalPrice || 0), 0) || 0;
+                          return (rental + services + addIns + extIns).toFixed(2);
+                        })()}€
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -1891,7 +1903,13 @@ function Reservations() {
                         />
                       </TableCell>
                       <TableCell>
-                        {(reservation.pricing?.totalAmount?.toFixed(2) || '0.00')}€
+                        {(() => {
+                          const rental = reservation.pricing?.totalAmount || 0;
+                          const services = reservation.servicesTotal || (reservation.selectedServices?.reduce((s, x) => s + (x.totalPrice || 0), 0) || 0);
+                          const addIns = reservation.selectedAdditionalInsurance?.reduce((s, x) => s + (x.calculatedPrice || x.totalPrice || 0), 0) || 0;
+                          const extIns = reservation.selectedExtendedInsurance?.reduce((s, x) => s + (x.calculatedPrice || x.totalPrice || 0), 0) || 0;
+                          return (rental + services + addIns + extIns).toFixed(2);
+                        })()}€
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -2130,7 +2148,13 @@ function Reservations() {
                         />
                       </TableCell>
                       <TableCell>
-                        {(reservation.pricing?.totalAmount?.toFixed(2) || '0.00')}€
+                        {(() => {
+                          const rental = reservation.pricing?.totalAmount || 0;
+                          const services = reservation.servicesTotal || (reservation.selectedServices?.reduce((s, x) => s + (x.totalPrice || 0), 0) || 0);
+                          const addIns = reservation.selectedAdditionalInsurance?.reduce((s, x) => s + (x.calculatedPrice || x.totalPrice || 0), 0) || 0;
+                          const extIns = reservation.selectedExtendedInsurance?.reduce((s, x) => s + (x.calculatedPrice || x.totalPrice || 0), 0) || 0;
+                          return (rental + services + addIns + extIns).toFixed(2);
+                        })()}€
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -2538,19 +2562,43 @@ function Reservations() {
 
                           <Divider sx={{ my: 1 }} />
 
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                            <Typography variant="body2">Medzisúčet:</Typography>
-                            <Typography variant="body2">{(() => {
-                              const totalAmount = selectedReservation.pricing.totalAmount || 0;
-                              const dph = totalAmount * 0.23;
-                              const subtotal = totalAmount - dph;
-                              return subtotal.toFixed(2);
-                            })()}€</Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                            <Typography variant="body2">DPH (23%):</Typography>
-                            <Typography variant="body2">{((selectedReservation.pricing.totalAmount || 0) * 0.23).toFixed(2)}€</Typography>
-                          </Box>
+                          {/* Calculate full total including services and insurance */}
+                          {(() => {
+                            // Base rental amount
+                            const rentalAmount = selectedReservation.pricing?.totalAmount || 0;
+
+                            // Services total
+                            const servicesAmount = selectedReservation.servicesTotal ||
+                              (selectedReservation.selectedServices?.reduce((sum, s) => sum + (s.totalPrice || 0), 0) || 0);
+
+                            // Insurance totals
+                            const additionalInsuranceAmount = selectedReservation.selectedAdditionalInsurance?.reduce(
+                              (sum, i) => sum + (i.calculatedPrice || i.totalPrice || 0), 0
+                            ) || 0;
+                            const extendedInsuranceAmount = selectedReservation.selectedExtendedInsurance?.reduce(
+                              (sum, i) => sum + (i.calculatedPrice || i.totalPrice || 0), 0
+                            ) || 0;
+
+                            // Full total with everything
+                            const fullTotal = rentalAmount + servicesAmount + additionalInsuranceAmount + extendedInsuranceAmount;
+
+                            // Calculate VAT (23%) - VAT is included in the total, so we extract it
+                            const dph = fullTotal * 0.23;
+                            const subtotal = fullTotal - dph;
+
+                            return (
+                              <>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                  <Typography variant="body2">Medzisúčet:</Typography>
+                                  <Typography variant="body2">{subtotal.toFixed(2)}€</Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                  <Typography variant="body2">DPH (23%):</Typography>
+                                  <Typography variant="body2">{dph.toFixed(2)}€</Typography>
+                                </Box>
+                              </>
+                            );
+                          })()}
                           {/* Discount Information */}
                           {selectedReservation.pricing?.appliedDiscount && (
                             <>
@@ -2573,69 +2621,92 @@ function Reservations() {
 
                           <Divider sx={{ my: 1 }} />
 
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Typography variant="body1" fontWeight="bold">{t('totalAmount')}:</Typography>
+                          {/* Calculate full total for display */}
+                          {(() => {
+                            // Base rental amount
+                            const rentalAmount = selectedReservation.pricing?.totalAmount || 0;
 
-                            {/* Price editing for Lerent only */}
-                            {auth.user?.email === 'lerent@lerent.sk' ? (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                {editingPrice ? (
-                                  <>
-                                    <TextField
-                                      value={editedPrice}
-                                      onChange={(e) => setEditedPrice(e.target.value)}
-                                      size="small"
-                                      type="number"
-                                      inputProps={{ step: '0.01', min: '0' }}
-                                      sx={{ width: '120px' }}
-                                      autoFocus
-                                      onKeyPress={(e) => {
-                                        if (e.key === 'Enter') {
-                                          handleSaveEditedPrice()
-                                        } else if (e.key === 'Escape') {
-                                          handleCancelEditingPrice()
-                                        }
-                                      }}
-                                    />
-                                    <Typography variant="body1" fontWeight="bold">€</Typography>
-                                    <IconButton
-                                      size="small"
-                                      color="success"
-                                      onClick={handleSaveEditedPrice}
-                                      title="Uložiť"
-                                    >
-                                      <CheckIcon fontSize="small" />
-                                    </IconButton>
-                                    <IconButton
-                                      size="small"
-                                      color="error"
-                                      onClick={handleCancelEditingPrice}
-                                      title="Zrušiť"
-                                    >
-                                      <CloseIcon fontSize="small" />
-                                    </IconButton>
-                                  </>
+                            // Services total
+                            const servicesAmount = selectedReservation.servicesTotal ||
+                              (selectedReservation.selectedServices?.reduce((sum, s) => sum + (s.totalPrice || 0), 0) || 0);
+
+                            // Insurance totals
+                            const additionalInsuranceAmount = selectedReservation.selectedAdditionalInsurance?.reduce(
+                              (sum, i) => sum + (i.calculatedPrice || i.totalPrice || 0), 0
+                            ) || 0;
+                            const extendedInsuranceAmount = selectedReservation.selectedExtendedInsurance?.reduce(
+                              (sum, i) => sum + (i.calculatedPrice || i.totalPrice || 0), 0
+                            ) || 0;
+
+                            // Full total with everything
+                            const fullTotal = rentalAmount + servicesAmount + additionalInsuranceAmount + extendedInsuranceAmount;
+
+                            return (
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="body1" fontWeight="bold">{t('totalAmount')}:</Typography>
+
+                                {/* Price editing for Lerent only */}
+                                {auth.user?.email === 'lerent@lerent.sk' ? (
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    {editingPrice ? (
+                                      <>
+                                        <TextField
+                                          value={editedPrice}
+                                          onChange={(e) => setEditedPrice(e.target.value)}
+                                          size="small"
+                                          type="number"
+                                          inputProps={{ step: '0.01', min: '0' }}
+                                          sx={{ width: '120px' }}
+                                          autoFocus
+                                          onKeyPress={(e) => {
+                                            if (e.key === 'Enter') {
+                                              handleSaveEditedPrice()
+                                            } else if (e.key === 'Escape') {
+                                              handleCancelEditingPrice()
+                                            }
+                                          }}
+                                        />
+                                        <Typography variant="body1" fontWeight="bold">€</Typography>
+                                        <IconButton
+                                          size="small"
+                                          color="success"
+                                          onClick={handleSaveEditedPrice}
+                                          title="Uložiť"
+                                        >
+                                          <CheckIcon fontSize="small" />
+                                        </IconButton>
+                                        <IconButton
+                                          size="small"
+                                          color="error"
+                                          onClick={handleCancelEditingPrice}
+                                          title="Zrušiť"
+                                        >
+                                          <CloseIcon fontSize="small" />
+                                        </IconButton>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Typography variant="body1" fontWeight="bold" color="primary">
+                                          {fullTotal.toFixed(2)}€
+                                        </Typography>
+                                        <IconButton
+                                          size="small"
+                                          onClick={handleStartEditingPrice}
+                                          title="Upraviť cenu"
+                                        >
+                                          <EditIcon fontSize="small" />
+                                        </IconButton>
+                                      </>
+                                    )}
+                                  </Box>
                                 ) : (
-                                  <>
-                                    <Typography variant="body1" fontWeight="bold" color="primary">
-                                      {selectedReservation.pricing.totalAmount?.toFixed(2) || '0.00'}€
-                                    </Typography>
-                                    <IconButton
-                                      size="small"
-                                      onClick={handleStartEditingPrice}
-                                      title="Upraviť cenu"
-                                    >
-                                      <EditIcon fontSize="small" />
-                                    </IconButton>
-                                  </>
+                                  <Typography variant="body1" fontWeight="bold" color="primary">
+                                    {fullTotal.toFixed(2)}€
+                                  </Typography>
                                 )}
                               </Box>
-                            ) : (
-                              <Typography variant="body1" fontWeight="bold" color="primary">
-                                {selectedReservation.pricing.totalAmount?.toFixed(2) || '0.00'}€
-                              </Typography>
-                            )}
-                          </Box>
+                            );
+                          })()}
 
                           {/* Payment Type */}
                           {selectedReservation.paymentType && (
