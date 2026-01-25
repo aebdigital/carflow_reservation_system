@@ -1,5 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
+const Handlebars = require('handlebars');
 const emailIconHelper = require('../utils/emailIconHelper');
 
 class EmailTemplateService {
@@ -124,14 +125,13 @@ class EmailTemplateService {
   }
 
   /**
-   * Process template with variables (simple variable replacement)
+   * Process template with variables using Handlebars
+   * Supports conditionals ({{#if}}), loops ({{#each}}), and variable replacement
    * @param {string} template - HTML template content
    * @param {Object} variables - Variables to replace in template
    * @returns {string} Processed HTML with variables replaced
    */
   processTemplate(template, variables = {}, senderEmail = null) {
-    let processedTemplate = template;
-
     // Add current year and social media icons by default
     const defaultVariables = {
       current_year: new Date().getFullYear(),
@@ -141,13 +141,20 @@ class EmailTemplateService {
     // Add social media icons as base64 data URIs
     const variablesWithIcons = emailIconHelper.addSocialIconsToVariables(defaultVariables, senderEmail);
 
-    // Replace all template variables
-    Object.entries(variablesWithIcons).forEach(([key, value]) => {
-      const regex = new RegExp(`{{${key}}}`, 'g');
-      processedTemplate = processedTemplate.replace(regex, value || '');
-    });
-
-    return processedTemplate;
+    try {
+      // Compile and render the template using Handlebars
+      const compiledTemplate = Handlebars.compile(template);
+      return compiledTemplate(variablesWithIcons);
+    } catch (error) {
+      console.error('Handlebars template processing error:', error.message);
+      // Fallback to simple replacement if Handlebars fails
+      let processedTemplate = template;
+      Object.entries(variablesWithIcons).forEach(([key, value]) => {
+        const regex = new RegExp(`{{${key}}}`, 'g');
+        processedTemplate = processedTemplate.replace(regex, value || '');
+      });
+      return processedTemplate;
+    }
   }
 
   /**
