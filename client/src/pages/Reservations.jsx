@@ -226,6 +226,12 @@ function Reservations() {
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(20)
 
+  // Filter state for NitraCar (search by car, customer, date)
+  const [filterCar, setFilterCar] = useState(null)
+  const [filterCustomer, setFilterCustomer] = useState('')
+  const [filterDateFrom, setFilterDateFrom] = useState(null)
+  const [filterDateTo, setFilterDateTo] = useState(null)
+
   // Helper function to format date and time for Slovak locale
   const formatDateTime = (dateString) => {
     if (!dateString) return '';
@@ -378,6 +384,57 @@ function Reservations() {
   const cars = carsData?.data || []
   const users = usersData?.data || []
   const payments = paymentsData?.data || []
+
+  // Check if NitraCar user (show filters only for this tenant)
+  const isNitraCarUser = auth.user?.email === 'nitra-car@nitra-car.sk'
+
+  // Filter reservations based on car, customer, and date filters (for NitraCar)
+  const filteredReservations = useMemo(() => {
+    if (!isNitraCarUser) return reservations
+
+    return reservations.filter(reservation => {
+      // Filter by car
+      if (filterCar && reservation.car?._id !== filterCar._id) {
+        return false
+      }
+
+      // Filter by customer name (search in firstName, lastName, email, phone)
+      if (filterCustomer && filterCustomer.trim() !== '') {
+        const searchTerm = filterCustomer.toLowerCase().trim()
+        const customerName = `${reservation.customer?.firstName || ''} ${reservation.customer?.lastName || ''}`.toLowerCase()
+        const customerEmail = (reservation.customer?.email || '').toLowerCase()
+        const customerPhone = (reservation.customer?.phone || '').toLowerCase()
+
+        if (!customerName.includes(searchTerm) &&
+            !customerEmail.includes(searchTerm) &&
+            !customerPhone.includes(searchTerm)) {
+          return false
+        }
+      }
+
+      // Filter by date range (check if reservation overlaps with filter dates)
+      if (filterDateFrom || filterDateTo) {
+        const resStart = new Date(reservation.startDate)
+        const resEnd = new Date(reservation.endDate)
+
+        // If filterDateFrom is set, reservation end must be >= filterDateFrom
+        if (filterDateFrom) {
+          const fromDate = new Date(filterDateFrom)
+          fromDate.setHours(0, 0, 0, 0)
+          if (resEnd < fromDate) return false
+        }
+
+        // If filterDateTo is set, reservation start must be <= filterDateTo
+        if (filterDateTo) {
+          const toDate = new Date(filterDateTo)
+          toDate.setHours(23, 59, 59, 999)
+          if (resStart > toDate) return false
+        }
+      }
+
+      return true
+    })
+  }, [reservations, filterCar, filterCustomer, filterDateFrom, filterDateTo, isNitraCarUser])
 
   // Get disabled dates from API response (for next 6 months)
   const disabledDates = useMemo(() => {
@@ -1105,6 +1162,83 @@ function Reservations() {
         </Button>
       </Box>
 
+      {/* Filter section for NitraCar user only */}
+      {isNitraCarUser && (
+        <Card sx={{ mb: 2, p: 2 }}>
+          <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+            Filtre (pre vyhľadávanie pokút)
+          </Typography>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm={6} md={3}>
+              <Autocomplete
+                options={cars}
+                getOptionLabel={(option) => `${option.brand} ${option.model} - ${option.registrationNumber || option.licensePlate || ''}`}
+                value={filterCar}
+                onChange={(e, newValue) => setFilterCar(newValue)}
+                renderInput={(params) => (
+                  <TextField {...params} label="Auto" size="small" placeholder="Vyberte auto" />
+                )}
+                isOptionEqualToValue={(option, value) => option._id === value?._id}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Zákazník"
+                placeholder="Meno, email alebo telefón"
+                value={filterCustomer}
+                onChange={(e) => setFilterCustomer(e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={2}>
+              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={sk}>
+                <DatePicker
+                  label="Dátum od"
+                  value={filterDateFrom}
+                  onChange={(newValue) => setFilterDateFrom(newValue)}
+                  slotProps={{
+                    textField: { size: 'small', fullWidth: true }
+                  }}
+                />
+              </LocalizationProvider>
+            </Grid>
+            <Grid item xs={12} sm={6} md={2}>
+              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={sk}>
+                <DatePicker
+                  label="Dátum do"
+                  value={filterDateTo}
+                  onChange={(newValue) => setFilterDateTo(newValue)}
+                  slotProps={{
+                    textField: { size: 'small', fullWidth: true }
+                  }}
+                />
+              </LocalizationProvider>
+            </Grid>
+            <Grid item xs={12} sm={12} md={2}>
+              <Button
+                variant="outlined"
+                size="small"
+                fullWidth
+                onClick={() => {
+                  setFilterCar(null)
+                  setFilterCustomer('')
+                  setFilterDateFrom(null)
+                  setFilterDateTo(null)
+                }}
+              >
+                Zrušiť filtre
+              </Button>
+            </Grid>
+          </Grid>
+          {(filterCar || filterCustomer || filterDateFrom || filterDateTo) && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Nájdených: {filteredReservations.length} rezervácií
+            </Typography>
+          )}
+        </Card>
+      )}
+
       <Card>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
@@ -1141,7 +1275,7 @@ function Reservations() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {getPaginatedReservations(reservations).map((reservation) => (
+                  {getPaginatedReservations(filteredReservations).map((reservation) => (
                     <TableRow key={reservation._id}>
                       <TableCell>
                         <Typography variant="body2" fontWeight="medium">
@@ -1448,7 +1582,7 @@ function Reservations() {
           {!reservationsLoading && !reservationsError && (
             <TablePagination
               component="div"
-              count={reservations.length}
+              count={filteredReservations.length}
               page={page}
               onPageChange={handleChangePage}
               rowsPerPage={rowsPerPage}
@@ -1487,7 +1621,7 @@ function Reservations() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {getPaginatedReservations(reservations.filter(r => r.status === 'ongoing')).map((reservation) => (
+                  {getPaginatedReservations(filteredReservations.filter(r => r.status === 'ongoing')).map((reservation) => (
                     <TableRow key={reservation._id}>
                       <TableCell>
                         <Typography variant="body2" fontWeight="medium">
@@ -1648,7 +1782,7 @@ function Reservations() {
           {!reservationsLoading && !reservationsError && (
             <TablePagination
               component="div"
-              count={reservations.filter(r => r.status === 'ongoing').length}
+              count={filteredReservations.filter(r => r.status === 'ongoing').length}
               page={page}
               onPageChange={handleChangePage}
               rowsPerPage={rowsPerPage}
@@ -1685,7 +1819,7 @@ function Reservations() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {getPaginatedReservations(reservations.filter(r => r.status === 'pending' || r.status === 'awaiting_payment')).map((reservation) => (
+                  {getPaginatedReservations(filteredReservations.filter(r => r.status === 'pending' || r.status === 'awaiting_payment')).map((reservation) => (
                     <TableRow key={reservation._id}>
                       <TableCell>
                         <Typography variant="body2" fontWeight="medium">
@@ -1887,7 +2021,7 @@ function Reservations() {
           {!reservationsLoading && !reservationsError && (
             <TablePagination
               component="div"
-              count={reservations.filter(r => r.status === 'pending' || r.status === 'awaiting_payment').length}
+              count={filteredReservations.filter(r => r.status === 'pending' || r.status === 'awaiting_payment').length}
               page={page}
               onPageChange={handleChangePage}
               rowsPerPage={rowsPerPage}
@@ -1924,7 +2058,7 @@ function Reservations() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {getPaginatedReservations(reservations.filter(r => r.status === 'completed')).map((reservation) => (
+                  {getPaginatedReservations(filteredReservations.filter(r => r.status === 'completed')).map((reservation) => (
                     <TableRow key={reservation._id}>
                       <TableCell>
                         <Typography variant="body2" fontWeight="medium">
@@ -2076,7 +2210,7 @@ function Reservations() {
           {!reservationsLoading && !reservationsError && (
             <TablePagination
               component="div"
-              count={reservations.filter(r => r.status === 'completed').length}
+              count={filteredReservations.filter(r => r.status === 'completed').length}
               page={page}
               onPageChange={handleChangePage}
               rowsPerPage={rowsPerPage}
