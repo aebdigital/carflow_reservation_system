@@ -269,6 +269,10 @@ function Reservations() {
   const [editingPrice, setEditingPrice] = useState(false)
   const [editedPrice, setEditedPrice] = useState('')
 
+  // Available services for NitraCar edit mode
+  const [availableServices, setAvailableServices] = useState([])
+  const [servicesLoading, setServicesLoading] = useState(false)
+
   // Initial form state
   const initialFormState = {
     customer: null,
@@ -297,7 +301,10 @@ function Reservations() {
     },
     additionalDrivers: [],
     specialRequests: '',
-    status: 'pending'
+    status: 'pending',
+    selectedServices: [],
+    servicesTotal: 0,
+    pricing: {}
   }
 
   const [formData, setFormData] = useState(initialFormState)
@@ -562,14 +569,60 @@ function Reservations() {
         specialRequests: formData.specialRequests || ''
       }
 
+      // For NitraCar edit mode, include services and recalculated pricing
+      if (isNitraCarUser && dialogMode === 'edit') {
+        // Calculate services total
+        const days = formData.pricing?.totalDays || Math.ceil((formData.endDate - formData.startDate) / (1000 * 60 * 60 * 24))
+        const servicesTotal = formData.selectedServices?.reduce((sum, s) => {
+          const pricingType = s.pricingType || s.pricing?.type || 'fixed'
+          const unitPrice = s.unitPrice || s.pricing?.amount || 0
+          const price = pricingType === 'per_day' ? unitPrice * days * (s.quantity || 1) : unitPrice * (s.quantity || 1)
+          return sum + price
+        }, 0) || 0
+
+        // Recalculate total with new car and services
+        const car = formData.car
+        let dailyRate = car.dailyRate || 0
+        if (days >= 26 && car.rates?.['26plus']) dailyRate = car.rates['26plus']
+        else if (days >= 10 && car.rates?.['10-25days']) dailyRate = car.rates['10-25days']
+        else if (days >= 4 && car.rates?.['4-9days']) dailyRate = car.rates['4-9days']
+        else if (days >= 2 && car.rates?.threeDays) dailyRate = car.rates.threeDays
+
+        const subtotal = dailyRate * days
+        const totalAmount = subtotal + servicesTotal
+
+        // Include updated services and pricing
+        reservationData.selectedServices = formData.selectedServices?.map(s => ({
+          _id: s._id || s.service,
+          service: s._id || s.service,
+          name: s.name,
+          category: s.category,
+          quantity: s.quantity || 1,
+          unitPrice: s.unitPrice || s.pricing?.amount || 0,
+          totalPrice: (s.pricingType === 'per_day' || s.pricing?.type === 'per_day')
+            ? (s.unitPrice || s.pricing?.amount || 0) * days * (s.quantity || 1)
+            : (s.unitPrice || s.pricing?.amount || 0) * (s.quantity || 1),
+          pricingType: s.pricingType || s.pricing?.type || 'fixed'
+        })) || []
+
+        reservationData.servicesTotal = servicesTotal
+        reservationData.pricing = {
+          ...formData.pricing,
+          dailyRate,
+          totalDays: days,
+          subtotal,
+          totalAmount
+        }
+      }
+
       console.log('Sending reservation data:', reservationData)
 
       if (dialogMode === 'create') {
         await createReservation(reservationData).unwrap()
       } else if (dialogMode === 'edit') {
-        await updateReservation({ 
-          id: selectedReservation._id, 
-          ...reservationData 
+        await updateReservation({
+          id: selectedReservation._id,
+          ...reservationData
         }).unwrap()
       }
 
@@ -1124,6 +1177,84 @@ function Reservations() {
   const getPaginatedReservations = (filteredReservations) => {
     return filteredReservations.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
   }
+
+  // Fetch available services for NitraCar when in edit mode
+  React.useEffect(() => {
+    const fetchServices = async () => {
+      if (isNitraCarUser && dialogMode === 'edit' && openDialog) {
+        setServicesLoading(true)
+        try {
+          const baseUrl = (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, '')
+          const response = await fetch(`${baseUrl}/additional-services`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          })
+          const result = await response.json()
+          if (result.success) {
+            setAvailableServices(result.data.filter(s => s.isActive))
+          }
+        } catch (err) {
+          console.error('Error fetching services:', err)
+        } finally {
+          setServicesLoading(false)
+        }
+      }
+    }
+    fetchServices()
+  }, [isNitraCarUser, dialogMode, openDialog])
+
+  // Recalculate price when car or dates change in edit mode for NitraCar
+  React.useEffect(() => {
+    if (isNitraCarUser && dialogMode === 'edit' && formData.car && formData.startDate && formData.endDate) {
+      const days = Math.ceil((formData.endDate - formData.startDate) / (1000 * 60 * 60 * 24))
+      if (days > 0) {
+        // Calculate base rental price using car's rate calculation
+        const car = formData.car
+        let dailyRate = car.dailyRate || 0
+
+        // Use NitraCar pricing tiers if available
+        if (days >= 26 && car.rates?.['26plus']) {
+          dailyRate = car.rates['26plus']
+        } else if (days >= 10 && car.rates?.['10-25days']) {
+          dailyRate = car.rates['10-25days']
+        } else if (days >= 4 && car.rates?.['4-9days']) {
+          dailyRate = car.rates['4-9days']
+        } else if (days >= 2 && car.rates?.threeDays) {
+          dailyRate = car.rates.threeDays
+        }
+
+        const subtotal = dailyRate * days
+
+        // Calculate services total
+        const servicesTotal = formData.selectedServices?.reduce((sum, s) => {
+          const service = s.service || s
+          const quantity = s.quantity || 1
+          const pricingType = service.pricingType || service.pricing?.type || 'fixed'
+          const amount = service.unitPrice || service.pricing?.amount || 0
+
+          if (pricingType === 'per_day') {
+            return sum + (amount * days * quantity)
+          }
+          return sum + (amount * quantity)
+        }, 0) || 0
+
+        const totalAmount = subtotal + servicesTotal
+
+        setFormData(prev => ({
+          ...prev,
+          pricing: {
+            ...prev.pricing,
+            dailyRate,
+            totalDays: days,
+            subtotal,
+            totalAmount
+          },
+          servicesTotal
+        }))
+      }
+    }
+  }, [isNitraCarUser, dialogMode, formData.car, formData.startDate, formData.endDate, formData.selectedServices])
 
   // Reset page when tab changes
   React.useEffect(() => {
@@ -3625,167 +3756,206 @@ function Reservations() {
               )}
 
 
-              {/* ✅ UNIFIED Additional Services & Insurance Display (Edit Mode) */}
-              {(() => {
-                // Only show in edit mode
-                if (dialogMode !== 'edit' || !selectedReservation) return null;
-                
-                // Combine all services and insurance into one unified array
-                const allServices = [];
-                
-                // Add regular services
-                if (selectedReservation.selectedServices && selectedReservation.selectedServices.length > 0) {
-                  selectedReservation.selectedServices.forEach(service => {
-                    allServices.push({
-                      ...service,
-                      displayName: service.quantity > 1 ? `${service.quantity}x ${service.name || service.service?.name || 'Služba'}` : (service.name || service.service?.name || 'Služba'),
-                      displayPrice: service.totalPrice,
-                      serviceType: 'service',
-                      categoryLabel: service.category || 'služba',
-                      unitPriceLabel: service.pricing?.amount || service.unitPrice,
-                      pricingTypeLabel: service.pricing?.type || service.pricingType || 'fixed',
-                      quantity: service.quantity || 1
-                    });
-                  });
-                }
+              {/* ✅ EDITABLE Additional Services for NitraCar (Edit Mode) */}
+              {isNitraCarUser && dialogMode === 'edit' && (
+                <Grid item xs={12}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom color="primary">
+                        Dodatočné služby
+                      </Typography>
 
-                // Add additional insurance as services
-                if (selectedReservation.selectedAdditionalInsurance && selectedReservation.selectedAdditionalInsurance.length > 0) {
-                  const totalDays = Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24));
+                      {/* Add new service */}
+                      <Box sx={{ mb: 2 }}>
+                        <Autocomplete
+                          options={availableServices.filter(s =>
+                            !formData.selectedServices?.some(sel =>
+                              (sel._id || sel.service?._id) === s._id
+                            )
+                          )}
+                          getOptionLabel={(option) => `${option.name} - ${option.pricing?.amount || 0}€${option.pricing?.type === 'per_day' ? '/deň' : ''}`}
+                          loading={servicesLoading}
+                          onChange={(e, value) => {
+                            if (value) {
+                              const days = formData.pricing?.totalDays || 1
+                              const amount = value.pricing?.amount || 0
+                              const totalPrice = value.pricing?.type === 'per_day' ? amount * days : amount
 
-                  selectedReservation.selectedAdditionalInsurance.forEach(insurance => {
-                    // Calculate total price: use calculatedPrice if available, otherwise calculate from baseAmount/price * days
-                    const totalPrice = insurance.calculatedPrice ||
-                                      (insurance.pricingType === 'per_day' ?
-                                       (insurance.baseAmount || insurance.price || 0) * totalDays :
-                                       (insurance.baseAmount || insurance.price || 0));
+                              const newService = {
+                                _id: value._id,
+                                service: value._id,
+                                name: value.name,
+                                category: value.category,
+                                quantity: 1,
+                                unitPrice: amount,
+                                totalPrice: totalPrice,
+                                pricingType: value.pricing?.type || 'fixed',
+                                pricing: value.pricing
+                              }
 
-                    allServices.push({
-                      ...insurance,
-                      displayName: insurance.name || insurance.insuranceId?.name || 'Poistenie',
-                      displayPrice: totalPrice,
-                      serviceType: 'insurance',
-                      categoryLabel: insurance.type || 'poistenie',
-                      unitPriceLabel: insurance.price || insurance.baseAmount,
-                      pricingTypeLabel: insurance.pricingType || 'per_day',
-                      quantity: insurance.selectedQuantity || 1
-                    });
-                  });
-                }
+                              setFormData(prev => ({
+                                ...prev,
+                                selectedServices: [...(prev.selectedServices || []), newService]
+                              }))
+                            }
+                          }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="Pridať službu"
+                              placeholder="Vyhľadajte a pridajte službu..."
+                              size="small"
+                            />
+                          )}
+                          value={null}
+                          blurOnSelect
+                          clearOnBlur
+                        />
+                      </Box>
 
-                // Add extended insurance as services
-                if (selectedReservation.selectedExtendedInsurance && selectedReservation.selectedExtendedInsurance.length > 0) {
-                  const totalDays = Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24));
-                  
-                  selectedReservation.selectedExtendedInsurance.forEach(insurance => {
-                    // Calculate total price: use calculatedPrice if available, otherwise calculate from baseAmount/price * days
-                    const totalPrice = insurance.calculatedPrice || 
-                                      (insurance.pricingType === 'per_day' ? 
-                                       (insurance.baseAmount || insurance.price || 0) * totalDays : 
-                                       (insurance.baseAmount || insurance.price || 0));
-                    
-                    allServices.push({
-                      ...insurance,
-                      displayName: insurance.name || insurance.insuranceId?.name || 'Rozšírené poistenie',
-                      displayPrice: totalPrice,
-                      serviceType: 'extended_insurance',
-                      categoryLabel: insurance.type || 'rozšírené poistenie',
-                      unitPriceLabel: insurance.price || insurance.baseAmount,
-                      pricingTypeLabel: insurance.pricingType || 'per_day',
-                      quantity: insurance.selectedQuantity || 1
-                    });
-                  });
-                }
-                
-                // Only show the section if there are any services/insurance
-                if (allServices.length === 0) return null;
-                
-                return (
-                  <Grid item xs={12}>
-                    <Card variant="outlined">
-                      <CardContent>
-                        <Typography variant="h6" gutterBottom color="primary">
-                          Dodatočné služby ({allServices.length})
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                          Všetky dodatočné služby a poistenie vybrané pri rezervácii
-                        </Typography>
-                        
+                      {/* Selected services list */}
+                      {formData.selectedServices && formData.selectedServices.length > 0 ? (
                         <Grid container spacing={2}>
-                          {allServices.map((service, index) => (
-                            <Grid item xs={12} md={6} key={service._id || index}>
-                              <Box sx={{ 
-                                p: 2, 
-                                bgcolor: service.serviceType === 'service' ? 'grey.50' : 
-                                         service.serviceType === 'insurance' ? 'info.50' : 'warning.50',
-                                borderRadius: 1,
-                                border: '1px solid',
-                                borderColor: service.serviceType === 'service' ? 'grey.200' : 
-                                           service.serviceType === 'insurance' ? 'info.200' : 'warning.200'
-                              }}>
-                                {/* Service Name and Price */}
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                                  <Typography variant="body2" fontWeight="medium">
-                                    {service.displayName}
-                                  </Typography>
-                                  <Typography variant="body2" color="primary" fontWeight="medium">
-                                    {service.displayPrice?.toFixed ? service.displayPrice.toFixed(2) : service.displayPrice}€
+                          {formData.selectedServices.map((service, index) => {
+                            const days = formData.pricing?.totalDays || 1
+                            const pricingType = service.pricingType || service.pricing?.type || 'fixed'
+                            const unitPrice = service.unitPrice || service.pricing?.amount || 0
+                            const displayPrice = pricingType === 'per_day' ? unitPrice * days * (service.quantity || 1) : unitPrice * (service.quantity || 1)
+
+                            return (
+                              <Grid item xs={12} md={6} key={service._id || index}>
+                                <Box sx={{
+                                  p: 2,
+                                  bgcolor: 'grey.50',
+                                  borderRadius: 1,
+                                  border: '1px solid',
+                                  borderColor: 'grey.200',
+                                  position: 'relative'
+                                }}>
+                                  {/* Remove button */}
+                                  <IconButton
+                                    size="small"
+                                    color="error"
+                                    onClick={() => {
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        selectedServices: prev.selectedServices.filter((_, i) => i !== index)
+                                      }))
+                                    }}
+                                    sx={{ position: 'absolute', top: 4, right: 4 }}
+                                  >
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+
+                                  {/* Service Name and Price */}
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1, pr: 4 }}>
+                                    <Typography variant="body2" fontWeight="medium">
+                                      {service.quantity > 1 ? `${service.quantity}x ` : ''}{service.name || 'Služba'}
+                                    </Typography>
+                                    <Typography variant="body2" color="primary" fontWeight="medium">
+                                      {displayPrice.toFixed(2)}€
+                                    </Typography>
+                                  </Box>
+
+                                  {/* Quantity control */}
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                                    <Typography variant="caption" color="text.secondary">Množstvo:</Typography>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => {
+                                        if (service.quantity > 1) {
+                                          const updated = [...formData.selectedServices]
+                                          updated[index] = { ...service, quantity: service.quantity - 1 }
+                                          setFormData(prev => ({ ...prev, selectedServices: updated }))
+                                        }
+                                      }}
+                                      disabled={service.quantity <= 1}
+                                    >
+                                      <span style={{ fontSize: '16px', fontWeight: 'bold' }}>-</span>
+                                    </IconButton>
+                                    <Typography variant="body2">{service.quantity || 1}</Typography>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => {
+                                        const updated = [...formData.selectedServices]
+                                        updated[index] = { ...service, quantity: (service.quantity || 1) + 1 }
+                                        setFormData(prev => ({ ...prev, selectedServices: updated }))
+                                      }}
+                                    >
+                                      <span style={{ fontSize: '16px', fontWeight: 'bold' }}>+</span>
+                                    </IconButton>
+                                    <Chip
+                                      label={pricingType === 'per_day' ? 'Za deň' : 'Pevná cena'}
+                                      size="small"
+                                      color="primary"
+                                      variant="outlined"
+                                      sx={{ ml: 1 }}
+                                    />
+                                  </Box>
+
+                                  {/* Unit price info */}
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                                    Jednotková cena: {unitPrice.toFixed(2)}€{pricingType === 'per_day' ? `/deň × ${days} dní` : ''}
                                   </Typography>
                                 </Box>
-                                
-                                {/* Service Description */}
-                                {service.description && (
-                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                                    {service.description}
-                                  </Typography>
-                                )}
-                                
-                                {/* Category Chip */}
-                                <Chip 
-                                  label={service.categoryLabel} 
-                                  size="small" 
-                                  variant="outlined" 
-                                  color={service.serviceType === 'service' ? 'default' : 
-                                         service.serviceType === 'insurance' ? 'info' : 'warning'}
-                                  sx={{ mb: 1, mr: 1 }}
-                                />
-                                
-                                {/* Pricing Type Chip */}
-                                <Chip 
-                                  label={service.pricingTypeLabel === 'per_day' ? 'Za deň' : 
-                                         service.pricingTypeLabel === 'per_km' ? 'Za km' : 
-                                         service.pricingTypeLabel === 'percentage' ? 'Percento' : 'Pevná cena'} 
-                                  size="small" 
-                                  color="primary"
-                                  variant="filled" 
-                                  sx={{ mb: 1 }}
-                                />
-                                
-                                {/* Service Details */}
-                                <Box sx={{ mt: 1 }}>
-                                  {service.quantity && service.quantity > 1 && (
-                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                                      Množstvo: {service.quantity}x
-                                    </Typography>
-                                  )}
-                                  {service.unitPriceLabel && (
-                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                                      Jednotková cena: {typeof service.unitPriceLabel === 'number' ? service.unitPriceLabel.toFixed(2) : service.unitPriceLabel}€
-                                      {service.pricingTypeLabel === 'per_day' ? ' /deň' : 
-                                       service.pricingTypeLabel === 'per_km' ? ' /km' : 
-                                       service.pricingTypeLabel === 'percentage' ? '%' : ''}
-                                    </Typography>
-                                  )}
-                                </Box>
-                              </Box>
-                            </Grid>
-                          ))}
+                              </Grid>
+                            )
+                          })}
                         </Grid>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                );
-              })()}
+                      ) : (
+                        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                          Žiadne dodatočné služby
+                        </Typography>
+                      )}
+
+                      {/* Services total */}
+                      {formData.selectedServices && formData.selectedServices.length > 0 && (
+                        <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="body1" fontWeight="medium">Služby spolu:</Typography>
+                          <Typography variant="body1" fontWeight="medium" color="primary">
+                            {formData.selectedServices.reduce((sum, s) => {
+                              const days = formData.pricing?.totalDays || 1
+                              const pricingType = s.pricingType || s.pricing?.type || 'fixed'
+                              const unitPrice = s.unitPrice || s.pricing?.amount || 0
+                              const price = pricingType === 'per_day' ? unitPrice * days * (s.quantity || 1) : unitPrice * (s.quantity || 1)
+                              return sum + price
+                            }, 0).toFixed(2)}€
+                          </Typography>
+                        </Box>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
+
+              {/* Read-only Services Display for non-NitraCar or view mode */}
+              {(!isNitraCarUser || dialogMode !== 'edit') && dialogMode !== 'create' && selectedReservation?.selectedServices?.length > 0 && (
+                <Grid item xs={12}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom color="primary">
+                        Dodatočné služby ({selectedReservation.selectedServices.length})
+                      </Typography>
+                      <Grid container spacing={2}>
+                        {selectedReservation.selectedServices.map((service, index) => (
+                          <Grid item xs={12} md={6} key={service._id || index}>
+                            <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, border: '1px solid', borderColor: 'grey.200' }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                <Typography variant="body2" fontWeight="medium">
+                                  {service.quantity > 1 ? `${service.quantity}x ` : ''}{service.name || service.service?.name || 'Služba'}
+                                </Typography>
+                                <Typography variant="body2" color="primary" fontWeight="medium">
+                                  {service.totalPrice?.toFixed(2) || '0.00'}€
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
 
               {/* Special Requests */}
               <Grid item xs={12}>
