@@ -1206,7 +1206,7 @@ function Reservations() {
 
   // Recalculate price when car or dates change in edit mode for NitraCar
   React.useEffect(() => {
-    if (isNitraCarUser && dialogMode === 'edit' && formData.car && formData.startDate && formData.endDate) {
+    if (isNitraCarUser && dialogMode === 'edit' && formData.car?._id && formData.startDate && formData.endDate) {
       const days = Math.ceil((formData.endDate - formData.startDate) / (1000 * 60 * 60 * 24))
       if (days > 0) {
         // Calculate base rental price using car's rate calculation
@@ -1241,6 +1241,8 @@ function Reservations() {
 
         const totalAmount = subtotal + servicesTotal
 
+        console.log('💰 [PRICE RECALC] Car changed:', car.brand, car.model, 'dailyRate:', dailyRate, 'days:', days, 'subtotal:', subtotal, 'total:', totalAmount)
+
         setFormData(prev => ({
           ...prev,
           pricing: {
@@ -1254,7 +1256,7 @@ function Reservations() {
         }))
       }
     }
-  }, [isNitraCarUser, dialogMode, formData.car, formData.startDate, formData.endDate, formData.selectedServices])
+  }, [isNitraCarUser, dialogMode, formData.car?._id, formData.startDate, formData.endDate, formData.selectedServices])
 
   // Reset page when tab changes
   React.useEffect(() => {
@@ -3952,6 +3954,46 @@ function Reservations() {
                           </Grid>
                         ))}
                       </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
+
+              {/* Pricing Summary for NitraCar Edit Mode */}
+              {isNitraCarUser && dialogMode === 'edit' && formData.pricing && (
+                <Grid item xs={12}>
+                  <Card variant="outlined" sx={{ bgcolor: 'primary.50' }}>
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom color="primary">
+                        Cenová kalkulácia
+                      </Typography>
+
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography variant="body2">
+                          Prenájom vozidla ({formData.pricing.totalDays || 0} dní × {formData.pricing.dailyRate?.toFixed(2) || 0}€):
+                        </Typography>
+                        <Typography variant="body2" fontWeight="medium">
+                          {(formData.pricing.subtotal || 0).toFixed(2)}€
+                        </Typography>
+                      </Box>
+
+                      {formData.servicesTotal > 0 && (
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                          <Typography variant="body2">Dodatočné služby:</Typography>
+                          <Typography variant="body2" fontWeight="medium">
+                            {formData.servicesTotal.toFixed(2)}€
+                          </Typography>
+                        </Box>
+                      )}
+
+                      <Divider sx={{ my: 1 }} />
+
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body1" fontWeight="bold">Celkom:</Typography>
+                        <Typography variant="body1" fontWeight="bold" color="primary">
+                          {(formData.pricing.totalAmount || 0).toFixed(2)}€
+                        </Typography>
+                      </Box>
                     </CardContent>
                   </Card>
                 </Grid>
