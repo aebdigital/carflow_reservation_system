@@ -521,6 +521,33 @@ class SMTP2GOService {
     const startDate = rawReservation?.startDate || reservationData.startDate;
     const endDate = rawReservation?.endDate || reservationData.endDate;
 
+    // Calculate pricing breakdown for email template
+    const pricing = rawReservation?.pricing || {};
+    const rentalDays = pricing.totalDays || Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)));
+    const dailyRate = pricing.dailyRate || 0;
+    const rentalTotal = pricing.rentalTotal || (dailyRate * rentalDays);
+
+    // Get services from reservation
+    const selectedServices = rawReservation?.selectedServices || [];
+    const servicesForEmail = selectedServices.map(s => ({
+      name: s.name || s.serviceName || 'Služba',
+      price: Number(s.calculatedPrice || s.price || 0).toFixed(2)
+    }));
+
+    // Calculate services total (including insurance)
+    const servicesTotal = pricing.servicesTotal || selectedServices.reduce((sum, s) => sum + Number(s.calculatedPrice || s.price || 0), 0);
+
+    // Calculate subtotal and VAT (23%)
+    const subtotal = rentalTotal + servicesTotal;
+    const vatAmount = subtotal * 0.23;
+    const totalAmount = pricing.totalAmount || (subtotal + vatAmount);
+
+    // Get deposit amount
+    const depositAmount = rawReservation?.car?.pricing?.deposit || rawReservation?.car?.deposit || pricing.deposit || 0;
+
+    // Get variable symbol
+    const variableSymbol = rawReservation?.qrCodes?.variableSymbol || rawReservation?.reservationNumber?.replace(/[^0-9]/g, '')?.slice(-10) || '';
+
     const templateVariables = {
       customer_name: reservationData.customerName || '',
       car_brand: reservationData.carInfo?.split(' ')[0] || rawReservation?.car?.brand || '',
@@ -538,7 +565,19 @@ class SMTP2GOService {
       link_view: `https://pozicauto.sk/reservations/${reservationData.reservationNumber}`,
       current_year: new Date().getFullYear(),
       // LeRent logo URL (from environment variable or fallback)
-      lerent_logo_url: process.env.LERENT_LOGO_URL || 'https://storage.googleapis.com/car_rental_carflow/tenant-5e482191fe5890cb9f9ad402/user-5e482191fe5890cb9f9ad402/logoRENT.png'
+      lerent_logo_url: process.env.LERENT_LOGO_URL || 'https://storage.googleapis.com/car_rental_carflow/tenant-5e482191fe5890cb9f9ad402/user-5e482191fe5890cb9f9ad402/logoRENT.png',
+      // Pricing breakdown for NitraCar templates
+      selected_services: servicesForEmail.length > 0 ? servicesForEmail : null,
+      rental_days: rentalDays,
+      rental_total: rentalTotal.toFixed(2),
+      services_total: servicesTotal > 0 ? servicesTotal.toFixed(2) : null,
+      subtotal: subtotal.toFixed(2),
+      vat_amount: vatAmount.toFixed(2),
+      total_amount: totalAmount.toFixed(2),
+      deposit_amount: `${Number(depositAmount).toFixed(2)} €`,
+      variable_symbol: variableSymbol,
+      instagram_url: 'https://www.instagram.com/nitracar/',
+      facebook_url: 'https://www.facebook.com/nitracar/'
     };
 
     // Add QR code data if available (same logic as confirmed email)
@@ -1226,6 +1265,30 @@ class SMTP2GOService {
     const pickupLocation = rawReservation?.pickupLocation?.name || reservationData.pickupLocation || 'Miesto vyzdvihnutia';
     const dropoffLocation = rawReservation?.dropoffLocation?.name || rawReservation?.pickupLocation?.name || reservationData.dropoffLocation || pickupLocation;
 
+    // Calculate pricing breakdown for email template
+    const pricing = rawReservation?.pricing || {};
+    const rentalDays = pricing.totalDays || Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)));
+    const dailyRate = pricing.dailyRate || 0;
+    const rentalTotal = pricing.rentalTotal || (dailyRate * rentalDays);
+
+    // Get services from reservation
+    const selectedServices = rawReservation?.selectedServices || [];
+    const servicesForEmail = selectedServices.map(s => ({
+      name: s.name || s.serviceName || 'Služba',
+      price: Number(s.calculatedPrice || s.price || 0).toFixed(2)
+    }));
+
+    // Calculate services total (including insurance)
+    const servicesTotal = pricing.servicesTotal || selectedServices.reduce((sum, s) => sum + Number(s.calculatedPrice || s.price || 0), 0);
+
+    // Calculate subtotal and VAT (23%)
+    const subtotal = rentalTotal + servicesTotal;
+    const vatAmount = subtotal * 0.23;
+    const totalAmount = pricing.totalAmount || (subtotal + vatAmount);
+
+    // Get variable symbol
+    const variableSymbol = rawReservation?.qrCodes?.variableSymbol || rawReservation?.reservationNumber?.replace(/[^0-9]/g, '')?.slice(-10) || '';
+
     const templateVariables = {
       customer_name: reservationData.customerName || rawReservation?.customer?.firstName + ' ' + rawReservation?.customer?.lastName || '',
       car_brand: rawReservation?.car?.brand || reservationData.carInfo?.split(' ')[0] || reservationData.carBrand || '',
@@ -1244,7 +1307,16 @@ class SMTP2GOService {
       instagram_url: 'https://www.instagram.com/nitracar/',
       facebook_url: 'https://www.facebook.com/nitracar/',
       current_year: new Date().getFullYear().toString(),
-      link_view: `https://pozicauto.sk/reservations/${reservationData.reservationNumber || rawReservation?.reservationNumber}`
+      link_view: `https://pozicauto.sk/reservations/${reservationData.reservationNumber || rawReservation?.reservationNumber}`,
+      // Pricing breakdown for NitraCar templates
+      selected_services: servicesForEmail.length > 0 ? servicesForEmail : null,
+      rental_days: rentalDays,
+      rental_total: rentalTotal.toFixed(2),
+      services_total: servicesTotal > 0 ? servicesTotal.toFixed(2) : null,
+      subtotal: subtotal.toFixed(2),
+      vat_amount: vatAmount.toFixed(2),
+      total_amount: totalAmount.toFixed(2),
+      variable_symbol: variableSymbol
     };
 
     // Get language from reservation for NitraCar (defaults to 'sk')

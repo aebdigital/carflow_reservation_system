@@ -169,6 +169,87 @@
             </td>
         </tr>
 
+        <!-- Pricing Breakdown -->
+        <tr>
+            <td style="padding: 20px;">
+                <table style="width: 100%; border-collapse: collapse; background-color: #f9f9f9; border-radius: 8px;">
+                    <tr>
+                        <td style="padding: 15px;">
+                            <h4 style="color: #22D3EE; font-size: 18px; font-weight: bold; margin: 0 0 15px 0;">Podrobnosti o cenách</h4>
+
+                            {{#if selected_services}}
+                            <!-- Additional Services -->
+                            <p style="color: #666666; font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">Dodatočné služby:</p>
+                            {{#each selected_services}}
+                            <table style="width: 100%; margin-bottom: 5px;">
+                                <tr>
+                                    <td style="color: #333333; font-size: 14px; padding: 3px 0 3px 15px;">{{this.name}}</td>
+                                    <td style="color: #333333; font-size: 14px; text-align: right; padding: 3px 0;">{{this.price}}€</td>
+                                </tr>
+                            </table>
+                            {{/each}}
+                            <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 10px 0;">
+                            {{/if}}
+
+                            <!-- Rental Price -->
+                            <table style="width: 100%; margin-bottom: 5px;">
+                                <tr>
+                                    <td style="color: #333333; font-size: 14px; padding: 3px 0;">Prenájom vozidla ({{rental_days}} dní):</td>
+                                    <td style="color: #333333; font-size: 14px; text-align: right; padding: 3px 0;">{{rental_total}}€</td>
+                                </tr>
+                            </table>
+
+                            {{#if services_total}}
+                            <!-- Services Total -->
+                            <table style="width: 100%; margin-bottom: 5px;">
+                                <tr>
+                                    <td style="color: #333333; font-size: 14px; padding: 3px 0;">Služby a poistenie:</td>
+                                    <td style="color: #333333; font-size: 14px; text-align: right; padding: 3px 0;">{{services_total}}€</td>
+                                </tr>
+                            </table>
+                            {{/if}}
+
+                            <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 10px 0;">
+
+                            <!-- Subtotal -->
+                            <table style="width: 100%; margin-bottom: 5px;">
+                                <tr>
+                                    <td style="color: #333333; font-size: 14px; padding: 3px 0;">Medzisúčet:</td>
+                                    <td style="color: #333333; font-size: 14px; text-align: right; padding: 3px 0;">{{subtotal}}€</td>
+                                </tr>
+                            </table>
+
+                            <!-- VAT -->
+                            <table style="width: 100%; margin-bottom: 5px;">
+                                <tr>
+                                    <td style="color: #333333; font-size: 14px; padding: 3px 0;">DPH (23%):</td>
+                                    <td style="color: #333333; font-size: 14px; text-align: right; padding: 3px 0;">{{vat_amount}}€</td>
+                                </tr>
+                            </table>
+
+                            <hr style="border: none; border-top: 2px solid #22D3EE; margin: 10px 0;">
+
+                            <!-- Total -->
+                            <table style="width: 100%; margin-bottom: 10px;">
+                                <tr>
+                                    <td style="color: #22D3EE; font-size: 18px; font-weight: bold; padding: 5px 0;">Celková suma:</td>
+                                    <td style="color: #22D3EE; font-size: 18px; font-weight: bold; text-align: right; padding: 5px 0;">{{total_amount}}€</td>
+                                </tr>
+                            </table>
+
+                            <!-- Variable Symbol -->
+                            <table style="width: 100%;">
+                                <tr>
+                                    <td style="color: #666666; font-size: 12px; padding: 3px 0;">Variabilný symbol:</td>
+                                    <td style="color: #22D3EE; font-size: 12px; font-weight: bold; text-align: right; padding: 3px 0;">{{variable_symbol}}</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
         <!-- Status Message -->
         <tr>
             <td style="padding: 20px; text-align: center;">
