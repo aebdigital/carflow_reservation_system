@@ -2586,8 +2586,24 @@ function Reservations() {
                             const dph = fullTotal * 0.23;
                             const subtotal = fullTotal - dph;
 
+                            // Total services + insurance
+                            const totalExtras = servicesAmount + additionalInsuranceAmount + extendedInsuranceAmount;
+
                             return (
                               <>
+                                {/* Show rental price separately */}
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                  <Typography variant="body2">Prenájom vozidla ({selectedReservation.pricing?.totalDays || 0} dní):</Typography>
+                                  <Typography variant="body2">{rentalAmount.toFixed(2)}€</Typography>
+                                </Box>
+                                {/* Show extras total if any */}
+                                {totalExtras > 0 && (
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                    <Typography variant="body2">Služby a poistenie:</Typography>
+                                    <Typography variant="body2">{totalExtras.toFixed(2)}€</Typography>
+                                  </Box>
+                                )}
+                                <Divider sx={{ my: 1 }} />
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                                   <Typography variant="body2">Medzisúčet:</Typography>
                                   <Typography variant="body2">{subtotal.toFixed(2)}€</Typography>
