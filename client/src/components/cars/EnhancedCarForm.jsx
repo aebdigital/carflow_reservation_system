@@ -1327,7 +1327,7 @@ const EnhancedCarForm = ({
           <Grid item xs={12} md={4}>
             <TextField
               fullWidth
-              label={isRival ? "Platnosť STK+EK" : "Platnosť STK"}
+              label="Platnosť STK"
               type="date"
               value={formData.documentValidity?.technicalInspection?.expiryDate?.split('T')[0] || ''}
               onChange={(e) => handleNestedChange('documentValidity.technicalInspection.expiryDate', e.target.value)}

@@ -1201,9 +1201,8 @@ function Cars() {
       }
     };
 
-    // Check all three document types
+    // Check document types (STK and highway sticker only - EK disabled for Rival)
     checkExpiry(car.documentValidity?.technicalInspection?.expiryDate, 'STK');
-    checkExpiry(car.documentValidity?.emissionInspection?.expiryDate, 'EK');
     checkExpiry(car.documentValidity?.highwayTollSticker?.expiryDate, 'Dialnicna znamka');
 
     return {
