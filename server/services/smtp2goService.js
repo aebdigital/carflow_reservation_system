@@ -537,10 +537,10 @@ class SMTP2GOService {
     // Calculate services total (including insurance)
     const servicesTotal = pricing.servicesTotal || selectedServices.reduce((sum, s) => sum + Number(s.calculatedPrice || s.price || 0), 0);
 
-    // Calculate subtotal and VAT (23%)
+    // Calculate total (NitraCar is not VAT payer, so no VAT added)
     const subtotal = rentalTotal + servicesTotal;
-    const vatAmount = subtotal * 0.23;
-    const totalAmount = pricing.totalAmount || (subtotal + vatAmount);
+    const isNitraCar = senderEmail && (senderEmail.includes('nitra-car') || senderEmail.includes('nitracar'));
+    const totalAmount = isNitraCar ? subtotal : (pricing.totalAmount || subtotal);
 
     // Get deposit amount
     const depositAmount = rawReservation?.car?.pricing?.deposit || rawReservation?.car?.deposit || pricing.deposit || 0;
@@ -566,13 +566,11 @@ class SMTP2GOService {
       current_year: new Date().getFullYear(),
       // LeRent logo URL (from environment variable or fallback)
       lerent_logo_url: process.env.LERENT_LOGO_URL || 'https://storage.googleapis.com/car_rental_carflow/tenant-5e482191fe5890cb9f9ad402/user-5e482191fe5890cb9f9ad402/logoRENT.png',
-      // Pricing breakdown for NitraCar templates
+      // Pricing breakdown for NitraCar templates (no VAT - not VAT payer)
       selected_services: servicesForEmail.length > 0 ? servicesForEmail : null,
       rental_days: rentalDays,
       rental_total: rentalTotal.toFixed(2),
       services_total: servicesTotal > 0 ? servicesTotal.toFixed(2) : null,
-      subtotal: subtotal.toFixed(2),
-      vat_amount: vatAmount.toFixed(2),
       total_amount: totalAmount.toFixed(2),
       deposit_amount: `${Number(depositAmount).toFixed(2)} €`,
       variable_symbol: variableSymbol,
@@ -1293,10 +1291,10 @@ class SMTP2GOService {
     // Calculate services total (including insurance)
     const servicesTotal = pricing.servicesTotal || selectedServices.reduce((sum, s) => sum + Number(s.calculatedPrice || s.price || 0), 0);
 
-    // Calculate subtotal and VAT (23%)
+    // Calculate total (NitraCar is not VAT payer, so no VAT added)
     const subtotal = rentalTotal + servicesTotal;
-    const vatAmount = subtotal * 0.23;
-    const totalAmount = pricing.totalAmount || (subtotal + vatAmount);
+    const isNitraCarEmail = senderEmail && (senderEmail.includes('nitra-car') || senderEmail.includes('nitracar'));
+    const totalAmount = isNitraCarEmail ? subtotal : (pricing.totalAmount || subtotal);
 
     // Get variable symbol
     const variableSymbol = rawReservation?.qrCodes?.variableSymbol || rawReservation?.reservationNumber?.replace(/[^0-9]/g, '')?.slice(-10) || '';
@@ -1320,13 +1318,11 @@ class SMTP2GOService {
       facebook_url: 'https://www.facebook.com/nitracar/',
       current_year: new Date().getFullYear().toString(),
       link_view: `https://pozicauto.sk/reservations/${reservationData.reservationNumber || rawReservation?.reservationNumber}`,
-      // Pricing breakdown for NitraCar templates
+      // Pricing breakdown for NitraCar templates (no VAT - not VAT payer)
       selected_services: servicesForEmail.length > 0 ? servicesForEmail : null,
       rental_days: rentalDays,
       rental_total: rentalTotal.toFixed(2),
       services_total: servicesTotal > 0 ? servicesTotal.toFixed(2) : null,
-      subtotal: subtotal.toFixed(2),
-      vat_amount: vatAmount.toFixed(2),
       total_amount: totalAmount.toFixed(2),
       variable_symbol: variableSymbol
     };
