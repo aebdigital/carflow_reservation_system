@@ -729,7 +729,7 @@ class SMTP2GOService {
     }
 
     // Override subject to match exact specification (use English for NitraCar English reservations)
-    const isNitraCar = senderEmail && (senderEmail.includes('nitra-car') || senderEmail.includes('nitracar'));
+    // isNitraCar already defined above for VAT calculation
     const subject = (isNitraCar && language === 'en') ? 'Reservation Received' : '📥 Rezervácia prijatá';
 
     return this.sendEmail(to, subject, emailData.html, null, user);
