@@ -866,25 +866,25 @@ function Reservations() {
     setReservationToDelete(null)
   }
 
-  const handleConfirm = async (reservation, skipEmail = false) => {
+  const handleConfirm = async (reservation, skipPaymentInfo = false) => {
     try {
       await confirmReservation({
         id: reservation._id,
         date: new Date(),
-        notes: skipEmail ? 'Confirmed without deposit email' : 'Confirmed by admin',
-        skipEmail: skipEmail
+        notes: skipPaymentInfo ? 'Confirmed without deposit (no payment info in email)' : 'Confirmed with deposit request',
+        skipPaymentInfo: skipPaymentInfo
       }).unwrap()
     } catch (error) {
       console.error('Error confirming reservation:', error)
     }
   }
 
-  // NitraCar specific: Confirm with deposit email
+  // NitraCar specific: Confirm with deposit email (includes payment link)
   const handleConfirmWithDeposit = async (reservation) => {
     await handleConfirm(reservation, false)
   }
 
-  // NitraCar specific: Confirm without deposit email
+  // NitraCar specific: Confirm without deposit (sends email but without payment info)
   const handleConfirmWithoutDeposit = async (reservation) => {
     await handleConfirm(reservation, true)
   }
@@ -1510,7 +1510,7 @@ function Reservations() {
                           {(reservation.status === 'pending' || reservation.status === 'awaiting_payment') && (
                             auth.user?.email === 'nitra-car@nitra-car.sk' ? (
                               <>
-                                <Tooltip title="Potvrdiť so zálohou (pošle email)">
+                                <Tooltip title="Potvrdiť so zálohou (pošle email s platobným linkom)">
                                   <IconButton
                                     size="small"
                                     onClick={() => handleConfirmWithDeposit(reservation)}
@@ -1519,7 +1519,7 @@ function Reservations() {
                                     <ConfirmIcon fontSize="small" />
                                   </IconButton>
                                 </Tooltip>
-                                <Tooltip title="Potvrdiť bez zálohy (nepošle email)">
+                                <Tooltip title="Potvrdiť bez zálohy (pošle email bez platobných údajov)">
                                   <IconButton
                                     size="small"
                                     onClick={() => handleConfirmWithoutDeposit(reservation)}
@@ -2064,7 +2064,7 @@ function Reservations() {
                           </Tooltip>
                           {auth.user?.email === 'nitra-car@nitra-car.sk' ? (
                             <>
-                              <Tooltip title="Potvrdiť so zálohou (pošle email)">
+                              <Tooltip title="Potvrdiť so zálohou (pošle email s platobným linkom)">
                                 <IconButton
                                   size="small"
                                   onClick={() => handleConfirmWithDeposit(reservation)}
@@ -2073,7 +2073,7 @@ function Reservations() {
                                   <ConfirmIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
-                              <Tooltip title="Potvrdiť bez zálohy (nepošle email)">
+                              <Tooltip title="Potvrdiť bez zálohy (pošle email bez platobných údajov)">
                                 <IconButton
                                   size="small"
                                   onClick={() => handleConfirmWithoutDeposit(reservation)}

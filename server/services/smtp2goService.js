@@ -738,14 +738,16 @@ class SMTP2GOService {
   }
 
   // Customer confirmation email when admin confirms reservation
-  async sendCustomerReservationConfirmed(to, reservationData, user = null, rawReservation = null, externalAttachments = []) {
+  // skipPaymentInfo: if true, sends email without QR codes/payment links (NitraCar "Potvrdiť bez zálohy")
+  async sendCustomerReservationConfirmed(to, reservationData, user = null, rawReservation = null, externalAttachments = [], skipPaymentInfo = false) {
     console.log('📧 [SMTP2GO DEBUG] sendCustomerReservationConfirmed called with:', {
       to: to,
       hasReservationData: !!reservationData,
       hasRawReservation: !!rawReservation,
       rawReservationId: rawReservation?._id,
       rawReservationQrCodes: !!rawReservation?.qrCodes,
-      externalAttachmentsCount: externalAttachments.length
+      externalAttachmentsCount: externalAttachments.length,
+      skipPaymentInfo: skipPaymentInfo
     });
     
     const emailTemplateService = require('./emailTemplateService');
@@ -797,16 +799,22 @@ class SMTP2GOService {
       car_image: templateVariables.car_image
     });
     
-    // Add QR code data if available
-    console.log('🔍 [EMAIL] Checking QR codes for confirmed email:', {
-      hasQrCodes: !!rawReservation?.qrCodes,
-      qrCodesKeys: rawReservation?.qrCodes ? Object.keys(rawReservation.qrCodes) : [],
-      payBySquareRental: !!rawReservation?.qrCodes?.payBySquareRental,
-      payBySquareDeposit: !!rawReservation?.qrCodes?.payBySquareDeposit,
-      payBySquare: !!rawReservation?.qrCodes?.payBySquare
-    });
-    
-    if (rawReservation?.qrCodes) {
+    // Add QR code data if available (skip if skipPaymentInfo is true - "Potvrdiť bez zálohy")
+    if (skipPaymentInfo) {
+      console.log('📧 [EMAIL] Skipping QR codes - skipPaymentInfo=true (Potvrdiť bez zálohy)');
+      templateVariables.qr_section_display = 'display: none;';
+      templateVariables.qr_deposit_display = 'display: none;';
+    } else {
+      console.log('🔍 [EMAIL] Checking QR codes for confirmed email:', {
+        hasQrCodes: !!rawReservation?.qrCodes,
+        qrCodesKeys: rawReservation?.qrCodes ? Object.keys(rawReservation.qrCodes) : [],
+        payBySquareRental: !!rawReservation?.qrCodes?.payBySquareRental,
+        payBySquareDeposit: !!rawReservation?.qrCodes?.payBySquareDeposit,
+        payBySquare: !!rawReservation?.qrCodes?.payBySquare
+      });
+    }
+
+    if (!skipPaymentInfo && rawReservation?.qrCodes) {
       console.log('📱 [EMAIL] Adding QR codes to confirmed email template');
       
       const qrCodes = rawReservation.qrCodes;
@@ -910,8 +918,12 @@ class SMTP2GOService {
       bank_account: templateVariables.bank_account
     });
 
-    // For nitra-car users: Generate Stripe payment link for €50
-    if (senderEmail && (
+    // For nitra-car users: Generate Stripe payment link for €50 (skip if skipPaymentInfo is true)
+    if (skipPaymentInfo) {
+      console.log('💳 [STRIPE] Skipping payment link - skipPaymentInfo=true (Potvrdiť bez zálohy)');
+      templateVariables.stripe_payment_url = '';
+      templateVariables.stripe_payment_amount = '';
+    } else if (senderEmail && (
       senderEmail.includes('nitra-car@nitra-car.sk') ||
       senderEmail.includes('nitracar') ||
       senderEmail.includes('nitra-car')

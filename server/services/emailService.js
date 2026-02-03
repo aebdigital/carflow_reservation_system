@@ -70,9 +70,10 @@ class EmailService {
   }
 
   // Customer reservation confirmed (after admin approval)
-  async sendCustomerReservationConfirmed(customerEmail, reservationData, rawReservation = null, user = null, attachments = []) {
+  // skipPaymentInfo: if true, sends email without QR codes/payment links (NitraCar "Potvrdiť bez zálohy")
+  async sendCustomerReservationConfirmed(customerEmail, reservationData, user = null, rawReservation = null, attachments = [], skipPaymentInfo = false) {
     // Use SMTP2GO service which has the correct implementation
-    return await smtp2goService.sendCustomerReservationConfirmed(customerEmail, reservationData, rawReservation, user, attachments);
+    return await smtp2goService.sendCustomerReservationConfirmed(customerEmail, reservationData, user, rawReservation, attachments, skipPaymentInfo);
   }
 
   // Customer deposit email (NitraCar only)
