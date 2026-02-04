@@ -525,22 +525,28 @@ class SMTP2GOService {
     const pricing = rawReservation?.pricing || {};
     const rentalDays = pricing.totalDays || Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)));
     const dailyRate = pricing.dailyRate || 0;
-    const rentalTotal = pricing.rentalTotal || (dailyRate * rentalDays);
+    const rentalTotal = pricing.totalAmount || pricing.rentalTotal || (dailyRate * rentalDays);
 
     // Get services from reservation
     const selectedServices = rawReservation?.selectedServices || [];
     const servicesForEmail = selectedServices.map(s => ({
       name: s.name || s.serviceName || 'Služba',
-      price: Number(s.calculatedPrice || s.price || 0).toFixed(2)
+      price: Number(s.calculatedPrice || s.totalPrice || s.price || 0).toFixed(2)
     }));
 
-    // Calculate services total (including insurance)
-    const servicesTotal = pricing.servicesTotal || selectedServices.reduce((sum, s) => sum + Number(s.calculatedPrice || s.price || 0), 0);
+    // Calculate services total
+    const servicesTotal = rawReservation?.servicesTotal || pricing.servicesTotal ||
+      selectedServices.reduce((sum, s) => sum + Number(s.calculatedPrice || s.totalPrice || s.price || 0), 0);
 
-    // Calculate total (NitraCar is not VAT payer, so no VAT added)
-    const subtotal = rentalTotal + servicesTotal;
+    // Calculate insurance totals (same as admin page)
+    const additionalInsurance = rawReservation?.selectedAdditionalInsurance || [];
+    const extendedInsurance = rawReservation?.selectedExtendedInsurance || [];
+    const additionalInsuranceTotal = additionalInsurance.reduce((sum, i) => sum + Number(i.calculatedPrice || i.totalPrice || 0), 0);
+    const extendedInsuranceTotal = extendedInsurance.reduce((sum, i) => sum + Number(i.calculatedPrice || i.totalPrice || 0), 0);
+
+    // Calculate total (same as admin page: rental + services + all insurance)
     const isNitraCar = senderEmail && (senderEmail.includes('nitra-car') || senderEmail.includes('nitracar'));
-    const totalAmount = isNitraCar ? subtotal : (pricing.totalAmount || subtotal);
+    const totalAmount = rentalTotal + servicesTotal + additionalInsuranceTotal + extendedInsuranceTotal;
 
     // Get deposit amount
     const depositAmount = rawReservation?.car?.pricing?.deposit || rawReservation?.car?.deposit || pricing.deposit || 0;
@@ -1279,22 +1285,28 @@ class SMTP2GOService {
     const pricing = rawReservation?.pricing || {};
     const rentalDays = pricing.totalDays || Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)));
     const dailyRate = pricing.dailyRate || 0;
-    const rentalTotal = pricing.rentalTotal || (dailyRate * rentalDays);
+    const rentalTotal = pricing.totalAmount || pricing.rentalTotal || (dailyRate * rentalDays);
 
     // Get services from reservation
     const selectedServices = rawReservation?.selectedServices || [];
     const servicesForEmail = selectedServices.map(s => ({
       name: s.name || s.serviceName || 'Služba',
-      price: Number(s.calculatedPrice || s.price || 0).toFixed(2)
+      price: Number(s.calculatedPrice || s.totalPrice || s.price || 0).toFixed(2)
     }));
 
-    // Calculate services total (including insurance)
-    const servicesTotal = pricing.servicesTotal || selectedServices.reduce((sum, s) => sum + Number(s.calculatedPrice || s.price || 0), 0);
+    // Calculate services total
+    const servicesTotal = rawReservation?.servicesTotal || pricing.servicesTotal ||
+      selectedServices.reduce((sum, s) => sum + Number(s.calculatedPrice || s.totalPrice || s.price || 0), 0);
 
-    // Calculate total (NitraCar is not VAT payer, so no VAT added)
-    const subtotal = rentalTotal + servicesTotal;
+    // Calculate insurance totals (same as admin page)
+    const additionalInsurance = rawReservation?.selectedAdditionalInsurance || [];
+    const extendedInsurance = rawReservation?.selectedExtendedInsurance || [];
+    const additionalInsuranceTotal = additionalInsurance.reduce((sum, i) => sum + Number(i.calculatedPrice || i.totalPrice || 0), 0);
+    const extendedInsuranceTotal = extendedInsurance.reduce((sum, i) => sum + Number(i.calculatedPrice || i.totalPrice || 0), 0);
+
+    // Calculate total (same as admin page: rental + services + all insurance)
     const isNitraCarEmail = senderEmail && (senderEmail.includes('nitra-car') || senderEmail.includes('nitracar'));
-    const totalAmount = isNitraCarEmail ? subtotal : (pricing.totalAmount || subtotal);
+    const totalAmount = rentalTotal + servicesTotal + additionalInsuranceTotal + extendedInsuranceTotal;
 
     // Get variable symbol
     const variableSymbol = rawReservation?.qrCodes?.variableSymbol || rawReservation?.reservationNumber?.replace(/[^0-9]/g, '')?.slice(-10) || '';
