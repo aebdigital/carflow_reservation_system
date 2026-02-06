@@ -163,28 +163,11 @@ class EmailIconHelper {
       logoPath: iconPaths.logo
     });
 
-    // Add logo as CID attachment for NitraCar only (LeRent uses hosted URL)
-    if (isNitracarEmail && fs.existsSync(iconPaths.logo)) {
-      const logoBuffer = fs.readFileSync(iconPaths.logo);
-      const logoMimeType = this.getMimeType(iconPaths.logo);
-      const cidName = 'logo';
-
-      attachments.push({
-        filename: path.basename(iconPaths.logo),
-        content: logoBuffer.toString('base64'),
-        type: logoMimeType,
-        cid: cidName
-      });
-
-      console.log('✅ [ICON HELPER] Logo attached as CID:', {
-        cid: cidName,
-        filename: path.basename(iconPaths.logo),
-        type: logoMimeType,
-        size: logoBuffer.length
-      });
-    }
-
-    if (isLerentEmail) {
+    // NitraCar: Skip logo attachment - templates use text "NITRA-CAR" header instead
+    // LeRent: Uses hosted logo URL, no CID attachment needed
+    if (isNitracarEmail) {
+      console.log('ℹ️  [ICON HELPER] NitraCar uses text header, skipping logo CID attachment');
+    } else if (isLerentEmail) {
       console.log('ℹ️  [ICON HELPER] LeRent uses hosted logo URL, skipping CID attachment');
     }
 
