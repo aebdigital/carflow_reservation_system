@@ -1299,7 +1299,7 @@ function Reservations() {
       {isNitraCarUser && (
         <Card sx={{ mb: 2, p: 2 }}>
           <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-            Filtre (pre vyhľadávanie pokút)
+            Filtre
           </Typography>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} sm={6} md={3}>
