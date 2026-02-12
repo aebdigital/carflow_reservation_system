@@ -318,10 +318,10 @@ class NitraCarContractPdfService {
 
     // Left column - Handover (from lessor) - blank for pen filling
     let y = startY;
-    y = this.drawBlankTextItem(doc, 'Poškodenia:', leftCol, y, colWidth);
     y = this.drawBlankTextItem(doc, 'Stav PHM v nádrži:', leftCol, y, colWidth);
     y = this.drawBlankTextItem(doc, 'Depozit uhradený:', leftCol, y, colWidth);
     y = this.drawBlankTextItem(doc, 'Stav počítadla v km:', leftCol, y, colWidth);
+    y = this.drawBlankTextItem(doc, 'Poškodenia:', leftCol, y, colWidth);
     y += 25;
     doc.text('Podpis odovzdávajúceho: ________________', leftCol, y);
     y += 18;
@@ -329,10 +329,10 @@ class NitraCarContractPdfService {
 
     // Right column - Return (from tenant) - blank for pen filling
     y = startY;
-    y = this.drawBlankTextItem(doc, 'Poškodenia:', rightCol, y, colWidth);
     y = this.drawBlankTextItem(doc, 'Stav PHM v nádrži:', rightCol, y, colWidth);
     y = this.drawBlankTextItem(doc, 'Depozit vrátený:', rightCol, y, colWidth);
     y = this.drawBlankTextItem(doc, 'Stav počítadla v km:', rightCol, y, colWidth);
+    y = this.drawBlankTextItem(doc, 'Poškodenia:', rightCol, y, colWidth);
     y += 25;
     doc.text('Podpis odovzdávajúceho: ________________', rightCol, y);
     y += 18;
