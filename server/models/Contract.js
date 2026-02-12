@@ -50,6 +50,10 @@ const contractSchema = new mongoose.Schema({
       type: String, // Číslo OP (ID card number)
       sparse: true
     },
+    rodneCislo: {
+      type: String, // Rodné číslo (birth number) - NitraCar only
+      sparse: true
+    },
     licenseNumber: {
       type: String, // Číslo vodičského preukazu
       sparse: true
@@ -467,7 +471,7 @@ contractSchema.statics.createFromReservation = async function(reservationId, ten
   console.log('🔖 [CONTRACT MODEL] Created by:', createdBy);
   
   const reservation = await Reservation.findById(reservationId)
-    .populate('customer', 'firstName lastName email phone address idNumber licenseNumber licenseExpiry dateOfBirth')
+    .populate('customer', 'firstName lastName email phone address idNumber rodneCislo licenseNumber licenseExpiry dateOfBirth')
     .populate('car', 'brand model year registrationNumber vin category fuelType transmission color mileage');
   
   if (!reservation) {
@@ -524,6 +528,7 @@ contractSchema.statics.createFromReservation = async function(reservationId, ten
       email: reservation.customer.email || 'neuvedene@email.sk',
       address: formatSlovakAddress(reservation.customer.address),
       idNumber: reservation.customer.idNumber || 'Neuvedené',
+      rodneCislo: reservation.customer.rodneCislo || '',
       licenseNumber: reservation.customer.licenseNumber || 'Neuvedené'
     },
     vehicle: {

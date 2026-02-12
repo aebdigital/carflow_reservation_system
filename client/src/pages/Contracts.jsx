@@ -231,6 +231,7 @@ function Contracts() {
         email: res.customer?.email || '',
         phone: res.customer?.phone || '',
         dateOfBirth: res.customer?.dateOfBirth ? new Date(res.customer.dateOfBirth).toISOString().split('T')[0] : '',
+        rodneCislo: res.customer?.rodneCislo || '',
         licenseNumber: res.customer?.licenseNumber || '',
         licenseExpiry: res.customer?.licenseExpiry ? new Date(res.customer.licenseExpiry).toISOString().split('T')[0] : '',
         status: res.customer?.status || 'active',
@@ -672,6 +673,7 @@ function Contracts() {
         email: editCustomerData.email,
         phone: editCustomerData.phone,
         dateOfBirth: editCustomerData.dateOfBirth || undefined,
+        rodneCislo: editCustomerData.rodneCislo || undefined,
         licenseNumber: editCustomerData.licenseNumber || undefined,
         licenseExpiry: editCustomerData.licenseExpiry || undefined,
         status: editCustomerData.status,
@@ -884,6 +886,11 @@ function Contracts() {
                         <Typography variant="caption" color="text.secondary">
                           {contract.customer.email}
                         </Typography>
+                        {isNitraCarUser && contract.customer.rodneCislo && (
+                          <Typography variant="caption" display="block" color="text.secondary">
+                            RČ: {contract.customer.rodneCislo}
+                          </Typography>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
@@ -1820,6 +1827,18 @@ function Contracts() {
                         value={editCustomerData.licenseExpiry || ''}
                         onChange={(e) => setEditCustomerData(prev => ({ ...prev, licenseExpiry: e.target.value }))}
                         InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Rodné číslo"
+                        value={editCustomerData.rodneCislo || ''}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, '')
+                          setEditCustomerData(prev => ({ ...prev, rodneCislo: val }))
+                        }}
+                        inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                       />
                     </Grid>
 

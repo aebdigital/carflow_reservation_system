@@ -72,6 +72,11 @@ const userSchema = new mongoose.Schema({
     sparse: true,
     trim: true
   },
+  rodneCislo: {
+    type: String, // Rodné číslo (birth number) - NitraCar only
+    sparse: true,
+    trim: true
+  },
   dateOfBirth: {
     type: Date,
     required: false

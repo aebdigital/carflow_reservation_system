@@ -86,6 +86,7 @@ function Customers() {
     userRole: auth.user?.role
   })
 
+  const isNitraCarUser = auth.user?.email === 'nitra-car@nitra-car.sk'
   const [tabValue, setTabValue] = useState(0)
   const [openDialog, setOpenDialog] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState(null)
@@ -101,6 +102,7 @@ function Customers() {
     email: '',
     phone: '',
     dateOfBirth: null,
+    rodneCislo: '',
     licenseNumber: '',
     licenseExpiry: null,
     address: {
@@ -294,6 +296,7 @@ function Customers() {
         email: customer.email || '',
         phone: customer.phone || '',
         dateOfBirth: customer.dateOfBirth ? new Date(customer.dateOfBirth).toISOString().split('T')[0] : null,
+        rodneCislo: customer.rodneCislo || '',
         licenseNumber: customer.licenseNumber || '',
         licenseExpiry: customer.licenseExpiry ? new Date(customer.licenseExpiry).toISOString().split('T')[0] : null,
         address: customer.address || initialFormState.address,
@@ -695,11 +698,16 @@ function Customers() {
                 <Typography variant="body2" color="text.secondary" gutterBottom>
                   Číslo preukazu: {selectedCustomer.licenseNumber || 'Neuvedené'}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" gutterBottom>
                   Platnosť preukazu: {selectedCustomer.licenseExpiry ? new Date(selectedCustomer.licenseExpiry).toLocaleDateString() : 'Neuvedené'}
                 </Typography>
+                {isNitraCarUser && selectedCustomer.rodneCislo && (
+                  <Typography variant="body2" color="text.secondary">
+                    Rodné číslo: {selectedCustomer.rodneCislo}
+                  </Typography>
+                )}
               </Grid>
-              
+
               {/* Address Information */}
               <Grid item xs={12}>
                 <Typography variant="h6" gutterBottom>Adresa</Typography>
@@ -872,6 +880,21 @@ function Customers() {
                   }}
                 />
               </Grid>
+              {isNitraCarUser && (
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Rodné číslo"
+                    value={formData.rodneCislo || ''}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, '')
+                      setFormData({ ...formData, rodneCislo: val })
+                    }}
+                    disabled={dialogMode === 'view'}
+                    inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
+                  />
+                </Grid>
+              )}
 
               {/* Address Information */}
               <Grid item xs={12}>
