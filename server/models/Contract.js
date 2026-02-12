@@ -341,61 +341,82 @@ contractSchema.index({ tenantId: 1, reservation: 1 });
 contractSchema.index({ tenantId: 1, status: 1 });
 contractSchema.index({ tenantId: 1, createdAt: 1 });
 
-// Generate contract number with the format: YYYYMMDD##N
+// Generate contract number
 contractSchema.pre('save', async function(next) {
   if (this.isNew && !this.contractNumber) {
     try {
       console.log('🔖 [CONTRACT] Generating contract number for new contract...');
-      
+
       const today = new Date();
       const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      
-      // Format: YYYYMMDD
-      const datePrefix = `${year}${month}${day}`;
-      console.log('🔖 [CONTRACT] Date prefix:', datePrefix);
-      
-      // Find contracts created today for this tenant
-      const startOfDay = new Date(today);
-      startOfDay.setHours(0, 0, 0, 0);
-      
-      const endOfDay = new Date(today);
-      endOfDay.setHours(23, 59, 59, 999);
-      
-      let todayContractsCount = 0;
-      try {
-        todayContractsCount = await this.constructor.countDocuments({
-          tenantId: this.tenantId,
-          createdAt: {
-            $gte: startOfDay,
-            $lte: endOfDay
-          }
-        });
-        console.log('🔖 [CONTRACT] Today contracts count:', todayContractsCount);
-      } catch (countError) {
-        console.error('🔖 [CONTRACT] Error counting today contracts, using fallback:', countError);
-        // Use current timestamp as fallback to ensure uniqueness
-        todayContractsCount = Date.now() % 100;
+
+      // Check if this is a NitraCar tenant
+      const User = mongoose.model('User');
+      const tenantAdmin = await User.findOne({
+        tenantId: this.tenantId,
+        role: 'admin'
+      }).select('email');
+      const isNitraCar = tenantAdmin?.email === 'nitra-car@nitra-car.sk';
+
+      if (isNitraCar) {
+        // NitraCar format: YYYY + sequential 3-digit number (e.g., 2026001)
+        console.log('🔖 [CONTRACT] NitraCar tenant - using YYYY+### format');
+
+        const startOfYear = new Date(year, 0, 1);
+        const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
+
+        let yearContractsCount = 0;
+        try {
+          yearContractsCount = await this.constructor.countDocuments({
+            tenantId: this.tenantId,
+            createdAt: { $gte: startOfYear, $lte: endOfYear }
+          });
+          console.log('🔖 [CONTRACT] Year contracts count:', yearContractsCount);
+        } catch (countError) {
+          console.error('🔖 [CONTRACT] Error counting year contracts:', countError);
+          yearContractsCount = Date.now() % 1000;
+        }
+
+        const sequentialNumber = String(yearContractsCount + 1).padStart(3, '0');
+        this.contractNumber = `${year}${sequentialNumber}`;
+        console.log('🔖 [CONTRACT] Generated NitraCar contract number:', this.contractNumber);
+      } else {
+        // Default format: YYYYMMDD##N
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const datePrefix = `${year}${month}${day}`;
+        console.log('🔖 [CONTRACT] Date prefix:', datePrefix);
+
+        const startOfDay = new Date(today);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(today);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        let todayContractsCount = 0;
+        try {
+          todayContractsCount = await this.constructor.countDocuments({
+            tenantId: this.tenantId,
+            createdAt: { $gte: startOfDay, $lte: endOfDay }
+          });
+          console.log('🔖 [CONTRACT] Today contracts count:', todayContractsCount);
+        } catch (countError) {
+          console.error('🔖 [CONTRACT] Error counting today contracts, using fallback:', countError);
+          todayContractsCount = Date.now() % 100;
+        }
+
+        const sequentialNumber = String(todayContractsCount + 1).padStart(2, '0');
+        this.contractNumber = `${datePrefix}${sequentialNumber}N`;
+        console.log('🔖 [CONTRACT] Generated contract number:', this.contractNumber);
       }
-      
-      // Sequential number with zero padding (01, 02, 03, etc.)
-      const sequentialNumber = String(todayContractsCount + 1).padStart(2, '0');
-      
-      // Final format: YYYYMMDD##N (e.g., 2025062201N)
-      this.contractNumber = `${datePrefix}${sequentialNumber}N`;
-      
-      console.log('🔖 [CONTRACT] Generated contract number:', this.contractNumber);
     } catch (error) {
       console.error('🔖 [CONTRACT] Error generating contract number:', error);
-      // Generate a more robust fallback contract number
       const timestamp = Date.now();
       const randomSuffix = Math.random().toString(36).substring(2, 5).toUpperCase();
       this.contractNumber = `${timestamp}${randomSuffix}N`;
       console.log('🔖 [CONTRACT] Using fallback contract number:', this.contractNumber);
     }
   }
-  
+
   // Ensure contract number is always set before saving
   if (!this.contractNumber) {
     const timestamp = Date.now();
@@ -403,7 +424,7 @@ contractSchema.pre('save', async function(next) {
     this.contractNumber = `EMERGENCY${timestamp}${randomSuffix}N`;
     console.log('🔖 [CONTRACT] Emergency contract number generated:', this.contractNumber);
   }
-  
+
   next();
 });
 

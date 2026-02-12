@@ -131,7 +131,7 @@ class NitraCarContractPdfService {
 
     // Contract number and date on the right (use reservation number)
     doc.fontSize(10).font(this.fontRegular).fillColor('black');
-    doc.text(`Číslo zmluvy: ${contractData.reservationNumber || contractData.contractNumber || 'N/A'}`, doc.page.width - 200, 40, { width: 160, align: 'right' });
+    doc.text(`Číslo zmluvy: ${contractData.contractNumber || contractData.reservationNumber || 'N/A'}`, doc.page.width - 200, 40, { width: 160, align: 'right' });
     doc.text(`Dátum: ${this.formatDate(new Date())}`, doc.page.width - 200, 70, { width: 160, align: 'right' });
 
     // Title - single line centered (reset x position to left margin first)
