@@ -1767,7 +1767,7 @@ const generateSlovakAgreement = asyncHandler(async (req, res, next) => {
       _id: req.params.id,
       tenantId: req.user.tenantId
     })
-      .populate('customer', 'firstName lastName email phone address licenseNumber idNumber')
+      .populate('customer', 'firstName lastName email phone address licenseNumber idNumber rodneCislo')
       .populate('car', 'brand model year registrationNumber vin color category mileageLimit idCardNumber technicalInspection')
       .populate('createdBy', 'firstName lastName');
 

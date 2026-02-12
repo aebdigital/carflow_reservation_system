@@ -1010,7 +1010,7 @@ class SMTP2GOService {
           {
             path: 'reservation',
             populate: [
-              { path: 'customer', select: 'firstName lastName email phone address licenseNumber idNumber' },
+              { path: 'customer', select: 'firstName lastName email phone address licenseNumber idNumber rodneCislo' },
               { path: 'car', select: 'brand model year registrationNumber vin color category mileage' }
             ]
           }
@@ -1034,6 +1034,7 @@ class SMTP2GOService {
                 email: contract.customer?.email,
                 address: contract.customer?.address,
                 idNumber: contract.customer?.idNumber || contract.customerIdentification?.idCardNumber,
+                rodneCislo: contract.customer?.rodneCislo,
                 licenseNumber: contract.customer?.licenseNumber || contract.customerIdentification?.driverLicenseNumber
               },
               vehicle: {

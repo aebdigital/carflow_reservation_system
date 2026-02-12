@@ -189,6 +189,9 @@ class NitraCarContractPdfService {
     this.drawLabelValue(doc, 'Meno / Názov:', fullName, leftCol, rightCol);
     this.drawLabelValue(doc, 'Bydlisko / Sídlo:', address, leftCol, rightCol);
     this.drawLabelValue(doc, 'Číslo OP / Pas:', customer.idNumber || 'Neuvedené', leftCol, rightCol);
+    if (customer.rodneCislo) {
+      this.drawLabelValue(doc, 'Rodné číslo:', customer.rodneCislo, leftCol, rightCol);
+    }
     this.drawLabelValue(doc, 'Telefón:', customer.phone || 'Neuvedené', leftCol, rightCol);
     this.drawLabelValue(doc, 'E-mail:', customer.email || 'Neuvedené', leftCol, rightCol);
 
