@@ -36,7 +36,16 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   Tooltip,
+  Tabs,
+  Tab,
+  Autocomplete,
+  CircularProgress,
 } from '@mui/material'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import { TimePicker } from '@mui/x-date-pickers/TimePicker'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
+import { sk } from 'date-fns/locale'
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -54,7 +63,8 @@ import {
   Rule as RuleIcon,
   Assignment as AssignmentIcon,
 } from '@mui/icons-material'
-import { 
+import { useSelector } from 'react-redux'
+import {
   useGetContractsQuery,
   useGetContractQuery,
   useCreateContractMutation,
@@ -66,6 +76,11 @@ import {
   useGetContractStatsQuery,
   useGetReservationsQuery,
   useGenerateReservationSlovakAgreementMutation,
+  useGetReservationQuery,
+  useUpdateReservationMutation,
+  useUpdateUserMutation,
+  useGetCarsQuery,
+  useGetPickupLocationsByUserQuery,
 } from '../store/store'
 import { t } from '../utils/translations'
 
@@ -74,6 +89,19 @@ function Contracts() {
   const [dialogMode, setDialogMode] = useState('create') // 'create', 'view'
   const [selectedContract, setSelectedContract] = useState(null)
   const [alert, setAlert] = useState(null)
+
+  // NitraCar edit dialog state
+  const auth = useSelector((state) => state.auth)
+  const isNitraCarUser = auth.user?.email === 'nitra-car@nitra-car.sk'
+  const [editOpen, setEditOpen] = useState(false)
+  const [editTabValue, setEditTabValue] = useState(0)
+  const [editReservationId, setEditReservationId] = useState(null)
+  const [editCustomerId, setEditCustomerId] = useState(null)
+  const [editReservationData, setEditReservationData] = useState({})
+  const [editCustomerData, setEditCustomerData] = useState({})
+  const [editSelectedServices, setEditSelectedServices] = useState([])
+  const [availableServices, setAvailableServices] = useState([])
+  const [servicesLoading, setServicesLoading] = useState(false)
   const [formData, setFormData] = useState({
     reservationId: '',
     customer: {
@@ -160,6 +188,15 @@ function Contracts() {
   const [generateContractPDF] = useGenerateContractPDFMutation()
   const [generateSlovakAgreement] = useGenerateReservationSlovakAgreementMutation()
 
+  // NitraCar edit hooks
+  const { data: editReservationResult, isLoading: editReservationLoading } = useGetReservationQuery(editReservationId, { skip: !editReservationId })
+  const [updateReservation, { isLoading: updatingReservation }] = useUpdateReservationMutation()
+  const [updateUser, { isLoading: updatingUser }] = useUpdateUserMutation()
+  const { data: carsData } = useGetCarsQuery(undefined, { skip: !isNitraCarUser })
+  const { data: pickupLocationsData, isLoading: pickupLocationsLoading } = useGetPickupLocationsByUserQuery(undefined, { skip: !isNitraCarUser })
+  const cars = carsData?.data || []
+  const pickupLocations = pickupLocationsData?.data || []
+
   const contracts = contractsData?.data || []
   const stats = contractStatsData?.data || {}
   const availableReservations = reservationsData?.data || []
@@ -170,6 +207,97 @@ function Contracts() {
       return () => clearTimeout(timer)
     }
   }, [alert])
+
+  // Populate edit form when reservation data loads
+  useEffect(() => {
+    if (editReservationResult?.data && editOpen) {
+      const res = editReservationResult.data
+      setEditReservationData({
+        car: res.car || null,
+        startDate: res.startDate ? new Date(res.startDate) : null,
+        endDate: res.endDate ? new Date(res.endDate) : null,
+        pickupLocation: res.pickupLocation || { name: '', address: { street: '', city: '', state: '', zipCode: '', country: '' } },
+        dropoffLocation: res.dropoffLocation || { name: '', address: { street: '', city: '', state: '', zipCode: '', country: '' } },
+        status: res.status || 'pending',
+        pricing: res.pricing || {},
+        specialRequests: res.specialRequests || '',
+        servicesTotal: res.servicesTotal || 0,
+      })
+      setEditSelectedServices(res.selectedServices || [])
+      setEditCustomerId(res.customer?._id || null)
+      setEditCustomerData({
+        firstName: res.customer?.firstName || '',
+        lastName: res.customer?.lastName || '',
+        email: res.customer?.email || '',
+        phone: res.customer?.phone || '',
+        dateOfBirth: res.customer?.dateOfBirth ? new Date(res.customer.dateOfBirth).toISOString().split('T')[0] : '',
+        licenseNumber: res.customer?.licenseNumber || '',
+        licenseExpiry: res.customer?.licenseExpiry ? new Date(res.customer.licenseExpiry).toISOString().split('T')[0] : '',
+        status: res.customer?.status || 'active',
+        address: {
+          street: res.customer?.address?.street || '',
+          city: res.customer?.address?.city || '',
+          state: res.customer?.address?.state || '',
+          zipCode: res.customer?.address?.zipCode || '',
+          country: res.customer?.address?.country || '',
+        }
+      })
+    }
+  }, [editReservationResult, editOpen])
+
+  // Fetch available services when edit dialog opens
+  useEffect(() => {
+    const fetchServices = async () => {
+      if (isNitraCarUser && editOpen) {
+        setServicesLoading(true)
+        try {
+          const baseUrl = (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, '')
+          const response = await fetch(`${baseUrl}/additional-services`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          })
+          const result = await response.json()
+          if (result.success) {
+            setAvailableServices(result.data.filter(s => s.isActive))
+          }
+        } catch (err) {
+          console.error('Error fetching services:', err)
+        } finally {
+          setServicesLoading(false)
+        }
+      }
+    }
+    fetchServices()
+  }, [isNitraCarUser, editOpen])
+
+  // Recalculate pricing when car or dates change in edit mode
+  useEffect(() => {
+    if (editOpen && editReservationData.car?._id && editReservationData.startDate && editReservationData.endDate) {
+      const days = Math.ceil((new Date(editReservationData.endDate) - new Date(editReservationData.startDate)) / (1000 * 60 * 60 * 24))
+      if (days > 0) {
+        const car = editReservationData.car
+        let dailyRate = car.dailyRate || 0
+        if (days >= 26 && car.rates?.['26plus']) dailyRate = car.rates['26plus']
+        else if (days >= 10 && car.rates?.['10-25days']) dailyRate = car.rates['10-25days']
+        else if (days >= 4 && car.rates?.['4-9days']) dailyRate = car.rates['4-9days']
+        else if (days >= 2 && car.rates?.threeDays) dailyRate = car.rates.threeDays
+
+        const subtotal = dailyRate * days
+        const servicesTotal = editSelectedServices?.reduce((sum, s) => {
+          const pricingType = s.pricingType || s.pricing?.type || 'fixed'
+          const unitPrice = s.unitPrice || s.pricing?.amount || 0
+          const price = pricingType === 'per_day' ? unitPrice * days * (s.quantity || 1) : unitPrice * (s.quantity || 1)
+          return sum + price
+        }, 0) || 0
+        const totalAmount = subtotal + servicesTotal
+
+        setEditReservationData(prev => ({
+          ...prev,
+          pricing: { ...prev.pricing, dailyRate, totalDays: days, subtotal, totalAmount },
+          servicesTotal
+        }))
+      }
+    }
+  }, [editOpen, editReservationData.car?._id, editReservationData.startDate, editReservationData.endDate, editSelectedServices])
 
   // Automatically calculate total pricing when values change
   useEffect(() => {
@@ -473,6 +601,101 @@ function Contracts() {
     }
   }
 
+  // NitraCar Edit handlers
+  const handleOpenEdit = (contract) => {
+    const resId = contract.reservation?._id || contract.reservation
+    setEditReservationId(resId)
+    setEditTabValue(0)
+    setEditOpen(true)
+  }
+
+  const handleCloseEdit = () => {
+    setEditOpen(false)
+    setEditReservationId(null)
+    setEditCustomerId(null)
+    setEditReservationData({})
+    setEditCustomerData({})
+    setEditSelectedServices([])
+  }
+
+  const handleEditSave = async () => {
+    try {
+      // Prepare reservation update data
+      const days = editReservationData.pricing?.totalDays || Math.ceil((new Date(editReservationData.endDate) - new Date(editReservationData.startDate)) / (1000 * 60 * 60 * 24))
+      const car = editReservationData.car
+      let dailyRate = car?.dailyRate || 0
+      if (days >= 26 && car?.rates?.['26plus']) dailyRate = car.rates['26plus']
+      else if (days >= 10 && car?.rates?.['10-25days']) dailyRate = car.rates['10-25days']
+      else if (days >= 4 && car?.rates?.['4-9days']) dailyRate = car.rates['4-9days']
+      else if (days >= 2 && car?.rates?.threeDays) dailyRate = car.rates.threeDays
+
+      const servicesTotal = editSelectedServices?.reduce((sum, s) => {
+        const pricingType = s.pricingType || s.pricing?.type || 'fixed'
+        const unitPrice = s.unitPrice || s.pricing?.amount || 0
+        const price = pricingType === 'per_day' ? unitPrice * days * (s.quantity || 1) : unitPrice * (s.quantity || 1)
+        return sum + price
+      }, 0) || 0
+      const subtotal = dailyRate * days
+      const totalAmount = subtotal + servicesTotal
+
+      const reservationUpdateData = {
+        id: editReservationId,
+        customer: editCustomerId,
+        car: car?._id,
+        startDate: new Date(editReservationData.startDate).toISOString(),
+        endDate: new Date(editReservationData.endDate).toISOString(),
+        pickupLocation: editReservationData.pickupLocation,
+        dropoffLocation: editReservationData.dropoffLocation,
+        status: editReservationData.status,
+        specialRequests: editReservationData.specialRequests || '',
+        selectedServices: editSelectedServices?.map(s => ({
+          _id: s._id || s.service,
+          service: s._id || s.service,
+          name: s.name,
+          category: s.category,
+          quantity: s.quantity || 1,
+          unitPrice: s.unitPrice || s.pricing?.amount || 0,
+          totalPrice: (s.pricingType === 'per_day' || s.pricing?.type === 'per_day')
+            ? (s.unitPrice || s.pricing?.amount || 0) * days * (s.quantity || 1)
+            : (s.unitPrice || s.pricing?.amount || 0) * (s.quantity || 1),
+          pricingType: s.pricingType || s.pricing?.type || 'fixed'
+        })) || [],
+        servicesTotal,
+        pricing: { ...editReservationData.pricing, dailyRate, totalDays: days, subtotal, totalAmount }
+      }
+
+      // Prepare customer update data
+      const customerUpdateData = {
+        id: editCustomerId,
+        firstName: editCustomerData.firstName,
+        lastName: editCustomerData.lastName,
+        email: editCustomerData.email,
+        phone: editCustomerData.phone,
+        dateOfBirth: editCustomerData.dateOfBirth || undefined,
+        licenseNumber: editCustomerData.licenseNumber || undefined,
+        licenseExpiry: editCustomerData.licenseExpiry || undefined,
+        status: editCustomerData.status,
+        address: editCustomerData.address,
+      }
+
+      // Call both mutations
+      await Promise.all([
+        updateReservation(reservationUpdateData).unwrap(),
+        updateUser(customerUpdateData).unwrap(),
+      ])
+
+      setAlert({ type: 'success', message: 'Rezervácia a zákazník boli úspešne aktualizované!' })
+      handleCloseEdit()
+      refetch()
+    } catch (error) {
+      console.error('Error updating from contract edit:', error)
+      setAlert({
+        type: 'error',
+        message: `Chyba pri aktualizácii: ${error.data?.message || error.message}`
+      })
+    }
+  }
+
   const handleDownloadSlovakAgreement = async (contract) => {
     try {
       if (!contract.reservationId) {
@@ -682,9 +905,20 @@ function Contracts() {
                     </TableCell>
                     <TableCell>
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          {isNitraCarUser && (
+                            <Tooltip title="Upraviť rezerváciu a zákazníka">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleOpenEdit(contract)}
+                                color="warning"
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                           <Tooltip title="Stiahnuť PDF">
-                      <IconButton 
-                        size="small" 
+                      <IconButton
+                        size="small"
                               onClick={() => handleDownloadPDF(contract._id)}
                         color="primary"
                       >
@@ -692,8 +926,8 @@ function Contracts() {
                       </IconButton>
                           </Tooltip>
                           <Tooltip title="Náhľad PDF">
-                            <IconButton 
-                              size="small" 
+                            <IconButton
+                              size="small"
                               onClick={() => handlePreviewPDF(contract._id)}
                               color="info"
                             >
@@ -701,8 +935,8 @@ function Contracts() {
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Vymazať">
-                            <IconButton 
-                              size="small" 
+                            <IconButton
+                              size="small"
                               onClick={() => handleDelete(contract._id)}
                               color="error"
                               disabled={contract.status === 'signed'}
@@ -1217,8 +1451,433 @@ function Contracts() {
         </DialogActions>
         </form>
       </Dialog>
+
+      {/* NitraCar Edit Reservation & Customer Dialog */}
+      {isNitraCarUser && (
+        <Dialog
+          open={editOpen}
+          onClose={handleCloseEdit}
+          maxWidth="lg"
+          fullWidth
+        >
+          <DialogTitle>Upraviť rezerváciu a zákazníka</DialogTitle>
+          <DialogContent>
+            {editReservationLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <>
+                <Tabs value={editTabValue} onChange={(e, v) => setEditTabValue(v)} sx={{ mb: 2 }}>
+                  <Tab label="Rezervácia" />
+                  <Tab label="Zákazník" />
+                </Tabs>
+
+                {/* Reservation Tab */}
+                {editTabValue === 0 && (
+                  <Grid container spacing={2}>
+                    {/* Car Selection */}
+                    <Grid item xs={12}>
+                      <Autocomplete
+                        options={cars}
+                        getOptionLabel={(option) => `${option.brand} ${option.model} - ${option.registrationNumber || option.licensePlate || ''}`}
+                        value={editReservationData.car || null}
+                        onChange={(e, newValue) => {
+                          setEditReservationData(prev => ({ ...prev, car: newValue }))
+                        }}
+                        isOptionEqualToValue={(option, value) => option._id === value?._id}
+                        renderInput={(params) => (
+                          <TextField {...params} label="Vozidlo" required />
+                        )}
+                      />
+                    </Grid>
+
+                    {/* Dates */}
+                    <Grid item xs={12} md={6}>
+                      <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={sk}>
+                        <DatePicker
+                          label="Dátum od"
+                          value={editReservationData.startDate ? new Date(editReservationData.startDate) : null}
+                          onChange={(newValue) => setEditReservationData(prev => ({ ...prev, startDate: newValue }))}
+                          slotProps={{ textField: { fullWidth: true, required: true } }}
+                        />
+                      </LocalizationProvider>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={sk}>
+                        <DatePicker
+                          label="Dátum do"
+                          value={editReservationData.endDate ? new Date(editReservationData.endDate) : null}
+                          onChange={(newValue) => setEditReservationData(prev => ({ ...prev, endDate: newValue }))}
+                          slotProps={{ textField: { fullWidth: true, required: true } }}
+                        />
+                      </LocalizationProvider>
+                    </Grid>
+
+                    {/* Pickup / Dropoff Locations */}
+                    <Grid item xs={12} md={6}>
+                      <Autocomplete
+                        options={pickupLocations}
+                        getOptionLabel={(option) => option?.name || ''}
+                        value={editReservationData.pickupLocation || null}
+                        onChange={(e, newValue) => {
+                          setEditReservationData(prev => ({
+                            ...prev,
+                            pickupLocation: newValue ? {
+                              name: newValue.name,
+                              address: { street: newValue.address || '', city: '', state: '', zipCode: '', country: '' }
+                            } : { name: '', address: { street: '', city: '', state: '', zipCode: '', country: '' } }
+                          }))
+                        }}
+                        loading={pickupLocationsLoading}
+                        isOptionEqualToValue={(option, value) => option.name?.trim() === value?.name?.trim()}
+                        renderInput={(params) => (
+                          <TextField {...params} label="Miesto prevzatia" />
+                        )}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Autocomplete
+                        options={pickupLocations}
+                        getOptionLabel={(option) => option?.name || ''}
+                        value={editReservationData.dropoffLocation || null}
+                        onChange={(e, newValue) => {
+                          setEditReservationData(prev => ({
+                            ...prev,
+                            dropoffLocation: newValue ? {
+                              name: newValue.name,
+                              address: { street: newValue.address || '', city: '', state: '', zipCode: '', country: '' }
+                            } : { name: '', address: { street: '', city: '', state: '', zipCode: '', country: '' } }
+                          }))
+                        }}
+                        loading={pickupLocationsLoading}
+                        isOptionEqualToValue={(option, value) => option.name?.trim() === value?.name?.trim()}
+                        renderInput={(params) => (
+                          <TextField {...params} label="Miesto vrátenia" />
+                        )}
+                      />
+                    </Grid>
+
+                    {/* Status */}
+                    <Grid item xs={12} md={6}>
+                      <FormControl fullWidth>
+                        <InputLabel>Stav</InputLabel>
+                        <Select
+                          value={editReservationData.status || 'pending'}
+                          onChange={(e) => setEditReservationData(prev => ({ ...prev, status: e.target.value }))}
+                          label="Stav"
+                        >
+                          <MenuItem value="pending">Čakajúca</MenuItem>
+                          <MenuItem value="confirmed">Potvrdená</MenuItem>
+                          <MenuItem value="zaplatene">Zaplatené</MenuItem>
+                          <MenuItem value="ongoing">Prebiehajúca</MenuItem>
+                          <MenuItem value="completed">Dokončená</MenuItem>
+                          <MenuItem value="cancelled">Zrušená</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+
+                    {/* Additional Services */}
+                    <Grid item xs={12}>
+                      <Card variant="outlined">
+                        <CardContent>
+                          <Typography variant="h6" gutterBottom color="primary">
+                            Dodatočné služby
+                          </Typography>
+                          <Box sx={{ mb: 2 }}>
+                            <Autocomplete
+                              options={availableServices.filter(s =>
+                                !editSelectedServices?.some(sel => (sel._id || sel.service?._id) === s._id)
+                              )}
+                              getOptionLabel={(option) => `${option.name} - ${option.pricing?.amount || 0}€${option.pricing?.type === 'per_day' ? '/deň' : ''}`}
+                              loading={servicesLoading}
+                              onChange={(e, value) => {
+                                if (value) {
+                                  const days = editReservationData.pricing?.totalDays || 1
+                                  const amount = value.pricing?.amount || 0
+                                  const totalPrice = value.pricing?.type === 'per_day' ? amount * days : amount
+                                  setEditSelectedServices(prev => [...prev, {
+                                    _id: value._id,
+                                    service: value._id,
+                                    name: value.name,
+                                    category: value.category,
+                                    quantity: 1,
+                                    unitPrice: amount,
+                                    totalPrice,
+                                    pricingType: value.pricing?.type || 'fixed',
+                                    pricing: value.pricing
+                                  }])
+                                }
+                              }}
+                              renderInput={(params) => (
+                                <TextField {...params} label="Pridať službu" placeholder="Vyhľadajte a pridajte službu..." size="small" />
+                              )}
+                              value={null}
+                              blurOnSelect
+                              clearOnBlur
+                            />
+                          </Box>
+                          {editSelectedServices && editSelectedServices.length > 0 ? (
+                            <Grid container spacing={2}>
+                              {editSelectedServices.map((service, index) => {
+                                const days = editReservationData.pricing?.totalDays || 1
+                                const pricingType = service.pricingType || service.pricing?.type || 'fixed'
+                                const unitPrice = service.unitPrice || service.pricing?.amount || 0
+                                const displayPrice = pricingType === 'per_day' ? unitPrice * days * (service.quantity || 1) : unitPrice * (service.quantity || 1)
+                                return (
+                                  <Grid item xs={12} md={6} key={service._id || index}>
+                                    <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, border: '1px solid', borderColor: 'grey.200', position: 'relative' }}>
+                                      <IconButton size="small" color="error" onClick={() => {
+                                        setEditSelectedServices(prev => prev.filter((_, i) => i !== index))
+                                      }} sx={{ position: 'absolute', top: 4, right: 4 }}>
+                                        <DeleteIcon fontSize="small" />
+                                      </IconButton>
+                                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1, pr: 4 }}>
+                                        <Typography variant="body2" fontWeight="medium">
+                                          {service.quantity > 1 ? `${service.quantity}x ` : ''}{service.name || 'Služba'}
+                                        </Typography>
+                                        <Typography variant="body2" color="primary" fontWeight="medium">
+                                          {displayPrice.toFixed(2)}€
+                                        </Typography>
+                                      </Box>
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                                        <Typography variant="caption" color="text.secondary">Množstvo:</Typography>
+                                        <IconButton size="small" onClick={() => {
+                                          if (service.quantity > 1) {
+                                            const updated = [...editSelectedServices]
+                                            updated[index] = { ...service, quantity: service.quantity - 1 }
+                                            setEditSelectedServices(updated)
+                                          }
+                                        }} disabled={service.quantity <= 1}>
+                                          <span style={{ fontSize: '16px', fontWeight: 'bold' }}>-</span>
+                                        </IconButton>
+                                        <Typography variant="body2">{service.quantity || 1}</Typography>
+                                        <IconButton size="small" onClick={() => {
+                                          const updated = [...editSelectedServices]
+                                          updated[index] = { ...service, quantity: (service.quantity || 1) + 1 }
+                                          setEditSelectedServices(updated)
+                                        }}>
+                                          <span style={{ fontSize: '16px', fontWeight: 'bold' }}>+</span>
+                                        </IconButton>
+                                        <Chip
+                                          label={pricingType === 'per_day' ? 'Za deň' : 'Pevná cena'}
+                                          size="small"
+                                          color="primary"
+                                          variant="outlined"
+                                          sx={{ ml: 1 }}
+                                        />
+                                      </Box>
+                                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                                        Jednotková cena: {unitPrice.toFixed(2)}€{pricingType === 'per_day' ? `/deň × ${days} dní` : ''}
+                                      </Typography>
+                                    </Box>
+                                  </Grid>
+                                )
+                              })}
+                            </Grid>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                              Žiadne dodatočné služby
+                            </Typography>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </Grid>
+
+                    {/* Pricing Summary */}
+                    {editReservationData.pricing && (
+                      <Grid item xs={12}>
+                        <Card variant="outlined" sx={{ bgcolor: 'primary.50' }}>
+                          <CardContent>
+                            <Typography variant="h6" gutterBottom color="primary">
+                              Cenová kalkulácia
+                            </Typography>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                              <Typography variant="body2">
+                                Prenájom vozidla ({editReservationData.pricing.totalDays || 0} dní × {editReservationData.pricing.dailyRate?.toFixed(2) || 0}€):
+                              </Typography>
+                              <Typography variant="body2" fontWeight="medium">
+                                {(editReservationData.pricing.subtotal || 0).toFixed(2)}€
+                              </Typography>
+                            </Box>
+                            {editReservationData.servicesTotal > 0 && (
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                <Typography variant="body2">Dodatočné služby:</Typography>
+                                <Typography variant="body2" fontWeight="medium">
+                                  {editReservationData.servicesTotal.toFixed(2)}€
+                                </Typography>
+                              </Box>
+                            )}
+                            <Divider sx={{ my: 1 }} />
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Typography variant="body1" fontWeight="bold">Celkom:</Typography>
+                              <Typography variant="body1" fontWeight="bold" color="primary">
+                                {(editReservationData.pricing.totalAmount || 0).toFixed(2)}€
+                              </Typography>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    )}
+
+                    {/* Special Requests */}
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Špeciálne požiadavky"
+                        multiline
+                        rows={2}
+                        value={editReservationData.specialRequests || ''}
+                        onChange={(e) => setEditReservationData(prev => ({ ...prev, specialRequests: e.target.value }))}
+                      />
+                    </Grid>
+                  </Grid>
+                )}
+
+                {/* Customer Tab */}
+                {editTabValue === 1 && (
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Meno"
+                        value={editCustomerData.firstName || ''}
+                        onChange={(e) => setEditCustomerData(prev => ({ ...prev, firstName: e.target.value }))}
+                        required
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Priezvisko"
+                        value={editCustomerData.lastName || ''}
+                        onChange={(e) => setEditCustomerData(prev => ({ ...prev, lastName: e.target.value }))}
+                        required
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="E-mail"
+                        type="email"
+                        value={editCustomerData.email || ''}
+                        onChange={(e) => setEditCustomerData(prev => ({ ...prev, email: e.target.value }))}
+                        required
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Telefón"
+                        value={editCustomerData.phone || ''}
+                        onChange={(e) => setEditCustomerData(prev => ({ ...prev, phone: e.target.value }))}
+                        required
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Dátum narodenia"
+                        type="date"
+                        value={editCustomerData.dateOfBirth || ''}
+                        onChange={(e) => setEditCustomerData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <FormControl fullWidth>
+                        <InputLabel>Stav zákazníka</InputLabel>
+                        <Select
+                          value={editCustomerData.status || 'active'}
+                          onChange={(e) => setEditCustomerData(prev => ({ ...prev, status: e.target.value }))}
+                          label="Stav zákazníka"
+                        >
+                          <MenuItem value="active">Aktívny</MenuItem>
+                          <MenuItem value="inactive">Neaktívny</MenuItem>
+                          <MenuItem value="pending">Čakajúci</MenuItem>
+                          <MenuItem value="blacklisted">Na čiernej listine</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+
+                    {/* License */}
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, mt: 1 }}>Vodičský preukaz</Typography>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Číslo vodičského preukazu"
+                        value={editCustomerData.licenseNumber || ''}
+                        onChange={(e) => setEditCustomerData(prev => ({ ...prev, licenseNumber: e.target.value }))}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Platnosť vodičského preukazu"
+                        type="date"
+                        value={editCustomerData.licenseExpiry || ''}
+                        onChange={(e) => setEditCustomerData(prev => ({ ...prev, licenseExpiry: e.target.value }))}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+
+                    {/* Address */}
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, mt: 1 }}>Adresa</Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Ulica"
+                        value={editCustomerData.address?.street || ''}
+                        onChange={(e) => setEditCustomerData(prev => ({ ...prev, address: { ...prev.address, street: e.target.value } }))}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <TextField
+                        fullWidth
+                        label="Mesto"
+                        value={editCustomerData.address?.city || ''}
+                        onChange={(e) => setEditCustomerData(prev => ({ ...prev, address: { ...prev.address, city: e.target.value } }))}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <TextField
+                        fullWidth
+                        label="PSČ"
+                        value={editCustomerData.address?.zipCode || ''}
+                        onChange={(e) => setEditCustomerData(prev => ({ ...prev, address: { ...prev.address, zipCode: e.target.value } }))}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <TextField
+                        fullWidth
+                        label="Krajina"
+                        value={editCustomerData.address?.country || ''}
+                        onChange={(e) => setEditCustomerData(prev => ({ ...prev, address: { ...prev.address, country: e.target.value } }))}
+                      />
+                    </Grid>
+                  </Grid>
+                )}
+              </>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseEdit}>Zrušiť</Button>
+            <Button
+              onClick={handleEditSave}
+              variant="contained"
+              disabled={updatingReservation || updatingUser || editReservationLoading}
+            >
+              {(updatingReservation || updatingUser) ? <CircularProgress size={20} /> : 'Uložiť zmeny'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </Box>
   )
 }
 
-export default Contracts 
+export default Contracts
