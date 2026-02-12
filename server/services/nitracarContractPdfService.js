@@ -140,11 +140,6 @@ class NitraCarContractPdfService {
     doc.fontSize(14).font(this.fontBold).fillColor('black');
     doc.text('ZMLUVA O PRENÁJME MOTOROVÉHO VOZIDLA', doc.page.margins.left, doc.y, { width: pageWidth, align: 'center' });
 
-    // Sposob uhrady - blank for pen filling
-    doc.moveDown(0.5);
-    doc.fontSize(10).font(this.fontRegular);
-    doc.text('Spôsob úhrady: _______________________', doc.page.margins.left, doc.y, { width: pageWidth, align: 'center' });
-
     doc.moveDown(1.5);
   }
 
@@ -293,6 +288,10 @@ class NitraCarContractPdfService {
       doc.moveDown(0.3);
       this.drawLabelValue(doc, 'Depozit:', `${this.formatPrice(contractData.deposit)} EUR`, leftCol, rightCol);
     }
+
+    // Payment method
+    doc.moveDown(0.3);
+    this.drawLabelValue(doc, 'Spôsob úhrady:', this.getPaymentMethodText(contractData.paymentMethod), leftCol, rightCol);
 
     doc.moveDown(1);
   }
@@ -526,7 +525,9 @@ class NitraCarContractPdfService {
       'invoice': 'Faktúra',
       'faktura': 'Faktúra',
       'prevod': 'Bankový prevod',
-      'stripe': 'Online platba (Stripe)'
+      'stripe': 'Online platba (Stripe)',
+      'online': 'Online',
+      'qr_kod': 'QR kód'
     };
     return methods[method?.toLowerCase()] || method || 'Neuvedené';
   }

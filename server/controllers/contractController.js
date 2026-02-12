@@ -129,9 +129,9 @@ const getContract = asyncHandler(async (req, res, next) => {
 // @route   POST /api/contracts
 // @access  Private/Staff
 const createContract = asyncHandler(async (req, res, next) => {
-  const { reservationId, additionalServices, specialServices, rentalRules, notes } = req.body;
-  
-  console.log('🔖 [CONTRACT] Creating contract with data:', { reservationId, additionalServices, specialServices, rentalRules, notes });
+  const { reservationId, additionalServices, specialServices, rentalRules, notes, paymentMethod } = req.body;
+
+  console.log('🔖 [CONTRACT] Creating contract with data:', { reservationId, additionalServices, specialServices, rentalRules, notes, paymentMethod });
   
   if (!reservationId) {
     return next(new AppError('Reservation ID is required', 400));
@@ -177,7 +177,11 @@ const createContract = asyncHandler(async (req, res, next) => {
     if (notes) {
       contract.notes = notes;
     }
-    
+
+    if (paymentMethod) {
+      contract.paymentMethod = paymentMethod;
+    }
+
     console.log('🔖 [CONTRACT] Additional data added, saving contract...');
     await contract.save();
     console.log('🔖 [CONTRACT] Contract saved successfully');

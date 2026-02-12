@@ -243,7 +243,7 @@ const contractSchema = new mongoose.Schema({
   // Payment method
   paymentMethod: {
     type: String,
-    enum: ['hotovost', 'karta', 'faktura', 'prevod', 'stripe'],
+    enum: ['hotovost', 'karta', 'faktura', 'prevod', 'stripe', 'online', 'qr_kod'],
     default: 'hotovost'
   },
 

@@ -102,8 +102,11 @@ function Contracts() {
   const [editSelectedServices, setEditSelectedServices] = useState([])
   const [availableServices, setAvailableServices] = useState([])
   const [servicesLoading, setServicesLoading] = useState(false)
+  const [editContractId, setEditContractId] = useState(null)
+  const [editPaymentMethod, setEditPaymentMethod] = useState('hotovost')
   const [formData, setFormData] = useState({
     reservationId: '',
+    paymentMethod: 'hotovost',
     customer: {
       firstName: '',
       lastName: '',
@@ -513,7 +516,8 @@ function Contracts() {
           additionalServices: formData.additionalServices || [],
           specialServices: formData.specialServices || {},
           rentalRules: formData.rentalRules || {},
-          notes: formData.notes || ''
+          notes: formData.notes || '',
+          ...(isNitraCarUser && formData.paymentMethod ? { paymentMethod: formData.paymentMethod } : {})
         };
         
         console.log('Creating contract with data:', contractData);
@@ -606,6 +610,8 @@ function Contracts() {
   const handleOpenEdit = (contract) => {
     const resId = contract.reservation?._id || contract.reservation
     setEditReservationId(resId)
+    setEditContractId(contract._id)
+    setEditPaymentMethod(contract.paymentMethod || 'hotovost')
     setEditTabValue(0)
     setEditOpen(true)
   }
@@ -613,10 +619,12 @@ function Contracts() {
   const handleCloseEdit = () => {
     setEditOpen(false)
     setEditReservationId(null)
+    setEditContractId(null)
     setEditCustomerId(null)
     setEditReservationData({})
     setEditCustomerData({})
     setEditSelectedServices([])
+    setEditPaymentMethod('hotovost')
   }
 
   const handleEditSave = async () => {
@@ -680,11 +688,16 @@ function Contracts() {
         address: editCustomerData.address,
       }
 
-      // Call both mutations
-      await Promise.all([
+      // Call mutations
+      const promises = [
         updateReservation(reservationUpdateData).unwrap(),
         updateUser(customerUpdateData).unwrap(),
-      ])
+      ]
+      // Also update contract paymentMethod if changed
+      if (editContractId && editPaymentMethod) {
+        promises.push(updateContract({ id: editContractId, paymentMethod: editPaymentMethod }).unwrap())
+      }
+      await Promise.all(promises)
 
       setAlert({ type: 'success', message: 'Rezervácia a zákazník boli úspešne aktualizované!' })
       handleCloseEdit()
@@ -994,6 +1007,24 @@ function Contracts() {
                     </Select>
                   </FormControl>
                 </Grid>
+                {isNitraCarUser && (
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Spôsob úhrady</InputLabel>
+                      <Select
+                        value={formData.paymentMethod || 'hotovost'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                        label="Spôsob úhrady"
+                      >
+                        <MenuItem value="hotovost">Hotovosť</MenuItem>
+                        <MenuItem value="prevod">Bankový prevod</MenuItem>
+                        <MenuItem value="karta">Karta</MenuItem>
+                        <MenuItem value="online">Online</MenuItem>
+                        <MenuItem value="qr_kod">QR kód</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                )}
               </Grid>
             )}
 
@@ -1580,6 +1611,24 @@ function Contracts() {
                           <MenuItem value="ongoing">Prebiehajúca</MenuItem>
                           <MenuItem value="completed">Dokončená</MenuItem>
                           <MenuItem value="cancelled">Zrušená</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+
+                    {/* Payment Method */}
+                    <Grid item xs={12} md={6}>
+                      <FormControl fullWidth>
+                        <InputLabel>Spôsob úhrady</InputLabel>
+                        <Select
+                          value={editPaymentMethod || 'hotovost'}
+                          onChange={(e) => setEditPaymentMethod(e.target.value)}
+                          label="Spôsob úhrady"
+                        >
+                          <MenuItem value="hotovost">Hotovosť</MenuItem>
+                          <MenuItem value="prevod">Bankový prevod</MenuItem>
+                          <MenuItem value="karta">Karta</MenuItem>
+                          <MenuItem value="online">Online</MenuItem>
+                          <MenuItem value="qr_kod">QR kód</MenuItem>
                         </Select>
                       </FormControl>
                     </Grid>
