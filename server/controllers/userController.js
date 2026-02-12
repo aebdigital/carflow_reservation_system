@@ -175,7 +175,9 @@ const createUser = asyncHandler(async (req, res, next) => {
     licenseNumber,
     licenseExpiry,
     dateOfBirth,
-    address
+    address,
+    idNumber,
+    rodneCislo
   } = req.body;
 
   // Check if user already exists in this tenant
@@ -207,6 +209,8 @@ const createUser = asyncHandler(async (req, res, next) => {
     if (licenseNumber) userData.licenseNumber = licenseNumber;
     if (licenseExpiry) userData.licenseExpiry = licenseExpiry;
     if (dateOfBirth) userData.dateOfBirth = dateOfBirth;
+    if (idNumber) userData.idNumber = idNumber;
+    if (rodneCislo) userData.rodneCislo = rodneCislo;
   }
 
   if (address) {
@@ -247,7 +251,9 @@ const updateUser = asyncHandler(async (req, res, next) => {
     'licenseNumber',
     'licenseExpiry',
     'dateOfBirth',
-    'address'
+    'address',
+    'idNumber',
+    'rodneCislo'
   ];
 
   // Admin can update additional fields
