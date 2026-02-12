@@ -394,6 +394,13 @@ const generateContractPDF = asyncHandler(async (req, res, next) => {
       // Use NitraCar dynamic PDF generator
       console.log('📄 [CONTRACT PDF] Using NitraCar dynamic PDF generator');
 
+      // Fetch live customer data for fields that may not be in the contract snapshot
+      let liveCustomer = null;
+      const customerId = contract.reservation?.customer;
+      if (customerId) {
+        liveCustomer = await User.findById(customerId).select('rodneCislo idNumber licenseNumber');
+      }
+
       // Prepare contract data for NitraCar PDF
       const contractData = {
         contractNumber: contract.contractNumber,
@@ -405,7 +412,7 @@ const generateContractPDF = asyncHandler(async (req, res, next) => {
           email: contract.customer?.email,
           address: contract.customer?.address,
           idNumber: contract.customer?.idNumber || contract.customerIdentification?.idCardNumber,
-          rodneCislo: contract.customer?.rodneCislo,
+          rodneCislo: contract.customer?.rodneCislo || liveCustomer?.rodneCislo,
           licenseNumber: contract.customer?.licenseNumber || contract.customerIdentification?.driverLicenseNumber
         },
         vehicle: {

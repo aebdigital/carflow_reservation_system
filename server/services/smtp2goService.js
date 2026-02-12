@@ -1034,7 +1034,7 @@ class SMTP2GOService {
                 email: contract.customer?.email,
                 address: contract.customer?.address,
                 idNumber: contract.customer?.idNumber || contract.customerIdentification?.idCardNumber,
-                rodneCislo: contract.customer?.rodneCislo,
+                rodneCislo: contract.customer?.rodneCislo || contract.reservation?.customer?.rodneCislo,
                 licenseNumber: contract.customer?.licenseNumber || contract.customerIdentification?.driverLicenseNumber
               },
               vehicle: {
