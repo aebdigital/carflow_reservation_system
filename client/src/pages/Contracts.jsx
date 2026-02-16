@@ -273,19 +273,39 @@ function Contracts() {
     fetchServices()
   }, [isNitraCarUser, editOpen])
 
+  // Calculate rate matching server's Car.calculateRate() method exactly
+  const calculateCarRate = (car, days) => {
+    const rates = car?.pricing?.rates || {}
+
+    // LeRent pricing structure
+    if (days >= 2 && days <= 3 && rates['2-3days']) return { dailyRate: rates['2-3days'], subtotal: rates['2-3days'] * days }
+    if (days >= 4 && days <= 10 && rates['4-10days']) return { dailyRate: rates['4-10days'], subtotal: rates['4-10days'] * days }
+    if (days >= 11 && days <= 20 && rates['11-20days']) return { dailyRate: rates['11-20days'], subtotal: rates['11-20days'] * days }
+    if (days >= 21 && days <= 29 && rates['21-29days']) return { dailyRate: rates['21-29days'], subtotal: rates['21-29days'] * days }
+    if (days >= 30 && days <= 60 && rates['30-60days']) return { dailyRate: rates['30-60days'], subtotal: rates['30-60days'] * days }
+
+    // NitraCar pricing structure
+    if (days >= 4 && days <= 9 && rates['4-9days']) return { dailyRate: rates['4-9days'], subtotal: rates['4-9days'] * days }
+    if (days >= 10 && days <= 25 && rates['10-25days']) return { dailyRate: rates['10-25days'], subtotal: rates['10-25days'] * days }
+    if (days >= 26 && rates['26plus']) return { dailyRate: rates['26plus'], subtotal: rates['26plus'] * days }
+
+    // Legacy structure
+    if (days === 1 && rates['1day']) return { dailyRate: rates['1day'], subtotal: rates['1day'] }
+    if (days >= 11 && days <= 17 && rates['11-17days']) return { dailyRate: rates['11-17days'], subtotal: rates['11-17days'] * days }
+    if (days >= 18 && days <= 24 && rates['18-24days']) return { dailyRate: rates['18-24days'], subtotal: rates['18-24days'] * days }
+    if (days >= 25 && days <= 29 && rates['25-29days']) return { dailyRate: rates['25-29days'], subtotal: rates['25-29days'] * days }
+
+    // Fallback to dailyRate
+    const dailyRate = car?.pricing?.dailyRate || car?.dailyRate || 0
+    return { dailyRate, subtotal: dailyRate * days }
+  }
+
   // Recalculate pricing when car or dates change in edit mode
   useEffect(() => {
     if (editOpen && editReservationData.car?._id && editReservationData.startDate && editReservationData.endDate) {
       const days = Math.ceil((new Date(editReservationData.endDate) - new Date(editReservationData.startDate)) / (1000 * 60 * 60 * 24))
       if (days > 0) {
-        const car = editReservationData.car
-        let dailyRate = car.pricing?.dailyRate || car.dailyRate || 0
-        if (days >= 26 && car.pricing?.rates?.['26plus']) dailyRate = car.pricing.rates['26plus']
-        else if (days >= 10 && car.pricing?.rates?.['10-25days']) dailyRate = car.pricing.rates['10-25days']
-        else if (days >= 4 && car.pricing?.rates?.['4-9days']) dailyRate = car.pricing.rates['4-9days']
-        else if (days >= 2 && car.pricing?.rates?.threeDays) dailyRate = car.pricing.rates.threeDays
-
-        const subtotal = dailyRate * days
+        const { dailyRate, subtotal } = calculateCarRate(editReservationData.car, days)
         const servicesTotal = editSelectedServices?.reduce((sum, s) => {
           const pricingType = s.pricingType || s.pricing?.type || 'fixed'
           const unitPrice = s.unitPrice || s.pricing?.amount || 0
@@ -632,11 +652,7 @@ function Contracts() {
       // Prepare reservation update data
       const days = editReservationData.pricing?.totalDays || Math.ceil((new Date(editReservationData.endDate) - new Date(editReservationData.startDate)) / (1000 * 60 * 60 * 24))
       const car = editReservationData.car
-      let dailyRate = car?.pricing?.dailyRate || car?.dailyRate || 0
-      if (days >= 26 && car?.pricing?.rates?.['26plus']) dailyRate = car.pricing.rates['26plus']
-      else if (days >= 10 && car?.pricing?.rates?.['10-25days']) dailyRate = car.pricing.rates['10-25days']
-      else if (days >= 4 && car?.pricing?.rates?.['4-9days']) dailyRate = car.pricing.rates['4-9days']
-      else if (days >= 2 && car?.pricing?.rates?.threeDays) dailyRate = car.pricing.rates.threeDays
+      const { dailyRate, subtotal } = calculateCarRate(car, days)
 
       const servicesTotal = editSelectedServices?.reduce((sum, s) => {
         const pricingType = s.pricingType || s.pricing?.type || 'fixed'
@@ -644,7 +660,6 @@ function Contracts() {
         const price = pricingType === 'per_day' ? unitPrice * days * (s.quantity || 1) : unitPrice * (s.quantity || 1)
         return sum + price
       }, 0) || 0
-      const subtotal = dailyRate * days
       const totalAmount = subtotal + servicesTotal
 
       const reservationUpdateData = {
