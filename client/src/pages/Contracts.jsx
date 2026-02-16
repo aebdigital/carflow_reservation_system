@@ -279,11 +279,11 @@ function Contracts() {
       const days = Math.ceil((new Date(editReservationData.endDate) - new Date(editReservationData.startDate)) / (1000 * 60 * 60 * 24))
       if (days > 0) {
         const car = editReservationData.car
-        let dailyRate = car.dailyRate || 0
-        if (days >= 26 && car.rates?.['26plus']) dailyRate = car.rates['26plus']
-        else if (days >= 10 && car.rates?.['10-25days']) dailyRate = car.rates['10-25days']
-        else if (days >= 4 && car.rates?.['4-9days']) dailyRate = car.rates['4-9days']
-        else if (days >= 2 && car.rates?.threeDays) dailyRate = car.rates.threeDays
+        let dailyRate = car.pricing?.dailyRate || car.dailyRate || 0
+        if (days >= 26 && car.pricing?.rates?.['26plus']) dailyRate = car.pricing.rates['26plus']
+        else if (days >= 10 && car.pricing?.rates?.['10-25days']) dailyRate = car.pricing.rates['10-25days']
+        else if (days >= 4 && car.pricing?.rates?.['4-9days']) dailyRate = car.pricing.rates['4-9days']
+        else if (days >= 2 && car.pricing?.rates?.threeDays) dailyRate = car.pricing.rates.threeDays
 
         const subtotal = dailyRate * days
         const servicesTotal = editSelectedServices?.reduce((sum, s) => {
@@ -632,11 +632,11 @@ function Contracts() {
       // Prepare reservation update data
       const days = editReservationData.pricing?.totalDays || Math.ceil((new Date(editReservationData.endDate) - new Date(editReservationData.startDate)) / (1000 * 60 * 60 * 24))
       const car = editReservationData.car
-      let dailyRate = car?.dailyRate || 0
-      if (days >= 26 && car?.rates?.['26plus']) dailyRate = car.rates['26plus']
-      else if (days >= 10 && car?.rates?.['10-25days']) dailyRate = car.rates['10-25days']
-      else if (days >= 4 && car?.rates?.['4-9days']) dailyRate = car.rates['4-9days']
-      else if (days >= 2 && car?.rates?.threeDays) dailyRate = car.rates.threeDays
+      let dailyRate = car?.pricing?.dailyRate || car?.dailyRate || 0
+      if (days >= 26 && car?.pricing?.rates?.['26plus']) dailyRate = car.pricing.rates['26plus']
+      else if (days >= 10 && car?.pricing?.rates?.['10-25days']) dailyRate = car.pricing.rates['10-25days']
+      else if (days >= 4 && car?.pricing?.rates?.['4-9days']) dailyRate = car.pricing.rates['4-9days']
+      else if (days >= 2 && car?.pricing?.rates?.threeDays) dailyRate = car.pricing.rates.threeDays
 
       const servicesTotal = editSelectedServices?.reduce((sum, s) => {
         const pricingType = s.pricingType || s.pricing?.type || 'fixed'
