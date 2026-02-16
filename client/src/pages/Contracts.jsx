@@ -80,7 +80,7 @@ import {
   useUpdateReservationMutation,
   useUpdateUserMutation,
   useGetCarsQuery,
-  useGetPickupLocationsByUserQuery,
+  useGetSettingsQuery,
 } from '../store/store'
 import { t } from '../utils/translations'
 
@@ -196,9 +196,9 @@ function Contracts() {
   const [updateReservation, { isLoading: updatingReservation }] = useUpdateReservationMutation()
   const [updateUser, { isLoading: updatingUser }] = useUpdateUserMutation()
   const { data: carsData } = useGetCarsQuery(undefined, { skip: !isNitraCarUser })
-  const { data: pickupLocationsData, isLoading: pickupLocationsLoading } = useGetPickupLocationsByUserQuery(undefined, { skip: !isNitraCarUser })
+  const { data: settingsData, isLoading: settingsLoading } = useGetSettingsQuery(undefined, { skip: !isNitraCarUser })
   const cars = carsData?.data || []
-  const pickupLocations = pickupLocationsData?.data || []
+  const pickupLocations = (settingsData?.data?.business?.pickupLocations || []).filter(loc => loc.isActive !== false)
 
   const contracts = contractsData?.data || []
   const stats = contractStatsData?.data || {}
@@ -1582,7 +1582,7 @@ function Contracts() {
                             } : { name: '', address: { street: '', city: '', state: '', zipCode: '', country: '' } }
                           }))
                         }}
-                        loading={pickupLocationsLoading}
+                        loading={settingsLoading}
                         isOptionEqualToValue={(option, value) => option.name?.trim() === value?.name?.trim()}
                         renderInput={(params) => (
                           <TextField {...params} label="Miesto prevzatia" />
@@ -1603,7 +1603,7 @@ function Contracts() {
                             } : { name: '', address: { street: '', city: '', state: '', zipCode: '', country: '' } }
                           }))
                         }}
-                        loading={pickupLocationsLoading}
+                        loading={settingsLoading}
                         isOptionEqualToValue={(option, value) => option.name?.trim() === value?.name?.trim()}
                         renderInput={(params) => (
                           <TextField {...params} label="Miesto vrátenia" />
