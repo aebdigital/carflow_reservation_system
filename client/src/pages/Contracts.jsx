@@ -104,6 +104,8 @@ function Contracts() {
   const [servicesLoading, setServicesLoading] = useState(false)
   const [editContractId, setEditContractId] = useState(null)
   const [editPaymentMethod, setEditPaymentMethod] = useState('hotovost')
+  const [editPickupFee, setEditPickupFee] = useState(0)
+  const [editDropoffFee, setEditDropoffFee] = useState(0)
   const [formData, setFormData] = useState({
     reservationId: '',
     paymentMethod: 'hotovost',
@@ -273,6 +275,15 @@ function Contracts() {
     fetchServices()
   }, [isNitraCarUser, editOpen])
 
+  // Determine location fee based on location name (NitraCar)
+  const getLocationFee = (locationName) => {
+    if (!locationName) return { fee: 0, isCustom: false }
+    const name = locationName.toLowerCase()
+    if (name.includes('iná adresa') || name.includes('ina adresa')) return { fee: 0, isCustom: true }
+    if (name.includes('v nitre')) return { fee: 10, isCustom: false }
+    return { fee: 0, isCustom: false }
+  }
+
   // Calculate rate matching server's Car.calculateRate() method exactly
   const calculateCarRate = (car, days) => {
     const rates = car?.pricing?.rates || {}
@@ -300,7 +311,7 @@ function Contracts() {
     return { dailyRate, subtotal: dailyRate * days }
   }
 
-  // Recalculate pricing when car or dates change in edit mode
+  // Recalculate pricing when car, dates, locations or services change in edit mode
   useEffect(() => {
     if (editOpen && editReservationData.car?._id && editReservationData.startDate && editReservationData.endDate) {
       const days = Math.ceil((new Date(editReservationData.endDate) - new Date(editReservationData.startDate)) / (1000 * 60 * 60 * 24))
@@ -312,16 +323,24 @@ function Contracts() {
           const price = pricingType === 'per_day' ? unitPrice * days * (s.quantity || 1) : unitPrice * (s.quantity || 1)
           return sum + price
         }, 0) || 0
-        const totalAmount = subtotal + servicesTotal
+
+        // Location fees (NitraCar)
+        const pickupInfo = getLocationFee(editReservationData.pickupLocation?.name)
+        const dropoffInfo = getLocationFee(editReservationData.dropoffLocation?.name)
+        const pickupFee = pickupInfo.isCustom ? editPickupFee : pickupInfo.fee
+        const dropoffFee = dropoffInfo.isCustom ? editDropoffFee : dropoffInfo.fee
+        const locationFeesTotal = pickupFee + dropoffFee
+
+        const totalAmount = subtotal + servicesTotal + locationFeesTotal
 
         setEditReservationData(prev => ({
           ...prev,
-          pricing: { ...prev.pricing, dailyRate, totalDays: days, subtotal, totalAmount },
+          pricing: { ...prev.pricing, dailyRate, totalDays: days, subtotal, totalAmount, locationFeesTotal, pickupFee, dropoffFee },
           servicesTotal
         }))
       }
     }
-  }, [editOpen, editReservationData.car?._id, editReservationData.startDate, editReservationData.endDate, editSelectedServices])
+  }, [editOpen, editReservationData.car?._id, editReservationData.startDate, editReservationData.endDate, editSelectedServices, editReservationData.pickupLocation?.name, editReservationData.dropoffLocation?.name, editPickupFee, editDropoffFee])
 
   // Automatically calculate total pricing when values change
   useEffect(() => {
@@ -645,6 +664,8 @@ function Contracts() {
     setEditCustomerData({})
     setEditSelectedServices([])
     setEditPaymentMethod('hotovost')
+    setEditPickupFee(0)
+    setEditDropoffFee(0)
   }
 
   const handleEditSave = async () => {
@@ -660,7 +681,15 @@ function Contracts() {
         const price = pricingType === 'per_day' ? unitPrice * days * (s.quantity || 1) : unitPrice * (s.quantity || 1)
         return sum + price
       }, 0) || 0
-      const totalAmount = subtotal + servicesTotal
+
+      // Location fees (NitraCar)
+      const pickupInfo = getLocationFee(editReservationData.pickupLocation?.name)
+      const dropoffInfo = getLocationFee(editReservationData.dropoffLocation?.name)
+      const pickupFee = pickupInfo.isCustom ? editPickupFee : pickupInfo.fee
+      const dropoffFee = dropoffInfo.isCustom ? editDropoffFee : dropoffInfo.fee
+      const locationFeesTotal = pickupFee + dropoffFee
+
+      const totalAmount = subtotal + servicesTotal + locationFeesTotal
 
       const reservationUpdateData = {
         id: editReservationId,
@@ -685,7 +714,7 @@ function Contracts() {
           pricingType: s.pricingType || s.pricing?.type || 'fixed'
         })) || [],
         servicesTotal,
-        pricing: { ...editReservationData.pricing, dailyRate, totalDays: days, subtotal, totalAmount }
+        pricing: { ...editReservationData.pricing, dailyRate, totalDays: days, subtotal, totalAmount, locationFeesTotal, pickupFee, dropoffFee }
       }
 
       // Prepare customer update data
@@ -1581,6 +1610,9 @@ function Contracts() {
                               address: { street: newValue.address || '', city: '', state: '', zipCode: '', country: '' }
                             } : { name: '', address: { street: '', city: '', state: '', zipCode: '', country: '' } }
                           }))
+                          const info = getLocationFee(newValue?.name)
+                          if (!info.isCustom) setEditPickupFee(info.fee)
+                          else setEditPickupFee(0)
                         }}
                         loading={settingsLoading}
                         isOptionEqualToValue={(option, value) => option.name?.trim() === value?.name?.trim()}
@@ -1589,6 +1621,18 @@ function Contracts() {
                         )}
                       />
                     </Grid>
+                    {getLocationFee(editReservationData.pickupLocation?.name).isCustom && (
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Cena za pristavenie (€)"
+                          type="number"
+                          value={editPickupFee}
+                          onChange={(e) => setEditPickupFee(Number(e.target.value) || 0)}
+                          inputProps={{ min: 0, step: 1 }}
+                        />
+                      </Grid>
+                    )}
                     <Grid item xs={12} md={6}>
                       <Autocomplete
                         options={pickupLocations}
@@ -1602,6 +1646,9 @@ function Contracts() {
                               address: { street: newValue.address || '', city: '', state: '', zipCode: '', country: '' }
                             } : { name: '', address: { street: '', city: '', state: '', zipCode: '', country: '' } }
                           }))
+                          const info = getLocationFee(newValue?.name)
+                          if (!info.isCustom) setEditDropoffFee(info.fee)
+                          else setEditDropoffFee(0)
                         }}
                         loading={settingsLoading}
                         isOptionEqualToValue={(option, value) => option.name?.trim() === value?.name?.trim()}
@@ -1610,6 +1657,18 @@ function Contracts() {
                         )}
                       />
                     </Grid>
+                    {getLocationFee(editReservationData.dropoffLocation?.name).isCustom && (
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          fullWidth
+                          label="Cena za vrátenie (€)"
+                          type="number"
+                          value={editDropoffFee}
+                          onChange={(e) => setEditDropoffFee(Number(e.target.value) || 0)}
+                          inputProps={{ min: 0, step: 1 }}
+                        />
+                      </Grid>
+                    )}
 
                     {/* Status */}
                     <Grid item xs={12} md={6}>
@@ -1776,6 +1835,19 @@ function Contracts() {
                                 <Typography variant="body2">Dodatočné služby:</Typography>
                                 <Typography variant="body2" fontWeight="medium">
                                   {editReservationData.servicesTotal.toFixed(2)}€
+                                </Typography>
+                              </Box>
+                            )}
+                            {(editReservationData.pricing?.pickupFee > 0 || editReservationData.pricing?.dropoffFee > 0) && (
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                <Typography variant="body2">
+                                  Poplatky za miesto ({[
+                                    editReservationData.pricing?.pickupFee > 0 && `prevzatie ${editReservationData.pricing.pickupFee}€`,
+                                    editReservationData.pricing?.dropoffFee > 0 && `vrátenie ${editReservationData.pricing.dropoffFee}€`
+                                  ].filter(Boolean).join(' + ')}):
+                                </Typography>
+                                <Typography variant="body2" fontWeight="medium">
+                                  {(editReservationData.pricing?.locationFeesTotal || 0).toFixed(2)}€
                                 </Typography>
                               </Box>
                             )}
