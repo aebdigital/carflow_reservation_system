@@ -907,9 +907,7 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
 
   // Check if reservation can be confirmed
   // NitraCar: allow confirming from 'awaiting_payment' as well
-  const User = require('../models/User');
-  const tenantUser = await User.findById(req.user.tenantId);
-  const isNitraCar = tenantUser?.email?.toLowerCase() === 'nitra-car@nitra-car.sk';
+  const isNitraCar = req.user.email?.toLowerCase() === 'nitra-car@nitra-car.sk';
 
   if (isNitraCar) {
     if (reservation.status !== 'pending' && reservation.status !== 'awaiting_payment') {
