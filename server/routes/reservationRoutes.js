@@ -17,7 +17,8 @@ const {
   sendPaymentNotification,
   createInvoice,
   downloadInvoicePdf,
-  sendDepositEmail
+  sendDepositEmail,
+  sendConfirmationEmail
 } = require('../controllers/reservationController');
 
 const { protect, requireStaff, addTenantFilter, restrictRivalDomain } = require('../middleware/authMiddleware');
@@ -51,6 +52,7 @@ router.put('/:id/confirm', confirmReservation);
 router.put('/:id/confirm-payment', requireStaff, confirmPayment);
 router.post('/:id/send-payment-notification', requireStaff, sendPaymentNotification);
 router.post('/:id/send-deposit-email', requireStaff, sendDepositEmail);
+router.post('/:id/send-confirmation-email', requireStaff, sendConfirmationEmail);
 router.put('/:id/checkin', requireStaff, checkInReservation);
 router.put('/:id/checkout', requireStaff, checkOutReservation);
 

@@ -906,11 +906,32 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
   }
 
   // Check if reservation can be confirmed
-  if (reservation.status !== 'pending') {
-    return next(new AppError('Only pending reservations can be confirmed', 400));
+  // NitraCar: allow confirming from 'awaiting_payment' as well
+  const User = require('../models/User');
+  const tenantUser = await User.findById(req.user.tenantId);
+  const isNitraCar = tenantUser?.email?.toLowerCase() === 'nitra-car@nitra-car.sk';
+
+  if (isNitraCar) {
+    if (reservation.status !== 'pending' && reservation.status !== 'awaiting_payment') {
+      return next(new AppError('Only pending or awaiting payment reservations can be confirmed', 400));
+    }
+  } else {
+    if (reservation.status !== 'pending') {
+      return next(new AppError('Only pending reservations can be confirmed', 400));
+    }
   }
 
-  reservation.status = 'confirmed';
+  // NitraCar flow: pending → awaiting_payment (no email), awaiting_payment → confirmed (no email)
+  // Other tenants: pending → confirmed (with email)
+  const isNitraCarAwaitingPaymentTransition = isNitraCar && reservation.status === 'pending';
+  const isNitraCarConfirmTransition = isNitraCar && reservation.status === 'awaiting_payment';
+
+  if (isNitraCarAwaitingPaymentTransition) {
+    reservation.status = 'awaiting_payment';
+  } else {
+    reservation.status = 'confirmed';
+  }
+
   reservation.confirmation = {
     date: new Date(),
     notes: notes || 'Confirmed by admin',
@@ -918,6 +939,19 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
   };
 
   await reservation.save();
+
+  // Skip QR codes, contract, and email for NitraCar awaiting_payment → confirmed (just a status change)
+  if (isNitraCarConfirmTransition) {
+    await reservation.populate([
+      { path: 'customer', select: 'firstName lastName email phone licenseNumber' },
+      { path: 'car', select: 'brand model year registrationNumber images dailyRate pricing' }
+    ]);
+    return res.status(200).json({
+      success: true,
+      message: 'Reservation confirmed successfully',
+      data: reservation
+    });
+  }
 
   // 🆕 Generate QR codes for confirmed reservation if not already present
   try {
@@ -1104,8 +1138,11 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
   }
 
   // 📧 Send customer confirmation email using new template system
+  // For NitraCar awaiting_payment: skip email entirely (sent separately via sendConfirmationEmail endpoint)
   // For NitraCar: shouldSkipPaymentInfo=true sends email without payment info (used for "Potvrdiť bez zálohy")
-  try {
+  if (isNitraCarAwaitingPaymentTransition) {
+    console.log('ℹ️ [EMAIL] NitraCar awaiting_payment - skipping email (will be sent separately)');
+  } else try {
     const emailService = require('../services/emailService');
     const emailHelpers = require('../utils/emailHelpers');
 
@@ -2395,6 +2432,63 @@ const sendDepositEmail = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Send confirmation email for awaiting_payment reservation (NitraCar)
+// @route   POST /api/reservations/:id/send-confirmation-email
+// @access  Private/Admin
+const sendConfirmationEmail = asyncHandler(async (req, res, next) => {
+  const reservation = await Reservation.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  }).populate([
+    { path: 'customer', select: 'firstName lastName email phone' },
+    { path: 'car', select: 'brand model year registrationNumber images imageUrl pricing deposit' }
+  ]);
+
+  if (!reservation) {
+    return next(new AppError('Reservation not found', 404));
+  }
+
+  if (reservation.status !== 'awaiting_payment') {
+    return next(new AppError('Only awaiting payment reservations can have confirmation email sent', 400));
+  }
+
+  if (!reservation.customer || !reservation.customer.email) {
+    return next(new AppError('Customer email not found', 400));
+  }
+
+  const { skipPaymentInfo } = req.body;
+  const shouldSkipPaymentInfo = skipPaymentInfo === true;
+
+  try {
+    const emailService = require('../services/emailService');
+    const emailHelpers = require('../utils/emailHelpers');
+
+    const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
+    const attachments = [];
+
+    // Send the same confirmation email that confirmReservation sends
+    await emailService.sendCustomerReservationConfirmed(
+      reservation.customer.email,
+      emailData,
+      req.user,
+      reservation,
+      attachments,
+      shouldSkipPaymentInfo
+    );
+
+    console.log('✅ [EMAIL] Confirmation email sent to:', reservation.customer.email);
+
+    res.status(200).json({
+      success: true,
+      message: 'Confirmation email sent successfully',
+      data: { email: reservation.customer.email }
+    });
+  } catch (error) {
+    console.error('❌ [EMAIL] Failed to send confirmation email:', error.message);
+    return next(new AppError(`Failed to send confirmation email: ${error.message}`, 500));
+  }
+});
+
 module.exports = {
   getReservations,
   getReservation,
@@ -2413,5 +2507,6 @@ module.exports = {
   sendPaymentNotification,
   createInvoice,
   downloadInvoicePdf,
-  sendDepositEmail
-}; 
+  sendDepositEmail,
+  sendConfirmationEmail
+};

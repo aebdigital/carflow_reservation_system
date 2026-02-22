@@ -1680,6 +1680,7 @@ function Contracts() {
                           label="Stav"
                         >
                           <MenuItem value="pending">Čakajúca</MenuItem>
+                          <MenuItem value="awaiting_payment">Čaká na platbu</MenuItem>
                           <MenuItem value="confirmed">Potvrdená</MenuItem>
                           <MenuItem value="zaplatene">Zaplatené</MenuItem>
                           <MenuItem value="ongoing">Prebiehajúca</MenuItem>

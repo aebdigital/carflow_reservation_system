@@ -344,6 +344,14 @@ export const api = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [{ type: 'Reservation', id }, 'Reservation'],
     }),
+    sendConfirmationEmail: builder.mutation({
+      query: ({ id, skipPaymentInfo }) => ({
+        url: `reservations/${id}/send-confirmation-email`,
+        method: 'POST',
+        body: { skipPaymentInfo },
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Reservation', id }, 'Reservation'],
+    }),
     createInvoice: builder.mutation({
       query: ({ id }) => ({
         url: `reservations/${id}/create-invoice`,
@@ -1159,6 +1167,7 @@ export const {
   useConfirmReservationPaymentMutation,
   useSendPaymentNotificationMutation,
   useSendDepositEmailMutation,
+  useSendConfirmationEmailMutation,
   useCreateInvoiceMutation,
   useCancelReservationMutation,
   useDeleteReservationMutation,

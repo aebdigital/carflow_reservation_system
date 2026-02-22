@@ -69,6 +69,7 @@ import {
   useConfirmReservationPaymentMutation,
   useSendPaymentNotificationMutation,
   useSendDepositEmailMutation,
+  useSendConfirmationEmailMutation,
   useCreateInvoiceMutation,
   useCheckInReservationMutation,
   useCheckOutReservationMutation,
@@ -348,6 +349,7 @@ function Reservations() {
   const [confirmReservationPayment] = useConfirmReservationPaymentMutation()
   const [sendPaymentNotification] = useSendPaymentNotificationMutation()
   const [sendDepositEmail] = useSendDepositEmailMutation()
+  const [sendConfirmationEmail] = useSendConfirmationEmailMutation()
   const [createInvoice] = useCreateInvoiceMutation()
   const [checkInReservation] = useCheckInReservationMutation()
   const [checkOutReservation] = useCheckOutReservationMutation()
@@ -925,6 +927,20 @@ function Reservations() {
       alert('Email s platbou depozitu bol úspešne odoslaný na ' + result.data?.email)
     } catch (error) {
       console.error('Error sending deposit email:', error)
+      alert('Chyba pri odosielaní emailu: ' + (error?.data?.message || error.message))
+    }
+  }
+
+  const handleSendConfirmationEmail = async (reservation) => {
+    try {
+      const result = await sendConfirmationEmail({
+        id: reservation._id,
+        skipPaymentInfo: false
+      }).unwrap()
+      console.log('Confirmation email sent successfully:', result)
+      alert('Email so zálohou bol úspešne odoslaný na ' + result.data?.email)
+    } catch (error) {
+      console.error('Error sending confirmation email:', error)
       alert('Chyba pri odosielaní emailu: ' + (error?.data?.message || error.message))
     }
   }
@@ -1507,10 +1523,10 @@ function Reservations() {
                               <EditIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          {(reservation.status === 'pending' || reservation.status === 'awaiting_payment') && (
+                          {reservation.status === 'pending' && (
                             auth.user?.email === 'nitra-car@nitra-car.sk' ? (
                               <>
-                                <Tooltip title="Potvrdiť so zálohou (pošle email s platobným linkom)">
+                                <Tooltip title="Potvrdiť so zálohou (nastaví stav Čaká na platbu)">
                                   <IconButton
                                     size="small"
                                     onClick={() => handleConfirmWithDeposit(reservation)}
@@ -1541,6 +1557,32 @@ function Reservations() {
                                 </IconButton>
                               </Tooltip>
                             )
+                          )}
+                          {reservation.status === 'awaiting_payment' && auth.user?.email === 'nitra-car@nitra-car.sk' && (
+                            <>
+                              <Tooltip title="Poslať email so zálohou">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleSendConfirmationEmail(reservation)}
+                                  color="info"
+                                  sx={{
+                                    backgroundColor: 'info.light',
+                                    '&:hover': { backgroundColor: 'info.main' }
+                                  }}
+                                >
+                                  <EmailIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Potvrdiť">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleConfirm(reservation)}
+                                  color="success"
+                                >
+                                  <ConfirmIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </>
                           )}
                           {reservation.status === 'confirmed' && (
                             <>
@@ -2062,38 +2104,66 @@ function Reservations() {
                               <EditIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          {auth.user?.email === 'nitra-car@nitra-car.sk' ? (
-                            <>
-                              <Tooltip title="Potvrdiť so zálohou (pošle email s platobným linkom)">
+                          {reservation.status === 'pending' && (
+                            auth.user?.email === 'nitra-car@nitra-car.sk' ? (
+                              <>
+                                <Tooltip title="Potvrdiť so zálohou (nastaví stav Čaká na platbu)">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleConfirmWithDeposit(reservation)}
+                                    color="success"
+                                  >
+                                    <ConfirmIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Potvrdiť bez zálohy (pošle email bez platobných údajov)">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleConfirmWithoutDeposit(reservation)}
+                                    color="warning"
+                                    sx={{ ml: 0.5 }}
+                                  >
+                                    <ConfirmIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </>
+                            ) : (
+                              <Tooltip title="Potvrdiť rezerváciu">
                                 <IconButton
                                   size="small"
-                                  onClick={() => handleConfirmWithDeposit(reservation)}
+                                  onClick={() => handleConfirm(reservation)}
                                   color="success"
                                 >
                                   <ConfirmIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
-                              <Tooltip title="Potvrdiť bez zálohy (pošle email bez platobných údajov)">
+                            )
+                          )}
+                          {reservation.status === 'awaiting_payment' && auth.user?.email === 'nitra-car@nitra-car.sk' && (
+                            <>
+                              <Tooltip title="Poslať email so zálohou">
                                 <IconButton
                                   size="small"
-                                  onClick={() => handleConfirmWithoutDeposit(reservation)}
-                                  color="warning"
-                                  sx={{ ml: 0.5 }}
+                                  onClick={() => handleSendConfirmationEmail(reservation)}
+                                  color="info"
+                                  sx={{
+                                    backgroundColor: 'info.light',
+                                    '&:hover': { backgroundColor: 'info.main' }
+                                  }}
+                                >
+                                  <EmailIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Potvrdiť">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleConfirm(reservation)}
+                                  color="success"
                                 >
                                   <ConfirmIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
                             </>
-                          ) : (
-                            <Tooltip title="Potvrdiť rezerváciu">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleConfirm(reservation)}
-                                color="success"
-                              >
-                                <ConfirmIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
                           )}
                           <Tooltip title={auth.user?.email === 'lerent@lerent.sk' ? 'Funkcia dočasne nedostupná' : 'Stiahnuť slovenskú zmluvu'}>
                             <span>
