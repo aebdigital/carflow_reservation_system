@@ -938,7 +938,7 @@ function Reservations() {
         skipPaymentInfo: false
       }).unwrap()
       console.log('Confirmation email sent successfully:', result)
-      alert('Email so zálohou bol úspešne odoslaný na ' + result.data?.email)
+      alert('Link na platbu bol úspešne odoslaný na ' + result.data?.email)
     } catch (error) {
       console.error('Error sending confirmation email:', error)
       alert('Chyba pri odosielaní emailu: ' + (error?.data?.message || error.message))
@@ -1560,7 +1560,7 @@ function Reservations() {
                           )}
                           {reservation.status === 'awaiting_payment' && auth.user?.email === 'nitra-car@nitra-car.sk' && (
                             <>
-                              <Tooltip title="Poslať email so zálohou">
+                              <Tooltip title="Zaslať link na platbu">
                                 <IconButton
                                   size="small"
                                   onClick={() => handleSendConfirmationEmail(reservation)}
@@ -2141,7 +2141,7 @@ function Reservations() {
                           )}
                           {reservation.status === 'awaiting_payment' && auth.user?.email === 'nitra-car@nitra-car.sk' && (
                             <>
-                              <Tooltip title="Poslať email so zálohou">
+                              <Tooltip title="Zaslať link na platbu">
                                 <IconButton
                                   size="small"
                                   onClick={() => handleSendConfirmationEmail(reservation)}
