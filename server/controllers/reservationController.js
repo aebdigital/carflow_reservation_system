@@ -919,9 +919,12 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // NitraCar flow: pending → awaiting_payment (no email), awaiting_payment → confirmed (no email)
+  // NitraCar flow:
+  //   "Potvrdiť so zálohou" (skipPaymentInfo=false): pending → awaiting_payment (no email)
+  //   "Potvrdiť bez zálohy" (skipPaymentInfo=true): pending → confirmed (with email, no payment info)
+  //   "Potvrdiť" from awaiting_payment: awaiting_payment → confirmed (no email)
   // Other tenants: pending → confirmed (with email)
-  const isNitraCarAwaitingPaymentTransition = isNitraCar && reservation.status === 'pending';
+  const isNitraCarAwaitingPaymentTransition = isNitraCar && reservation.status === 'pending' && !shouldSkipPaymentInfo;
   const isNitraCarConfirmTransition = isNitraCar && reservation.status === 'awaiting_payment';
 
   if (isNitraCarAwaitingPaymentTransition) {
