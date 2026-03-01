@@ -920,9 +920,9 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
   }
 
   // NitraCar flow:
-  //   "Potvrdiť so zálohou" (skipPaymentInfo=false): pending → awaiting_payment (no email)
+  //   "Poslať email na zaplatenie zálohy" (skipPaymentInfo=false): pending → awaiting_payment (sends email with payment link)
   //   "Potvrdiť bez zálohy" (skipPaymentInfo=true): pending → confirmed (with email, no payment info)
-  //   "Potvrdiť" from awaiting_payment: awaiting_payment → confirmed (no email)
+  //   "Potvrdiť rezerváciu" from awaiting_payment: awaiting_payment → confirmed (sends reservation confirmed email)
   // Other tenants: pending → confirmed (with email)
   const isNitraCarAwaitingPaymentTransition = isNitraCar && reservation.status === 'pending' && !shouldSkipPaymentInfo;
   const isNitraCarConfirmTransition = isNitraCar && reservation.status === 'awaiting_payment';
@@ -941,12 +941,34 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
 
   await reservation.save();
 
-  // Skip QR codes, contract, and email for NitraCar awaiting_payment → confirmed (just a status change)
+  // NitraCar awaiting_payment → confirmed: send reservation confirmed email
   if (isNitraCarConfirmTransition) {
     await reservation.populate([
       { path: 'customer', select: 'firstName lastName email phone licenseNumber' },
       { path: 'car', select: 'brand model year registrationNumber images dailyRate pricing' }
     ]);
+
+    // Send reservation confirmed email (without payment info since deposit was already requested)
+    try {
+      const emailService = require('../services/emailService');
+      const emailHelpers = require('../utils/emailHelpers');
+
+      if (emailService.isConfigured && reservation.customer?.email) {
+        const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
+        await emailService.sendCustomerReservationConfirmed(
+          reservation.customer.email,
+          emailData,
+          req.user,
+          reservation,
+          [],
+          true // skipPaymentInfo - deposit was already handled
+        );
+        console.log('✅ [EMAIL] Reservation confirmed email sent to:', reservation.customer.email);
+      }
+    } catch (emailError) {
+      console.error('❌ [EMAIL] Failed to send reservation confirmed email:', emailError.message);
+    }
+
     return res.status(200).json({
       success: true,
       message: 'Reservation confirmed successfully',
@@ -1139,11 +1161,9 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
   }
 
   // 📧 Send customer confirmation email using new template system
-  // For NitraCar awaiting_payment: skip email entirely (sent separately via sendConfirmationEmail endpoint)
   // For NitraCar: shouldSkipPaymentInfo=true sends email without payment info (used for "Potvrdiť bez zálohy")
-  if (isNitraCarAwaitingPaymentTransition) {
-    console.log('ℹ️ [EMAIL] NitraCar awaiting_payment - skipping email (will be sent separately)');
-  } else try {
+  // For NitraCar awaiting_payment transition: sends email with payment link
+  try {
     const emailService = require('../services/emailService');
     const emailHelpers = require('../utils/emailHelpers');
 
