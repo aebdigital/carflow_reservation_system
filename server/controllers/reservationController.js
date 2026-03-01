@@ -1160,59 +1160,36 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
     console.log('ℹ️ [SUPERFAKTURA] Invoice creation is currently disabled');
   }
 
-  // 📧 Send customer confirmation email using new template system
-  // For NitraCar: shouldSkipPaymentInfo=true sends email without payment info (used for "Potvrdiť bez zálohy")
-  // For NitraCar awaiting_payment transition: sends email with payment link
+  // 📧 Send email
+  // For NitraCar awaiting_payment transition: sends deposit email (reservation-deposit template)
+  // For NitraCar "bez zálohy": sends confirmed email without payment info
+  // For other tenants: sends confirmed email
   try {
     const emailService = require('../services/emailService');
     const emailHelpers = require('../utils/emailHelpers');
 
-    console.log('📧 [EMAIL DEBUG] Starting confirmation email process...');
-    console.log('📧 [EMAIL DEBUG] Email service configured:', !!emailService.isConfigured);
-    console.log('📧 [EMAIL DEBUG] Customer exists:', !!reservation.customer);
-    console.log('📧 [EMAIL DEBUG] Customer email:', reservation.customer?.email);
-    console.log('📧 [EMAIL DEBUG] Skip payment info:', shouldSkipPaymentInfo);
-    console.log('📧 [EMAIL DEBUG] Reservation QR codes exist:', !!reservation.qrCodes);
-    console.log('📧 [EMAIL DEBUG] QR codes content:', {
-      hasQrCodes: !!reservation.qrCodes,
-      qrCodesKeys: reservation.qrCodes ? Object.keys(reservation.qrCodes) : [],
-      payBySquareRental: !!reservation.qrCodes?.payBySquareRental,
-      payBySquareDeposit: !!reservation.qrCodes?.payBySquareDeposit,
-      payBySquare: !!reservation.qrCodes?.payBySquare
-    });
-
     if (emailService.isConfigured && reservation.customer && reservation.customer.email) {
-      // Prepare reservation data using existing helper
       const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
-      console.log('📧 [EMAIL DEBUG] Email data prepared:', {
-        hasEmailData: !!emailData,
-        carBrand: emailData?.car_brand,
-        carModel: emailData?.car_model,
-        customerName: `${emailData?.first_name} ${emailData?.last_name}`
-      });
 
-      // Prepare attachments array (invoice PDF for LeRent)
-      const attachments = [];
-      if (invoicePdfBuffer) {
-        attachments.push({
-          filename: `Faktura_${reservation.superfakturaInvoiceNumber || reservation.reservationNumber}.pdf`,
-          content: invoicePdfBuffer,
-          contentType: 'application/pdf'
-        });
-        console.log('📎 [EMAIL] Adding SuperFaktura invoice PDF attachment');
+      if (isNitraCarAwaitingPaymentTransition) {
+        // NitraCar "Poslať email na zaplatenie zálohy" → send deposit email
+        await emailService.sendCustomerDepositEmail(reservation.customer.email, emailData, req.user, reservation);
+        console.log('✅ [EMAIL] Deposit email sent to:', reservation.customer.email);
+      } else {
+        // Prepare attachments array (invoice PDF for LeRent)
+        const attachments = [];
+        if (invoicePdfBuffer) {
+          attachments.push({
+            filename: `Faktura_${reservation.superfakturaInvoiceNumber || reservation.reservationNumber}.pdf`,
+            content: invoicePdfBuffer,
+            contentType: 'application/pdf'
+          });
+        }
+
+        // Send confirmation email
+        await emailService.sendCustomerReservationConfirmed(reservation.customer.email, emailData, req.user, reservation, attachments, shouldSkipPaymentInfo);
+        console.log('✅ [EMAIL] Confirmation notification sent to customer:', reservation.customer.email, shouldSkipPaymentInfo ? '(without payment info)' : '(with payment info)');
       }
-
-      // Send confirmation email using new template, pass both emailData and raw reservation
-      // Pass shouldSkipPaymentInfo to hide QR codes and payment links
-      console.log('📧 [EMAIL DEBUG] Calling sendCustomerReservationConfirmed...');
-      await emailService.sendCustomerReservationConfirmed(reservation.customer.email, emailData, req.user, reservation, attachments, shouldSkipPaymentInfo);
-      console.log('✅ [EMAIL] Confirmation notification sent to customer:', reservation.customer.email, shouldSkipPaymentInfo ? '(without payment info)' : '(with payment info)');
-    } else {
-      console.log('❌ [EMAIL DEBUG] Email not sent due to missing requirements:', {
-        emailConfigured: !!emailService.isConfigured,
-        hasCustomer: !!reservation.customer,
-        hasEmail: !!reservation.customer?.email
-      });
     }
   } catch (emailError) {
     console.error('❌ [EMAIL] Failed to send confirmation notification:', emailError.message);
