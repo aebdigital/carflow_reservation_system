@@ -503,6 +503,15 @@ function Reservations() {
 
   // Status color mapping
   const getStatusColor = (status) => {
+    if (isNitraCarUser) {
+      const colors = {
+        pending: 'default',
+        awaiting_payment: 'warning',
+        confirmed: 'success',
+        cancelled: 'error'
+      }
+      return colors[status] || 'default'
+    }
     const colors = {
       pending: 'warning',
       awaiting_payment: 'warning',
@@ -518,6 +527,15 @@ function Reservations() {
 
   // Status text mapping
   const getStatusText = (status) => {
+    if (isNitraCarUser) {
+      const statusTexts = {
+        pending: 'Nová',
+        awaiting_payment: 'Čakajúca',
+        confirmed: 'Potvrdená',
+        cancelled: 'Zrušená'
+      }
+      return statusTexts[status] || status
+    }
     const statusTexts = {
       pending: t('pending'),
       awaiting_payment: 'Čakajúce na platbu',
@@ -1392,9 +1410,9 @@ function Reservations() {
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
             <Tab label="Všetky rezervácie" />
-            <Tab label="Aktívne" />
-            <Tab label="Čakajúce" />
-            <Tab label="Dokončené" />
+            <Tab label={isNitraCarUser ? 'Potvrdené' : 'Aktívne'} />
+            <Tab label={isNitraCarUser ? 'Nové / Čakajúce' : 'Čakajúce'} />
+            <Tab label={isNitraCarUser ? 'Zrušené' : 'Dokončené'} />
           </Tabs>
         </Box>
 
@@ -1802,7 +1820,7 @@ function Reservations() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {getPaginatedReservations(filteredReservations.filter(r => r.status === 'ongoing')).map((reservation) => (
+                  {getPaginatedReservations(filteredReservations.filter(r => isNitraCarUser ? r.status === 'confirmed' : r.status === 'ongoing')).map((reservation) => (
                     <TableRow key={reservation._id}>
                       <TableCell>
                         <Typography variant="body2" fontWeight="medium">
@@ -1969,7 +1987,7 @@ function Reservations() {
           {!reservationsLoading && !reservationsError && (
             <TablePagination
               component="div"
-              count={filteredReservations.filter(r => r.status === 'ongoing').length}
+              count={filteredReservations.filter(r => isNitraCarUser ? r.status === 'confirmed' : r.status === 'ongoing').length}
               page={page}
               onPageChange={handleChangePage}
               rowsPerPage={rowsPerPage}
@@ -2279,7 +2297,7 @@ function Reservations() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {getPaginatedReservations(filteredReservations.filter(r => r.status === 'completed')).map((reservation) => (
+                  {getPaginatedReservations(filteredReservations.filter(r => isNitraCarUser ? r.status === 'cancelled' : r.status === 'completed')).map((reservation) => (
                     <TableRow key={reservation._id}>
                       <TableCell>
                         <Typography variant="body2" fontWeight="medium">
@@ -2437,7 +2455,7 @@ function Reservations() {
           {!reservationsLoading && !reservationsError && (
             <TablePagination
               component="div"
-              count={filteredReservations.filter(r => r.status === 'completed').length}
+              count={filteredReservations.filter(r => isNitraCarUser ? r.status === 'cancelled' : r.status === 'completed').length}
               page={page}
               onPageChange={handleChangePage}
               rowsPerPage={rowsPerPage}
@@ -3816,12 +3834,23 @@ function Reservations() {
                       onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                       label={t('status')}
                     >
-                      <MenuItem value="pending">{t('pending')}</MenuItem>
-                      <MenuItem value="confirmed">{t('confirmed')}</MenuItem>
-                      <MenuItem value="zaplatene">Zaplatené</MenuItem>
-                      <MenuItem value="ongoing">{t('ongoing')}</MenuItem>
-                      <MenuItem value="completed">{t('completed')}</MenuItem>
-                      <MenuItem value="cancelled">{t('cancelled')}</MenuItem>
+                      {isNitraCarUser ? (
+                        [
+                          <MenuItem key="pending" value="pending">Nová</MenuItem>,
+                          <MenuItem key="awaiting_payment" value="awaiting_payment">Čakajúca</MenuItem>,
+                          <MenuItem key="confirmed" value="confirmed">Potvrdená</MenuItem>,
+                          <MenuItem key="cancelled" value="cancelled">Zrušená</MenuItem>
+                        ]
+                      ) : (
+                        [
+                          <MenuItem key="pending" value="pending">{t('pending')}</MenuItem>,
+                          <MenuItem key="confirmed" value="confirmed">{t('confirmed')}</MenuItem>,
+                          <MenuItem key="zaplatene" value="zaplatene">Zaplatené</MenuItem>,
+                          <MenuItem key="ongoing" value="ongoing">{t('ongoing')}</MenuItem>,
+                          <MenuItem key="completed" value="completed">{t('completed')}</MenuItem>,
+                          <MenuItem key="cancelled" value="cancelled">{t('cancelled')}</MenuItem>
+                        ]
+                      )}
                     </Select>
                   </FormControl>
                 </Grid>

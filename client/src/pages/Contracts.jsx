@@ -1679,13 +1679,24 @@ function Contracts() {
                           onChange={(e) => setEditReservationData(prev => ({ ...prev, status: e.target.value }))}
                           label="Stav"
                         >
-                          <MenuItem value="pending">Čakajúca</MenuItem>
-                          <MenuItem value="awaiting_payment">Čaká na platbu</MenuItem>
-                          <MenuItem value="confirmed">Potvrdená</MenuItem>
-                          <MenuItem value="zaplatene">Zaplatené</MenuItem>
-                          <MenuItem value="ongoing">Prebiehajúca</MenuItem>
-                          <MenuItem value="completed">Dokončená</MenuItem>
-                          <MenuItem value="cancelled">Zrušená</MenuItem>
+                          {isNitraCarUser ? (
+                            [
+                              <MenuItem key="pending" value="pending">Nová</MenuItem>,
+                              <MenuItem key="awaiting_payment" value="awaiting_payment">Čakajúca</MenuItem>,
+                              <MenuItem key="confirmed" value="confirmed">Potvrdená</MenuItem>,
+                              <MenuItem key="cancelled" value="cancelled">Zrušená</MenuItem>
+                            ]
+                          ) : (
+                            [
+                              <MenuItem key="pending" value="pending">Čakajúca</MenuItem>,
+                              <MenuItem key="awaiting_payment" value="awaiting_payment">Čaká na platbu</MenuItem>,
+                              <MenuItem key="confirmed" value="confirmed">Potvrdená</MenuItem>,
+                              <MenuItem key="zaplatene" value="zaplatene">Zaplatené</MenuItem>,
+                              <MenuItem key="ongoing" value="ongoing">Prebiehajúca</MenuItem>,
+                              <MenuItem key="completed" value="completed">Dokončená</MenuItem>,
+                              <MenuItem key="cancelled" value="cancelled">Zrušená</MenuItem>
+                            ]
+                          )}
                         </Select>
                       </FormControl>
                     </Grid>
