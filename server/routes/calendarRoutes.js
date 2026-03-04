@@ -82,22 +82,40 @@ router.get('/ics', async (req, res) => {
       // Create detailed description
       const description = buildEventDescription(reservation, customerName, carInfo);
 
-      // Use actual pickup/dropoff times instead of all-day events
-      const startDate = new Date(reservation.startDate);
-      const endDate = new Date(reservation.endDate);
+      // Create two 30-min events: pickup and dropoff
+      const pickupStart = new Date(reservation.startDate);
+      const pickupEnd = new Date(pickupStart.getTime() + 30 * 60 * 1000);
 
+      const dropoffStart = new Date(reservation.endDate);
+      const dropoffEnd = new Date(dropoffStart.getTime() + 30 * 60 * 1000);
+
+      // Pickup event
       calendar.createEvent({
-        id: reservation._id.toString(),
-        summary: summary,
+        id: `${reservation._id.toString()}-pickup`,
+        summary: `Prevzatie: ${summary}`,
         description: description,
-        start: startDate,
-        end: endDate,
+        start: pickupStart,
+        end: pickupEnd,
         allDay: false,
-        timezone: 'Europe/Bratislava',
         timestamp: reservation.updatedAt || reservation.createdAt,
-        categories: [{ name: 'Potvrdena' }],
+        categories: [{ name: 'Prevzatie' }],
         status: 'CONFIRMED',
         location: reservation.pickupLocation?.name || '',
+        url: `https://admindemo.carflow.sk/reservations?id=${reservation._id}`
+      });
+
+      // Dropoff event
+      calendar.createEvent({
+        id: `${reservation._id.toString()}-dropoff`,
+        summary: `Vratenie: ${summary}`,
+        description: description,
+        start: dropoffStart,
+        end: dropoffEnd,
+        allDay: false,
+        timestamp: reservation.updatedAt || reservation.createdAt,
+        categories: [{ name: 'Vratenie' }],
+        status: 'CONFIRMED',
+        location: reservation.dropoffLocation?.name || '',
         url: `https://admindemo.carflow.sk/reservations?id=${reservation._id}`
       });
     }
