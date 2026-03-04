@@ -47,10 +47,10 @@ router.get('/ics', async (req, res) => {
     const clientIp = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     await calendarToken.recordAccess(clientIp);
 
-    // Fetch all reservations for this tenant (excluding cancelled)
+    // Fetch only confirmed reservations for this tenant
     const reservations = await Reservation.find({
       tenantId: calendarToken.tenantId,
-      status: { $nin: ['cancelled'] }
+      status: 'confirmed'
     })
     .populate('customer', 'firstName lastName email phone')
     .populate('car', 'make model licensePlate year color')
@@ -82,28 +82,21 @@ router.get('/ics', async (req, res) => {
       // Create detailed description
       const description = buildEventDescription(reservation, customerName, carInfo);
 
-      // Get status display text
-      const statusText = getStatusText(reservation.status);
-
-      // Calculate the end date for all-day events
-      // For ICS all-day events, the end date should be the day AFTER the last day
+      // Use actual pickup/dropoff times instead of all-day events
       const startDate = new Date(reservation.startDate);
       const endDate = new Date(reservation.endDate);
-
-      // Add one day to end date for all-day event format
-      const allDayEndDate = new Date(endDate);
-      allDayEndDate.setDate(allDayEndDate.getDate() + 1);
 
       calendar.createEvent({
         id: reservation._id.toString(),
         summary: summary,
         description: description,
         start: startDate,
-        end: allDayEndDate,
-        allDay: true,
+        end: endDate,
+        allDay: false,
+        timezone: 'Europe/Bratislava',
         timestamp: reservation.updatedAt || reservation.createdAt,
-        categories: [{ name: statusText }],
-        status: reservation.status === 'cancelled' ? 'CANCELLED' : 'CONFIRMED',
+        categories: [{ name: 'Potvrdena' }],
+        status: 'CONFIRMED',
         location: reservation.pickupLocation?.name || '',
         url: `https://admindemo.carflow.sk/reservations?id=${reservation._id}`
       });
@@ -256,8 +249,8 @@ function buildEventDescription(reservation, customerName, carInfo) {
     `Cislo rezervacie: ${reservation.reservationNumber || reservation._id}`,
     `Status: ${getStatusText(reservation.status)}`,
     '',
-    `Prevzatie: ${reservation.pickupLocation?.name || 'Neuvedene'}`,
-    `Vratenie: ${reservation.dropoffLocation?.name || 'Neuvedene'}`,
+    `Prevzatie: ${reservation.pickupLocation?.name || 'Neuvedene'} (${formatDateTime(reservation.startDate)})`,
+    `Vratenie: ${reservation.dropoffLocation?.name || 'Neuvedene'} (${formatDateTime(reservation.endDate)})`,
     '',
     reservation.customer?.phone ? `Telefon: ${reservation.customer.phone}` : null,
     reservation.customer?.email ? `Email: ${reservation.customer.email}` : null,
@@ -267,6 +260,15 @@ function buildEventDescription(reservation, customerName, carInfo) {
   ].filter(Boolean);
 
   return lines.join('\n');
+}
+
+/**
+ * Format date/time for display in description
+ */
+function formatDateTime(date) {
+  if (!date) return '';
+  const d = new Date(date);
+  return d.toLocaleString('sk-SK', { timeZone: 'Europe/Bratislava', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 /**
