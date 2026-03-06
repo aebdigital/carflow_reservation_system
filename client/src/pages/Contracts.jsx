@@ -104,6 +104,8 @@ function Contracts() {
   const [servicesLoading, setServicesLoading] = useState(false)
   const [editContractId, setEditContractId] = useState(null)
   const [editPaymentMethod, setEditPaymentMethod] = useState('hotovost')
+  const [editIdDocumentType, setEditIdDocumentType] = useState('op')
+  const [editSecondDriver, setEditSecondDriver] = useState({ firstName: '', lastName: '', idDocumentType: 'op', idNumber: '', phone: '' })
   const [editPickupFee, setEditPickupFee] = useState(0)
   const [editDropoffFee, setEditDropoffFee] = useState(0)
   const [formData, setFormData] = useState({
@@ -651,6 +653,8 @@ function Contracts() {
     setEditReservationId(resId)
     setEditContractId(contract._id)
     setEditPaymentMethod(contract.paymentMethod || 'hotovost')
+    setEditIdDocumentType(contract.customer?.idDocumentType || 'op')
+    setEditSecondDriver(contract.secondDriver || { firstName: '', lastName: '', idDocumentType: 'op', idNumber: '', phone: '' })
     setEditTabValue(0)
     setEditOpen(true)
   }
@@ -664,6 +668,8 @@ function Contracts() {
     setEditCustomerData({})
     setEditSelectedServices([])
     setEditPaymentMethod('hotovost')
+    setEditIdDocumentType('op')
+    setEditSecondDriver({ firstName: '', lastName: '', idDocumentType: 'op', idNumber: '', phone: '' })
     setEditPickupFee(0)
     setEditDropoffFee(0)
   }
@@ -738,8 +744,13 @@ function Contracts() {
         updateUser(customerUpdateData).unwrap(),
       ]
       // Also update contract paymentMethod if changed
-      if (editContractId && editPaymentMethod) {
-        promises.push(updateContract({ id: editContractId, paymentMethod: editPaymentMethod }).unwrap())
+      if (editContractId) {
+        const contractUpdate = { id: editContractId, paymentMethod: editPaymentMethod }
+        if (isNitraCarUser) {
+          contractUpdate['customer.idDocumentType'] = editIdDocumentType
+          contractUpdate.secondDriver = editSecondDriver
+        }
+        promises.push(updateContract(contractUpdate).unwrap())
       }
       await Promise.all(promises)
 
@@ -1989,6 +2000,92 @@ function Contracts() {
                         inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                       />
                     </Grid>
+
+                    {/* ID Document Type - NitraCar only */}
+                    {isNitraCarUser && (
+                      <>
+                        <Grid item xs={12}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mt: 1 }}>Doklad totožnosti</Typography>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <FormControl fullWidth>
+                            <InputLabel>Typ dokladu</InputLabel>
+                            <Select
+                              value={editIdDocumentType}
+                              onChange={(e) => setEditIdDocumentType(e.target.value)}
+                              label="Typ dokladu"
+                            >
+                              <MenuItem value="op">Občiansky preukaz</MenuItem>
+                              <MenuItem value="pas">Pas</MenuItem>
+                              <MenuItem value="pobyt">Doklad o povolení na pobyt</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="Číslo dokladu"
+                            value={editCustomerData.idNumber || ''}
+                            onChange={(e) => setEditCustomerData(prev => ({ ...prev, idNumber: e.target.value }))}
+                          />
+                        </Grid>
+                      </>
+                    )}
+
+                    {/* Second Driver - NitraCar only */}
+                    {isNitraCarUser && (
+                      <>
+                        <Grid item xs={12}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mt: 1 }}>Druhý vodič</Typography>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="Meno"
+                            value={editSecondDriver.firstName || ''}
+                            onChange={(e) => setEditSecondDriver(prev => ({ ...prev, firstName: e.target.value }))}
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="Priezvisko"
+                            value={editSecondDriver.lastName || ''}
+                            onChange={(e) => setEditSecondDriver(prev => ({ ...prev, lastName: e.target.value }))}
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                          <FormControl fullWidth>
+                            <InputLabel>Typ dokladu</InputLabel>
+                            <Select
+                              value={editSecondDriver.idDocumentType || 'op'}
+                              onChange={(e) => setEditSecondDriver(prev => ({ ...prev, idDocumentType: e.target.value }))}
+                              label="Typ dokladu"
+                            >
+                              <MenuItem value="op">Občiansky preukaz</MenuItem>
+                              <MenuItem value="pas">Pas</MenuItem>
+                              <MenuItem value="pobyt">Doklad o povolení na pobyt</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                          <TextField
+                            fullWidth
+                            label="Číslo dokladu"
+                            value={editSecondDriver.idNumber || ''}
+                            onChange={(e) => setEditSecondDriver(prev => ({ ...prev, idNumber: e.target.value }))}
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                          <TextField
+                            fullWidth
+                            label="Telefón"
+                            value={editSecondDriver.phone || ''}
+                            onChange={(e) => setEditSecondDriver(prev => ({ ...prev, phone: e.target.value }))}
+                          />
+                        </Grid>
+                      </>
+                    )}
 
                     {/* Address */}
                     <Grid item xs={12}>

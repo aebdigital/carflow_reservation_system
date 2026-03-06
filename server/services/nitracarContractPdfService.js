@@ -22,7 +22,7 @@ class NitraCarContractPdfService {
 
     // Company details (static)
     this.companyInfo = {
-      name: 'NITRA CAR s.r.o.',
+      name: 'VP Invest s.r.o.',
       address: 'Štefánikova trieda 79',
       city: '949 01 Nitra',
       ico: '50 229 486',
@@ -89,6 +89,7 @@ class NitraCarContractPdfService {
         this.generateHeader(doc, contractData);
         this.generateSection1_Prenajimatel(doc);
         this.generateSection2_Najomca(doc, contractData);
+        this.generateSection2a_DruhyVodic(doc, contractData);
         this.generateSection3_PredmetNajmu(doc, contractData);
         this.generateSection4_DobaNajmu(doc, contractData);
         this.generateSection5_Najomne(doc, contractData);
@@ -183,12 +184,37 @@ class NitraCarContractPdfService {
 
     this.drawLabelValue(doc, 'Meno / Názov:', fullName, leftCol, rightCol);
     this.drawLabelValue(doc, 'Bydlisko / Sídlo:', address, leftCol, rightCol);
-    this.drawLabelValue(doc, 'Číslo OP / Pas:', customer.idNumber || 'Neuvedené', leftCol, rightCol);
+    this.drawLabelValue(doc, 'Doklad totožnosti:', this.getIdDocumentTypeText(customer.idDocumentType), leftCol, rightCol);
+    this.drawLabelValue(doc, 'Číslo dokladu:', customer.idNumber || 'Neuvedené', leftCol, rightCol);
     if (customer.rodneCislo) {
       this.drawLabelValue(doc, 'Rodné číslo:', customer.rodneCislo, leftCol, rightCol);
     }
     this.drawLabelValue(doc, 'Telefón:', customer.phone || 'Neuvedené', leftCol, rightCol);
     this.drawLabelValue(doc, 'E-mail:', customer.email || 'Neuvedené', leftCol, rightCol);
+
+    doc.moveDown(1);
+  }
+
+  /**
+   * Section II.a - Druhý vodič (Second Driver) - optional
+   */
+  generateSection2a_DruhyVodic(doc, contractData) {
+    const secondDriver = contractData.secondDriver;
+    if (!secondDriver || (!secondDriver.firstName && !secondDriver.lastName)) return;
+
+    this.drawSectionHeaderLeft(doc, 'II.a Druhý vodič');
+
+    const leftCol = doc.page.margins.left;
+    const rightCol = doc.page.margins.left + 150;
+
+    doc.fontSize(9).font(this.fontRegular);
+
+    const driverName = `${secondDriver.firstName || ''} ${secondDriver.lastName || ''}`.trim() || 'Neuvedené';
+
+    this.drawLabelValue(doc, 'Meno a priezvisko:', driverName, leftCol, rightCol);
+    this.drawLabelValue(doc, 'Doklad totožnosti:', this.getIdDocumentTypeText(secondDriver.idDocumentType), leftCol, rightCol);
+    this.drawLabelValue(doc, 'Číslo dokladu:', secondDriver.idNumber || 'Neuvedené', leftCol, rightCol);
+    this.drawLabelValue(doc, 'Telefón:', secondDriver.phone || 'Neuvedené', leftCol, rightCol);
 
     doc.moveDown(1);
   }
@@ -227,11 +253,10 @@ class NitraCarContractPdfService {
 
     doc.fontSize(9).font(this.fontRegular);
 
-    const startDateTime = this.formatDateTime(rental.startDate);
-    const endDateTime = this.formatDateTime(rental.endDate);
-
-    this.drawLabelValue(doc, 'Začiatok nájmu:', startDateTime, leftCol, rightCol);
-    this.drawLabelValue(doc, 'Ukončenie nájmu:', endDateTime, leftCol, rightCol);
+    this.drawLabelValue(doc, 'Dátum prevzatia:', this.formatDate(rental.startDate), leftCol, rightCol);
+    this.drawLabelValue(doc, 'Čas prevzatia:', this.formatTime(rental.startDate), leftCol, rightCol);
+    this.drawLabelValue(doc, 'Dátum vrátenia:', this.formatDate(rental.endDate), leftCol, rightCol);
+    this.drawLabelValue(doc, 'Čas vrátenia:', this.formatTime(rental.endDate), leftCol, rightCol);
     this.drawLabelValue(doc, 'Počet dní:', rental.totalDays?.toString() || 'Neuvedené', leftCol, rightCol);
     this.drawLabelValue(doc, 'Miesto prevzatia:', rental.pickupLocation || 'Neuvedené', leftCol, rightCol);
     this.drawLabelValue(doc, 'Miesto vrátenia:', rental.returnLocation || 'Neuvedené', leftCol, rightCol);
@@ -476,13 +501,19 @@ class NitraCarContractPdfService {
   formatDate(date) {
     if (!date) return 'Neuvedené';
     const d = new Date(date);
-    return d.toLocaleDateString('sk-SK', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return d.toLocaleDateString('sk-SK', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Bratislava' });
   }
 
   formatDateTime(date) {
     if (!date) return 'Neuvedené';
     const d = new Date(date);
     return `${d.toLocaleDateString('sk-SK', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${d.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}`;
+  }
+
+  formatTime(date) {
+    if (!date) return 'Neuvedené';
+    const d = new Date(date);
+    return d.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bratislava' });
   }
 
   formatPrice(price) {
@@ -530,6 +561,15 @@ class NitraCarContractPdfService {
       'qr_kod': 'QR kód'
     };
     return methods[method?.toLowerCase()] || method || 'Neuvedené';
+  }
+
+  getIdDocumentTypeText(type) {
+    const types = {
+      'op': 'Občiansky preukaz',
+      'pas': 'Pas',
+      'pobyt': 'Doklad o povolení na pobyt'
+    };
+    return types[type?.toLowerCase()] || type || 'Občiansky preukaz';
   }
 }
 

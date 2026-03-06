@@ -46,8 +46,13 @@ const contractSchema = new mongoose.Schema({
       zipCode: String,
       country: String
     },
+    idDocumentType: {
+      type: String, // Typ dokladu: op, pas, pobyt
+      enum: ['op', 'pas', 'pobyt'],
+      default: 'op'
+    },
     idNumber: {
-      type: String, // Číslo OP (ID card number)
+      type: String, // Číslo dokladu totožnosti
       sparse: true
     },
     rodneCislo: {
@@ -58,6 +63,19 @@ const contractSchema = new mongoose.Schema({
       type: String, // Číslo vodičského preukazu
       sparse: true
     }
+  },
+
+  // Second driver (Druhý vodič) - NitraCar only
+  secondDriver: {
+    firstName: String,
+    lastName: String,
+    idDocumentType: {
+      type: String,
+      enum: ['op', 'pas', 'pobyt'],
+      default: 'op'
+    },
+    idNumber: String,
+    phone: String
   },
 
   // Vehicle information (Vozidlo)

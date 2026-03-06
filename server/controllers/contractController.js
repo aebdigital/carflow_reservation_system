@@ -415,10 +415,12 @@ const generateContractPDF = asyncHandler(async (req, res, next) => {
           phone: contract.customer?.phone,
           email: contract.customer?.email,
           address: contract.customer?.address,
+          idDocumentType: contract.customer?.idDocumentType || 'op',
           idNumber: contract.customer?.idNumber || contract.customerIdentification?.idCardNumber,
           rodneCislo: contract.customer?.rodneCislo || liveCustomer?.rodneCislo,
           licenseNumber: contract.customer?.licenseNumber || contract.customerIdentification?.driverLicenseNumber
         },
+        secondDriver: contract.secondDriver || null,
         vehicle: {
           brand: contract.vehicle?.brand,
           model: contract.vehicle?.model,
