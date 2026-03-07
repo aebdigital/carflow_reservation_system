@@ -748,6 +748,7 @@ function Contracts() {
         const contractUpdate = { id: editContractId, paymentMethod: editPaymentMethod }
         if (isNitraCarUser) {
           contractUpdate['customer.idDocumentType'] = editIdDocumentType
+          contractUpdate['customer.idNumber'] = editCustomerData.idNumber || ''
           contractUpdate.secondDriver = editSecondDriver
         }
         promises.push(updateContract(contractUpdate).unwrap())
