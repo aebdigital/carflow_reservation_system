@@ -1186,9 +1186,10 @@ class SMTP2GOService {
       end_time: endDate ? new Date(endDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bratislava' }) : '',
       pickup_location: rawReservation?.pickupLocation?.name || reservationData.pickupLocation || 'Miesto vyzdvihnutia',
       dropoff_location: rawReservation?.dropoffLocation?.name || reservationData.dropoffLocation || rawReservation?.pickupLocation?.name || reservationData.pickupLocation || 'Miesto vrátenia',
+      reservation_number: reservationData.reservationNumber || rawReservation?.reservationNumber || '',
       company_name: user?.businessName || user?.companyName || 'NITRA-CAR',
       company_email: emailConfig.emailFrom,
-      company_phone: user?.phoneNumber || user?.phone || '+421 XXX XXX XXX',
+      company_phone: '+421 910 524 554',
       instagram_url: 'https://www.instagram.com/nitracar/',
       facebook_url: 'https://www.facebook.com/nitracar/',
       current_year: new Date().getFullYear()

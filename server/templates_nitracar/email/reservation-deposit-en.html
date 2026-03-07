@@ -191,6 +191,28 @@
             </td>
         </tr>
 
+        <!-- Bank Transfer Alternative -->
+        <tr>
+            <td style="padding: 10px 20px 20px 20px; text-align: center;">
+                <table style="width: 100%; max-width: 500px; margin: 0 auto; background-color: #f9f9f9; border-radius: 10px; border: 1px solid #e0e0e0;">
+                    <tr>
+                        <td style="padding: 20px; text-align: center;">
+                            <h4 style="color: #666666; font-size: 16px; font-weight: bold; margin: 0 0 10px 0;">🏦 Bank Transfer</h4>
+                            <p style="color: #666666; font-size: 14px; margin: 0 0 8px 0;">
+                                You can also pay the deposit of {{stripe_payment_amount}} via bank transfer:
+                            </p>
+                            <p style="color: #333333; font-size: 16px; font-weight: bold; margin: 0 0 5px 0;">
+                                IBAN: SK65 1100 0000 0029 2287 3659
+                            </p>
+                            <p style="color: #333333; font-size: 14px; margin: 0;">
+                                Reference number: <strong>{{reservation_number}}</strong>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
         <!-- Important Information -->
         <tr>
             <td style="padding: 20px; text-align: center;">
