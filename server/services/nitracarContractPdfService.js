@@ -31,41 +31,52 @@ class NitraCarContractPdfService {
       website: 'www.nitra-car.sk',
       phone: '+421 911 123 456'
     };
+
+    // Brand colors
+    this.colors = {
+      primary: '#0891B2',
+      primaryDark: '#065F73',
+      accent: '#22D3EE',
+      dark: '#1a1a1a',
+      medium: '#555555',
+      light: '#888888',
+      border: '#d0d0d0',
+      bgLight: '#f7f9fb',
+      bgSection: '#eef6f8',
+      white: '#ffffff'
+    };
   }
 
   /**
    * Register custom fonts for Slovak diacritics support
    */
   registerFonts(doc) {
-    // Register Roboto fonts if available
     if (fs.existsSync(this.fontPath) && fs.existsSync(this.fontBoldPath)) {
       doc.registerFont('Roboto', this.fontPath);
       doc.registerFont('Roboto-Bold', this.fontBoldPath);
-      console.log('📄 [NITRACAR PDF] Custom fonts registered successfully');
+      console.log('[NITRACAR PDF] Custom fonts registered successfully');
       return true;
     } else {
-      console.log('📄 [NITRACAR PDF] Custom fonts not found, using Helvetica (diacritics may not display correctly)');
+      console.log('[NITRACAR PDF] Custom fonts not found, using Helvetica');
       return false;
     }
   }
 
   /**
    * Generate NitraCar rental contract PDF
-   * @param {Object} contractData - Contract data from database
-   * @returns {Promise<Buffer>} PDF buffer
    */
   async generateContract(contractData) {
     return new Promise((resolve, reject) => {
       try {
-        console.log('📄 [NITRACAR PDF] Starting dynamic contract generation');
-        console.log('📄 [NITRACAR PDF] Contract number:', contractData.contractNumber);
+        console.log('[NITRACAR PDF] Starting dynamic contract generation');
+        console.log('[NITRACAR PDF] Contract number:', contractData.contractNumber);
 
         const doc = new PDFDocument({
           size: 'A4',
-          margins: { top: 40, bottom: 40, left: 40, right: 40 },
+          margins: { top: 40, bottom: 40, left: 45, right: 45 },
           info: {
             Title: `Zmluva o prenájme vozidla - ${contractData.contractNumber}`,
-            Author: 'NitraCar s.r.o.',
+            Author: 'VP Invest s.r.o.',
             Subject: 'Zmluva o prenájme motorového vozidla',
             Creator: 'CarFlow Reservation System'
           }
@@ -80,12 +91,12 @@ class NitraCarContractPdfService {
         doc.on('data', buffers.push.bind(buffers));
         doc.on('end', () => {
           const pdfBuffer = Buffer.concat(buffers);
-          console.log('📄 [NITRACAR PDF] PDF generated successfully, size:', pdfBuffer.length, 'bytes');
+          console.log('[NITRACAR PDF] PDF generated successfully, size:', pdfBuffer.length, 'bytes');
           resolve(pdfBuffer);
         });
         doc.on('error', reject);
 
-        // Generate the contract content
+        // Page 1: Contract details
         this.generateHeader(doc, contractData);
         this.generateSection1_Prenajimatel(doc);
         this.generateSection2_Najomca(doc, contractData);
@@ -94,19 +105,20 @@ class NitraCarContractPdfService {
         this.generateSection4_DobaNajmu(doc, contractData);
         this.generateSection5_Najomne(doc, contractData);
 
-        // Add page break before handover protocol
+        // Page 2: Handover protocol & signatures
         doc.addPage();
+        this.generatePage2Header(doc, contractData);
         this.generateSection6_PreberaciProtokol(doc, contractData);
         this.generateSection7_PreberaciePodpisy(doc, contractData);
         this.generateSectionNotes(doc, contractData);
         this.generateSection8_Podpisy(doc, contractData);
         this.generateTermsAcceptance(doc);
+        this.generateFooter(doc);
 
-        // Finalize the PDF
         doc.end();
 
       } catch (error) {
-        console.error('📄 [NITRACAR PDF] Error generating contract:', error);
+        console.error('[NITRACAR PDF] Error generating contract:', error);
         reject(error);
       }
     });
@@ -117,344 +129,407 @@ class NitraCarContractPdfService {
    */
   generateHeader(doc, contractData) {
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const left = doc.page.margins.left;
+    const right = doc.page.width - doc.page.margins.right;
 
-    // Try to add logo
+    // Top accent bar
+    doc.rect(0, 0, doc.page.width, 6).fill(this.colors.primary);
+
+    // Logo
     if (fs.existsSync(this.logoPath)) {
       try {
-        doc.image(this.logoPath, doc.page.margins.left, 30, { width: 120 });
+        doc.image(this.logoPath, left, 20, { width: 130 });
       } catch (e) {
-        console.log('📄 [NITRACAR PDF] Could not load logo, using text instead');
-        doc.fontSize(20).font(this.fontBold).text('NITRA CAR', doc.page.margins.left, 40);
+        doc.fontSize(22).font(this.fontBold).fillColor(this.colors.primary)
+          .text('NITRA CAR', left, 28);
       }
     } else {
-      // Fallback to text logo
-      doc.fontSize(20).font(this.fontBold).fillColor('#0891B2').text('NITRA CAR', doc.page.margins.left, 40);
+      doc.fontSize(22).font(this.fontBold).fillColor(this.colors.primary)
+        .text('NITRA CAR', left, 28);
     }
 
-    // Contract number and date on the right (use reservation number)
-    doc.fontSize(10).font(this.fontRegular).fillColor('black');
-    doc.text(`Číslo zmluvy: ${contractData.contractNumber || contractData.reservationNumber || 'N/A'}`, doc.page.width - 200, 40, { width: 160, align: 'right' });
-    doc.text(`Dátum: ${this.formatDate(new Date())}`, doc.page.width - 200, 70, { width: 160, align: 'right' });
+    // Contract info box on the right
+    const boxW = 185;
+    const boxX = right - boxW;
+    const boxY = 18;
+    doc.roundedRect(boxX, boxY, boxW, 52, 4)
+      .fill(this.colors.bgSection);
 
-    // Title - single line centered (reset x position to left margin first)
-    doc.x = doc.page.margins.left;
-    doc.y = 100;
-    doc.fontSize(14).font(this.fontBold).fillColor('black');
-    doc.text('ZMLUVA O PRENÁJME MOTOROVÉHO VOZIDLA', doc.page.margins.left, doc.y, { width: pageWidth, align: 'center' });
+    doc.fontSize(8).font(this.fontRegular).fillColor(this.colors.light)
+      .text('ČÍSLO ZMLUVY', boxX + 12, boxY + 8);
+    doc.fontSize(12).font(this.fontBold).fillColor(this.colors.primary)
+      .text(contractData.contractNumber || contractData.reservationNumber || 'N/A', boxX + 12, boxY + 19);
+    doc.fontSize(8).font(this.fontRegular).fillColor(this.colors.light)
+      .text(this.formatDate(new Date()), boxX + 12, boxY + 36);
 
-    doc.moveDown(1.5);
+    // Title
+    doc.y = 90;
+    doc.fontSize(16).font(this.fontBold).fillColor(this.colors.dark);
+    doc.text('ZMLUVA O PRENÁJME MOTOROVÉHO VOZIDLA', left, doc.y, {
+      width: pageWidth,
+      align: 'center'
+    });
+
+    // Decorative line under title
+    const lineY = doc.y + 5;
+    const lineW = 80;
+    const lineX = left + (pageWidth - lineW) / 2;
+    doc.moveTo(lineX, lineY).lineTo(lineX + lineW, lineY)
+      .strokeColor(this.colors.accent).lineWidth(2).stroke();
+
+    doc.y = lineY + 15;
   }
 
   /**
-   * Section I - Prenajímateľ (Lessor)
+   * Page 2 mini header
+   */
+  generatePage2Header(doc, contractData) {
+    const left = doc.page.margins.left;
+    const right = doc.page.width - doc.page.margins.right;
+
+    // Top accent bar
+    doc.rect(0, 0, doc.page.width, 4).fill(this.colors.primary);
+
+    // Compact header
+    doc.fontSize(9).font(this.fontBold).fillColor(this.colors.primary)
+      .text('NITRA-CAR', left, 14);
+    doc.fontSize(8).font(this.fontRegular).fillColor(this.colors.light)
+      .text(`Zmluva č. ${contractData.contractNumber || ''}`, right - 160, 14, { width: 160, align: 'right' });
+
+    // Thin separator
+    doc.moveTo(left, 28).lineTo(right, 28)
+      .strokeColor(this.colors.border).lineWidth(0.5).stroke();
+
+    doc.y = 38;
+  }
+
+  /**
+   * Section I - Prenajimatel (Lessor)
    */
   generateSection1_Prenajimatel(doc) {
-    this.drawSectionHeaderLeft(doc, 'I. Prenajímateľ');
+    this.drawSectionHeader(doc, 'I.', 'Prenajímateľ');
 
     const info = this.companyInfo;
-    const leftCol = doc.page.margins.left;
-    const rightCol = doc.page.margins.left + 150;
+    const rows = [
+      ['Názov spoločnosti', info.name],
+      ['Adresa', `${info.address}, ${info.city}`],
+      ['IČO', info.ico],
+      ['DIČ', info.dic],
+      ['E-mail', info.email],
+      ['Web', info.website],
+      ['Telefón', info.phone]
+    ];
 
-    doc.fontSize(9).font(this.fontRegular);
-
-    this.drawLabelValue(doc, 'Názov spoločnosti:', info.name, leftCol, rightCol);
-    this.drawLabelValue(doc, 'Adresa:', `${info.address}, ${info.city}`, leftCol, rightCol);
-    this.drawLabelValue(doc, 'IČO:', info.ico, leftCol, rightCol);
-    this.drawLabelValue(doc, 'DIČ:', info.dic, leftCol, rightCol);
-    this.drawLabelValue(doc, 'E-mail:', info.email, leftCol, rightCol);
-    this.drawLabelValue(doc, 'Web:', info.website, leftCol, rightCol);
-    this.drawLabelValue(doc, 'Telefón:', info.phone, leftCol, rightCol);
-
-    doc.moveDown(1);
+    this.drawInfoTable(doc, rows);
+    doc.moveDown(0.8);
   }
 
   /**
-   * Section II - Nájomca (Tenant/Customer)
+   * Section II - Najomca (Tenant/Customer)
    */
   generateSection2_Najomca(doc, contractData) {
-    this.drawSectionHeaderLeft(doc, 'II. Nájomca');
+    this.drawSectionHeader(doc, 'II.', 'Nájomca');
 
     const customer = contractData.customer || {};
-    const leftCol = doc.page.margins.left;
-    const rightCol = doc.page.margins.left + 150;
-
-    doc.fontSize(9).font(this.fontRegular);
-
     const fullName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Neuvedené';
     const address = this.formatAddress(customer.address);
 
-    this.drawLabelValue(doc, 'Meno / Názov:', fullName, leftCol, rightCol);
-    this.drawLabelValue(doc, 'Bydlisko / Sídlo:', address, leftCol, rightCol);
-    this.drawLabelValue(doc, 'Doklad totožnosti:', this.getIdDocumentTypeText(customer.idDocumentType), leftCol, rightCol);
-    this.drawLabelValue(doc, 'Číslo dokladu:', customer.idNumber || 'Neuvedené', leftCol, rightCol);
-    if (customer.rodneCislo) {
-      this.drawLabelValue(doc, 'Rodné číslo:', customer.rodneCislo, leftCol, rightCol);
-    }
-    this.drawLabelValue(doc, 'Telefón:', customer.phone || 'Neuvedené', leftCol, rightCol);
-    this.drawLabelValue(doc, 'E-mail:', customer.email || 'Neuvedené', leftCol, rightCol);
+    const rows = [
+      ['Meno / Názov', fullName],
+      ['Bydlisko / Sídlo', address],
+      ['Doklad totožnosti', this.getIdDocumentTypeText(customer.idDocumentType)],
+      ['Číslo dokladu', customer.idNumber || 'Neuvedené']
+    ];
 
-    doc.moveDown(1);
+    if (customer.rodneCislo) {
+      rows.push(['Rodné číslo', customer.rodneCislo]);
+    }
+
+    rows.push(
+      ['Telefón', customer.phone || 'Neuvedené'],
+      ['E-mail', customer.email || 'Neuvedené']
+    );
+
+    this.drawInfoTable(doc, rows);
+    doc.moveDown(0.8);
   }
 
   /**
-   * Section II.a - Druhý vodič (Second Driver) - optional
+   * Section II.a - Druhy vodic (Second Driver) - optional
    */
   generateSection2a_DruhyVodic(doc, contractData) {
     const secondDriver = contractData.secondDriver;
     if (!secondDriver || (!secondDriver.firstName && !secondDriver.lastName)) return;
 
-    this.drawSectionHeaderLeft(doc, 'II.a Druhý vodič');
-
-    const leftCol = doc.page.margins.left;
-    const rightCol = doc.page.margins.left + 150;
-
-    doc.fontSize(9).font(this.fontRegular);
+    this.drawSectionHeader(doc, 'II.a', 'Druhý vodič');
 
     const driverName = `${secondDriver.firstName || ''} ${secondDriver.lastName || ''}`.trim() || 'Neuvedené';
 
-    this.drawLabelValue(doc, 'Meno a priezvisko:', driverName, leftCol, rightCol);
-    this.drawLabelValue(doc, 'Doklad totožnosti:', this.getIdDocumentTypeText(secondDriver.idDocumentType), leftCol, rightCol);
-    this.drawLabelValue(doc, 'Číslo dokladu:', secondDriver.idNumber || 'Neuvedené', leftCol, rightCol);
-    this.drawLabelValue(doc, 'Číslo vodičského preukazu:', secondDriver.licenseNumber || 'Neuvedené', leftCol, rightCol);
-    if (secondDriver.dateOfBirth) {
-      this.drawLabelValue(doc, 'Dátum narodenia:', this.formatDate(secondDriver.dateOfBirth), leftCol, rightCol);
-    }
-    this.drawLabelValue(doc, 'Telefón:', secondDriver.phone || 'Neuvedené', leftCol, rightCol);
+    const rows = [
+      ['Meno a priezvisko', driverName],
+      ['Doklad totožnosti', this.getIdDocumentTypeText(secondDriver.idDocumentType)],
+      ['Číslo dokladu', secondDriver.idNumber || 'Neuvedené'],
+      ['Číslo vodičského preukazu', secondDriver.licenseNumber || 'Neuvedené']
+    ];
 
-    doc.moveDown(1);
+    if (secondDriver.dateOfBirth) {
+      rows.push(['Dátum narodenia', this.formatDate(secondDriver.dateOfBirth)]);
+    }
+
+    rows.push(['Telefón', secondDriver.phone || 'Neuvedené']);
+
+    this.drawInfoTable(doc, rows);
+    doc.moveDown(0.8);
   }
 
   /**
-   * Section III - Predmet nájmu (Vehicle)
+   * Section III - Predmet najmu (Vehicle)
    */
   generateSection3_PredmetNajmu(doc, contractData) {
-    this.drawSectionHeaderLeft(doc, 'III. Predmet nájmu (Údaje o vozidle)');
+    this.drawSectionHeader(doc, 'III.', 'Predmet nájmu');
 
     const vehicle = contractData.vehicle || {};
-    const leftCol = doc.page.margins.left;
-    const rightCol = doc.page.margins.left + 150;
-
-    doc.fontSize(9).font(this.fontRegular);
-
     const vehicleType = `${vehicle.brand || ''} ${vehicle.model || ''}`.trim() || 'Neuvedené';
 
-    this.drawLabelValue(doc, 'Typ vozidla:', vehicleType, leftCol, rightCol);
-    this.drawLabelValue(doc, 'EČV:', vehicle.registrationNumber || 'Neuvedené', leftCol, rightCol);
-    this.drawLabelValue(doc, 'VIN:', vehicle.vin || 'Neuvedené', leftCol, rightCol);
-    this.drawLabelValue(doc, 'Rok výroby:', vehicle.year?.toString() || 'Neuvedené', leftCol, rightCol);
+    const rows = [
+      ['Typ vozidla', vehicleType],
+      ['EČV', vehicle.registrationNumber || 'Neuvedené'],
+      ['VIN', vehicle.vin || 'Neuvedené'],
+      ['Rok výroby', vehicle.year?.toString() || 'Neuvedené']
+    ];
 
-    doc.moveDown(1);
+    this.drawInfoTable(doc, rows);
+    doc.moveDown(0.8);
   }
 
   /**
-   * Section IV - Doba nájmu (Rental Period)
+   * Section IV - Doba najmu (Rental Period)
    */
   generateSection4_DobaNajmu(doc, contractData) {
-    this.drawSectionHeaderLeft(doc, 'IV. Doba nájmu');
+    this.drawSectionHeader(doc, 'IV.', 'Doba nájmu');
 
     const rental = contractData.rental || {};
-    const leftCol = doc.page.margins.left;
-    const rightCol = doc.page.margins.left + 150;
 
-    doc.fontSize(9).font(this.fontRegular);
+    const rows = [
+      ['Dátum prevzatia', this.formatDate(rental.startDate)],
+      ['Čas prevzatia', this.formatTime(rental.startDate)],
+      ['Dátum vrátenia', this.formatDate(rental.endDate)],
+      ['Čas vrátenia', this.formatTime(rental.endDate)],
+      ['Počet dní', rental.totalDays?.toString() || 'Neuvedené'],
+      ['Miesto prevzatia', rental.pickupLocation || 'Neuvedené'],
+      ['Miesto vrátenia', rental.returnLocation || 'Neuvedené']
+    ];
 
-    this.drawLabelValue(doc, 'Dátum prevzatia:', this.formatDate(rental.startDate), leftCol, rightCol);
-    this.drawLabelValue(doc, 'Čas prevzatia:', this.formatTime(rental.startDate), leftCol, rightCol);
-    this.drawLabelValue(doc, 'Dátum vrátenia:', this.formatDate(rental.endDate), leftCol, rightCol);
-    this.drawLabelValue(doc, 'Čas vrátenia:', this.formatTime(rental.endDate), leftCol, rightCol);
-    this.drawLabelValue(doc, 'Počet dní:', rental.totalDays?.toString() || 'Neuvedené', leftCol, rightCol);
-    this.drawLabelValue(doc, 'Miesto prevzatia:', rental.pickupLocation || 'Neuvedené', leftCol, rightCol);
-    this.drawLabelValue(doc, 'Miesto vrátenia:', rental.returnLocation || 'Neuvedené', leftCol, rightCol);
-
-    doc.moveDown(1);
+    this.drawInfoTable(doc, rows);
+    doc.moveDown(0.8);
   }
 
   /**
-   * Section V - Nájomné (Rental Fee)
+   * Section V - Najomne (Rental Fee)
    */
   generateSection5_Najomne(doc, contractData) {
-    this.drawSectionHeaderLeft(doc, 'V. Nájomné');
+    this.drawSectionHeader(doc, 'V.', 'Nájomné');
 
     const rental = contractData.rental || {};
     const rentalRules = contractData.rentalRules || {};
     const additionalServices = contractData.additionalServices || [];
-    const leftCol = doc.page.margins.left;
-    const rightCol = doc.page.margins.left + 200;
-
-    doc.fontSize(9).font(this.fontRegular);
+    const left = doc.page.margins.left;
+    const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
 
     const dailyKmLimit = rentalRules.dailyKmLimit || 200;
     const totalDays = rental.totalDays || 1;
     const totalKmLimit = dailyKmLimit * totalDays;
 
-    this.drawLabelValue(doc, 'Denná sadzba:', `${this.formatPrice(rental.dailyRate)} EUR`, leftCol, rightCol);
-    this.drawLabelValue(doc, 'Kilometrový limit za deň:', `${dailyKmLimit} km`, leftCol, rightCol);
-    this.drawLabelValue(doc, 'Celkovo km:', `${totalKmLimit} km`, leftCol, rightCol);
-    this.drawLabelValue(doc, 'Sadzba nad limit:', `${this.formatPrice(rentalRules.excessKmFee || 0.25)} EUR/km`, leftCol, rightCol);
+    const rows = [
+      ['Denná sadzba', `${this.formatPrice(rental.dailyRate)} EUR`],
+      ['Kilometrový limit za deň', `${dailyKmLimit} km`],
+      ['Celkovo km', `${totalKmLimit} km`],
+      ['Sadzba nad limit', `${this.formatPrice(rentalRules.excessKmFee || 0.25)} EUR/km`]
+    ];
+
+    this.drawInfoTable(doc, rows);
 
     // Additional services
     if (additionalServices.length > 0) {
       doc.moveDown(0.5);
-      doc.font(this.fontBold).text('Služby a príplatky:', leftCol);
-      doc.font(this.fontRegular);
+      doc.fontSize(9).font(this.fontBold).fillColor(this.colors.dark)
+        .text('Služby a príplatky:', left);
+      doc.moveDown(0.3);
+      doc.font(this.fontRegular).fillColor(this.colors.medium);
 
       additionalServices.forEach(service => {
         const servicePrice = (service.price || 0) * (service.quantity || 1);
-        doc.text(`  - ${service.name}: ${this.formatPrice(servicePrice)} EUR`, leftCol + 10);
+        doc.fontSize(9).text(`    ${service.name}: ${this.formatPrice(servicePrice)} EUR`, left);
       });
     }
 
-    // Total calculation
+    // Total
+    doc.moveDown(0.6);
+    const totalAmount = rental.totalAmount || 0;
+    const totalY = doc.y;
+
+    // Total highlight box
+    doc.roundedRect(left, totalY - 3, pageWidth, 20, 3)
+      .fill(this.colors.bgSection);
+
+    doc.fontSize(10).font(this.fontBold).fillColor(this.colors.primary)
+      .text('Spolu k úhrade:', left + 10, totalY + 1, { continued: true })
+      .text(`  ${this.formatPrice(totalAmount)} EUR`);
+
+    doc.fillColor(this.colors.dark);
     doc.moveDown(0.5);
-    const servicesTotal = additionalServices.reduce((sum, s) => sum + ((s.price || 0) * (s.quantity || 1)), 0);
-    const totalAmount = (rental.totalAmount || 0);
 
-    doc.font(this.fontBold);
-    this.drawLabelValue(doc, 'Spolu k úhrade:', `${this.formatPrice(totalAmount)} EUR`, leftCol, rightCol);
-    doc.font(this.fontRegular);
-
-    // Deposit info
+    // Deposit
     if (contractData.deposit) {
-      doc.moveDown(0.3);
-      this.drawLabelValue(doc, 'Depozit:', `${this.formatPrice(contractData.deposit)} EUR`, leftCol, rightCol);
+      doc.fontSize(9).font(this.fontRegular);
+      this.drawLabelValue(doc, 'Depozit:', `${this.formatPrice(contractData.deposit)} EUR`, left, left + 200);
     }
 
     // Payment method
     doc.moveDown(0.3);
-    this.drawLabelValue(doc, 'Spôsob úhrady:', this.getPaymentMethodText(contractData.paymentMethod), leftCol, rightCol);
+    doc.fontSize(9).font(this.fontRegular);
+    this.drawLabelValue(doc, 'Spôsob úhrady:', this.getPaymentMethodText(contractData.paymentMethod), left, left + 200);
 
     doc.moveDown(1);
   }
 
   /**
-   * Section VI - Preberací protokol (Handover Protocol)
+   * Section VI - Preberaci protokol (Handover Protocol)
    */
   generateSection6_PreberaciProtokol(doc, contractData) {
-    this.drawSectionHeaderLeft(doc, 'VI. Preberací protokol');
+    this.drawSectionHeader(doc, 'VI.', 'Preberací protokol');
 
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-    const colWidth = (pageWidth - 20) / 2;
+    const colWidth = (pageWidth - 30) / 2;
     const leftCol = doc.page.margins.left;
-    const rightCol = doc.page.margins.left + colWidth + 20;
+    const rightCol = doc.page.margins.left + colWidth + 30;
 
-    // Two-column layout
-    doc.fontSize(10).font(this.fontBold);
-    doc.text('Pri prevzatí vozidla:', leftCol, doc.y, { width: colWidth });
-    doc.text('Pri vrátení vozidla:', rightCol, doc.y - 12, { width: colWidth });
+    // Column headers with background
+    const headerY = doc.y;
+    doc.roundedRect(leftCol, headerY - 2, colWidth, 18, 3).fill(this.colors.primary);
+    doc.roundedRect(rightCol, headerY - 2, colWidth, 18, 3).fill(this.colors.primaryDark);
 
-    doc.moveDown(0.5);
+    doc.fontSize(9).font(this.fontBold).fillColor(this.colors.white)
+      .text('PREVZATIE VOZIDLA', leftCol + 8, headerY + 2, { width: colWidth - 16 })
+      .text('VRÁTENIE VOZIDLA', rightCol + 8, headerY + 2, { width: colWidth - 16 });
+
+    doc.fillColor(this.colors.dark);
+    doc.y = headerY + 22;
+
     doc.fontSize(9).font(this.fontRegular);
     const startY = doc.y;
 
-    // Left column - Handover (from lessor) - blank for pen filling
+    // Left column
     let y = startY;
-    y = this.drawBlankTextItem(doc, 'Stav PHM v nádrži:', leftCol, y, colWidth);
-    y = this.drawBlankTextItem(doc, 'Depozit uhradený:', leftCol, y, colWidth);
-    y = this.drawBlankTextItem(doc, 'Stav počítadla v km:', leftCol, y, colWidth);
-    y = this.drawBlankTextItem(doc, 'Poškodenia:', leftCol, y, colWidth);
+    y = this.drawBlankField(doc, 'Stav PHM v nádrži:', leftCol, y, colWidth);
+    y = this.drawBlankField(doc, 'Depozit uhradený:', leftCol, y, colWidth);
+    y = this.drawBlankField(doc, 'Stav počítadla v km:', leftCol, y, colWidth);
+    y = this.drawBlankField(doc, 'Poškodenia:', leftCol, y, colWidth);
 
-    // Right column - Return (from tenant) - blank for pen filling
+    // Right column
     y = startY;
-    y = this.drawBlankTextItem(doc, 'Stav PHM v nádrži:', rightCol, y, colWidth);
-    y = this.drawBlankTextItem(doc, 'Depozit vrátený:', rightCol, y, colWidth);
-    y = this.drawBlankTextItem(doc, 'Stav počítadla v km:', rightCol, y, colWidth);
-    y = this.drawBlankTextItem(doc, 'Poškodenia:', rightCol, y, colWidth);
+    y = this.drawBlankField(doc, 'Stav PHM v nádrži:', rightCol, y, colWidth);
+    y = this.drawBlankField(doc, 'Depozit vrátený:', rightCol, y, colWidth);
+    y = this.drawBlankField(doc, 'Stav počítadla v km:', rightCol, y, colWidth);
+    y = this.drawBlankField(doc, 'Poškodenia:', rightCol, y, colWidth);
 
-    doc.y = Math.max(doc.y, y + 15);
+    doc.y = Math.max(doc.y, y + 10);
   }
 
   /**
    * Section VII - Podpisy preberacieho protokolu (Handover Signatures)
    */
   generateSection7_PreberaciePodpisy(doc, contractData) {
-    doc.moveDown(1);
-    this.drawSectionHeaderLeft(doc, 'VII. Podpisy preberacieho protokolu');
+    doc.moveDown(0.8);
+    this.drawSectionHeader(doc, 'VII.', 'Podpisy preberacieho protokolu');
 
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-    const colWidth = (pageWidth - 20) / 2;
+    const colWidth = (pageWidth - 30) / 2;
     const leftCol = doc.page.margins.left;
-    const rightCol = doc.page.margins.left + colWidth + 20;
+    const rightCol = doc.page.margins.left + colWidth + 30;
 
-    doc.fontSize(10).font(this.fontBold);
-    doc.text('Pri prevzatí vozidla:', leftCol, doc.y, { width: colWidth });
-    doc.text('Pri vrátení vozidla:', rightCol, doc.y - 12, { width: colWidth });
+    // Column sub-headers
+    doc.fontSize(9).font(this.fontBold).fillColor(this.colors.primary);
+    doc.text('Pri prevzatí vozidla:', leftCol, doc.y);
+    doc.text('Pri vrátení vozidla:', rightCol, doc.y - 12);
+    doc.fillColor(this.colors.dark);
 
     doc.moveDown(1);
     const y = doc.y;
 
     doc.fontSize(9).font(this.fontRegular);
 
-    // Left column - Handover signatures
-    doc.text('Za prenajímateľa: ________________', leftCol, y);
-    doc.text('Za nájomcu: ________________', leftCol, y + 25);
+    // Left column signatures
+    this.drawSignatureLine(doc, 'Za prenajímateľa', leftCol, y, colWidth - 20);
+    this.drawSignatureLine(doc, 'Za nájomcu', leftCol, y + 40, colWidth - 20);
 
-    // Right column - Return signatures
-    doc.text('Za prenajímateľa: ________________', rightCol, y);
-    doc.text('Za nájomcu: ________________', rightCol, y + 25);
+    // Right column signatures
+    this.drawSignatureLine(doc, 'Za prenajímateľa', rightCol, y, colWidth - 20);
+    this.drawSignatureLine(doc, 'Za nájomcu', rightCol, y + 40, colWidth - 20);
 
-    doc.y = y + 60;
+    doc.y = y + 85;
   }
 
   /**
-   * Notes Section - Poznámky
+   * Notes Section - Poznamky
    */
   generateSectionNotes(doc, contractData) {
-    doc.moveDown(1.5);
-    this.drawSectionHeaderLeft(doc, 'Poznámky');
+    doc.moveDown(1);
+    this.drawSectionHeader(doc, '', 'Poznámky');
 
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const leftCol = doc.page.margins.left;
 
     doc.fontSize(9).font(this.fontRegular);
 
-    // Draw lines for handwritten notes
-    const lineSpacing = 20;
+    const lineSpacing = 22;
     const numLines = 4;
     let y = doc.y + 5;
 
     for (let i = 0; i < numLines; i++) {
       doc.moveTo(leftCol, y)
          .lineTo(leftCol + pageWidth, y)
-         .strokeColor('#cccccc')
+         .strokeColor(this.colors.border)
          .lineWidth(0.5)
+         .dash(3, { space: 3 })
          .stroke();
       y += lineSpacing;
     }
+    doc.undash();
 
-    doc.y = y + 10;
+    doc.y = y + 5;
   }
 
   /**
-   * Section VIII - Podpisy zmluvných strán (Contract Signatures)
+   * Section VIII - Podpisy zmluvnych stran (Contract Signatures)
    */
   generateSection8_Podpisy(doc, contractData) {
-    doc.moveDown(1);
-    this.drawSectionHeaderLeft(doc, 'VIII. Podpisy zmluvných strán');
+    doc.moveDown(0.8);
+    this.drawSectionHeader(doc, 'VIII.', 'Podpisy zmluvných strán');
 
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-    const colWidth = pageWidth / 2 - 20;
+    const colWidth = pageWidth / 2 - 30;
     const leftCol = doc.page.margins.left;
-    const rightCol = doc.page.margins.left + pageWidth / 2 + 10;
+    const rightCol = doc.page.margins.left + pageWidth / 2 + 15;
+
+    doc.moveDown(0.5);
+
+    // Date and place
+    doc.fontSize(9).font(this.fontRegular).fillColor(this.colors.medium)
+      .text(`V Nitre, dňa ${this.formatDate(new Date())}`, leftCol);
 
     doc.moveDown(1);
     const y = doc.y;
 
     // Left - Lessor signature
-    doc.fontSize(9).font(this.fontRegular);
-    doc.text('Za prenajímateľa:', leftCol, y);
-    doc.moveDown(2);
-    doc.text('_________________________________', leftCol);
-    doc.text('Podpis', leftCol);
+    this.drawSignatureBlock(doc, 'Za prenajímateľa', this.companyInfo.name, leftCol, y, colWidth);
 
     // Right - Tenant signature
-    doc.text('Nájomca:', rightCol, y);
-    doc.y = y + 30;
-    doc.text('_________________________________', rightCol);
-    doc.text('Podpis', rightCol);
+    const customer = contractData.customer || {};
+    const tenantName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim();
+    this.drawSignatureBlock(doc, 'Nájomca', tenantName, rightCol, y, colWidth);
 
-    // Date and place
-    doc.moveDown(2);
-    doc.text(`V Nitre, dňa ${this.formatDate(new Date())}`, leftCol);
+    doc.y = y + 80;
   }
 
   /**
@@ -464,23 +539,28 @@ class NitraCarContractPdfService {
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const leftCol = doc.page.margins.left;
 
-    doc.moveDown(2);
+    doc.moveDown(1.5);
 
-    // Add QR code if available
+    // Thin separator
+    doc.moveTo(leftCol + pageWidth * 0.2, doc.y)
+      .lineTo(leftCol + pageWidth * 0.8, doc.y)
+      .strokeColor(this.colors.border).lineWidth(0.5).stroke();
+
+    doc.moveDown(1);
+
+    // QR code
     if (fs.existsSync(this.qrCodePath)) {
       try {
-        // Center the QR code
-        const qrSize = 80;
+        const qrSize = 70;
         const qrX = leftCol + (pageWidth - qrSize) / 2;
         doc.image(this.qrCodePath, qrX, doc.y, { width: qrSize });
-        doc.y += qrSize + 10;
+        doc.y += qrSize + 8;
       } catch (e) {
-        console.log('📄 [NITRACAR PDF] Could not load QR code:', e.message);
+        console.log('[NITRACAR PDF] Could not load QR code:', e.message);
       }
     }
 
-    // Terms acceptance text
-    doc.fontSize(8).font(this.fontRegular).fillColor('#666666');
+    doc.fontSize(7.5).font(this.fontRegular).fillColor(this.colors.light);
     doc.text(
       'Svojím podpisom nájomca potvrdzuje, že sa oboznámil s Podmienkami nájmu (dostupné po naskenovaní QR kódu) a súhlasí s nimi.',
       leftCol,
@@ -489,43 +569,139 @@ class NitraCarContractPdfService {
     );
   }
 
-  // Helper methods
+  /**
+   * Page footer
+   */
+  generateFooter(doc) {
+    const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const left = doc.page.margins.left;
+    const bottomY = doc.page.height - 25;
 
-  drawSectionHeaderLeft(doc, title) {
-    doc.fontSize(11).font(this.fontBold).fillColor('#0891B2');
-    doc.text(title, doc.page.margins.left, doc.y, { align: 'left' });
-    doc.moveTo(doc.page.margins.left, doc.y)
-       .lineTo(doc.page.width - doc.page.margins.right, doc.y)
-       .strokeColor('#0891B2')
-       .lineWidth(0.5)
-       .stroke();
-    doc.fillColor('black');
-    doc.moveDown(0.5);
+    doc.fontSize(7).font(this.fontRegular).fillColor(this.colors.light)
+      .text(
+        `${this.companyInfo.name}  |  ${this.companyInfo.email}  |  ${this.companyInfo.website}`,
+        left, bottomY,
+        { width: pageWidth, align: 'center' }
+      );
+  }
+
+  // ─── Drawing Helpers ───────────────────────────────────────────────
+
+  /**
+   * Draw styled section header with number badge
+   */
+  drawSectionHeader(doc, number, title) {
+    const left = doc.page.margins.left;
+    const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const y = doc.y;
+
+    if (number) {
+      // Number badge
+      const badgeW = 28;
+      const badgeH = 16;
+      doc.roundedRect(left, y - 1, badgeW, badgeH, 3).fill(this.colors.primary);
+      doc.fontSize(9).font(this.fontBold).fillColor(this.colors.white)
+        .text(number, left, y + 1, { width: badgeW, align: 'center' });
+
+      // Title text
+      doc.fontSize(11).font(this.fontBold).fillColor(this.colors.dark)
+        .text(title, left + badgeW + 8, y + 1);
+    } else {
+      doc.fontSize(11).font(this.fontBold).fillColor(this.colors.dark)
+        .text(title, left, y + 1);
+    }
+
+    // Underline
+    const lineY = doc.y + 3;
+    doc.moveTo(left, lineY).lineTo(left + pageWidth, lineY)
+      .strokeColor(this.colors.accent).lineWidth(1).stroke();
+
+    doc.fillColor(this.colors.dark);
+    doc.y = lineY + 8;
+  }
+
+  /**
+   * Draw a styled key-value info table
+   */
+  drawInfoTable(doc, rows) {
+    const left = doc.page.margins.left;
+    const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const labelWidth = 180;
+    const rowHeight = 16;
+
+    rows.forEach((row, i) => {
+      const y = doc.y;
+
+      // Alternating row background
+      if (i % 2 === 0) {
+        doc.rect(left, y - 2, pageWidth, rowHeight).fill(this.colors.bgLight);
+      }
+
+      doc.fontSize(9).font(this.fontBold).fillColor(this.colors.medium)
+        .text(row[0] + ':', left + 8, y + 1, { width: labelWidth });
+      doc.fontSize(9).font(this.fontRegular).fillColor(this.colors.dark)
+        .text(row[1] || 'Neuvedené', left + labelWidth + 8, y + 1);
+
+      doc.y = y + rowHeight;
+    });
   }
 
   drawLabelValue(doc, label, value, leftCol, rightCol) {
     const y = doc.y;
-    doc.font(this.fontBold).text(label, leftCol, y, { continued: false });
-    doc.font(this.fontRegular).text(value || 'Neuvedené', rightCol, y);
+    doc.font(this.fontBold).fillColor(this.colors.medium).text(label, leftCol, y);
+    doc.font(this.fontRegular).fillColor(this.colors.dark).text(value || 'Neuvedené', rightCol, y);
   }
 
-  drawCheckboxItem(doc, label, checked, x, y) {
-    const checkbox = checked ? '[X]' : '[ ]';
-    doc.text(`${checkbox} ${label}`, x, y);
-    return y + 14;
+  /**
+   * Draw a blank field with dotted underline for handwriting
+   */
+  drawBlankField(doc, label, x, y, width) {
+    doc.font(this.fontBold).fillColor(this.colors.medium).fontSize(8.5)
+      .text(label, x + 5, y + 2);
+
+    const lineY = y + 16;
+    doc.moveTo(x + 5, lineY)
+      .lineTo(x + width - 10, lineY)
+      .strokeColor(this.colors.border)
+      .lineWidth(0.5)
+      .dash(2, { space: 2 })
+      .stroke();
+    doc.undash();
+
+    return y + 26;
   }
 
-  drawTextItem(doc, label, value, x, y, width) {
-    doc.font(this.fontBold).text(label, x, y, { continued: true, width: width });
-    doc.font(this.fontRegular).text(` ${value || 'Neuvedené'}`);
-    return doc.y + 2;
+  /**
+   * Draw a signature line with label underneath
+   */
+  drawSignatureLine(doc, label, x, y, width) {
+    doc.moveTo(x, y + 20).lineTo(x + width, y + 20)
+      .strokeColor(this.colors.border).lineWidth(0.5).stroke();
+
+    doc.fontSize(8).font(this.fontRegular).fillColor(this.colors.light)
+      .text(label, x, y + 24, { width: width, align: 'center' });
   }
 
-  drawBlankTextItem(doc, label, x, y, width) {
-    doc.font(this.fontBold).text(label, x, y, { continued: true, width: width });
-    doc.font(this.fontRegular).text(' _______________________');
-    return doc.y + 8; // Extra space for pen filling
+  /**
+   * Draw a full signature block with label, name placeholder, and line
+   */
+  drawSignatureBlock(doc, role, name, x, y, width) {
+    doc.fontSize(9).font(this.fontBold).fillColor(this.colors.primary)
+      .text(role + ':', x, y);
+
+    // Signature line
+    const lineY = y + 40;
+    doc.moveTo(x, lineY).lineTo(x + width, lineY)
+      .strokeColor(this.colors.dark).lineWidth(0.5).stroke();
+
+    // Name and "Podpis" label
+    doc.fontSize(8).font(this.fontRegular).fillColor(this.colors.light)
+      .text(name || '', x, lineY + 4, { width: width, align: 'center' });
+    doc.fontSize(7).fillColor(this.colors.border)
+      .text('podpis', x, lineY + 15, { width: width, align: 'center' });
   }
+
+  // ─── Formatting Helpers ────────────────────────────────────────────
 
   formatDate(date) {
     if (!date) return 'Neuvedené';
