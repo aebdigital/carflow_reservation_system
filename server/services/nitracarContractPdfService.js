@@ -133,7 +133,9 @@ class NitraCarContractPdfService {
     const right = doc.page.width - doc.page.margins.right;
 
     // Top accent bar
+    doc.save();
     doc.rect(0, 0, doc.page.width, 6).fill(this.colors.primary);
+    doc.restore();
 
     // Logo
     if (fs.existsSync(this.logoPath)) {
@@ -141,26 +143,28 @@ class NitraCarContractPdfService {
         doc.image(this.logoPath, left, 20, { width: 130 });
       } catch (e) {
         doc.fontSize(22).font(this.fontBold).fillColor(this.colors.primary)
-          .text('NITRA CAR', left, 28);
+          .text('NITRA CAR', left, 28, { lineBreak: false });
       }
     } else {
       doc.fontSize(22).font(this.fontBold).fillColor(this.colors.primary)
-        .text('NITRA CAR', left, 28);
+        .text('NITRA CAR', left, 28, { lineBreak: false });
     }
 
     // Contract info box on the right
     const boxW = 185;
     const boxX = right - boxW;
     const boxY = 18;
+    doc.save();
     doc.roundedRect(boxX, boxY, boxW, 52, 4)
       .fill(this.colors.bgSection);
+    doc.restore();
 
     doc.fontSize(8).font(this.fontRegular).fillColor(this.colors.light)
-      .text('ČÍSLO ZMLUVY', boxX + 12, boxY + 8);
+      .text('ČÍSLO ZMLUVY', boxX + 12, boxY + 8, { width: boxW - 24, lineBreak: false });
     doc.fontSize(12).font(this.fontBold).fillColor(this.colors.primary)
-      .text(contractData.contractNumber || contractData.reservationNumber || 'N/A', boxX + 12, boxY + 19);
+      .text(contractData.contractNumber || contractData.reservationNumber || 'N/A', boxX + 12, boxY + 19, { width: boxW - 24, lineBreak: false });
     doc.fontSize(8).font(this.fontRegular).fillColor(this.colors.light)
-      .text(this.formatDate(new Date()), boxX + 12, boxY + 36);
+      .text(this.formatDate(new Date()), boxX + 12, boxY + 36, { width: boxW - 24, lineBreak: false });
 
     // Title
     doc.y = 90;
@@ -188,13 +192,15 @@ class NitraCarContractPdfService {
     const right = doc.page.width - doc.page.margins.right;
 
     // Top accent bar
+    doc.save();
     doc.rect(0, 0, doc.page.width, 4).fill(this.colors.primary);
+    doc.restore();
 
     // Compact header
     doc.fontSize(9).font(this.fontBold).fillColor(this.colors.primary)
-      .text('NITRA-CAR', left, 14);
+      .text('NITRA-CAR', left, 14, { lineBreak: false });
     doc.fontSize(8).font(this.fontRegular).fillColor(this.colors.light)
-      .text(`Zmluva č. ${contractData.contractNumber || ''}`, right - 160, 14, { width: 160, align: 'right' });
+      .text(`Zmluva č. ${contractData.contractNumber || ''}`, right - 160, 14, { width: 160, align: 'right', lineBreak: false });
 
     // Thin separator
     doc.moveTo(left, 28).lineTo(right, 28)
@@ -369,12 +375,13 @@ class NitraCarContractPdfService {
     const totalY = doc.y;
 
     // Total highlight box
+    doc.save();
     doc.roundedRect(left, totalY - 3, pageWidth, 20, 3)
       .fill(this.colors.bgSection);
+    doc.restore();
 
     doc.fontSize(10).font(this.fontBold).fillColor(this.colors.primary)
-      .text('Spolu k úhrade:', left + 10, totalY + 1, { continued: true })
-      .text(`  ${this.formatPrice(totalAmount)} EUR`);
+      .text(`Spolu k úhrade:  ${this.formatPrice(totalAmount)} EUR`, left + 10, totalY + 1, { width: pageWidth - 20, lineBreak: false });
 
     doc.fillColor(this.colors.dark);
     doc.moveDown(0.5);
@@ -406,12 +413,17 @@ class NitraCarContractPdfService {
 
     // Column headers with background
     const headerY = doc.y;
+    doc.save();
     doc.roundedRect(leftCol, headerY - 2, colWidth, 18, 3).fill(this.colors.primary);
+    doc.restore();
+    doc.save();
     doc.roundedRect(rightCol, headerY - 2, colWidth, 18, 3).fill(this.colors.primaryDark);
+    doc.restore();
 
     doc.fontSize(9).font(this.fontBold).fillColor(this.colors.white)
-      .text('PREVZATIE VOZIDLA', leftCol + 8, headerY + 2, { width: colWidth - 16 })
-      .text('VRÁTENIE VOZIDLA', rightCol + 8, headerY + 2, { width: colWidth - 16 });
+      .text('PREVZATIE VOZIDLA', leftCol + 8, headerY + 2, { width: colWidth - 16, lineBreak: false });
+    doc.fontSize(9).font(this.fontBold).fillColor(this.colors.white)
+      .text('VRÁTENIE VOZIDLA', rightCol + 8, headerY + 2, { width: colWidth - 16, lineBreak: false });
 
     doc.fillColor(this.colors.dark);
     doc.y = headerY + 22;
@@ -449,9 +461,10 @@ class NitraCarContractPdfService {
     const rightCol = doc.page.margins.left + colWidth + 30;
 
     // Column sub-headers
+    const subY = doc.y;
     doc.fontSize(9).font(this.fontBold).fillColor(this.colors.primary);
-    doc.text('Pri prevzatí vozidla:', leftCol, doc.y);
-    doc.text('Pri vrátení vozidla:', rightCol, doc.y - 12);
+    doc.text('Pri prevzatí vozidla:', leftCol, subY, { width: colWidth, lineBreak: false });
+    doc.text('Pri vrátení vozidla:', rightCol, subY, { width: colWidth, lineBreak: false });
     doc.fillColor(this.colors.dark);
 
     doc.moveDown(1);
@@ -516,7 +529,7 @@ class NitraCarContractPdfService {
 
     // Date and place
     doc.fontSize(9).font(this.fontRegular).fillColor(this.colors.medium)
-      .text(`V Nitre, dňa ${this.formatDate(new Date())}`, leftCol);
+      .text(`V Nitre, dňa ${this.formatDate(new Date())}`, leftCol, doc.y, { width: pageWidth, lineBreak: false });
 
     doc.moveDown(1);
     const y = doc.y;
@@ -599,20 +612,22 @@ class NitraCarContractPdfService {
       // Number badge
       const badgeW = 28;
       const badgeH = 16;
+      doc.save();
       doc.roundedRect(left, y - 1, badgeW, badgeH, 3).fill(this.colors.primary);
+      doc.restore();
       doc.fontSize(9).font(this.fontBold).fillColor(this.colors.white)
-        .text(number, left, y + 1, { width: badgeW, align: 'center' });
+        .text(number, left, y + 1, { width: badgeW, align: 'center', lineBreak: false });
 
       // Title text
       doc.fontSize(11).font(this.fontBold).fillColor(this.colors.dark)
-        .text(title, left + badgeW + 8, y + 1);
+        .text(title, left + badgeW + 8, y + 1, { width: pageWidth - badgeW - 8, lineBreak: false });
     } else {
       doc.fontSize(11).font(this.fontBold).fillColor(this.colors.dark)
-        .text(title, left, y + 1);
+        .text(title, left, y + 1, { width: pageWidth, lineBreak: false });
     }
 
     // Underline
-    const lineY = doc.y + 3;
+    const lineY = y + 18;
     doc.moveTo(left, lineY).lineTo(left + pageWidth, lineY)
       .strokeColor(this.colors.accent).lineWidth(1).stroke();
 
@@ -627,20 +642,28 @@ class NitraCarContractPdfService {
     const left = doc.page.margins.left;
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const labelWidth = 180;
+    const valueWidth = pageWidth - labelWidth - 16;
     const rowHeight = 16;
 
     rows.forEach((row, i) => {
+      // Check if we need a new page
+      if (doc.y + rowHeight > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+      }
+
       const y = doc.y;
 
       // Alternating row background
       if (i % 2 === 0) {
+        doc.save();
         doc.rect(left, y - 2, pageWidth, rowHeight).fill(this.colors.bgLight);
+        doc.restore();
       }
 
       doc.fontSize(9).font(this.fontBold).fillColor(this.colors.medium)
-        .text(row[0] + ':', left + 8, y + 1, { width: labelWidth });
+        .text(row[0] + ':', left + 8, y + 1, { width: labelWidth, lineBreak: false });
       doc.fontSize(9).font(this.fontRegular).fillColor(this.colors.dark)
-        .text(row[1] || 'Neuvedené', left + labelWidth + 8, y + 1);
+        .text(row[1] || 'Neuvedené', left + labelWidth + 8, y + 1, { width: valueWidth, lineBreak: false });
 
       doc.y = y + rowHeight;
     });
@@ -648,8 +671,12 @@ class NitraCarContractPdfService {
 
   drawLabelValue(doc, label, value, leftCol, rightCol) {
     const y = doc.y;
-    doc.font(this.fontBold).fillColor(this.colors.medium).text(label, leftCol, y);
-    doc.font(this.fontRegular).fillColor(this.colors.dark).text(value || 'Neuvedené', rightCol, y);
+    const pageRight = doc.page.width - doc.page.margins.right;
+    doc.font(this.fontBold).fillColor(this.colors.medium)
+      .text(label, leftCol, y, { width: rightCol - leftCol, lineBreak: false });
+    doc.font(this.fontRegular).fillColor(this.colors.dark)
+      .text(value || 'Neuvedené', rightCol, y, { width: pageRight - rightCol, lineBreak: false });
+    doc.y = y + 14;
   }
 
   /**
@@ -657,7 +684,7 @@ class NitraCarContractPdfService {
    */
   drawBlankField(doc, label, x, y, width) {
     doc.font(this.fontBold).fillColor(this.colors.medium).fontSize(8.5)
-      .text(label, x + 5, y + 2);
+      .text(label, x + 5, y + 2, { width: width - 10, lineBreak: false });
 
     const lineY = y + 16;
     doc.moveTo(x + 5, lineY)
@@ -679,7 +706,7 @@ class NitraCarContractPdfService {
       .strokeColor(this.colors.border).lineWidth(0.5).stroke();
 
     doc.fontSize(8).font(this.fontRegular).fillColor(this.colors.light)
-      .text(label, x, y + 24, { width: width, align: 'center' });
+      .text(label, x, y + 24, { width: width, align: 'center', lineBreak: false });
   }
 
   /**
@@ -687,7 +714,7 @@ class NitraCarContractPdfService {
    */
   drawSignatureBlock(doc, role, name, x, y, width) {
     doc.fontSize(9).font(this.fontBold).fillColor(this.colors.primary)
-      .text(role + ':', x, y);
+      .text(role + ':', x, y, { width: width, lineBreak: false });
 
     // Signature line
     const lineY = y + 40;
@@ -696,9 +723,9 @@ class NitraCarContractPdfService {
 
     // Name and "Podpis" label
     doc.fontSize(8).font(this.fontRegular).fillColor(this.colors.light)
-      .text(name || '', x, lineY + 4, { width: width, align: 'center' });
+      .text(name || '', x, lineY + 4, { width: width, align: 'center', lineBreak: false });
     doc.fontSize(7).fillColor(this.colors.border)
-      .text('podpis', x, lineY + 15, { width: width, align: 'center' });
+      .text('podpis', x, lineY + 15, { width: width, align: 'center', lineBreak: false });
   }
 
   // ─── Formatting Helpers ────────────────────────────────────────────
