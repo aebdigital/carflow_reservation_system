@@ -97,8 +97,9 @@ class NitraCarContractPdfService {
         // Add page break before handover protocol
         doc.addPage();
         this.generateSection6_PreberaciProtokol(doc, contractData);
+        this.generateSection7_PreberaciePodpisy(doc, contractData);
         this.generateSectionNotes(doc, contractData);
-        this.generateSection7_Podpisy(doc, contractData);
+        this.generateSection8_Podpisy(doc, contractData);
         this.generateTermsAcceptance(doc);
 
         // Finalize the PDF
@@ -351,10 +352,6 @@ class NitraCarContractPdfService {
     y = this.drawBlankTextItem(doc, 'Depozit uhradený:', leftCol, y, colWidth);
     y = this.drawBlankTextItem(doc, 'Stav počítadla v km:', leftCol, y, colWidth);
     y = this.drawBlankTextItem(doc, 'Poškodenia:', leftCol, y, colWidth);
-    y += 25;
-    doc.text('Podpis odovzdávajúceho: ________________', leftCol, y);
-    y += 18;
-    doc.text('Podpis preberajúceho: ________________', leftCol, y);
 
     // Right column - Return (from tenant) - blank for pen filling
     y = startY;
@@ -362,12 +359,40 @@ class NitraCarContractPdfService {
     y = this.drawBlankTextItem(doc, 'Depozit vrátený:', rightCol, y, colWidth);
     y = this.drawBlankTextItem(doc, 'Stav počítadla v km:', rightCol, y, colWidth);
     y = this.drawBlankTextItem(doc, 'Poškodenia:', rightCol, y, colWidth);
-    y += 25;
-    doc.text('Podpis odovzdávajúceho: ________________', rightCol, y);
-    y += 18;
-    doc.text('Podpis preberajúceho: ________________', rightCol, y);
 
-    doc.y = Math.max(doc.y, y + 30);
+    doc.y = Math.max(doc.y, y + 15);
+  }
+
+  /**
+   * Section VII - Podpisy preberacieho protokolu (Handover Signatures)
+   */
+  generateSection7_PreberaciePodpisy(doc, contractData) {
+    doc.moveDown(1);
+    this.drawSectionHeaderLeft(doc, 'VII. Podpisy preberacieho protokolu');
+
+    const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const colWidth = (pageWidth - 20) / 2;
+    const leftCol = doc.page.margins.left;
+    const rightCol = doc.page.margins.left + colWidth + 20;
+
+    doc.fontSize(10).font(this.fontBold);
+    doc.text('Pri prevzatí vozidla:', leftCol, doc.y, { width: colWidth });
+    doc.text('Pri vrátení vozidla:', rightCol, doc.y - 12, { width: colWidth });
+
+    doc.moveDown(1);
+    const y = doc.y;
+
+    doc.fontSize(9).font(this.fontRegular);
+
+    // Left column - Handover signatures
+    doc.text('Za prenajímateľa: ________________', leftCol, y);
+    doc.text('Za nájomcu: ________________', leftCol, y + 25);
+
+    // Right column - Return signatures
+    doc.text('Za prenajímateľa: ________________', rightCol, y);
+    doc.text('Za nájomcu: ________________', rightCol, y + 25);
+
+    doc.y = y + 60;
   }
 
   /**
@@ -400,11 +425,11 @@ class NitraCarContractPdfService {
   }
 
   /**
-   * Section VII - Podpisy (Signatures)
+   * Section VIII - Podpisy zmluvných strán (Contract Signatures)
    */
-  generateSection7_Podpisy(doc, contractData) {
+  generateSection8_Podpisy(doc, contractData) {
     doc.moveDown(1);
-    this.drawSectionHeaderLeft(doc, 'VII. Podpisy zmluvných strán');
+    this.drawSectionHeaderLeft(doc, 'VIII. Podpisy zmluvných strán');
 
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const colWidth = pageWidth / 2 - 20;
