@@ -397,7 +397,7 @@ class NitraCarContractPdfService {
     doc.fontSize(9).font(this.fontRegular);
     this.drawLabelValue(doc, 'Spôsob úhrady:', this.getPaymentMethodText(contractData.paymentMethod), left, left + 200);
 
-    doc.moveDown(1);
+    doc.moveDown(0.3);
   }
 
   /**
@@ -552,14 +552,14 @@ class NitraCarContractPdfService {
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const leftCol = doc.page.margins.left;
 
-    doc.moveDown(1.5);
+    doc.moveDown(1);
 
     // Thin separator
     doc.moveTo(leftCol + pageWidth * 0.2, doc.y)
       .lineTo(leftCol + pageWidth * 0.8, doc.y)
       .strokeColor(this.colors.border).lineWidth(0.5).stroke();
 
-    doc.moveDown(1);
+    doc.moveDown(0.5);
 
     // QR code
     if (fs.existsSync(this.qrCodePath)) {
@@ -588,12 +588,12 @@ class NitraCarContractPdfService {
   generateFooter(doc) {
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const left = doc.page.margins.left;
-    const bottomY = doc.page.height - 25;
 
+    doc.moveDown(1);
     doc.fontSize(7).font(this.fontRegular).fillColor(this.colors.light)
       .text(
         `${this.companyInfo.name}  |  ${this.companyInfo.email}  |  ${this.companyInfo.website}`,
-        left, bottomY,
+        left, doc.y,
         { width: pageWidth, align: 'center' }
       );
   }
