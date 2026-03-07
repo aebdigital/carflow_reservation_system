@@ -75,7 +75,9 @@ const contractSchema = new mongoose.Schema({
       default: 'op'
     },
     idNumber: String,
-    phone: String
+    phone: String,
+    licenseNumber: String, // Číslo vodičského preukazu
+    dateOfBirth: Date // Dátum narodenia (optional)
   },
 
   // Vehicle information (Vozidlo)

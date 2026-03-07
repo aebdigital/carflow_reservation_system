@@ -105,7 +105,7 @@ function Contracts() {
   const [editContractId, setEditContractId] = useState(null)
   const [editPaymentMethod, setEditPaymentMethod] = useState('hotovost')
   const [editIdDocumentType, setEditIdDocumentType] = useState('op')
-  const [editSecondDriver, setEditSecondDriver] = useState({ firstName: '', lastName: '', idDocumentType: 'op', idNumber: '', phone: '' })
+  const [editSecondDriver, setEditSecondDriver] = useState({ firstName: '', lastName: '', idDocumentType: 'op', idNumber: '', phone: '', licenseNumber: '', dateOfBirth: null })
   const [editPickupFee, setEditPickupFee] = useState(0)
   const [editDropoffFee, setEditDropoffFee] = useState(0)
   const [formData, setFormData] = useState({
@@ -654,7 +654,7 @@ function Contracts() {
     setEditContractId(contract._id)
     setEditPaymentMethod(contract.paymentMethod || 'hotovost')
     setEditIdDocumentType(contract.customer?.idDocumentType || 'op')
-    setEditSecondDriver(contract.secondDriver || { firstName: '', lastName: '', idDocumentType: 'op', idNumber: '', phone: '' })
+    setEditSecondDriver(contract.secondDriver || { firstName: '', lastName: '', idDocumentType: 'op', idNumber: '', phone: '', licenseNumber: '', dateOfBirth: null })
     setEditTabValue(0)
     setEditOpen(true)
   }
@@ -669,7 +669,7 @@ function Contracts() {
     setEditSelectedServices([])
     setEditPaymentMethod('hotovost')
     setEditIdDocumentType('op')
-    setEditSecondDriver({ firstName: '', lastName: '', idDocumentType: 'op', idNumber: '', phone: '' })
+    setEditSecondDriver({ firstName: '', lastName: '', idDocumentType: 'op', idNumber: '', phone: '', licenseNumber: '', dateOfBirth: null })
     setEditPickupFee(0)
     setEditDropoffFee(0)
   }
@@ -2083,6 +2083,24 @@ function Contracts() {
                             value={editSecondDriver.phone || ''}
                             onChange={(e) => setEditSecondDriver(prev => ({ ...prev, phone: e.target.value }))}
                           />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="Číslo vodičského preukazu"
+                            value={editSecondDriver.licenseNumber || ''}
+                            onChange={(e) => setEditSecondDriver(prev => ({ ...prev, licenseNumber: e.target.value }))}
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={sk}>
+                            <DatePicker
+                              label="Dátum narodenia"
+                              value={editSecondDriver.dateOfBirth ? new Date(editSecondDriver.dateOfBirth) : null}
+                              onChange={(date) => setEditSecondDriver(prev => ({ ...prev, dateOfBirth: date }))}
+                              slotProps={{ textField: { fullWidth: true } }}
+                            />
+                          </LocalizationProvider>
                         </Grid>
                       </>
                     )}

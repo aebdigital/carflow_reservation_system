@@ -214,6 +214,10 @@ class NitraCarContractPdfService {
     this.drawLabelValue(doc, 'Meno a priezvisko:', driverName, leftCol, rightCol);
     this.drawLabelValue(doc, 'Doklad totožnosti:', this.getIdDocumentTypeText(secondDriver.idDocumentType), leftCol, rightCol);
     this.drawLabelValue(doc, 'Číslo dokladu:', secondDriver.idNumber || 'Neuvedené', leftCol, rightCol);
+    this.drawLabelValue(doc, 'Číslo vodičského preukazu:', secondDriver.licenseNumber || 'Neuvedené', leftCol, rightCol);
+    if (secondDriver.dateOfBirth) {
+      this.drawLabelValue(doc, 'Dátum narodenia:', this.formatDate(secondDriver.dateOfBirth), leftCol, rightCol);
+    }
     this.drawLabelValue(doc, 'Telefón:', secondDriver.phone || 'Neuvedené', leftCol, rightCol);
 
     doc.moveDown(1);
