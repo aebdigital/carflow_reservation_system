@@ -1203,8 +1203,8 @@ class SMTP2GOService {
       if (stripeConfig && stripeConfig.secretKey) {
         const stripe = require('stripe')(stripeConfig.secretKey);
 
-        // Get deposit amount from car or use default
-        const depositAmount = rawReservation?.car?.pricing?.deposit || rawReservation?.car?.deposit || reservationData.deposit || 500;
+        // NitraCar deposit is always 50€
+        const depositAmount = 50;
         const depositInCents = Math.round(depositAmount * 100);
 
         // Create a Stripe Payment Link for deposit
