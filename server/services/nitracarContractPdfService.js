@@ -105,9 +105,7 @@ class NitraCarContractPdfService {
         this.generateSection4_DobaNajmu(doc, contractData);
         this.generateSection5_Najomne(doc, contractData);
 
-        // Page 2: Handover protocol & signatures
-        doc.addPage();
-        this.generatePage2Header(doc, contractData);
+        // Handover protocol & signatures (continues naturally, page breaks handled automatically)
         this.generateSection6_PreberaciProtokol(doc, contractData);
         this.generateSection7_PreberaciePodpisy(doc, contractData);
         this.generateSectionNotes(doc, contractData);
@@ -404,6 +402,11 @@ class NitraCarContractPdfService {
    * Section VI - Preberaci protokol (Handover Protocol)
    */
   generateSection6_PreberaciProtokol(doc, contractData) {
+    // Ensure enough space for the handover protocol (~150px needed)
+    if (doc.y + 150 > doc.page.height - doc.page.margins.bottom) {
+      doc.addPage();
+      this.generatePage2Header(doc, contractData);
+    }
     this.drawSectionHeader(doc, 'VI.', 'Preberací protokol');
 
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
@@ -487,7 +490,7 @@ class NitraCarContractPdfService {
    * Notes Section - Poznamky
    */
   generateSectionNotes(doc, contractData) {
-    doc.moveDown(1);
+    doc.moveDown(0.5);
     this.drawSectionHeader(doc, '', 'Poznámky');
 
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
@@ -589,12 +592,12 @@ class NitraCarContractPdfService {
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const left = doc.page.margins.left;
 
-    doc.moveDown(1);
+    doc.moveDown(0.5);
     doc.fontSize(7).font(this.fontRegular).fillColor(this.colors.light)
       .text(
         `${this.companyInfo.name}  |  ${this.companyInfo.email}  |  ${this.companyInfo.website}`,
         left, doc.y,
-        { width: pageWidth, align: 'center' }
+        { width: pageWidth, align: 'center', lineBreak: false }
       );
   }
 
