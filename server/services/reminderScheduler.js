@@ -1,5 +1,6 @@
 const cron = require('node-cron');
 const Reservation = require('../models/Reservation');
+const User = require('../models/User');
 const emailService = require('./emailService');
 const emailHelpers = require('../utils/emailHelpers');
 
@@ -82,7 +83,8 @@ class ReminderScheduler {
         'reminder24h.sent': { $ne: true }
       }).populate([
         { path: 'customer', select: 'firstName lastName email phone' },
-        { path: 'car', select: 'brand model year registrationNumber pricing images imageUrl deposit' }
+        { path: 'car', select: 'brand model year registrationNumber pricing images imageUrl deposit' },
+        { path: 'createdBy', select: 'email tenantId' }
       ]);
 
       console.log(`📧 [REMINDER] Found ${reservations.length} reservations needing 24h reminders`);
@@ -159,7 +161,8 @@ class ReminderScheduler {
         'reviewRequest.sent': { $ne: true }
       }).populate([
         { path: 'customer', select: 'firstName lastName email phone' },
-        { path: 'car', select: 'brand model year registrationNumber pricing images imageUrl deposit' }
+        { path: 'car', select: 'brand model year registrationNumber pricing images imageUrl deposit' },
+        { path: 'createdBy', select: 'email tenantId' }
       ]);
 
       console.log(`⭐ [REVIEW] Found ${reservations.length} reservations needing review requests`);
@@ -193,7 +196,13 @@ class ReminderScheduler {
 
       // Prepare email data using existing helper
       const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
-      
+
+      // Get the admin/tenant user for tenant-specific email templates
+      let adminUser = reservation.createdBy || null;
+      if (!adminUser && reservation.tenantId) {
+        adminUser = await User.findById(reservation.tenantId).select('email tenantId');
+      }
+
       // Send 24-hour reminder email, pass raw reservation for car image
       await emailService.sendCustomerReservationReminder24(reservation.customer.email, emailData, adminUser, reservation);
 
@@ -230,7 +239,12 @@ class ReminderScheduler {
       const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
       
       // Get the admin/tenant user for tenant-specific email templates
-      const adminUser = reservation.createdBy || null;
+      let adminUser = reservation.createdBy || null;
+
+      // If createdBy is not populated, look up the tenant admin by tenantId
+      if (!adminUser && reservation.tenantId) {
+        adminUser = await User.findById(reservation.tenantId).select('email tenantId');
+      }
       
       // Send 24-hour return reminder email, pass raw reservation for car image
       await emailService.sendCustomerReturnReminder24(reservation.customer.email, emailData, adminUser, reservation);
@@ -267,8 +281,13 @@ class ReminderScheduler {
       // Prepare email data using existing helper
       const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
       
+      // Get the admin/tenant user for tenant-specific email templates
+      let adminUser = reservation.createdBy || null;
+      if (!adminUser && reservation.tenantId) {
+        adminUser = await User.findById(reservation.tenantId).select('email tenantId');
+      }
+
       // Send review request email, pass raw reservation for car image
-      const adminUser = reservation.createdBy || null;
       await emailService.sendCustomerReviewRequest(reservation.customer.email, emailData, adminUser, reservation);
 
       // Mark review request as sent
