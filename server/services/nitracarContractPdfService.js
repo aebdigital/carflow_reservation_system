@@ -63,6 +63,17 @@ class NitraCarContractPdfService {
   }
 
   /**
+   * Check remaining space on page and add new page if needed
+   */
+  ensureSpace(doc, requiredHeight) {
+    if (doc.y + requiredHeight > doc.page.height - doc.page.margins.bottom) {
+      doc.addPage();
+      return true; // new page was added
+    }
+    return false;
+  }
+
+  /**
    * Generate NitraCar rental contract PDF
    */
   async generateContract(contractData) {
@@ -74,6 +85,7 @@ class NitraCarContractPdfService {
         const doc = new PDFDocument({
           size: 'A4',
           margins: { top: 40, bottom: 40, left: 45, right: 45 },
+          autoFirstPage: true,
           info: {
             Title: `Zmluva o prenájme vozidla - ${contractData.contractNumber}`,
             Author: 'VP Invest s.r.o.',
@@ -105,7 +117,9 @@ class NitraCarContractPdfService {
         this.generateSection4_DobaNajmu(doc, contractData);
         this.generateSection5_Najomne(doc, contractData);
 
-        // Handover protocol & signatures (continues naturally, page breaks handled automatically)
+        // Page 2: Handover protocol & signatures
+        doc.addPage();
+        this.generatePage2Header(doc, contractData);
         this.generateSection6_PreberaciProtokol(doc, contractData);
         this.generateSection7_PreberaciePodpisy(doc, contractData);
         this.generateSectionNotes(doc, contractData);
@@ -141,11 +155,11 @@ class NitraCarContractPdfService {
         doc.image(this.logoPath, left, 20, { width: 130 });
       } catch (e) {
         doc.fontSize(22).font(this.fontBold).fillColor(this.colors.primary)
-          .text('NITRA CAR', left, 28, { lineBreak: false });
+          .text('NITRA CAR', left, 28, { width: pageWidth, lineBreak: false });
       }
     } else {
       doc.fontSize(22).font(this.fontBold).fillColor(this.colors.primary)
-        .text('NITRA CAR', left, 28, { lineBreak: false });
+        .text('NITRA CAR', left, 28, { width: pageWidth, lineBreak: false });
     }
 
     // Contract info box on the right
@@ -169,7 +183,8 @@ class NitraCarContractPdfService {
     doc.fontSize(16).font(this.fontBold).fillColor(this.colors.dark);
     doc.text('ZMLUVA O PRENÁJME MOTOROVÉHO VOZIDLA', left, doc.y, {
       width: pageWidth,
-      align: 'center'
+      align: 'center',
+      lineBreak: false
     });
 
     // Decorative line under title
@@ -196,7 +211,7 @@ class NitraCarContractPdfService {
 
     // Compact header
     doc.fontSize(9).font(this.fontBold).fillColor(this.colors.primary)
-      .text('NITRA-CAR', left, 14, { lineBreak: false });
+      .text('NITRA-CAR', left, 14, { width: 200, lineBreak: false });
     doc.fontSize(8).font(this.fontRegular).fillColor(this.colors.light)
       .text(`Zmluva č. ${contractData.contractNumber || ''}`, right - 160, 14, { width: 160, align: 'right', lineBreak: false });
 
@@ -225,7 +240,7 @@ class NitraCarContractPdfService {
     ];
 
     this.drawInfoTable(doc, rows);
-    doc.moveDown(0.8);
+    doc.moveDown(0.6);
   }
 
   /**
@@ -255,7 +270,7 @@ class NitraCarContractPdfService {
     );
 
     this.drawInfoTable(doc, rows);
-    doc.moveDown(0.8);
+    doc.moveDown(0.6);
   }
 
   /**
@@ -283,7 +298,7 @@ class NitraCarContractPdfService {
     rows.push(['Telefón', secondDriver.phone || 'Neuvedené']);
 
     this.drawInfoTable(doc, rows);
-    doc.moveDown(0.8);
+    doc.moveDown(0.6);
   }
 
   /**
@@ -303,7 +318,7 @@ class NitraCarContractPdfService {
     ];
 
     this.drawInfoTable(doc, rows);
-    doc.moveDown(0.8);
+    doc.moveDown(0.6);
   }
 
   /**
@@ -325,7 +340,7 @@ class NitraCarContractPdfService {
     ];
 
     this.drawInfoTable(doc, rows);
-    doc.moveDown(0.8);
+    doc.moveDown(0.6);
   }
 
   /**
@@ -355,20 +370,24 @@ class NitraCarContractPdfService {
 
     // Additional services
     if (additionalServices.length > 0) {
-      doc.moveDown(0.5);
+      this.ensureSpace(doc, 30);
+      doc.moveDown(0.4);
       doc.fontSize(9).font(this.fontBold).fillColor(this.colors.dark)
-        .text('Služby a príplatky:', left);
+        .text('Služby a príplatky:', left, doc.y, { width: pageWidth, lineBreak: false });
       doc.moveDown(0.3);
       doc.font(this.fontRegular).fillColor(this.colors.medium);
 
       additionalServices.forEach(service => {
+        this.ensureSpace(doc, 14);
         const servicePrice = (service.price || 0) * (service.quantity || 1);
-        doc.fontSize(9).text(`    ${service.name}: ${this.formatPrice(servicePrice)} EUR`, left);
+        doc.fontSize(9).text(`    ${service.name}: ${this.formatPrice(servicePrice)} EUR`, left, doc.y, { width: pageWidth, lineBreak: false });
+        doc.y += 14;
       });
     }
 
     // Total
-    doc.moveDown(0.6);
+    this.ensureSpace(doc, 50);
+    doc.moveDown(0.4);
     const totalAmount = rental.totalAmount || 0;
     const totalY = doc.y;
 
@@ -382,7 +401,7 @@ class NitraCarContractPdfService {
       .text(`Spolu k úhrade:  ${this.formatPrice(totalAmount)} EUR`, left + 10, totalY + 1, { width: pageWidth - 20, lineBreak: false });
 
     doc.fillColor(this.colors.dark);
-    doc.moveDown(0.5);
+    doc.y = totalY + 22;
 
     // Deposit
     if (contractData.deposit) {
@@ -391,22 +410,14 @@ class NitraCarContractPdfService {
     }
 
     // Payment method
-    doc.moveDown(0.3);
     doc.fontSize(9).font(this.fontRegular);
     this.drawLabelValue(doc, 'Spôsob úhrady:', this.getPaymentMethodText(contractData.paymentMethod), left, left + 200);
-
-    doc.moveDown(0.3);
   }
 
   /**
    * Section VI - Preberaci protokol (Handover Protocol)
    */
   generateSection6_PreberaciProtokol(doc, contractData) {
-    // Ensure enough space for the handover protocol (~150px needed)
-    if (doc.y + 150 > doc.page.height - doc.page.margins.bottom) {
-      doc.addPage();
-      this.generatePage2Header(doc, contractData);
-    }
     this.drawSectionHeader(doc, 'VI.', 'Preberací protokol');
 
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
@@ -455,7 +466,8 @@ class NitraCarContractPdfService {
    * Section VII - Podpisy preberacieho protokolu (Handover Signatures)
    */
   generateSection7_PreberaciePodpisy(doc, contractData) {
-    doc.moveDown(0.8);
+    this.ensureSpace(doc, 120);
+    doc.moveDown(0.6);
     this.drawSectionHeader(doc, 'VII.', 'Podpisy preberacieho protokolu');
 
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
@@ -470,7 +482,7 @@ class NitraCarContractPdfService {
     doc.text('Pri vrátení vozidla:', rightCol, subY, { width: colWidth, lineBreak: false });
     doc.fillColor(this.colors.dark);
 
-    doc.moveDown(1);
+    doc.y = subY + 18;
     const y = doc.y;
 
     doc.fontSize(9).font(this.fontRegular);
@@ -490,6 +502,7 @@ class NitraCarContractPdfService {
    * Notes Section - Poznamky
    */
   generateSectionNotes(doc, contractData) {
+    this.ensureSpace(doc, 120);
     doc.moveDown(0.5);
     this.drawSectionHeader(doc, '', 'Poznámky');
 
@@ -520,7 +533,8 @@ class NitraCarContractPdfService {
    * Section VIII - Podpisy zmluvnych stran (Contract Signatures)
    */
   generateSection8_Podpisy(doc, contractData) {
-    doc.moveDown(0.8);
+    this.ensureSpace(doc, 120);
+    doc.moveDown(0.6);
     this.drawSectionHeader(doc, 'VIII.', 'Podpisy zmluvných strán');
 
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
@@ -528,13 +542,13 @@ class NitraCarContractPdfService {
     const leftCol = doc.page.margins.left;
     const rightCol = doc.page.margins.left + pageWidth / 2 + 15;
 
-    doc.moveDown(0.5);
+    doc.moveDown(0.3);
 
     // Date and place
     doc.fontSize(9).font(this.fontRegular).fillColor(this.colors.medium)
       .text(`V Nitre, dňa ${this.formatDate(new Date())}`, leftCol, doc.y, { width: pageWidth, lineBreak: false });
 
-    doc.moveDown(1);
+    doc.y += 18;
     const y = doc.y;
 
     // Left - Lessor signature
@@ -545,7 +559,7 @@ class NitraCarContractPdfService {
     const tenantName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim();
     this.drawSignatureBlock(doc, 'Nájomca', tenantName, rightCol, y, colWidth);
 
-    doc.y = y + 80;
+    doc.y = y + 70;
   }
 
   /**
@@ -555,22 +569,23 @@ class NitraCarContractPdfService {
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const leftCol = doc.page.margins.left;
 
-    doc.moveDown(1);
+    this.ensureSpace(doc, 110);
+    doc.moveDown(0.8);
 
     // Thin separator
     doc.moveTo(leftCol + pageWidth * 0.2, doc.y)
       .lineTo(leftCol + pageWidth * 0.8, doc.y)
       .strokeColor(this.colors.border).lineWidth(0.5).stroke();
 
-    doc.moveDown(0.5);
+    doc.y += 8;
 
     // QR code
     if (fs.existsSync(this.qrCodePath)) {
       try {
-        const qrSize = 70;
+        const qrSize = 60;
         const qrX = leftCol + (pageWidth - qrSize) / 2;
         doc.image(this.qrCodePath, qrX, doc.y, { width: qrSize });
-        doc.y += qrSize + 8;
+        doc.y += qrSize + 6;
       } catch (e) {
         console.log('[NITRACAR PDF] Could not load QR code:', e.message);
       }
@@ -581,18 +596,18 @@ class NitraCarContractPdfService {
       'Svojím podpisom nájomca potvrdzuje, že sa oboznámil s Podmienkami nájmu (dostupné po naskenovaní QR kódu) a súhlasí s nimi.',
       leftCol,
       doc.y,
-      { width: pageWidth, align: 'center' }
+      { width: pageWidth, align: 'center', lineBreak: true }
     );
   }
 
   /**
-   * Page footer
+   * Page footer - renders inline after content
    */
   generateFooter(doc) {
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const left = doc.page.margins.left;
 
-    doc.moveDown(0.5);
+    doc.y += 8;
     doc.fontSize(7).font(this.fontRegular).fillColor(this.colors.light)
       .text(
         `${this.companyInfo.name}  |  ${this.companyInfo.email}  |  ${this.companyInfo.website}`,
@@ -609,6 +624,10 @@ class NitraCarContractPdfService {
   drawSectionHeader(doc, number, title) {
     const left = doc.page.margins.left;
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+
+    // Ensure space for header + at least one content row
+    this.ensureSpace(doc, 45);
+
     const y = doc.y;
 
     if (number) {
@@ -650,9 +669,7 @@ class NitraCarContractPdfService {
 
     rows.forEach((row, i) => {
       // Check if we need a new page
-      if (doc.y + rowHeight > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage();
-      }
+      this.ensureSpace(doc, rowHeight);
 
       const y = doc.y;
 
