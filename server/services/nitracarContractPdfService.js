@@ -117,9 +117,7 @@ class NitraCarContractPdfService {
         this.generateSection4_DobaNajmu(doc, contractData);
         this.generateSection5_Najomne(doc, contractData);
 
-        // Page 2: Handover protocol & signatures
-        doc.addPage();
-        this.generatePage2Header(doc, contractData);
+        // Handover protocol & signatures (flows naturally, ensureSpace handles page breaks)
         this.generateSection6_PreberaciProtokol(doc, contractData);
         this.generateSection7_PreberaciePodpisy(doc, contractData);
         this.generateSectionNotes(doc, contractData);
