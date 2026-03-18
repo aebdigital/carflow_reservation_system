@@ -742,19 +742,20 @@ const updateReservation = asyncHandler(async (req, res, next) => {
       return next(new AppError('Vozidlo nie je dostupné pre vybrané dátumy', 400));
     }
 
-    // Recalculate pricing if dates changed
+    // Recalculate pricing if dates changed (use new car if changed, otherwise existing)
     if (req.body.startDate || req.body.endDate) {
-      const car = await Car.findById(reservation.car);
+      const carId = req.body.car || reservation.car;
+      const car = await Car.findById(carId);
       const days = Math.ceil((newEndDate - newStartDate) / (1000 * 60 * 60 * 24));
       const subtotal = car.calculateRate(days);
-      const taxes = 0; // 🔧 REMOVED TAX CALCULATION - No taxes added in admin
-      const totalAmount = subtotal + taxes;
+      const dailyRate = subtotal / days;
+      const totalAmount = subtotal + (req.body.pricing?.servicesTotal || reservation.pricing?.servicesTotal || 0);
 
       req.body.pricing = {
-        ...reservation.pricing,
+        ...(req.body.pricing || reservation.pricing),
+        dailyRate,
         totalDays: days,
         subtotal,
-        taxes,
         totalAmount
       };
     }

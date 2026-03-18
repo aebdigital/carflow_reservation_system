@@ -600,11 +600,12 @@ function Reservations() {
 
         // Recalculate total with new car and services
         const car = formData.car
-        let dailyRate = car.dailyRate || 0
-        if (days >= 26 && car.rates?.['26plus']) dailyRate = car.rates['26plus']
-        else if (days >= 10 && car.rates?.['10-25days']) dailyRate = car.rates['10-25days']
-        else if (days >= 4 && car.rates?.['4-9days']) dailyRate = car.rates['4-9days']
-        else if (days >= 2 && car.rates?.threeDays) dailyRate = car.rates.threeDays
+        const rates = car.pricing?.rates || {}
+        let dailyRate = car.pricing?.dailyRate || car.dailyRate || 0
+        if (days >= 26 && rates['26plus']) dailyRate = rates['26plus']
+        else if (days >= 10 && rates['10-25days']) dailyRate = rates['10-25days']
+        else if (days >= 4 && rates['4-9days']) dailyRate = rates['4-9days']
+        else if (days >= 2 && days <= 3 && rates['2-3days']) dailyRate = rates['2-3days']
 
         const subtotal = dailyRate * days
         const totalAmount = subtotal + servicesTotal
@@ -1230,17 +1231,18 @@ function Reservations() {
       if (days > 0) {
         // Calculate base rental price using car's rate calculation
         const car = formData.car
-        let dailyRate = car.dailyRate || 0
+        const rates = car.pricing?.rates || {}
+        let dailyRate = car.pricing?.dailyRate || car.dailyRate || 0
 
-        // Use NitraCar pricing tiers if available
-        if (days >= 26 && car.rates?.['26plus']) {
-          dailyRate = car.rates['26plus']
-        } else if (days >= 10 && car.rates?.['10-25days']) {
-          dailyRate = car.rates['10-25days']
-        } else if (days >= 4 && car.rates?.['4-9days']) {
-          dailyRate = car.rates['4-9days']
-        } else if (days >= 2 && car.rates?.threeDays) {
-          dailyRate = car.rates.threeDays
+        // Use pricing tiers if available
+        if (days >= 26 && rates['26plus']) {
+          dailyRate = rates['26plus']
+        } else if (days >= 10 && rates['10-25days']) {
+          dailyRate = rates['10-25days']
+        } else if (days >= 4 && rates['4-9days']) {
+          dailyRate = rates['4-9days']
+        } else if (days >= 2 && days <= 3 && rates['2-3days']) {
+          dailyRate = rates['2-3days']
         }
 
         const subtotal = dailyRate * days
