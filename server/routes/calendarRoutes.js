@@ -47,13 +47,13 @@ router.get('/ics', async (req, res) => {
     const clientIp = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     await calendarToken.recordAccess(clientIp);
 
-    // Fetch only confirmed reservations for this tenant
+    // Fetch active reservations for this tenant
     const reservations = await Reservation.find({
       tenantId: calendarToken.tenantId,
-      status: 'confirmed'
+      status: { $in: ['confirmed', 'awaiting_payment', 'zaplatene', 'ongoing'] }
     })
     .populate('customer', 'firstName lastName email phone')
-    .populate('car', 'make model licensePlate year color')
+    .populate('car', 'make model licensePlate year color brand registrationNumber')
     .sort({ startDate: 1 });
 
     // Create ICS calendar
@@ -71,10 +71,10 @@ router.get('/ics', async (req, res) => {
         : 'Neznamy zakaznik';
 
       const carInfo = reservation.car
-        ? `${reservation.car.make || ''} ${reservation.car.model || ''}`.trim()
+        ? `${reservation.car.brand || reservation.car.make || ''} ${reservation.car.model || ''}`.trim()
         : 'Neznamy vozidlo';
 
-      const licensePlate = reservation.car?.licensePlate || '';
+      const licensePlate = reservation.car?.registrationNumber || reservation.car?.licensePlate || '';
 
       // Create event summary: "BRAND MODEL - Customer Name"
       const summary = `${carInfo}${licensePlate ? ` (${licensePlate})` : ''} - ${customerName}`;
@@ -82,40 +82,25 @@ router.get('/ics', async (req, res) => {
       // Create detailed description
       const description = buildEventDescription(reservation, customerName, carInfo);
 
-      // Create two 30-min events: pickup and dropoff
-      const pickupStart = new Date(reservation.startDate);
-      const pickupEnd = new Date(pickupStart.getTime() + 30 * 60 * 1000);
+      // Create a single all-day spanning event for the entire rental period
+      const startDate = new Date(reservation.startDate);
+      const endDate = new Date(reservation.endDate);
 
-      const dropoffStart = new Date(reservation.endDate);
-      const dropoffEnd = new Date(dropoffStart.getTime() + 30 * 60 * 1000);
+      // For all-day events, end date must be the day AFTER the last day (exclusive)
+      const endDateExclusive = new Date(endDate);
+      endDateExclusive.setDate(endDateExclusive.getDate() + 1);
 
-      // Pickup event
       calendar.createEvent({
-        id: `${reservation._id.toString()}-pickup`,
-        summary: `Prevzatie: ${summary}`,
+        id: reservation._id.toString(),
+        summary: summary,
         description: description,
-        start: pickupStart,
-        end: pickupEnd,
-        allDay: false,
+        start: startDate,
+        end: endDateExclusive,
+        allDay: true,
         timestamp: reservation.updatedAt || reservation.createdAt,
-        categories: [{ name: 'Prevzatie' }],
+        categories: [{ name: 'Rezervacia' }],
         status: 'CONFIRMED',
         location: reservation.pickupLocation?.name || '',
-        url: `https://admindemo.carflow.sk/reservations?id=${reservation._id}`
-      });
-
-      // Dropoff event
-      calendar.createEvent({
-        id: `${reservation._id.toString()}-dropoff`,
-        summary: `Vratenie: ${summary}`,
-        description: description,
-        start: dropoffStart,
-        end: dropoffEnd,
-        allDay: false,
-        timestamp: reservation.updatedAt || reservation.createdAt,
-        categories: [{ name: 'Vratenie' }],
-        status: 'CONFIRMED',
-        location: reservation.dropoffLocation?.name || '',
         url: `https://admindemo.carflow.sk/reservations?id=${reservation._id}`
       });
     }
@@ -260,11 +245,15 @@ router.delete('/token/:id', protect, async (req, res) => {
  * Build detailed event description
  */
 function buildEventDescription(reservation, customerName, carInfo) {
+  const totalAmount = reservation.pricing?.totalAmount || reservation.pricing?.total || 0;
+  const days = reservation.pricing?.totalDays || Math.ceil((new Date(reservation.endDate) - new Date(reservation.startDate)) / (1000 * 60 * 60 * 24));
+
   const lines = [
     `Zakaznik: ${customerName}`,
     `Vozidlo: ${carInfo}`,
-    reservation.car?.licensePlate ? `SPZ: ${reservation.car.licensePlate}` : null,
+    (reservation.car?.registrationNumber || reservation.car?.licensePlate) ? `SPZ: ${reservation.car.registrationNumber || reservation.car.licensePlate}` : null,
     `Cislo rezervacie: ${reservation.reservationNumber || reservation._id}`,
+    `Pocet dni: ${days}`,
     `Status: ${getStatusText(reservation.status)}`,
     '',
     `Prevzatie: ${reservation.pickupLocation?.name || 'Neuvedene'} (${formatDateTime(reservation.startDate)})`,
@@ -273,8 +262,8 @@ function buildEventDescription(reservation, customerName, carInfo) {
     reservation.customer?.phone ? `Telefon: ${reservation.customer.phone}` : null,
     reservation.customer?.email ? `Email: ${reservation.customer.email}` : null,
     '',
-    reservation.pricing?.total ? `Celkova cena: ${reservation.pricing.total} EUR` : null,
-    reservation.pricing?.deposit ? `Zaloha: ${reservation.pricing.deposit} EUR` : null
+    totalAmount ? `Celkova cena: ${Number(totalAmount).toFixed(2)} EUR` : null,
+    reservation.pricing?.deposit ? `Zaloha: ${Number(reservation.pricing.deposit).toFixed(2)} EUR` : null
   ].filter(Boolean);
 
   return lines.join('\n');
