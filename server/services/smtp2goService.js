@@ -1254,7 +1254,10 @@ class SMTP2GOService {
     }
 
     // Set subject based on language
-    const subject = language === 'en' ? '💳 Deposit Payment' : '💳 Platba depozitu';
+    const resNum = reservationData.reservationNumber || rawReservation?.reservationNumber || '';
+    const subject = language === 'en'
+      ? `Order ${resNum} – Reservation deposit payment`
+      : `Objednávka ${resNum} – Zálohová platba za rezerváciu`;
 
     return this.sendEmail(to, subject, emailData.html, null, user);
   }

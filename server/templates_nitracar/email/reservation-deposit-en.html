@@ -30,15 +30,6 @@
             .detail-icon {
                 margin-right: 5px !important;
             }
-            .footer-social {
-                max-width: 100% !important;
-            }
-            .footer-social td {
-                width: 50% !important;
-                display: inline-block !important;
-                text-align: center !important;
-                padding: 5px 0 !important;
-            }
             .logo-img {
                 max-width: 200px !important;
             }
@@ -57,7 +48,7 @@
         <!-- Title -->
         <tr>
             <td style="padding: 30px 20px 20px 20px; text-align: center;">
-                <h2 style="color: #666666; font-size: 24px; font-weight: bold; margin: 0;">DEPOSIT PAYMENT</h2>
+                <h2 style="color: #666666; font-size: 22px; font-weight: bold; margin: 0;">RESERVATION DEPOSIT PAYMENT</h2>
             </td>
         </tr>
 
@@ -73,9 +64,15 @@
 
         <!-- Greeting -->
         <tr>
-            <td style="padding: 0 20px 20px 20px; text-align: center;">
+            <td style="padding: 0 20px 20px 20px; text-align: left;">
+                <p style="color: #666666; font-size: 16px; margin: 0 0 10px 0;">
+                    Hello,
+                </p>
+                <p style="color: #666666; font-size: 16px; margin: 0 0 10px 0;">
+                    thank you for your reservation request. To confirm it, we require a deposit of <strong style="color: #22D3EE;">50 EUR</strong>.
+                </p>
                 <p style="color: #666666; font-size: 16px; margin: 0;">
-                    Dear <strong style="color: #22D3EE;">{{customer_name}}</strong>, please pay the deposit for your reservation.
+                    This amount will be deducted from the total payment upon vehicle pickup.
                 </p>
             </td>
         </tr>
@@ -169,17 +166,30 @@
             </td>
         </tr>
 
+        <!-- Pricing Details -->
+        <tr>
+            <td style="padding: 0 20px 20px 20px;">
+                <table style="width: 100%; max-width: 500px; margin: 0 auto; border-collapse: collapse; background-color: #f9f9f9; border-radius: 8px;">
+                    <tr>
+                        <td style="padding: 15px 20px; font-size: 15px; color: #333333;">
+                            <strong>Vehicle deposit:</strong>
+                        </td>
+                        <td style="padding: 15px 20px; font-size: 15px; color: #22D3EE; font-weight: bold; text-align: right;">
+                            50 €
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
         <!-- Stripe Payment Button -->
         <tr>
             <td style="padding: 20px; text-align: center;">
                 <table style="width: 100%; max-width: 500px; margin: 0 auto; background: linear-gradient(135deg, #22D3EE 0%, #1BA3C3 100%); border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
                     <tr>
                         <td style="padding: 25px; text-align: center;">
-                            <h3 style="color: #ffffff; font-size: 20px; font-weight: bold; margin: 0 0 10px 0;">💳 Deposit</h3>
-                            <p style="color: #ffffff; font-size: 16px; margin: 0 0 20px 0;">
-                                Please pay the deposit of <strong style="font-size: 24px;">{{stripe_payment_amount}}</strong>
-                            </p>
-                            <a href="{{stripe_payment_url}}" target="_blank" style="display: inline-block; padding: 15px 40px; background-color: #ffffff; color: #22D3EE; text-decoration: none; font-size: 18px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); transition: all 0.3s ease;">
+                            <h3 style="color: #ffffff; font-size: 20px; font-weight: bold; margin: 0 0 10px 0;">💳 Deposit 50 €</h3>
+                            <a href="{{stripe_payment_url}}" target="_blank" style="display: inline-block; padding: 15px 40px; background-color: #ffffff; color: #22D3EE; text-decoration: none; font-size: 18px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);">
                                 Pay Now
                             </a>
                             <p style="color: #ffffff; font-size: 12px; margin: 15px 0 0 0; opacity: 0.9;">
@@ -199,7 +209,7 @@
                         <td style="padding: 20px; text-align: center;">
                             <h4 style="color: #666666; font-size: 16px; font-weight: bold; margin: 0 0 10px 0;">🏦 Bank Transfer</h4>
                             <p style="color: #666666; font-size: 14px; margin: 0 0 8px 0;">
-                                You can also pay the deposit of {{stripe_payment_amount}} via bank transfer:
+                                You can also pay the deposit of 50 € via bank transfer:
                             </p>
                             <p style="color: #333333; font-size: 16px; font-weight: bold; margin: 0 0 5px 0;">
                                 IBAN: SK65 1100 0000 0029 2287 3659
@@ -215,12 +225,15 @@
 
         <!-- Important Information -->
         <tr>
-            <td style="padding: 20px; text-align: center;">
-                <p style="color: #666666; font-size: 16px; margin: 0 0 10px 0;">
-                    The deposit will be refunded after the rental ends and the vehicle is returned in its original condition.
+            <td style="padding: 20px; text-align: left;">
+                <p style="color: #666666; font-size: 14px; margin: 0 0 10px 0;">
+                    If the reservation is cancelled by the client, the deposit is non-refundable.
                 </p>
-                <p style="color: #666666; font-size: 14px; margin: 0;">
+                <p style="color: #666666; font-size: 14px; margin: 0 0 15px 0;">
                     If you have any questions, please don't hesitate to contact us.
+                </p>
+                <p style="color: #666666; font-size: 14px; font-weight: bold; margin: 0;">
+                    Thank you.
                 </p>
             </td>
         </tr>
@@ -228,25 +241,8 @@
         <!-- Footer -->
         <tr>
             <td style="background-color: #22D3EE; padding: 20px; text-align: center;">
-                <p style="color: white; font-size: 18px; font-weight: bold; margin: 0 0 10px 0;">{{company_phone}}</p>
+                <p style="color: white; font-size: 18px; font-weight: bold; margin: 0 0 10px 0;">0910 524 554</p>
                 <p style="color: white; font-size: 16px; margin: 0 0 15px 0;">{{company_email}}</p>
-
-                <table class="footer-social" style="width: 100%; max-width: 400px; margin: 15px auto;">
-                    <tr>
-                        <td style="width: 50%; text-align: center; padding: 0 10px;">
-                            <a href="{{instagram_url}}" target="_blank" style="text-decoration: none; color: white; display: inline-block;">
-                                <img src="https://img.icons8.com/ios-filled/50/FFFFFF/instagram-new.png" alt="Instagram" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 8px;" />
-                                <span style="color: white; font-size: 14px;">INSTAGRAM</span>
-                            </a>
-                        </td>
-                        <td style="width: 50%; text-align: center; padding: 0 10px;">
-                            <a href="{{facebook_url}}" target="_blank" style="text-decoration: none; color: white; display: inline-block;">
-                                <img src="https://img.icons8.com/ios-filled/50/FFFFFF/facebook.png" alt="Facebook" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 8px;" />
-                                <span style="color: white; font-size: 14px;">FACEBOOK</span>
-                            </a>
-                        </td>
-                    </tr>
-                </table>
 
                 <hr style="border: 1px solid white; margin: 15px 0;">
 

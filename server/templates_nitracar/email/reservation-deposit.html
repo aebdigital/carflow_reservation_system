@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Platba depozitu - NITRA-CAR</title>
+    <title>Zálohová platba - NITRA-CAR</title>
     <style>
         @media only screen and (max-width: 600px) {
             .main-table {
@@ -30,15 +30,6 @@
             .detail-icon {
                 margin-right: 5px !important;
             }
-            .footer-social {
-                max-width: 100% !important;
-            }
-            .footer-social td {
-                width: 50% !important;
-                display: inline-block !important;
-                text-align: center !important;
-                padding: 5px 0 !important;
-            }
             .logo-img {
                 max-width: 200px !important;
             }
@@ -57,7 +48,7 @@
         <!-- Title -->
         <tr>
             <td style="padding: 30px 20px 20px 20px; text-align: center;">
-                <h2 style="color: #666666; font-size: 24px; font-weight: bold; margin: 0;">PLATBA DEPOZITU</h2>
+                <h2 style="color: #666666; font-size: 22px; font-weight: bold; margin: 0;">ZÁLOHOVÁ PLATBA ZA REZERVÁCIU</h2>
             </td>
         </tr>
 
@@ -73,9 +64,15 @@
 
         <!-- Greeting -->
         <tr>
-            <td style="padding: 0 20px 20px 20px; text-align: center;">
+            <td style="padding: 0 20px 20px 20px; text-align: left;">
+                <p style="color: #666666; font-size: 16px; margin: 0 0 10px 0;">
+                    Dobrý deň,
+                </p>
+                <p style="color: #666666; font-size: 16px; margin: 0 0 10px 0;">
+                    ďakujeme za žiadosť o rezerváciu. Pre jej potvrdenie potrebujeme zálohu vo výške <strong style="color: #22D3EE;">50 EUR</strong>.
+                </p>
                 <p style="color: #666666; font-size: 16px; margin: 0;">
-                    Dobrý deň <strong style="color: #22D3EE;">{{customer_name}}</strong>, prosíme o úhradu depozitu pre Vašu rezerváciu.
+                    O túto sumu budete mať zníženú platbu pri preberaní vozidla.
                 </p>
             </td>
         </tr>
@@ -169,17 +166,30 @@
             </td>
         </tr>
 
+        <!-- Pricing Details -->
+        <tr>
+            <td style="padding: 0 20px 20px 20px;">
+                <table style="width: 100%; max-width: 500px; margin: 0 auto; border-collapse: collapse; background-color: #f9f9f9; border-radius: 8px;">
+                    <tr>
+                        <td style="padding: 15px 20px; font-size: 15px; color: #333333;">
+                            <strong>Záloha za vozidlo:</strong>
+                        </td>
+                        <td style="padding: 15px 20px; font-size: 15px; color: #22D3EE; font-weight: bold; text-align: right;">
+                            50 €
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
         <!-- Stripe Payment Button -->
         <tr>
             <td style="padding: 20px; text-align: center;">
                 <table style="width: 100%; max-width: 500px; margin: 0 auto; background: linear-gradient(135deg, #22D3EE 0%, #1BA3C3 100%); border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
                     <tr>
                         <td style="padding: 25px; text-align: center;">
-                            <h3 style="color: #ffffff; font-size: 20px; font-weight: bold; margin: 0 0 10px 0;">💳 Depozit</h3>
-                            <p style="color: #ffffff; font-size: 16px; margin: 0 0 20px 0;">
-                                Prosím uhraďte depozit vo výške <strong style="font-size: 24px;">{{stripe_payment_amount}}</strong>
-                            </p>
-                            <a href="{{stripe_payment_url}}" target="_blank" style="display: inline-block; padding: 15px 40px; background-color: #ffffff; color: #22D3EE; text-decoration: none; font-size: 18px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); transition: all 0.3s ease;">
+                            <h3 style="color: #ffffff; font-size: 20px; font-weight: bold; margin: 0 0 10px 0;">💳 Záloha 50 €</h3>
+                            <a href="{{stripe_payment_url}}" target="_blank" style="display: inline-block; padding: 15px 40px; background-color: #ffffff; color: #22D3EE; text-decoration: none; font-size: 18px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);">
                                 Zaplatiť teraz
                             </a>
                             <p style="color: #ffffff; font-size: 12px; margin: 15px 0 0 0; opacity: 0.9;">
@@ -199,7 +209,7 @@
                         <td style="padding: 20px; text-align: center;">
                             <h4 style="color: #666666; font-size: 16px; font-weight: bold; margin: 0 0 10px 0;">🏦 Bankový prevod</h4>
                             <p style="color: #666666; font-size: 14px; margin: 0 0 8px 0;">
-                                Zálohu {{stripe_payment_amount}} je možné uhradiť aj bankovým prevodom na účet:
+                                Zálohu 50 € je možné uhradiť aj bankovým prevodom na účet:
                             </p>
                             <p style="color: #333333; font-size: 16px; font-weight: bold; margin: 0 0 5px 0;">
                                 IBAN: SK65 1100 0000 0029 2287 3659
@@ -215,12 +225,15 @@
 
         <!-- Important Information -->
         <tr>
-            <td style="padding: 20px; text-align: center;">
-                <p style="color: #666666; font-size: 16px; margin: 0 0 10px 0;">
-                    Depozit bude vrátený po ukončení prenájmu a vrátení vozidla v pôvodnom stave.
+            <td style="padding: 20px; text-align: left;">
+                <p style="color: #666666; font-size: 14px; margin: 0 0 10px 0;">
+                    Pokiaľ bude rezervácia zrušená zo strany klienta, je záloha za rezerváciu nevratná.
                 </p>
-                <p style="color: #666666; font-size: 14px; margin: 0;">
-                    V prípade otázok nás neváhajte kontaktovať.
+                <p style="color: #666666; font-size: 14px; margin: 0 0 15px 0;">
+                    V prípade otázok alebo upresnení nás neváhajte kontaktovať.
+                </p>
+                <p style="color: #666666; font-size: 14px; font-weight: bold; margin: 0;">
+                    Ďakujeme.
                 </p>
             </td>
         </tr>
@@ -228,25 +241,8 @@
         <!-- Footer -->
         <tr>
             <td style="background-color: #22D3EE; padding: 20px; text-align: center;">
-                <p style="color: white; font-size: 18px; font-weight: bold; margin: 0 0 10px 0;">{{company_phone}}</p>
+                <p style="color: white; font-size: 18px; font-weight: bold; margin: 0 0 10px 0;">0910 524 554</p>
                 <p style="color: white; font-size: 16px; margin: 0 0 15px 0;">{{company_email}}</p>
-
-                <table class="footer-social" style="width: 100%; max-width: 400px; margin: 15px auto;">
-                    <tr>
-                        <td style="width: 50%; text-align: center; padding: 0 10px;">
-                            <a href="{{instagram_url}}" target="_blank" style="text-decoration: none; color: white; display: inline-block;">
-                                <img src="https://img.icons8.com/ios-filled/50/FFFFFF/instagram-new.png" alt="Instagram" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 8px;" />
-                                <span style="color: white; font-size: 14px;">INSTAGRAM</span>
-                            </a>
-                        </td>
-                        <td style="width: 50%; text-align: center; padding: 0 10px;">
-                            <a href="{{facebook_url}}" target="_blank" style="text-decoration: none; color: white; display: inline-block;">
-                                <img src="https://img.icons8.com/ios-filled/50/FFFFFF/facebook.png" alt="Facebook" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 8px;" />
-                                <span style="color: white; font-size: 14px;">FACEBOOK</span>
-                            </a>
-                        </td>
-                    </tr>
-                </table>
 
                 <hr style="border: 1px solid white; margin: 15px 0;">
 
