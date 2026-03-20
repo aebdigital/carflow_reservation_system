@@ -50,7 +50,7 @@ router.get('/ics', async (req, res) => {
     // Fetch active reservations for this tenant
     const reservations = await Reservation.find({
       tenantId: calendarToken.tenantId,
-      status: { $in: ['confirmed', 'awaiting_payment', 'zaplatene', 'ongoing'] }
+      status: 'confirmed'
     })
     .populate('customer', 'firstName lastName email phone')
     .populate('car', 'make model licensePlate year color brand registrationNumber')
