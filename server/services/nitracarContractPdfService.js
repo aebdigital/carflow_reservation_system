@@ -510,7 +510,7 @@ class NitraCarContractPdfService {
     doc.fontSize(9).font(this.fontRegular);
 
     const lineSpacing = 22;
-    const numLines = 4;
+    const numLines = 5;
     let y = doc.y + 5;
 
     for (let i = 0; i < numLines; i++) {
