@@ -392,6 +392,12 @@ function Reservations() {
   const users = usersData?.data || []
   const payments = paymentsData?.data || []
 
+  // Always use the latest reservation data from the RTK cache for view dialog
+  const liveSelectedReservation = useMemo(() => {
+    if (!selectedReservation?._id) return selectedReservation
+    return reservations.find(r => r._id === selectedReservation._id) || selectedReservation
+  }, [reservations, selectedReservation])
+
   // Check if NitraCar user (show filters only for this tenant)
   const isNitraCarUser = auth.user?.email === 'nitra-car@nitra-car.sk'
 
@@ -2452,8 +2458,10 @@ function Reservations() {
            dialogMode === 'edit' ? 'Upraviť rezerváciu' : 'Zobraziť rezerváciu'}
         </DialogTitle>
         <DialogContent>
-          {dialogMode === 'view' && selectedReservation ? (
+          {dialogMode === 'view' && liveSelectedReservation ? (
             // View Mode - Comprehensive Reservation Details
+            // Uses liveSelectedReservation to always show the latest data from RTK cache
+            (() => { const selectedReservation = liveSelectedReservation; return (
             <Box sx={{ mt: 2 }}>
               {/* Header with Reservation Number and Status */}
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -3433,6 +3441,7 @@ function Reservations() {
                 )}
               </Grid>
             </Box>
+            ); })()
           ) : (
             // Edit/Create Mode - Original Form
             <Grid container spacing={3} sx={{ mt: 1 }}>
