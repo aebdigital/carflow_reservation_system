@@ -676,13 +676,8 @@ const BlogSettings = () => {
           {selectedBlog ? 'Upraviť blog' : 'Vytvoriť nový blog'}
         </DialogTitle>
         <DialogContent>
-          <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-            <Tab label="Základné info" />
-            <Tab label="Obsah" />
-          </Tabs>
-
-          {/* Basic Info Tab */}
-          {activeTab === 0 && (
+          {/* Blog Form */}
+          {true && (
             <Box sx={{ mt: 2 }}>
               <Grid container spacing={2}>
                 <Grid item xs={12} md={8}>
@@ -759,13 +754,8 @@ const BlogSettings = () => {
                   </Stack>
                 </Grid>
               </Grid>
-            </Box>
-          )}
 
-          {/* Content Tab */}
-          {activeTab === 1 && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
+              <Typography variant="subtitle2" gutterBottom sx={{ mt: 3 }}>
                 Obsah blogu
               </Typography>
               <RichTextEditor
@@ -825,10 +815,6 @@ const BlogSettings = () => {
               </Box>
             </Box>
           )}
-
-          {/* SEO & Social Tab */}
-
-          {/* Settings Tab */}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseBlogDialog}>Zrušiť</Button>
