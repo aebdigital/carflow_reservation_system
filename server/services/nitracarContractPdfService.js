@@ -27,7 +27,7 @@ class NitraCarContractPdfService {
       city: '949 05 Nitra',
       ico: '46 600 400',
       dic: '',
-      email: 'info@nitra-car.sk',
+      email: 'nitra-car@nitra-car.sk',
       website: 'www.nitra-car.sk',
       phone: '+421 911 123 456'
     };
