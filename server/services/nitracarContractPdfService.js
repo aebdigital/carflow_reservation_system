@@ -257,7 +257,8 @@ class NitraCarContractPdfService {
       ['Meno / Názov', fullName],
       ['Bydlisko / Sídlo', address],
       ['Doklad totožnosti', this.getIdDocumentTypeText(customer.idDocumentType)],
-      ['Číslo dokladu', customer.idNumber || 'Neuvedené']
+      ['Číslo dokladu', customer.idNumber || 'Neuvedené'],
+      ['Číslo vodičského preukazu', customer.licenseNumber || 'Neuvedené']
     ];
 
     if (customer.rodneCislo) {
