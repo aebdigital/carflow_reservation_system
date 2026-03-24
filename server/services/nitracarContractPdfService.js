@@ -22,11 +22,11 @@ class NitraCarContractPdfService {
 
     // Company details (static)
     this.companyInfo = {
-      name: 'VP Invest s.r.o.',
-      address: 'Štefánikova trieda 79',
-      city: '949 01 Nitra',
-      ico: '50 229 486',
-      dic: '2120258502',
+      name: 'VP invest, s.r.o.',
+      address: 'Novozámocká 138',
+      city: '949 05 Nitra',
+      ico: '46 600 400',
+      dic: '',
       email: 'info@nitra-car.sk',
       website: 'www.nitra-car.sk',
       phone: '+421 911 123 456'
@@ -228,14 +228,16 @@ class NitraCarContractPdfService {
 
     const info = this.companyInfo;
     const rows = [
-      ['Názov spoločnosti', info.name],
-      ['Adresa', `${info.address}, ${info.city}`],
+      ['Obchodné meno', info.name],
+      ['Sídlo', `${info.address}, ${info.city}`],
       ['IČO', info.ico],
-      ['DIČ', info.dic],
+    ];
+    if (info.dic) rows.push(['DIČ', info.dic]);
+    rows.push(
       ['E-mail', info.email],
       ['Web', info.website],
       ['Telefón', info.phone]
-    ];
+    );
 
     this.drawInfoTable(doc, rows);
     doc.moveDown(0.6);
