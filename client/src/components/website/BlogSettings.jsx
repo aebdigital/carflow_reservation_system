@@ -246,15 +246,22 @@ const BlogSettings = () => {
 
   const handleSaveBlog = async () => {
     try {
+      // Auto-generate excerpt from content if not set
+      const dataToSave = { ...blogData };
+      if (!dataToSave.excerpt) {
+        const plainText = dataToSave.content?.replace(/<[^>]*>/g, '') || '';
+        dataToSave.excerpt = plainText.substring(0, 200).trim() || dataToSave.title;
+      }
+
       let savedBlog;
-      
+
       if (selectedBlog) {
         // Updating existing blog
-        savedBlog = await updateBlog({ id: selectedBlog._id, ...blogData }).unwrap();
+        savedBlog = await updateBlog({ id: selectedBlog._id, ...dataToSave }).unwrap();
         setAlert({ type: 'success', message: 'Blog bol úspešne aktualizovaný!' });
       } else {
         // Creating new blog
-        savedBlog = await createBlog(blogData).unwrap();
+        savedBlog = await createBlog(dataToSave).unwrap();
         setAlert({ type: 'success', message: 'Blog bol úspešne vytvorený!' });
       }
       
@@ -678,19 +685,6 @@ const BlogSettings = () => {
                     helperText="URL verzia názvu"
                   />
                 </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Výpis"
-                    value={blogData.excerpt}
-                    onChange={(e) => setBlogData(prev => ({ ...prev, excerpt: e.target.value }))}
-                    multiline
-                    rows={3}
-                    margin="normal"
-                    required
-                    helperText="Krátky popis pre výpis blogov a SEO"
-                  />
-                </Grid>
                 <Grid item xs={12} md={6}>
                   <FormControl fullWidth margin="normal">
                     <InputLabel>Kategória</InputLabel>
@@ -820,7 +814,7 @@ const BlogSettings = () => {
           <Button 
             onClick={handleSaveBlog} 
             variant="contained"
-            disabled={!blogData.title || !blogData.excerpt || !blogData.content}
+            disabled={!blogData.title || !blogData.content}
           >
             {selectedBlog ? 'Aktualizovať' : 'Vytvoriť'} blog
           </Button>
