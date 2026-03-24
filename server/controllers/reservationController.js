@@ -428,6 +428,29 @@ const createReservation = asyncHandler(async (req, res, next) => {
 
     reservationNumber = `${year}${month}${sequentialNumber}`;
     console.log(`🔢 [LERENT ADMIN] Generated reservation number: ${reservationNumber} (Year: ${year}, Month: ${month}, #${sequentialNumber})`);
+  } else if (req.user.email.toLowerCase() === 'nitra-car@nitra-car.sk') {
+    // NitraCar format: YYYYNNN (year + sequential number within year)
+    const now = new Date();
+    const year = now.getFullYear();
+    const yearPrefix = `${year}`;
+
+    const existingReservations = await Reservation.find({
+      tenantId: req.user.tenantId,
+      reservationNumber: { $regex: `^${yearPrefix}` }
+    })
+    .sort({ reservationNumber: -1 })
+    .limit(1)
+    .select('reservationNumber');
+
+    let nextSeq = 1;
+    if (existingReservations.length > 0) {
+      const lastNum = existingReservations[0].reservationNumber;
+      const lastSeq = parseInt(lastNum.slice(4), 10);
+      if (!isNaN(lastSeq)) nextSeq = lastSeq + 1;
+    }
+
+    reservationNumber = `${year}${String(nextSeq).padStart(3, '0')}`;
+    console.log(`🔢 [NITRACAR ADMIN] Generated reservation number: ${reservationNumber}`);
   } else {
     // Default format for other tenants
     reservationNumber = `RES-${req.user.tenantId.toString().slice(-4).toUpperCase()}-${Date.now()}`;

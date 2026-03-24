@@ -542,7 +542,7 @@ reservationSchema.index({ tenantId: 1, status: 1 });
 reservationSchema.index({ tenantId: 1, startDate: 1, endDate: 1 });
 reservationSchema.index({ tenantId: 1, createdAt: 1 });
 
-// Generate unique reservation number scoped to tenant
+// Generate unique reservation number scoped to tenant (fallback if not set by controller)
 reservationSchema.pre('save', async function(next) {
   if (this.isNew && !this.reservationNumber) {
     const count = await this.constructor.countDocuments({ tenantId: this.tenantId });
