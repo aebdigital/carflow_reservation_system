@@ -51,20 +51,41 @@ import {
   useUploadBlogImageMutation
 } from '../../store/store';
 import BlogEnglishTranslation from '../admin/BlogEnglishTranslation';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
-// Rich text editor component (simplified version)
+const quillModules = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    [{ align: [] }],
+    ['blockquote'],
+    ['link', 'image'],
+    ['clean']
+  ]
+};
+
+const quillFormats = [
+  'header', 'bold', 'italic', 'underline', 'strike',
+  'list', 'align', 'blockquote', 'link', 'image'
+];
+
 const RichTextEditor = ({ value, onChange, placeholder }) => {
   return (
-    <TextField
-      multiline
-      rows={8}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      fullWidth
-      variant="outlined"
-      helperText="HTML značky są podporované pre formátovanie textu"
-    />
+    <Box sx={{
+      '& .ql-container': { minHeight: '200px', fontSize: '14px' },
+      '& .ql-editor': { minHeight: '200px' }
+    }}>
+      <ReactQuill
+        theme="snow"
+        value={value || ''}
+        onChange={onChange}
+        placeholder={placeholder}
+        modules={quillModules}
+        formats={quillFormats}
+      />
+    </Box>
   );
 };
 
