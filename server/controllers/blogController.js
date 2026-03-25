@@ -216,6 +216,12 @@ const updateBlog = asyncHandler(async (req, res, next) => {
     version: existingBlog.version
   };
 
+  // If featuredImage is explicitly null, unset it
+  if (req.body.featuredImage === null) {
+    await Blog.findByIdAndUpdate(req.params.id, { $unset: { featuredImage: 1 } });
+    delete updateData.featuredImage;
+  }
+
   const blog = await Blog.findByIdAndUpdate(
     req.params.id,
     updateData,

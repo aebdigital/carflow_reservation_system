@@ -794,6 +794,21 @@ const BlogSettings = () => {
                         Náhľad - obrázok bude nahraný po uložení blogu
                       </Typography>
                     )}
+                    <Button
+                      size="small"
+                      color="error"
+                      startIcon={<DeleteIcon />}
+                      onClick={() => {
+                        if (blogData.featuredImage?.isPreview) {
+                          URL.revokeObjectURL(blogData.featuredImage.url);
+                        }
+                        setBlogData(prev => ({ ...prev, featuredImage: null }));
+                        setSelectedImageFile(null);
+                      }}
+                      sx={{ mt: 1 }}
+                    >
+                      Odstrániť obrázok
+                    </Button>
                   </Box>
                 ) : (
                   <Alert severity="info" sx={{ mb: 2 }}>
