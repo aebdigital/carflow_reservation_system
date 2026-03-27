@@ -12,8 +12,27 @@ import {
   Tabs,
   Tab,
 } from '@mui/material';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import TranslationDialog from './TranslationDialog';
 import { useUpdateBlogEnglishMutation } from '../../store/store';
+
+const quillModules = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    [{ align: [] }],
+    ['blockquote'],
+    ['link', 'image'],
+    ['clean']
+  ]
+};
+
+const quillFormats = [
+  'header', 'bold', 'italic', 'underline', 'strike',
+  'list', 'align', 'blockquote', 'link', 'image'
+];
 
 const BlogEnglishTranslation = ({ blog, open, onClose }) => {
   const [activeTab, setActiveTab] = useState(0);
@@ -169,14 +188,22 @@ const BlogEnglishTranslation = ({ blog, open, onClose }) => {
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
               🇬🇧 English Content
             </Typography>
-            <TextField
-              fullWidth
-              multiline
-              rows={15}
-              value={contentEn}
-              onChange={(e) => setContentEn(e.target.value)}
-              placeholder="Enter full English blog content..."
-            />
+            <Box sx={{
+              '& .ql-container': { minHeight: '300px', fontSize: '14px' },
+              '& .ql-editor': { minHeight: '300px' }
+            }}>
+              <ReactQuill
+                key={blog?._id ? `${blog._id}-en` : 'new-en'}
+                theme="snow"
+                value={contentEn || ''}
+                onChange={(content, delta, source) => {
+                  if (source === 'user') setContentEn(content);
+                }}
+                placeholder="Enter full English blog content..."
+                modules={quillModules}
+                formats={quillFormats}
+              />
+            </Box>
           </Box>
         )}
 
