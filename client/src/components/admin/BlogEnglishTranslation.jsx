@@ -165,21 +165,6 @@ const BlogEnglishTranslation = ({ blog, open, onClose }) => {
               />
             </Grid>
 
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                🇬🇧 English Excerpt
-              </Typography>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                value={excerptEn}
-                onChange={(e) => setExcerptEn(e.target.value)}
-                placeholder="Enter English excerpt..."
-                helperText={`${excerptEn.length}/500 characters`}
-                inputProps={{ maxLength: 500 }}
-              />
-            </Grid>
           </Grid>
         )}
 
