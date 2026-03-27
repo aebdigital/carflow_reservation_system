@@ -72,6 +72,12 @@ const quillFormats = [
 ];
 
 const RichTextEditor = ({ value, onChange, placeholder }) => {
+  const handleChange = (content, delta, source, editor) => {
+    if (source === 'user') {
+      onChange(content);
+    }
+  };
+
   return (
     <Box sx={{
       '& .ql-container': { minHeight: '200px', fontSize: '14px' },
@@ -80,7 +86,7 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
       <ReactQuill
         theme="snow"
         value={value || ''}
-        onChange={onChange}
+        onChange={handleChange}
         placeholder={placeholder}
         modules={quillModules}
         formats={quillFormats}
@@ -759,6 +765,7 @@ const BlogSettings = () => {
                 Obsah blogu
               </Typography>
               <RichTextEditor
+                key={selectedBlog?._id || 'new'}
                 value={blogData.content}
                 onChange={(content) => setBlogData(prev => ({ ...prev, content }))}
                 placeholder="Napíšte obsah vášho blogu..."
