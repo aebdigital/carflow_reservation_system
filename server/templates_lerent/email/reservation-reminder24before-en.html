@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reminder: Vehicle Return Tomorrow</title>
+    <style>
+        /* Mobile-specific styles */
+        @media only screen and (max-width: 600px) {
+            .car-image {
+                width: 90% !important;
+                max-width: none !important;
+                margin: 0 auto 10px auto !important;
+            }
+            .email-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                border-radius: 0 !important;
+            }
+            .mobile-padding {
+                padding: 0 !important;
+            }
+            .body-mobile {
+                padding: 0 !important;
+            }
+        }
+    </style>
+</head>
+<body class="body-mobile" style="margin: 0; padding: 20px; font-family: Arial, Helvetica, sans-serif; background-color: #020000; color: #ffffff;">
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #020000;">
+        <tr>
+            <td align="center" class="mobile-padding" style="padding: 20px;">
+                <!-- Email Container -->
+                <table cellpadding="0" cellspacing="0" border="0" width="600" class="email-container" style="max-width: 600px; background-color: #141414; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.18);">
+                    <!-- Logo -->
+                    <tr>
+                        <td style="padding: 20px 20px 0 20px;">
+                            <img src="{{lerent_logo_url}}" alt="LeRent Logo" style="width: 80px; height: auto; display: block;" />
+                        </td>
+                    </tr>
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="padding: 80px 20px 30px 20px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #fa9208;">⏰ REMINDER: VEHICLE RETURN TOMORROW</h1>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 0 20px 20px 20px; color: #ffffff;">
+                            <!-- Car Image -->
+                            <img src="{{car_image}}" alt="{{car_brand}} {{car_model}}" class="car-image" style="width: 60%; max-width: 350px; height: auto; display: block; border-radius: 8px; margin: 0 auto 10px auto;" />
+
+                            <!-- Car Name -->
+                            <div style="font-size: 18px; font-weight: 600; margin: 10px 0 20px 0; color: #fa9208; text-align: center;">
+                                {{car_brand}} {{car_model}}
+                            </div>
+
+                            <!-- Greeting -->
+                            <h2 style="font-size: 22px; margin-bottom: 20px; color: #ffffff;">Dear {{customer_name}},</h2>
+
+                            <p style="color: #ffffff; line-height: 1.6;">
+                                This is a reminder that <strong>tomorrow</strong> is the return date for your reserved vehicle.
+                            </p>
+
+                            <!-- Return Info Box -->
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 20px 0; background-color: rgba(250, 146, 8, 0.1); border-left: 4px solid #fa9208; border-radius: 4px;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <h3 style="font-size: 18px; margin-top: 0; margin-bottom: 15px; color: #fa9208;">VEHICLE RETURN</h3>
+                                        <div style="margin: 10px 0; font-size: 16px; color: #ffffff;">
+                                            <span style="color: #fa9208; font-weight: 600;">Date:</span> {{end_date}}
+                                        </div>
+                                        <div style="margin: 10px 0; font-size: 16px; color: #ffffff;">
+                                            <span style="color: #fa9208; font-weight: 600;">Return location:</span> {{dropoff_location}}
+                                        </div>
+                                        <div style="margin: 10px 0; font-size: 16px; color: #ffffff;">
+                                            <span style="color: #fa9208; font-weight: 600;">Time:</span> {{end_time}}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Important Notice -->
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 30px; background-color: rgba(33, 150, 243, 0.1); border-left: 4px solid #2196F3; border-radius: 4px;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <h3 style="color: #2196F3; margin-top: 0; font-size: 18px;">💡 Important reminders:</h3>
+                                        <div style="margin: 20px 0; color: #ffffff;">
+                                            <p style="margin: 8px 0; padding-left: 20px; color: #ffffff;">✓ Please refuel the tank to its original level</p>
+                                            <p style="margin: 8px 0; padding-left: 20px; color: #ffffff;">✓ Inspect the vehicle before returning it</p>
+                                            <p style="margin: 8px 0; padding-left: 20px; color: #ffffff;">✓ Do not forget all your personal belongings</p>
+                                            <p style="margin: 8px 0; padding-left: 20px; color: #ffffff;">✓ If you will be late, please contact us in advance</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="color: #ffffff; line-height: 1.6; margin-top: 20px;"><strong>Thank you for choosing our services!</strong></p>
+
+                            <!-- Google Review Request -->
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 30px; background-color: rgba(250, 146, 8, 0.1); border-left: 4px solid #fa9208; border-radius: 4px;">
+                                <tr>
+                                    <td style="padding: 20px; text-align: center;">
+                                        <h3 style="color: #fa9208; margin-top: 0; font-size: 18px;">⭐ Were you happy with your rental?</h3>
+                                        <p style="color: #ffffff; margin: 10px 0 15px 0;">Leave us a review on Google</p>
+                                        <a href="https://www.google.com/search?sa=X&sca_esv=3a311592578585b5&biw=1729&bih=921&tbm=lcl&sxsrf=AE3TifP8fKm79hxKxIi9mvgJuyTgHe6LjQ:1763309034317&q=lerent%20nitra%20reviews&rflfq=1&num=20&stick=H4sIAAAAAAAAAONgkxIyMTQ0sjA3MjIzMrS0NDYwNjXewMj4ilEkJ7UoNa9EIS-zpChRoSi1LDO1vHgRK1ZhAJlNqUJHAAAA&rldimm=411287226219930353&hl=en-SK&ved=0CA4Q5foLahcKEwiYw6uFhveQAxUAAAAAHQAAAAAQBQ#" style="display: inline-block; padding: 12px 30px; background-color: #fa9208; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; margin-top: 10px;">Write a review</a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 20px; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.18); color: #cccccc;">
+                            <p style="margin: 0; color: #cccccc;">LeRent Car Rental</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

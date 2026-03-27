@@ -56,8 +56,8 @@ function Cars() {
   // Get current user to check tenant
   const { user } = useSelector((state) => state.auth)
 
-  // Check if multi-language features should be shown (only for nitracar tenant)
-  const showMultiLanguage = user?.email && !['rival@test.sk', 'lerent@lerent.sk'].includes(user.email.toLowerCase())
+  // Check if multi-language features should be shown (not for rival tenant)
+  const showMultiLanguage = user?.email && !['rival@test.sk'].includes(user.email.toLowerCase())
   const [openDialog, setOpenDialog] = useState(false)
   const [selectedCar, setSelectedCar] = useState(null)
   const [dialogMode, setDialogMode] = useState('create') // 'create', 'edit', 'view'

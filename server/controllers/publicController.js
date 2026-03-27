@@ -345,7 +345,7 @@ const getCarByUser = asyncHandler(async (req, res, next) => {
     _id: carId, 
     tenantId,
     isActive: true 
-  }).select('brand model year color category fuelType fuelConsumption engine transmission seats doors description dailyRate weeklyRate monthlyRate location features images status mileage mileageLimits equipment badges pricing');
+  }).select('brand model year color category fuelType fuelConsumption engine transmission seats doors description descriptionEn dailyRate weeklyRate monthlyRate location features images status mileage mileageLimits equipment badges pricing');
   
   if (!car) {
     return next(new AppError(`Car not found with id: ${carId}`, 404));
@@ -569,7 +569,10 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     pricing: frontendPricing,
 
     // Payment type (optional: 'stripe' or 'prevod')
-    paymentType
+    paymentType,
+
+    // Language preference for email templates ('sk' or 'en')
+    websiteLanguage
   } = req.body;
 
   // 🔍 DEBUG: Log incoming services and insurance data structure for createReservationByUser
@@ -1241,6 +1244,8 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
       extendedInsurancePrices: extendedInsurancePrices || {},
       // Payment type (optional: 'stripe' or 'prevod')
       paymentType: paymentType || undefined,
+      // Language preference for email templates ('sk' or 'en')
+      websiteLanguage: websiteLanguage || 'sk',
       terms: {
         mileageLimit: -1,
         fuelPolicy: 'full-to-full',
@@ -1673,7 +1678,10 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     pricing: frontendPricing,
 
     // Payment type (optional: 'stripe' or 'prevod')
-    paymentType
+    paymentType,
+
+    // Language preference for email templates ('sk' or 'en')
+    websiteLanguage
   } = req.body;
 
   // 🔍 DEBUG: Log incoming services and insurance data structure for createPublicReservation
@@ -2150,6 +2158,8 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
       extendedInsurancePrices: extendedInsurancePrices || {},
       // Payment type (optional: 'stripe' or 'prevod')
       paymentType: paymentType || undefined,
+      // Language preference for email templates ('sk' or 'en')
+      websiteLanguage: websiteLanguage || 'sk',
       terms: {
         mileageLimit: -1, // Unlimited
         fuelPolicy: 'full-to-full',
@@ -3319,7 +3329,7 @@ const getPublicCar = asyncHandler(async (req, res, next) => {
     _id: req.params.id,
     status: 'active',
     isActive: true
-  }).select('brand model year color category fuelType engine transmission seats doors description pricing mileageLimits location features images equipment badges status');
+  }).select('brand model year color category fuelType engine transmission seats doors description descriptionEn pricing mileageLimits location features images equipment badges status');
 
   if (!car) {
     return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
@@ -5114,7 +5124,7 @@ const getCarsByBrandByUser = asyncHandler(async (req, res, next) => {
     if (transmission) query.transmission = transmission;
     
     let cars = await Car.find(query)
-      .select('_id brand model year color category fuelType transmission seats doors description pricing location features images equipment badges status')
+      .select('_id brand model year color category fuelType transmission seats doors description descriptionEn pricing location features images equipment badges status')
       .sort({ model: 1, year: -1 });
     
     // Filter by availability if dates provided
@@ -5260,7 +5270,7 @@ const getCarsByEquipmentByUser = asyncHandler(async (req, res, next) => {
     if (brand) query.brand = new RegExp(brand, 'i');
     
     let cars = await Car.find(query)
-      .select('_id brand model year color category fuelType transmission seats doors description pricing location features images equipment badges status')
+      .select('_id brand model year color category fuelType transmission seats doors description descriptionEn pricing location features images equipment badges status')
       .sort({ 'pricing.dailyRate': 1, brand: 1, model: 1 });
     
     // Filter by availability if dates provided
@@ -5432,7 +5442,7 @@ const searchCarsByUser = asyncHandler(async (req, res, next) => {
     }
     
     let cars = await Car.find(query)
-      .select('_id brand model year color category fuelType transmission seats doors description pricing location features images equipment badges status')
+      .select('_id brand model year color category fuelType transmission seats doors description descriptionEn pricing location features images equipment badges status')
       .lean();
     
     // Price range filter (applied after query since pricing can be in different formats)

@@ -70,8 +70,8 @@ class EmailTemplateService {
       if (isLerent) templateSource = 'lerent';
       else if (isNitracar) templateSource = 'nitracar';
 
-      // For NitraCar, include language in cache key
-      const langSuffix = isNitracar && language === 'en' ? '_en' : '';
+      // For NitraCar and LeRent, include language in cache key
+      const langSuffix = (isNitracar || isLerent) && language === 'en' ? '_en' : '';
       const cacheKey = `${templateName}${langSuffix}_${templateSource}`;
 
       // Check cache first
@@ -81,21 +81,22 @@ class EmailTemplateService {
 
       const templatesPath = this.getTemplatePath(senderEmail);
 
-      // For NitraCar with English language, try to load the -en version first
+      // For NitraCar and LeRent with English language, try to load the -en version first
       let templatePath;
       let templateContent;
 
-      if (isNitracar && language === 'en') {
+      if ((isNitracar || isLerent) && language === 'en') {
+        const tenantLabel = isNitracar ? 'NITRACAR' : 'LERENT';
         const englishTemplatePath = path.join(templatesPath, `${templateName}-en.html`);
         try {
           templateContent = await fs.readFile(englishTemplatePath, 'utf8');
           templatePath = englishTemplatePath;
-          console.log(`📧 [NITRACAR] Using English template: ${templateName}-en.html`);
+          console.log(`📧 [${tenantLabel}] Using English template: ${templateName}-en.html`);
         } catch (engError) {
           // Fallback to Slovak template if English not found
           templatePath = path.join(templatesPath, `${templateName}.html`);
           templateContent = await fs.readFile(templatePath, 'utf8');
-          console.log(`📧 [NITRACAR] English template not found, using Slovak: ${templateName}.html`);
+          console.log(`📧 [${tenantLabel}] English template not found, using Slovak: ${templateName}.html`);
         }
       } else {
         templatePath = path.join(templatesPath, `${templateName}.html`);
