@@ -597,7 +597,7 @@ const BlogSettings = () => {
                       </Typography>
                       
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        {blog.excerpt?.substring(0, 100)}...
+                        {blog.excerpt?.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').substring(0, 100)}...
                       </Typography>
 
                       <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
