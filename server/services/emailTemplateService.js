@@ -71,7 +71,9 @@ class EmailTemplateService {
       else if (isNitracar) templateSource = 'nitracar';
 
       // For NitraCar and LeRent, include language in cache key
-      const langSuffix = (isNitracar || isLerent) && language === 'en' ? '_en' : '';
+      let langSuffix = '';
+      if ((isNitracar || isLerent) && language === 'en') langSuffix = '_en';
+      else if (isLerent && language === 'hu') langSuffix = '_hu';
       const cacheKey = `${templateName}${langSuffix}_${templateSource}`;
 
       // Check cache first
@@ -81,22 +83,32 @@ class EmailTemplateService {
 
       const templatesPath = this.getTemplatePath(senderEmail);
 
-      // For NitraCar and LeRent with English language, try to load the -en version first
+      // For NitraCar and LeRent with English, or LeRent with Hungarian, try language-specific template first
       let templatePath;
       let templateContent;
 
       if ((isNitracar || isLerent) && language === 'en') {
         const tenantLabel = isNitracar ? 'NITRACAR' : 'LERENT';
-        const englishTemplatePath = path.join(templatesPath, `${templateName}-en.html`);
+        const localizedPath = path.join(templatesPath, `${templateName}-en.html`);
         try {
-          templateContent = await fs.readFile(englishTemplatePath, 'utf8');
-          templatePath = englishTemplatePath;
+          templateContent = await fs.readFile(localizedPath, 'utf8');
+          templatePath = localizedPath;
           console.log(`📧 [${tenantLabel}] Using English template: ${templateName}-en.html`);
         } catch (engError) {
-          // Fallback to Slovak template if English not found
           templatePath = path.join(templatesPath, `${templateName}.html`);
           templateContent = await fs.readFile(templatePath, 'utf8');
           console.log(`📧 [${tenantLabel}] English template not found, using Slovak: ${templateName}.html`);
+        }
+      } else if (isLerent && language === 'hu') {
+        const localizedPath = path.join(templatesPath, `${templateName}-hu.html`);
+        try {
+          templateContent = await fs.readFile(localizedPath, 'utf8');
+          templatePath = localizedPath;
+          console.log(`📧 [LERENT] Using Hungarian template: ${templateName}-hu.html`);
+        } catch (huError) {
+          templatePath = path.join(templatesPath, `${templateName}.html`);
+          templateContent = await fs.readFile(templatePath, 'utf8');
+          console.log(`📧 [LERENT] Hungarian template not found, using Slovak: ${templateName}.html`);
         }
       } else {
         templatePath = path.join(templatesPath, `${templateName}.html`);
@@ -223,8 +235,23 @@ class EmailTemplateService {
       'newsletter': `📰 ${variables.newsletter_title || 'Newsletter'} - ${variables.company_name || 'News'}`
     };
 
-    const subjects = language === 'en' ? subjectsEn : subjectsSk;
-    const defaultSubject = language === 'en' ? `📧 ${variables.company_name || 'Email'}` : `📧 ${variables.company_name || 'Email'}`;
+    // Hungarian subjects
+    const subjectsHu = {
+      'welcome': `🎉 Üdvözöljük a ${variables.company_name || 'szolgáltatásunknál'}!`,
+      'reservation-confirmation': `✅ Foglalás fogadva - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'reservation-confirmed': `✅ Foglalás megerősítve - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'reservation-cancelled': `❌ Foglalás törölve - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'reservation-edited': `📝 Foglalás módosítva - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'reservation-reminder24': `⏰ Emlékeztető: Holnap az átvétel - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'reservation-reminder24after': `⏰ Emlékeztető: Holnap a visszahozatal - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'payment-notification': `💰 Fizetési emlékeztető - ${variables.car_brand || ''} ${variables.car_model || ''}`,
+      'payment-receipt': `💳 Fizetés visszaigazolása - Számla ${variables.invoice_number || 'XXX'}`,
+      'reminder-notification': `🔔 ${variables.reminder_type || 'Emlékeztető'} - ${variables.days_remaining || 'X'} nap van hátra!`,
+      'newsletter': `📰 ${variables.newsletter_title || 'Hírlevél'} - ${variables.company_name || 'Hírek'}`
+    };
+
+    const subjects = language === 'hu' ? subjectsHu : language === 'en' ? subjectsEn : subjectsSk;
+    const defaultSubject = `📧 ${variables.company_name || 'Email'}`;
 
     return variables.custom_subject || subjects[templateName] || defaultSubject;
   }

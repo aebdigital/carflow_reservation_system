@@ -172,7 +172,7 @@ const reservationSchema = new mongoose.Schema({
   // Website language - tracks which language version the reservation was made from (NitraCar only)
   websiteLanguage: {
     type: String,
-    enum: ['sk', 'en'],
+    enum: ['sk', 'en', 'hu'],
     default: 'sk'
   },
 

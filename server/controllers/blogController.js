@@ -698,6 +698,41 @@ const addBlogComment = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Update blog Hungarian translations
+// @route   PUT /api/blogs/:id/hungarian
+// @access  Private/Staff
+const updateBlogHungarian = asyncHandler(async (req, res, next) => {
+  const { titleHu, slugHu, contentHu } = req.body;
+
+  const blog = await Blog.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  });
+
+  if (!blog) {
+    return next(new AppError(`Blog not found with id of ${req.params.id}`, 404));
+  }
+
+  const updateData = { lastModifiedBy: req.user._id };
+
+  if (titleHu !== undefined) updateData.titleHu = titleHu;
+  if (slugHu !== undefined) updateData.slugHu = slugHu;
+  if (contentHu !== undefined) updateData.contentHu = contentHu;
+
+  const updatedBlog = await Blog.findByIdAndUpdate(
+    req.params.id,
+    updateData,
+    { new: true, runValidators: true }
+  ).populate('author', 'firstName lastName email')
+   .populate('lastModifiedBy', 'firstName lastName email');
+
+  res.status(200).json({
+    success: true,
+    data: updatedBlog,
+    message: 'Blog Hungarian translations updated successfully'
+  });
+});
+
 // @desc    Update blog English translations
 // @route   PUT /api/blogs/:id/english
 // @access  Private/Staff
@@ -750,6 +785,7 @@ module.exports = {
   uploadBlogImageHandler,
   toggleBlogStatus,
   updateBlogEnglish,
+  updateBlogHungarian,
 
   // Public endpoints
   getPublicBlogsByUser,

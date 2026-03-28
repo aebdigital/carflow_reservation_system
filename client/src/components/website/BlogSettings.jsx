@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { 
   Box, 
   Typography, 
@@ -51,6 +52,7 @@ import {
   useUploadBlogImageMutation
 } from '../../store/store';
 import BlogEnglishTranslation from '../admin/BlogEnglishTranslation';
+import BlogHungarianTranslation from '../admin/BlogHungarianTranslation';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
@@ -96,6 +98,9 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
 };
 
 const BlogSettings = () => {
+  const { user } = useSelector((state) => state.auth);
+  const isLerent = user?.email?.toLowerCase() === 'lerent@lerent.sk';
+
   const [alert, setAlert] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
   const [blogDialogOpen, setBlogDialogOpen] = useState(false);
@@ -104,6 +109,7 @@ const BlogSettings = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [translationDialog, setTranslationDialog] = useState({ open: false, blog: null });
+  const [hungarianTranslationDialog, setHungarianTranslationDialog] = useState({ open: false, blog: null });
 
   // Blog form state
   const [blogData, setBlogData] = useState({
@@ -645,6 +651,30 @@ const BlogSettings = () => {
                             />
                           )}
                         </IconButton>
+                        {isLerent && (
+                          <IconButton
+                            size="small"
+                            onClick={() => setHungarianTranslationDialog({ open: true, blog })}
+                            color="warning"
+                            title="Magyar fordítás"
+                          >
+                            <LanguageIcon />
+                            {blog.titleHu && (
+                              <Chip
+                                label="HU"
+                                size="small"
+                                color="success"
+                                sx={{
+                                  position: 'absolute',
+                                  top: -4,
+                                  right: -4,
+                                  height: 16,
+                                  fontSize: 9
+                                }}
+                              />
+                            )}
+                          </IconButton>
+                        )}
                         <IconButton
                           size="small"
                           onClick={() => handleToggleStatus(blog._id, blog.status)}
@@ -856,6 +886,15 @@ const BlogSettings = () => {
         open={translationDialog.open}
         onClose={() => setTranslationDialog({ open: false, blog: null })}
       />
+
+      {/* Hungarian Translation Dialog - LeRent only */}
+      {isLerent && (
+        <BlogHungarianTranslation
+          blog={hungarianTranslationDialog.blog}
+          open={hungarianTranslationDialog.open}
+          onClose={() => setHungarianTranslationDialog({ open: false, blog: null })}
+        />
+      )}
     </Box>
   );
 };

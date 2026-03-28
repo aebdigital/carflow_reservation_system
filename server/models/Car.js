@@ -188,6 +188,11 @@ const carSchema = new mongoose.Schema({
     maxLength: [1000, 'English description cannot exceed 1000 characters'],
     trim: true
   },
+  descriptionHu: {
+    type: String,
+    maxLength: [1000, 'Hungarian description cannot exceed 1000 characters'],
+    trim: true
+  },
   
   // 6. CENNÍK, DOPLNKOVÉ ÚDAJE, SLUŽBY, DEPOZIT
   pricing: {

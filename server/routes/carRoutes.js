@@ -14,7 +14,8 @@ const {
   setPrimaryImage,
   getCarStatus,
   testFileUpload,
-  updateCarEnglish
+  updateCarEnglish,
+  updateCarHungarian
 } = require('../controllers/carController');
 
 const { protect, requireAdmin, requireStaff, addTenantFilter, restrictRivalDomain } = require('../middleware/authMiddleware');
@@ -56,5 +57,8 @@ router.post('/test-upload', requireAdmin, uploadMultipleCarImages, handleMulterE
 
 // English translation endpoint
 router.put('/:id/english', requireStaff, updateCarEnglish);
+
+// Hungarian translation endpoint
+router.put('/:id/hungarian', requireStaff, updateCarHungarian);
 
 module.exports = router; 

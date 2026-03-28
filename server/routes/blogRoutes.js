@@ -8,7 +8,8 @@ const {
   deleteBlog,
   uploadBlogImageHandler,
   toggleBlogStatus,
-  updateBlogEnglish
+  updateBlogEnglish,
+  updateBlogHungarian
 } = require('../controllers/blogController');
 
 const { protect, requireStaff } = require('../middleware/authMiddleware');
@@ -53,5 +54,8 @@ router.patch('/:id/publish', toggleBlogStatus);
 
 // English translation route
 router.put('/:id/english', updateBlogEnglish);
+
+// Hungarian translation route
+router.put('/:id/hungarian', updateBlogHungarian);
 
 module.exports = router; 

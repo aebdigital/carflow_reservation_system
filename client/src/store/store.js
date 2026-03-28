@@ -1081,6 +1081,25 @@ export const api = createApi({
       invalidatesTags: (result, error, { bannerId }) => [{ type: 'Banner', id: bannerId }, 'Banner'],
     }),
 
+    // Hungarian Translation endpoints (LeRent only)
+    updateCarHungarian: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `cars/${id}/hungarian`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Car', id }, 'Car'],
+    }),
+
+    updateBlogHungarian: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `blogs/${id}/hungarian`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Blog', id }, 'Blog'],
+    }),
+
     // Brand endpoints
     getBrands: builder.query({
       query: () => 'brands',
@@ -1296,6 +1315,10 @@ export const {
   useUpdateInfoBarEnglishMutation,
   useUpdateModalEnglishMutation,
   useUpdateBannerImageEnglishMutation,
+
+  // Hungarian Translation hooks (LeRent only)
+  useUpdateCarHungarianMutation,
+  useUpdateBlogHungarianMutation,
 
   // Brand hooks
   useGetBrandsQuery,

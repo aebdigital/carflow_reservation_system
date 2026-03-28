@@ -34,7 +34,7 @@ const getCars = asyncHandler(async (req, res, next) => {
     query = query.select(fields);
   } else {
     // Default selection for admin - include most fields but handle legacy data safely
-    const adminFields = 'brand model year color category fuelType drivetrain transmission seats doors trunkVolume engine fuelConsumption mileage mileageLimits description descriptionEn pricing location features images equipment badges status internalId registrationNumber vin documentValidity damages statistics notifications maintenance insurance addons createdAt updatedAt isActive';
+    const adminFields = 'brand model year color category fuelType drivetrain transmission seats doors trunkVolume engine fuelConsumption mileage mileageLimits description descriptionEn descriptionHu pricing location features images equipment badges status internalId registrationNumber vin documentValidity damages statistics notifications maintenance insurance addons createdAt updatedAt isActive';
     query = query.select(adminFields);
   }
 
@@ -90,7 +90,7 @@ const getCar = asyncHandler(async (req, res, next) => {
   const car = await Car.findOne({ 
     _id: req.params.id, 
     tenantId: req.user.tenantId 
-  }).select('brand model year color category fuelType drivetrain transmission seats doors trunkVolume engine fuelConsumption mileage mileageLimits description descriptionEn pricing location features images equipment badges status internalId registrationNumber vin documentValidity damages statistics notifications maintenance insurance addons createdAt updatedAt isActive');
+  }).select('brand model year color category fuelType drivetrain transmission seats doors trunkVolume engine fuelConsumption mileage mileageLimits description descriptionEn descriptionHu pricing location features images equipment badges status internalId registrationNumber vin documentValidity damages statistics notifications maintenance insurance addons createdAt updatedAt isActive');
 
   if (!car) {
     return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
@@ -2171,7 +2171,7 @@ const getCarsByLocation = asyncHandler(async (req, res, next) => {
   const cars = await Car.find({
     'location.name': new RegExp(req.params.locationName, 'i'),
     isActive: true
-  }).select('brand model year color category fuelType drivetrain transmission seats doors trunkVolume engine fuelConsumption mileage mileageLimits description descriptionEn pricing location features images equipment badges status');
+  }).select('brand model year color category fuelType drivetrain transmission seats doors trunkVolume engine fuelConsumption mileage mileageLimits description descriptionEn descriptionHu pricing location features images equipment badges status');
 
   res.status(200).json({
     success: true,
@@ -2482,7 +2482,6 @@ const updateCarEnglish = asyncHandler(async (req, res, next) => {
     return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
   }
 
-  // Update English description
   if (descriptionEn !== undefined) {
     car.descriptionEn = descriptionEn;
   }
@@ -2493,6 +2492,31 @@ const updateCarEnglish = asyncHandler(async (req, res, next) => {
     success: true,
     data: car,
     message: 'Car English translation updated successfully'
+  });
+});
+
+const updateCarHungarian = asyncHandler(async (req, res, next) => {
+  const { descriptionHu } = req.body;
+
+  const car = await Car.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  });
+
+  if (!car) {
+    return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
+  }
+
+  if (descriptionHu !== undefined) {
+    car.descriptionHu = descriptionHu;
+  }
+
+  await car.save();
+
+  res.status(200).json({
+    success: true,
+    data: car,
+    message: 'Car Hungarian translation updated successfully'
   });
 });
 
@@ -2512,5 +2536,6 @@ module.exports = {
   getCarCalendar,
   getCarStatus,
   testFileUpload,
-  updateCarEnglish
+  updateCarEnglish,
+  updateCarHungarian
 }; 

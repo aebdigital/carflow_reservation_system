@@ -50,6 +50,7 @@ import {
 import { t } from '../utils/translations'
 import EnhancedCarForm from '../components/cars/EnhancedCarForm'
 import CarEnglishTranslation from '../components/admin/CarEnglishTranslation'
+import CarHungarianTranslation from '../components/admin/CarHungarianTranslation'
 import { useSelector } from 'react-redux'
 
 function Cars() {
@@ -58,12 +59,14 @@ function Cars() {
 
   // Check if multi-language features should be shown (not for rival tenant)
   const showMultiLanguage = user?.email && !['rival@test.sk'].includes(user.email.toLowerCase())
+  const isLerent = user?.email?.toLowerCase() === 'lerent@lerent.sk'
   const [openDialog, setOpenDialog] = useState(false)
   const [selectedCar, setSelectedCar] = useState(null)
   const [dialogMode, setDialogMode] = useState('create') // 'create', 'edit', 'view'
   const [selectedImages, setSelectedImages] = useState([])
   const [imagePreviewUrls, setImagePreviewUrls] = useState([])
   const [translationDialog, setTranslationDialog] = useState({ open: false, car: null })
+  const [hungarianTranslationDialog, setHungarianTranslationDialog] = useState({ open: false, car: null })
 
   // Initial form state - Enhanced for comprehensive car management
   const initialFormState = {
@@ -1402,6 +1405,35 @@ function Cars() {
                   </IconButton>
                 </Tooltip>
               )}
+              {isLerent && (
+                <Tooltip title="Magyar fordítás">
+                  <IconButton
+                    size="medium"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setHungarianTranslationDialog({ open: true, car });
+                    }}
+                    color="warning"
+                    sx={{ mr: 0.5, p: 0.6 }}
+                  >
+                    <LanguageIcon sx={{ fontSize: '22px' }} />
+                    {car.descriptionHu && (
+                      <Box
+                        component="span"
+                        sx={{
+                          position: 'absolute',
+                          top: 2,
+                          right: 2,
+                          width: 8,
+                          height: 8,
+                          bgcolor: 'success.main',
+                          borderRadius: '50%',
+                        }}
+                      />
+                    )}
+                  </IconButton>
+                </Tooltip>
+              )}
               <IconButton
                 size="medium"
                 onClick={(e) => {
@@ -1637,12 +1669,21 @@ function Cars() {
         </Alert>
       </Snackbar>
 
-      {/* English Translation Dialog - Only for nitracar tenant */}
+      {/* English Translation Dialog */}
       {showMultiLanguage && (
         <CarEnglishTranslation
           car={translationDialog.car}
           open={translationDialog.open}
           onClose={() => setTranslationDialog({ open: false, car: null })}
+        />
+      )}
+
+      {/* Hungarian Translation Dialog - LeRent only */}
+      {isLerent && (
+        <CarHungarianTranslation
+          car={hungarianTranslationDialog.car}
+          open={hungarianTranslationDialog.open}
+          onClose={() => setHungarianTranslationDialog({ open: false, car: null })}
         />
       )}
     </Box>

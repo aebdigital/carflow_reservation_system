@@ -20,6 +20,11 @@ const blogSchema = new mongoose.Schema({
     trim: true,
     maxLength: [200, 'English title cannot exceed 200 characters']
   },
+  titleHu: {
+    type: String,
+    trim: true,
+    maxLength: [200, 'Hungarian title cannot exceed 200 characters']
+  },
 
   slug: {
     type: String,
@@ -33,6 +38,12 @@ const blogSchema = new mongoose.Schema({
     trim: true,
     lowercase: true,
     match: [/^[a-z0-9-]+$/, 'English slug can only contain lowercase letters, numbers, and hyphens']
+  },
+  slugHu: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    match: [/^[a-z0-9-]+$/, 'Hungarian slug can only contain lowercase letters, numbers, and hyphens']
   },
 
   excerpt: {
@@ -52,6 +63,9 @@ const blogSchema = new mongoose.Schema({
     required: [true, 'Blog content is required']
   },
   contentEn: {
+    type: String
+  },
+  contentHu: {
     type: String
   },
   
