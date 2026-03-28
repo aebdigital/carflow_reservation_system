@@ -345,7 +345,7 @@ const getCarByUser = asyncHandler(async (req, res, next) => {
     _id: carId, 
     tenantId,
     isActive: true 
-  }).select('brand model year color category fuelType fuelConsumption engine transmission seats doors description descriptionEn dailyRate weeklyRate monthlyRate location features images status mileage mileageLimits equipment badges pricing');
+  }).select('brand model year color category fuelType fuelConsumption engine transmission seats doors description descriptionEn descriptionHu dailyRate weeklyRate monthlyRate location features images status mileage mileageLimits equipment badges pricing');
   
   if (!car) {
     return next(new AppError(`Car not found with id: ${carId}`, 404));
@@ -3329,7 +3329,7 @@ const getPublicCar = asyncHandler(async (req, res, next) => {
     _id: req.params.id,
     status: 'active',
     isActive: true
-  }).select('brand model year color category fuelType engine transmission seats doors description descriptionEn pricing mileageLimits location features images equipment badges status');
+  }).select('brand model year color category fuelType engine transmission seats doors description descriptionEn descriptionHu pricing mileageLimits location features images equipment badges status');
 
   if (!car) {
     return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
@@ -5124,7 +5124,7 @@ const getCarsByBrandByUser = asyncHandler(async (req, res, next) => {
     if (transmission) query.transmission = transmission;
     
     let cars = await Car.find(query)
-      .select('_id brand model year color category fuelType transmission seats doors description descriptionEn pricing location features images equipment badges status')
+      .select('_id brand model year color category fuelType transmission seats doors description descriptionEn descriptionHu pricing location features images equipment badges status')
       .sort({ model: 1, year: -1 });
     
     // Filter by availability if dates provided
@@ -5270,7 +5270,7 @@ const getCarsByEquipmentByUser = asyncHandler(async (req, res, next) => {
     if (brand) query.brand = new RegExp(brand, 'i');
     
     let cars = await Car.find(query)
-      .select('_id brand model year color category fuelType transmission seats doors description descriptionEn pricing location features images equipment badges status')
+      .select('_id brand model year color category fuelType transmission seats doors description descriptionEn descriptionHu pricing location features images equipment badges status')
       .sort({ 'pricing.dailyRate': 1, brand: 1, model: 1 });
     
     // Filter by availability if dates provided
@@ -5442,7 +5442,7 @@ const searchCarsByUser = asyncHandler(async (req, res, next) => {
     }
     
     let cars = await Car.find(query)
-      .select('_id brand model year color category fuelType transmission seats doors description descriptionEn pricing location features images equipment badges status')
+      .select('_id brand model year color category fuelType transmission seats doors description descriptionEn descriptionHu pricing location features images equipment badges status')
       .lean();
     
     // Price range filter (applied after query since pricing can be in different formats)
