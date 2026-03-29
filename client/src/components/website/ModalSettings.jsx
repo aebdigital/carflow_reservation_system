@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useSelector } from 'react-redux'
 import {
   Box,
   Card,
@@ -58,6 +59,7 @@ import {
 } from '../../store/store'
 import { store } from '../../store/store'
 import ModalEnglishTranslation from '../admin/ModalEnglishTranslation'
+import ModalHungarianTranslation from '../admin/ModalHungarianTranslation'
 
 const modalTypeOptions = [
   { value: 'newsletter', label: 'Newsletter' },
@@ -152,7 +154,10 @@ export default function ModalSettings() {
   const [formData, setFormData] = useState(initialFormData)
   const [alert, setAlert] = useState(null)
   const [showPreview, setShowPreview] = useState(false)
+  const { user } = useSelector((state) => state.auth)
+  const isLerent = user?.email?.toLowerCase() === 'lerent@lerent.sk'
   const [translationDialog, setTranslationDialog] = useState({ open: false, modal: null })
+  const [hungarianTranslationDialog, setHungarianTranslationDialog] = useState({ open: false, modal: null })
 
   const { data: modalsData, isLoading: modalsLoading, error: modalsError, refetch } = useGetModalsQuery()
   const [createModal, { isLoading: creating }] = useCreateModalMutation()
@@ -683,6 +688,32 @@ export default function ModalSettings() {
                               )}
                             </IconButton>
                           </Tooltip>
+                          {isLerent && (
+                            <Tooltip title="Magyar fordítás">
+                              <IconButton
+                                size="small"
+                                onClick={() => setHungarianTranslationDialog({ open: true, modal })}
+                                color="warning"
+                                sx={{ position: 'relative' }}
+                              >
+                                <LanguageIcon fontSize="small" />
+                                {modal.titleHu && (
+                                  <Box
+                                    component="span"
+                                    sx={{
+                                      position: 'absolute',
+                                      top: 2,
+                                      right: 2,
+                                      width: 6,
+                                      height: 6,
+                                      bgcolor: 'success.main',
+                                      borderRadius: '50%',
+                                    }}
+                                  />
+                                )}
+                              </IconButton>
+                            </Tooltip>
+                          )}
                           <Tooltip title={modal.isActive ? 'Deaktivovať' : 'Aktivovať'}>
                             <IconButton
                               size="small"
@@ -1140,6 +1171,13 @@ export default function ModalSettings() {
         open={translationDialog.open}
         onClose={() => setTranslationDialog({ open: false, modal: null })}
       />
+      {isLerent && (
+        <ModalHungarianTranslation
+          modal={hungarianTranslationDialog.modal}
+          open={hungarianTranslationDialog.open}
+          onClose={() => setHungarianTranslationDialog({ open: false, modal: null })}
+        />
+      )}
       </Box>
     </LocalizationProvider>
   )

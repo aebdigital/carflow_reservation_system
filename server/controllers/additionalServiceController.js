@@ -672,21 +672,14 @@ const updateAdditionalServiceEnglish = asyncHandler(async (req, res, next) => {
     return next(new AppError(`Additional service not found with id of ${req.params.id}`, 404));
   }
 
-  // Update English fields
-  const updateData = {
-    lastModifiedBy: req.user._id
-  };
-
+  const updateData = { lastModifiedBy: req.user._id };
   if (nameEn !== undefined) updateData.nameEn = nameEn;
   if (descriptionEn !== undefined) updateData.descriptionEn = descriptionEn;
 
   const updatedService = await AdditionalService.findByIdAndUpdate(
     req.params.id,
     updateData,
-    {
-      new: true,
-      runValidators: true
-    }
+    { new: true, runValidators: true }
   ).populate('createdBy', 'name email')
    .populate('lastModifiedBy', 'name email');
 
@@ -694,6 +687,36 @@ const updateAdditionalServiceEnglish = asyncHandler(async (req, res, next) => {
     success: true,
     data: updatedService,
     message: 'Additional service English translations updated successfully'
+  });
+});
+
+const updateAdditionalServiceHungarian = asyncHandler(async (req, res, next) => {
+  const { nameHu, descriptionHu } = req.body;
+
+  const service = await AdditionalService.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  });
+
+  if (!service) {
+    return next(new AppError(`Additional service not found with id of ${req.params.id}`, 404));
+  }
+
+  const updateData = { lastModifiedBy: req.user._id };
+  if (nameHu !== undefined) updateData.nameHu = nameHu;
+  if (descriptionHu !== undefined) updateData.descriptionHu = descriptionHu;
+
+  const updatedService = await AdditionalService.findByIdAndUpdate(
+    req.params.id,
+    updateData,
+    { new: true, runValidators: true }
+  ).populate('createdBy', 'name email')
+   .populate('lastModifiedBy', 'name email');
+
+  res.status(200).json({
+    success: true,
+    data: updatedService,
+    message: 'Additional service Hungarian translations updated successfully'
   });
 });
 
@@ -710,5 +733,6 @@ module.exports = {
   calculateServicePrice,
   calculateServicePricePublic,
   updateSortOrder,
-  updateAdditionalServiceEnglish
+  updateAdditionalServiceEnglish,
+  updateAdditionalServiceHungarian
 }; 

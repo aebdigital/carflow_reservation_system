@@ -1082,6 +1082,42 @@ export const api = createApi({
     }),
 
     // Hungarian Translation endpoints (LeRent only)
+    updateServiceHungarian: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `additional-services/${id}/hungarian`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['Settings'],
+    }),
+
+    updateInfoBarHungarian: builder.mutation({
+      query: (body) => ({
+        url: 'website/settings/info-bar/hungarian',
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['WebsiteSettings'],
+    }),
+
+    updateModalHungarian: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `website/modals/${id}/hungarian`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['WebsiteSettings'],
+    }),
+
+    updateBannerImageHungarian: builder.mutation({
+      query: ({ bannerId, imageId, ...body }) => ({
+        url: `banners/${bannerId}/images/${imageId}/hungarian`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: (result, error, { bannerId }) => [{ type: 'Banner', id: bannerId }, 'Banner'],
+    }),
+
     updateCarHungarian: builder.mutation({
       query: ({ id, ...body }) => ({
         url: `cars/${id}/hungarian`,
@@ -1317,6 +1353,10 @@ export const {
   useUpdateBannerImageEnglishMutation,
 
   // Hungarian Translation hooks (LeRent only)
+  useUpdateServiceHungarianMutation,
+  useUpdateInfoBarHungarianMutation,
+  useUpdateModalHungarianMutation,
+  useUpdateBannerImageHungarianMutation,
   useUpdateCarHungarianMutation,
   useUpdateBlogHungarianMutation,
 

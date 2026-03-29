@@ -5,6 +5,7 @@ const {
   updateInfoBar,
   toggleInfoBar,
   updateInfoBarEnglish,
+  updateInfoBarHungarian,
   // Modal CRUD operations
   getModals,
   createModal,
@@ -13,7 +14,8 @@ const {
   toggleModal,
   getActiveModals,
   recordModalAnalytics,
-  updateModalEnglish
+  updateModalEnglish,
+  updateModalHungarian
 } = require('../controllers/websiteController');
 
 const router = express.Router();
@@ -45,6 +47,9 @@ router.route('/settings/info-bar/toggle')
 router.route('/settings/info-bar/english')
   .put(requireAdmin, updateInfoBarEnglish);
 
+router.route('/settings/info-bar/hungarian')
+  .put(requireAdmin, updateInfoBarHungarian);
+
 // Modal CRUD routes
 router.route('/modals')
   .get(getModals)
@@ -59,5 +64,8 @@ router.route('/modals/:id/toggle')
 
 router.route('/modals/:id/english')
   .put(requireAdmin, updateModalEnglish);
+
+router.route('/modals/:id/hungarian')
+  .put(requireAdmin, updateModalHungarian);
 
 module.exports = router; 

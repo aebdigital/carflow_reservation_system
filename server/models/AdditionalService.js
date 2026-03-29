@@ -20,6 +20,11 @@ const additionalServiceSchema = new mongoose.Schema({
     trim: true,
     maxLength: [100, 'English service name cannot exceed 100 characters']
   },
+  nameHu: {
+    type: String,
+    trim: true,
+    maxLength: [100, 'Hungarian service name cannot exceed 100 characters']
+  },
   description: {
     type: String,
     trim: true,
@@ -29,6 +34,11 @@ const additionalServiceSchema = new mongoose.Schema({
     type: String,
     trim: true,
     maxLength: [500, 'English service description cannot exceed 500 characters']
+  },
+  descriptionHu: {
+    type: String,
+    trim: true,
+    maxLength: [500, 'Hungarian service description cannot exceed 500 characters']
   },
   
   // Category

@@ -388,6 +388,27 @@ const toggleInfoBar = asyncHandler(async (req, res, next) => {
 // @desc    Update info bar English translation
 // @route   PUT /api/website/settings/info-bar/english
 // @access  Private/Admin
+const updateInfoBarHungarian = asyncHandler(async (req, res, next) => {
+  const { textHu } = req.body;
+
+  const updateData = {
+    'infoBar.textHu': textHu || '',
+    lastUpdatedBy: req.user._id
+  };
+
+  const settings = await WebsiteSettings.findOneAndUpdate(
+    { tenantId: req.user.tenantId },
+    updateData,
+    { new: true, runValidators: true, upsert: true }
+  ).populate('lastUpdatedBy', 'firstName lastName email');
+
+  res.status(200).json({
+    success: true,
+    data: settings.infoBar,
+    message: 'Info bar Hungarian translation updated successfully'
+  });
+});
+
 const updateInfoBarEnglish = asyncHandler(async (req, res, next) => {
   const { textEn } = req.body;
 
@@ -410,6 +431,36 @@ const updateInfoBarEnglish = asyncHandler(async (req, res, next) => {
     success: true,
     data: settings.infoBar,
     message: 'Info bar English translation updated successfully'
+  });
+});
+
+// @desc    Update modal Hungarian translations
+// @route   PUT /api/website/modals/:id/hungarian
+// @access  Private/Admin
+const updateModalHungarian = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { titleHu, contentHu, emailPlaceholderHu, buttonTextHu, secondaryButtonTextHu } = req.body;
+
+  const settings = await WebsiteSettings.findOne({ tenantId: req.user.tenantId });
+  if (!settings) return next(new AppError('Website settings not found', 404));
+
+  const modalIndex = settings.modals.findIndex(modal => modal._id.toString() === id);
+  if (modalIndex === -1) return next(new AppError('Modal not found', 404));
+
+  if (titleHu !== undefined) settings.modals[modalIndex].titleHu = titleHu;
+  if (contentHu !== undefined) settings.modals[modalIndex].contentHu = contentHu;
+  if (emailPlaceholderHu !== undefined) settings.modals[modalIndex].emailPlaceholderHu = emailPlaceholderHu;
+  if (buttonTextHu !== undefined) settings.modals[modalIndex].buttonTextHu = buttonTextHu;
+  if (secondaryButtonTextHu !== undefined) settings.modals[modalIndex].secondaryButtonTextHu = secondaryButtonTextHu;
+
+  settings.modals[modalIndex].lastUpdatedBy = req.user._id;
+  settings.lastUpdatedBy = req.user._id;
+  await settings.save();
+
+  res.status(200).json({
+    success: true,
+    data: settings.modals[modalIndex],
+    message: 'Modal Hungarian translations updated successfully'
   });
 });
 
@@ -457,6 +508,7 @@ module.exports = {
   updateInfoBar,
   toggleInfoBar,
   updateInfoBarEnglish,
+  updateInfoBarHungarian,
   // Modal CRUD operations
   getModals,
   createModal,
@@ -465,5 +517,6 @@ module.exports = {
   toggleModal,
   getActiveModals,
   recordModalAnalytics,
-  updateModalEnglish
+  updateModalEnglish,
+  updateModalHungarian
 }; 

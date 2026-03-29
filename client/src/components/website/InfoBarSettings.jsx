@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useSelector } from 'react-redux'
 import {
   Box,
   Card,
@@ -33,6 +34,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { sk } from 'date-fns/locale'
 import { useUpdateInfoBarMutation, useToggleInfoBarMutation } from '../../store/store'
 import InfoBarEnglishTranslation from '../admin/InfoBarEnglishTranslation'
+import InfoBarHungarianTranslation from '../admin/InfoBarHungarianTranslation'
 
 const colorOptions = [
   { value: 'red', label: 'Červená (Urgent)', color: '#f44336', bgColor: '#d32f2f' },
@@ -64,7 +66,10 @@ export default function InfoBarSettings({ settings }) {
   const [toggleInfoBar, { isLoading: isToggling }] = useToggleInfoBarMutation()
   const [alert, setAlert] = useState(null)
   const [showPreview, setShowPreview] = useState(false)
+  const { user } = useSelector((state) => state.auth)
+  const isLerent = user?.email?.toLowerCase() === 'lerent@lerent.sk'
   const [translationDialog, setTranslationDialog] = useState(false)
+  const [hungarianTranslationDialog, setHungarianTranslationDialog] = useState(false)
 
   useEffect(() => {
     if (settings?.infoBar) {
@@ -312,6 +317,31 @@ export default function InfoBarSettings({ settings }) {
                           )}
                         </IconButton>
                       </Tooltip>
+                      {isLerent && (
+                        <Tooltip title="Magyar fordítás">
+                          <IconButton
+                            onClick={() => setHungarianTranslationDialog(true)}
+                            color="warning"
+                            sx={{ position: 'relative' }}
+                          >
+                            <LanguageIcon />
+                            {settings?.infoBar?.textHu && (
+                              <Box
+                                component="span"
+                                sx={{
+                                  position: 'absolute',
+                                  top: 4,
+                                  right: 4,
+                                  width: 8,
+                                  height: 8,
+                                  bgcolor: 'success.main',
+                                  borderRadius: '50%',
+                                }}
+                              />
+                            )}
+                          </IconButton>
+                        </Tooltip>
+                      )}
                     </Box>
                   </Grid>
                 </Grid>
@@ -381,6 +411,13 @@ export default function InfoBarSettings({ settings }) {
         open={translationDialog}
         onClose={() => setTranslationDialog(false)}
       />
+      {isLerent && (
+        <InfoBarHungarianTranslation
+          infoBar={settings?.infoBar}
+          open={hungarianTranslationDialog}
+          onClose={() => setHungarianTranslationDialog(false)}
+        />
+      )}
     </LocalizationProvider>
   )
 } 

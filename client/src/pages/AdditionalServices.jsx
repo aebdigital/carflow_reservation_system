@@ -52,6 +52,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { t } from '../utils/translations';
 import AdditionalServiceForm from '../components/additionalServices/AdditionalServiceForm';
 import ServiceEnglishTranslation from '../components/admin/ServiceEnglishTranslation';
+import ServiceHungarianTranslation from '../components/admin/ServiceHungarianTranslation';
 
 // API endpoints (will be replaced with RTK Query)
 const additionalServicesAPI = {
@@ -120,6 +121,7 @@ function AdditionalServices() {
   const [dialogMode, setDialogMode] = useState('create');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [translationDialog, setTranslationDialog] = useState({ open: false, service: null });
+  const [hungarianTranslationDialog, setHungarianTranslationDialog] = useState({ open: false, service: null });
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -754,6 +756,31 @@ function AdditionalServices() {
                       )}
                     </IconButton>
                   </Tooltip>
+                  {isLeRent && (
+                    <Tooltip title="Magyar fordítás">
+                      <IconButton
+                        size="small"
+                        onClick={() => setHungarianTranslationDialog({ open: true, service })}
+                        color="warning"
+                      >
+                        <LanguageIcon />
+                        {service.nameHu && (
+                          <Box
+                            component="span"
+                            sx={{
+                              position: 'absolute',
+                              top: 2,
+                              right: 2,
+                              width: 6,
+                              height: 6,
+                              bgcolor: 'success.main',
+                              borderRadius: '50%',
+                            }}
+                          />
+                        )}
+                      </IconButton>
+                    </Tooltip>
+                  )}
                   <Tooltip title="Vymazať">
                     <IconButton
                       size="small"
@@ -900,6 +927,15 @@ function AdditionalServices() {
         open={translationDialog.open}
         onClose={() => setTranslationDialog({ open: false, service: null })}
       />
+
+      {/* Hungarian Translation Dialog - LeRent only */}
+      {isLeRent && (
+        <ServiceHungarianTranslation
+          service={hungarianTranslationDialog.service}
+          open={hungarianTranslationDialog.open}
+          onClose={() => setHungarianTranslationDialog({ open: false, service: null })}
+        />
+      )}
     </Box>
   );
 }

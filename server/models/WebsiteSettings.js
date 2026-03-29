@@ -11,6 +11,10 @@ const infoBarSchema = new mongoose.Schema({
     type: String,
     maxLength: [200, 'English info bar text cannot exceed 200 characters']
   },
+  textHu: {
+    type: String,
+    maxLength: [200, 'Hungarian info bar text cannot exceed 200 characters']
+  },
   color: {
     type: String,
     enum: ['red', 'blue', 'green', 'yellow', 'orange', 'purple'],
@@ -59,6 +63,10 @@ const modalSchema = new mongoose.Schema({
     type: String,
     maxLength: [100, 'English modal title cannot exceed 100 characters']
   },
+  titleHu: {
+    type: String,
+    maxLength: [100, 'Hungarian modal title cannot exceed 100 characters']
+  },
   content: {
     type: String,
     required: [true, 'Modal content is required'],
@@ -67,6 +75,10 @@ const modalSchema = new mongoose.Schema({
   contentEn: {
     type: String,
     maxLength: [1000, 'English modal content cannot exceed 1000 characters']
+  },
+  contentHu: {
+    type: String,
+    maxLength: [1000, 'Hungarian modal content cannot exceed 1000 characters']
   },
   type: {
     type: String,
@@ -128,6 +140,10 @@ const modalSchema = new mongoose.Schema({
     type: String,
     default: 'Enter your email'
   },
+  emailPlaceholderHu: {
+    type: String,
+    default: 'Adja meg az e-mail címét'
+  },
   buttonText: {
     type: String,
     default: 'Získať zľavu'
@@ -136,6 +152,10 @@ const modalSchema = new mongoose.Schema({
     type: String,
     default: 'Get Discount'
   },
+  buttonTextHu: {
+    type: String,
+    default: 'Kedvezmény igénylése'
+  },
   secondaryButtonText: {
     type: String,
     default: 'Možno neskôr'
@@ -143,6 +163,10 @@ const modalSchema = new mongoose.Schema({
   secondaryButtonTextEn: {
     type: String,
     default: 'Maybe Later'
+  },
+  secondaryButtonTextHu: {
+    type: String,
+    default: 'Talán később'
   },
   // Discount specific fields
   discountCode: {

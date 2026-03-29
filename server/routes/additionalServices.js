@@ -11,7 +11,8 @@ const {
   getServicesForVehicle,
   calculateServicePrice,
   updateSortOrder,
-  updateAdditionalServiceEnglish
+  updateAdditionalServiceEnglish,
+  updateAdditionalServiceHungarian
 } = require('../controllers/additionalServiceController');
 
 const { protect, requireAdmin, requireStaff } = require('../middleware/authMiddleware');
@@ -156,5 +157,8 @@ router.route('/:id')
 
 // English translation route
 router.put('/:id/english', authorize('admin', 'staff'), updateAdditionalServiceEnglish);
+
+// Hungarian translation route
+router.put('/:id/hungarian', authorize('admin', 'staff'), updateAdditionalServiceHungarian);
 
 module.exports = router; 

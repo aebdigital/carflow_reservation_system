@@ -65,6 +65,7 @@ import {
   useGetCarsQuery
 } from '../../store/store'
 import BannerImageEnglishTranslation from '../admin/BannerImageEnglishTranslation'
+import BannerImageHungarianTranslation from '../admin/BannerImageHungarianTranslation'
 
 const positionOptions = [
   { value: 'hero-section', label: 'Hero sekcia' },
@@ -73,7 +74,7 @@ const positionOptions = [
 ]
 
 // Drag and Drop Image Component
-const DraggableImage = ({ image, index, onRemove, onTranslate, onEdit, onDragStart, onDragOver, onDrop, isEditing, isLeRent }) => {
+const DraggableImage = ({ image, index, onRemove, onTranslate, onTranslateHungarian, onEdit, onDragStart, onDragOver, onDrop, isEditing, isLeRent }) => {
   const [isDragOver, setIsDragOver] = useState(false)
 
   const handleDragStart = (e) => {
@@ -203,6 +204,38 @@ const DraggableImage = ({ image, index, onRemove, onTranslate, onEdit, onDragSta
                 </IconButton>
               </Tooltip>
             )}
+            {isLeRent && (
+              <Tooltip title="Magyar fordítás">
+                <IconButton
+                  size="small"
+                  onClick={() => onTranslateHungarian && onTranslateHungarian(image)}
+                  sx={{
+                    backgroundColor: 'rgba(237, 108, 2, 0.8)',
+                    color: 'white',
+                    position: 'relative',
+                    '&:hover': {
+                      backgroundColor: 'rgba(237, 108, 2, 1)'
+                    }
+                  }}
+                >
+                  <LanguageIcon fontSize="small" />
+                  {(image.altHu || image.titleHu || image.descriptionHu) && (
+                    <Box
+                      component="span"
+                      sx={{
+                        position: 'absolute',
+                        top: 2,
+                        right: 2,
+                        width: 6,
+                        height: 6,
+                        bgcolor: '#4caf50',
+                        borderRadius: '50%',
+                      }}
+                    />
+                  )}
+                </IconButton>
+              </Tooltip>
+            )}
             <IconButton
               size="small"
               onClick={() => onRemove(image._id)}
@@ -247,6 +280,7 @@ export default function BannerSettings() {
   const [imagePreviews, setImagePreviews] = useState([])
   const [alert, setAlert] = useState(null)
   const [translationDialog, setTranslationDialog] = useState({ open: false, image: null, bannerId: null })
+  const [hungarianTranslationDialog, setHungarianTranslationDialog] = useState({ open: false, image: null, bannerId: null })
   const [imageMetadataDialog, setImageMetadataDialog] = useState({ open: false, image: null, index: null })
   const [formData, setFormData] = useState({
     position: 'hero-section',
@@ -410,6 +444,14 @@ export default function BannerSettings() {
       return
     }
     setTranslationDialog({ open: true, image, bannerId: selectedBanner.id })
+  }
+
+  const handleTranslateImageHungarian = (image) => {
+    if (!selectedBanner) {
+      setAlert({ type: 'error', message: 'Uložte banner pred pridaním prekladov.' })
+      return
+    }
+    setHungarianTranslationDialog({ open: true, image, bannerId: selectedBanner.id })
   }
 
   const handleEditImageMetadata = (image, index) => {
@@ -904,6 +946,7 @@ export default function BannerSettings() {
                                   index={index}
                                   onRemove={handleRemoveImage}
                                   onTranslate={handleTranslateImage}
+                                  onTranslateHungarian={handleTranslateImageHungarian}
                                   onEdit={handleEditImageMetadata}
                                   onDragStart={() => {}}
                                   onDragOver={() => {}}
@@ -1027,6 +1070,19 @@ export default function BannerSettings() {
               setAlert({ type: 'success', message: 'Preklad bol úspešne uložený!' })
             }}
           />
+
+          {isLeRentUser && (
+            <BannerImageHungarianTranslation
+              image={hungarianTranslationDialog.image}
+              bannerId={hungarianTranslationDialog.bannerId}
+              open={hungarianTranslationDialog.open}
+              onClose={() => setHungarianTranslationDialog({ open: false, image: null, bannerId: null })}
+              onSuccess={() => {
+                refetch()
+                setAlert({ type: 'success', message: 'Magyar fordítás sikeresen mentve!' })
+              }}
+            />
+          )}
 
           {/* Image Metadata Dialog for LeRent */}
           <Dialog

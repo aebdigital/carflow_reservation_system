@@ -20,6 +20,11 @@ const bannerImageSchema = new mongoose.Schema({
     trim: true,
     maxlength: [200, 'English image alt text cannot exceed 200 characters']
   },
+  altHu: {
+    type: String,
+    trim: true,
+    maxlength: [200, 'Hungarian image alt text cannot exceed 200 characters']
+  },
   title: {
     type: String,
     trim: true,
@@ -30,6 +35,11 @@ const bannerImageSchema = new mongoose.Schema({
     trim: true,
     maxlength: [100, 'English image title cannot exceed 100 characters']
   },
+  titleHu: {
+    type: String,
+    trim: true,
+    maxlength: [100, 'Hungarian image title cannot exceed 100 characters']
+  },
   description: {
     type: String,
     trim: true,
@@ -39,6 +49,11 @@ const bannerImageSchema = new mongoose.Schema({
     type: String,
     trim: true,
     maxlength: [500, 'English image description cannot exceed 500 characters']
+  },
+  descriptionHu: {
+    type: String,
+    trim: true,
+    maxlength: [500, 'Hungarian image description cannot exceed 500 characters']
   },
   carId: {
     type: mongoose.Schema.Types.ObjectId,
