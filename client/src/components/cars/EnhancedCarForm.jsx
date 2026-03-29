@@ -146,10 +146,11 @@ const EnhancedCarForm = ({
 
     // In edit mode, ALWAYS use RTK Query cache as source of truth for existing images
     // This ensures reordered images from backend are immediately reflected
-    // Only use formData.images in create mode
+    // In view mode, use formData.images (already populated from selected car)
+    // Only use formData.images in create mode as well (will be empty)
     const existingImages = (dialogMode === 'edit' && carData?.data?.images)
       ? carData.data.images
-      : (dialogMode === 'create' && formData.images && formData.images.length > 0)
+      : (formData.images && formData.images.length > 0)
         ? formData.images
         : [];
     console.log('📷 [COMBINED] Using existing images:', existingImages.map(img => ({ id: img._id, order: img.order })));
