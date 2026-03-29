@@ -442,7 +442,7 @@ const getPublicBlogsByUser = asyncHandler(async (req, res, next) => {
 
   const blogs = await Blog.find(query)
     .populate('author', 'firstName lastName')
-    .select('title titleEn titleHu slug slugEn slugHu excerpt excerptEn featuredImage category tags publishDate readingTime views likes author seo socialMedia')
+    .select('title titleEn titleHu slug slugEn slugHu excerpt excerptEn excerptHu featuredImage category tags publishDate readingTime views likes author seo socialMedia')
     .sort(sort)
     .skip(startIndex)
     .limit(parseInt(limit));
