@@ -2,6 +2,22 @@ const Blog = require('../models/Blog');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const cloudStorage = require('../services/cloudStorage');
 
+function generateExcerpt(html, maxLength = 300) {
+  const text = (html || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (text.length <= maxLength) return text
+  const trimmed = text.substring(0, maxLength)
+  const lastSpace = trimmed.lastIndexOf(' ')
+  return (lastSpace > 0 ? trimmed.substring(0, lastSpace) : trimmed) + '...'
+}
+
 // ADMIN BLOG MANAGEMENT ENDPOINTS
 
 // @desc    Get all blogs for tenant (admin)
@@ -121,12 +137,17 @@ const createBlog = asyncHandler(async (req, res, next) => {
     });
 
     // Add tenant information to blog data
-    const blogData = { 
+    const blogData = {
       ...req.body,
       tenantId: req.user.tenantId,
       author: req.user._id,
       createdBy: req.user._id,
       lastModifiedBy: req.user._id
+    }
+
+    // Auto-generate excerpt from content
+    if (blogData.content) {
+      blogData.excerpt = generateExcerpt(blogData.content)
     };
 
     // Initialize nested objects if not provided
@@ -215,6 +236,11 @@ const updateBlog = asyncHandler(async (req, res, next) => {
     lastModifiedBy: req.user._id,
     version: existingBlog.version
   };
+
+  // Auto-generate excerpt from content
+  if (req.body.content) {
+    updateData.excerpt = generateExcerpt(req.body.content)
+  }
 
   // If featuredImage is explicitly null, unset it
   if (req.body.featuredImage === null) {
@@ -717,7 +743,10 @@ const updateBlogHungarian = asyncHandler(async (req, res, next) => {
 
   if (titleHu !== undefined) updateData.titleHu = titleHu;
   if (slugHu !== undefined) updateData.slugHu = slugHu;
-  if (contentHu !== undefined) updateData.contentHu = contentHu;
+  if (contentHu !== undefined) {
+    updateData.contentHu = contentHu;
+    updateData.excerptHu = generateExcerpt(contentHu);
+  }
 
   const updatedBlog = await Blog.findByIdAndUpdate(
     req.params.id,
@@ -737,7 +766,7 @@ const updateBlogHungarian = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/blogs/:id/english
 // @access  Private/Staff
 const updateBlogEnglish = asyncHandler(async (req, res, next) => {
-  const { titleEn, slugEn, excerptEn, contentEn } = req.body;
+  const { titleEn, slugEn, contentEn } = req.body;
 
   const blog = await Blog.findOne({
     _id: req.params.id,
@@ -755,8 +784,10 @@ const updateBlogEnglish = asyncHandler(async (req, res, next) => {
 
   if (titleEn !== undefined) updateData.titleEn = titleEn;
   if (slugEn !== undefined) updateData.slugEn = slugEn;
-  if (excerptEn !== undefined) updateData.excerptEn = excerptEn;
-  if (contentEn !== undefined) updateData.contentEn = contentEn;
+  if (contentEn !== undefined) {
+    updateData.contentEn = contentEn;
+    updateData.excerptEn = generateExcerpt(contentEn);
+  }
 
   const updatedBlog = await Blog.findByIdAndUpdate(
     req.params.id,

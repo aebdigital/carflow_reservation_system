@@ -57,6 +57,11 @@ const blogSchema = new mongoose.Schema({
     trim: true,
     maxLength: [500, 'English excerpt cannot exceed 500 characters']
   },
+  excerptHu: {
+    type: String,
+    trim: true,
+    maxLength: [500, 'Hungarian excerpt cannot exceed 500 characters']
+  },
 
   content: {
     type: String,
