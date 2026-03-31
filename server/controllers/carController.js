@@ -1916,7 +1916,10 @@ const getCarAvailability = asyncHandler(async (req, res, next) => {
   }
 
   // Check for overlapping reservations
-  const overlappingReservations = await Reservation.findOverlapping(req.params.id, start, end);
+  // NitraCar: only confirmed/ongoing reservations block a car
+  const isNitraCarTenant = req.user?.email?.toLowerCase() === 'nitra-car@nitra-car.sk';
+  const blockingStatuses = isNitraCarTenant ? ['confirmed', 'ongoing'] : null;
+  const overlappingReservations = await Reservation.findOverlapping(req.params.id, start, end, null, blockingStatuses);
 
   const isAvailable = overlappingReservations.length === 0 && car.isAvailableForBooking();
 

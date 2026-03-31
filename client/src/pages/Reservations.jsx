@@ -401,10 +401,19 @@ function Reservations() {
   // Check if NitraCar user (show filters only for this tenant)
   const isNitraCarUser = auth.user?.email === 'nitra-car@nitra-car.sk'
 
-  // NitraCar: cap "second driver" service at max 5 days (5 × unit price)
-  const getServiceDays = (serviceName, days) => {
+  // NitraCar: cap "Druhý vodič" service total at 24 EUR regardless of days
+  const DRUHÝ_VODIČ_MAX = 24
+  const capServicePrice = (price, serviceName) => {
     if (isNitraCarUser && serviceName && serviceName.toLowerCase().includes('vodič')) {
-      return Math.min(days, 5)
+      return Math.min(price, DRUHÝ_VODIČ_MAX)
+    }
+    return price
+  }
+  // Legacy helper kept for backward compat — now routes through capServicePrice
+  const getServiceDays = (serviceName, days, unitPrice = 0) => {
+    if (isNitraCarUser && serviceName && serviceName.toLowerCase().includes('vodič') && unitPrice > 0) {
+      const maxDays = DRUHÝ_VODIČ_MAX / unitPrice
+      return Math.min(days, maxDays)
     }
     return days
   }
@@ -608,8 +617,8 @@ function Reservations() {
         const servicesTotal = formData.selectedServices?.reduce((sum, s) => {
           const pricingType = s.pricingType || s.pricing?.type || 'fixed'
           const unitPrice = s.unitPrice || s.pricing?.amount || 0
-          const effectiveDays = pricingType === 'per_day' ? getServiceDays(s.name, days) : 1
-          const price = pricingType === 'per_day' ? unitPrice * effectiveDays * (s.quantity || 1) : unitPrice * (s.quantity || 1)
+          const rawPrice = pricingType === 'per_day' ? unitPrice * days * (s.quantity || 1) : unitPrice * (s.quantity || 1)
+          const price = capServicePrice(rawPrice, s.name)
           return sum + price
         }, 0) || 0
 
@@ -634,7 +643,7 @@ function Reservations() {
           quantity: s.quantity || 1,
           unitPrice: s.unitPrice || s.pricing?.amount || 0,
           totalPrice: (s.pricingType === 'per_day' || s.pricing?.type === 'per_day')
-            ? (s.unitPrice || s.pricing?.amount || 0) * getServiceDays(s.name, days) * (s.quantity || 1)
+            ? capServicePrice((s.unitPrice || s.pricing?.amount || 0) * days * (s.quantity || 1), s.name)
             : (s.unitPrice || s.pricing?.amount || 0) * (s.quantity || 1),
           pricingType: s.pricingType || s.pricing?.type || 'fixed'
         })) || []
@@ -1271,8 +1280,8 @@ function Reservations() {
           const amount = service.unitPrice || service.pricing?.amount || 0
 
           if (pricingType === 'per_day') {
-            const effectiveDays = getServiceDays(serviceName, days)
-            return sum + (amount * effectiveDays * quantity)
+            const rawPrice = amount * days * quantity
+            return sum + capServicePrice(rawPrice, serviceName)
           }
           return sum + (amount * quantity)
         }, 0) || 0

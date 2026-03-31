@@ -155,13 +155,17 @@ const getCarsByUser = asyncHandler(async (req, res, next) => {
 
     // Find cars that are available for the specified dates
     const allCars = await Car.find(baseQuery);
-    
+
+    // NitraCar: only confirmed/ongoing reservations block a car (pending/awaiting_payment do not)
+    const isNitraCar = email.toLowerCase() === 'nitra-car@nitra-car.sk';
+    const blockingStatuses = isNitraCar ? ['confirmed', 'ongoing'] : ['pending', 'confirmed', 'ongoing'];
+
     for (const car of allCars) {
       // Check for overlapping reservations
       const overlappingReservations = await Reservation.find({
         car: car._id,
         tenantId: car.tenantId,
-        status: { $in: ['pending', 'confirmed', 'ongoing'] },
+        status: { $in: blockingStatuses },
         $or: [
           {
             startDate: { $lte: start },
@@ -200,14 +204,17 @@ const getCarsByUser = asyncHandler(async (req, res, next) => {
       isActive: true
     };
 
+    const isNitraCarFallback = email.toLowerCase() === 'nitra-car@nitra-car.sk';
+    const fallbackBlockingStatuses = isNitraCarFallback ? ['confirmed', 'ongoing'] : ['pending', 'confirmed', 'ongoing'];
+
     const fallbackCars = await Car.find(fallbackQuery);
     const availableFallbackCars = [];
-    
+
     for (const car of fallbackCars) {
       const overlappingReservations = await Reservation.find({
         car: car._id,
         tenantId: car.tenantId,
-        status: { $in: ['pending', 'confirmed', 'ongoing'] },
+        status: { $in: fallbackBlockingStatuses },
         $or: [
           {
             startDate: { $lte: new Date(startDate) },
