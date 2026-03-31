@@ -141,6 +141,21 @@ class PDFService {
 
         // Flatten the form to prevent further editing
         form.flatten();
+
+        // Add phone number overlay for NitraCar (no form field exists for company phone)
+        if (isNitraCar) {
+          const pages = pdfDoc.getPages();
+          const firstPage = pages[0];
+          const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+          firstPage.drawText('0910 524 554', {
+            x: 295,
+            y: 735,
+            size: 9,
+            font: font,
+            color: rgb(0, 0, 0)
+          });
+          console.log('✅ [NITRA-CAR PDF] Added phone number overlay');
+        }
       } else {
         console.log('ℹ️ [PDF] No form fields found, will use text overlay method');
 
@@ -212,8 +227,8 @@ class PDFService {
     };
 
     const formData = {
-      // Current generation date
-      'date_of_generation': formatDate(new Date()),
+      // Date of rental start
+      'date_of_generation': formatDate(startDate),
 
       // Company fields - leave blank as requested
       'company_name': '',

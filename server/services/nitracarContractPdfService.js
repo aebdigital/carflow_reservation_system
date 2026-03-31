@@ -29,7 +29,7 @@ class NitraCarContractPdfService {
       dic: '',
       email: 'nitra-car@nitra-car.sk',
       website: 'www.nitra-car.sk',
-      phone: '+421 911 123 456'
+      phone: '0910 524 554'
     };
 
     // Brand colors
@@ -176,6 +176,11 @@ class NitraCarContractPdfService {
     doc.fontSize(8).font(this.fontRegular).fillColor(this.colors.light)
       .text(this.formatDate(new Date()), boxX + 12, boxY + 36, { width: boxW - 24, lineBreak: false });
 
+    // Contact info under logo
+    const info = this.companyInfo;
+    doc.fontSize(7.5).font(this.fontRegular).fillColor(this.colors.medium)
+      .text(`${info.email}  |  ${info.website}  |  ${info.phone}`, left, 62, { width: 200, lineBreak: false });
+
     // Title
     doc.y = 90;
     doc.fontSize(16).font(this.fontBold).fillColor(this.colors.dark);
@@ -233,11 +238,6 @@ class NitraCarContractPdfService {
       ['IČO', info.ico],
     ];
     if (info.dic) rows.push(['DIČ', info.dic]);
-    rows.push(
-      ['E-mail', info.email],
-      ['Web', info.website],
-      ['Telefón', info.phone]
-    );
 
     this.drawInfoTable(doc, rows);
     doc.moveDown(0.6);
@@ -452,6 +452,7 @@ class NitraCarContractPdfService {
     y = this.drawBlankField(doc, 'Depozit uhradený:', leftCol, y, colWidth);
     y = this.drawBlankField(doc, 'Stav počítadla v km:', leftCol, y, colWidth);
     y = this.drawBlankField(doc, 'Poškodenia:', leftCol, y, colWidth);
+    y = this.drawBlankField(doc, '', leftCol, y, colWidth);
 
     // Right column
     y = startY;
@@ -459,6 +460,7 @@ class NitraCarContractPdfService {
     y = this.drawBlankField(doc, 'Depozit vrátený:', rightCol, y, colWidth);
     y = this.drawBlankField(doc, 'Stav počítadla v km:', rightCol, y, colWidth);
     y = this.drawBlankField(doc, 'Poškodenia:', rightCol, y, colWidth);
+    y = this.drawBlankField(doc, '', rightCol, y, colWidth);
 
     doc.y = Math.max(doc.y, y + 10);
   }
