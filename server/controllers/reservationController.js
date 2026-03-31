@@ -816,7 +816,9 @@ const updateReservation = asyncHandler(async (req, res, next) => {
   );
 
   // Send email notification if critical fields changed and customer exists
-  if (criticalFieldsChanged && reservation.customer && reservation.customer.email) {
+  // NitraCar: skip edit email entirely
+  const isNitraCarEdit = req.user.email?.toLowerCase() === 'nitra-car@nitra-car.sk';
+  if (!isNitraCarEdit && criticalFieldsChanged && reservation.customer && reservation.customer.email) {
     try {
       const emailService = require('../services/emailService');
       const emailHelpers = require('../utils/emailHelpers');
