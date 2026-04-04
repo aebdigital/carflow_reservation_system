@@ -2804,11 +2804,13 @@ const EnhancedCarForm = ({
                   startIcon={<ImageIcon />}
                   onClick={() => adminPhotoInputRef.current?.click()}
                   disabled={adminPhotoUploading || !carId}
+                  fullWidth={false}
+                  sx={{ minWidth: 0 }}
                 >
                   {adminPhotoUploading ? 'Nahrávam...' : 'Nahrať fotky / súbory'}
                 </Button>
                 {!carId && (
-                  <Typography variant="caption" color="text.secondary" sx={{ ml: 2 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
                     Najprv uložte vozidlo
                   </Typography>
                 )}
@@ -2926,11 +2928,16 @@ const EnhancedCarForm = ({
 
       {/* Lightbox for admin photos */}
       {lightboxPhoto && (
-        <Dialog open onClose={() => setLightboxPhoto(null)} maxWidth={false}>
-          <Box sx={{ position: 'relative', bgcolor: 'black' }}>
+        <Dialog
+          open
+          onClose={() => setLightboxPhoto(null)}
+          maxWidth={false}
+          PaperProps={{ sx: { bgcolor: 'black', m: 1, borderRadius: 1 } }}
+        >
+          <Box sx={{ position: 'relative' }}>
             <IconButton
               onClick={() => setLightboxPhoto(null)}
-              sx={{ position: 'absolute', top: 8, right: 8, color: 'white', zIndex: 1, bgcolor: 'rgba(0,0,0,0.4)', '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' } }}
+              sx={{ position: 'absolute', top: 8, right: 8, color: 'white', zIndex: 1, bgcolor: 'rgba(0,0,0,0.5)', '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' }, p: 1 }}
             >
               <CloseIcon />
             </IconButton>
@@ -2938,7 +2945,7 @@ const EnhancedCarForm = ({
               component="img"
               src={lightboxPhoto.url}
               alt={lightboxPhoto.description}
-              sx={{ display: 'block', maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain' }}
+              sx={{ display: 'block', maxWidth: { xs: '95vw', sm: '90vw' }, maxHeight: { xs: '80vh', sm: '90vh' }, objectFit: 'contain' }}
             />
           </Box>
         </Dialog>
