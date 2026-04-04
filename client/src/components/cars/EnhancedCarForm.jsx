@@ -2834,7 +2834,7 @@ const EnhancedCarForm = ({
                   {adminPhotos.map((photo, index) => {
                     const isPdf = photo.description?.toLowerCase().endsWith('.pdf');
                     const isImage = photo.fileType === 'image' || !photo.fileType;
-                    const handleOpen = () => setLightboxPhoto(photo);
+                    const handleOpen = () => isImage ? setLightboxPhoto(photo) : window.open(photo.url, '_blank', 'noopener,noreferrer');
                     const handleDownload = () => {
                       const a = document.createElement('a');
                       a.href = photo.url;
