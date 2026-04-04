@@ -817,9 +817,10 @@ const EnhancedCarForm = ({
         sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
       >
         <Tab label="Identifikácia" />
+        {isLeRent && <Tab label="Admin fotky" />}
         <Tab label="Technické údaje" />
         <Tab label="Stav vozidla" />
-        <Tab 
+        <Tab
           label={
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <span>Fotodokumentácia</span>
@@ -832,7 +833,6 @@ const EnhancedCarForm = ({
         <Tab label="Štatistiky" />
         <Tab label="Cenník a služby" />
         <Tab label="Výbava a značky" />
-        {isLeRent && <Tab label="Admin fotky" />}
       </Tabs>
 
       {/* Tab 1: Vehicle Identification */}
@@ -1051,7 +1051,7 @@ const EnhancedCarForm = ({
       </TabPanel>
 
       {/* Tab 2: Technical Data */}
-      <TabPanel value={tabValue} index={1}>
+      <TabPanel value={tabValue} index={isLeRent ? 2 : 1}>
         <Grid container spacing={3}>
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom>Palivo a motor</Typography>
@@ -1259,7 +1259,7 @@ const EnhancedCarForm = ({
       </TabPanel>
 
       {/* Tab 3: Vehicle Status */}
-      <TabPanel value={tabValue} index={2}>
+      <TabPanel value={tabValue} index={isLeRent ? 3 : 2}>
         <Grid container spacing={3}>
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom>Stav vozidla</Typography>
@@ -1473,7 +1473,7 @@ const EnhancedCarForm = ({
       </TabPanel>
 
       {/* Tab 4: Photo Documentation */}
-      <TabPanel value={tabValue} index={3}>
+      <TabPanel value={tabValue} index={isLeRent ? 4 : 3}>
         <Box>
           <Typography variant="h6" gutterBottom>Fotodokumentácia</Typography>
 
@@ -1760,7 +1760,7 @@ const EnhancedCarForm = ({
       </TabPanel>
 
       {/* Tab 5: Statistics */}
-      <TabPanel value={tabValue} index={4}>
+      <TabPanel value={tabValue} index={isLeRent ? 5 : 4}>
         <Box>
           <Typography variant="h6" gutterBottom>Štatistiky vozidla</Typography>
           
@@ -1863,7 +1863,7 @@ const EnhancedCarForm = ({
       </TabPanel>
 
       {/* Tab 6: Pricing & Services */}
-      <TabPanel value={tabValue} index={5}>
+      <TabPanel value={tabValue} index={isLeRent ? 6 : 5}>
         <Box>
           <Typography variant="h6" gutterBottom>Cenník a služby</Typography>
           
@@ -2209,7 +2209,7 @@ const EnhancedCarForm = ({
       </TabPanel>
 
       {/* Tab 7: Equipment & Badges */}
-      <TabPanel value={tabValue} index={6}>
+      <TabPanel value={tabValue} index={isLeRent ? 7 : 6}>
         <Box>
           <Typography variant="h6" gutterBottom>Výbava a značky</Typography>
           
@@ -2761,7 +2761,7 @@ const EnhancedCarForm = ({
 
       {/* Tab 8: Admin Photos (LeRent only) */}
       {isLeRent && (
-        <TabPanel value={tabValue} index={7}>
+        <TabPanel value={tabValue} index={1}>
           <Box>
             <Typography variant="h6" gutterBottom>Interné fotky a súbory</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
