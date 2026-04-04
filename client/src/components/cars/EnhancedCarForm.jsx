@@ -50,7 +50,11 @@ import {
   LocalOffer as TagIcon,
   DragIndicator as DragIcon,
   Refresh as RefreshIcon,
-  Image as ImageIcon
+  Image as ImageIcon,
+  OpenInNew as OpenInNewIcon,
+  Download as DownloadIcon,
+  PictureAsPdf as PdfIcon,
+  InsertDriveFile as FileIcon
 } from '@mui/icons-material';
 import DamageModal from './DamageModal';
 import { useGetCarQuery, useGetGlobalEquipmentQuery, useGetBrandsQuery, useCreateBrandMutation, useDeleteBrandMutation, useUploadAdminPhotosMutation, useDeleteAdminPhotoMutation } from '../../store/store';
@@ -2826,49 +2830,92 @@ const EnhancedCarForm = ({
 
               return (
                 <Grid container spacing={2}>
-                  {adminPhotos.map((photo, index) => (
-                    <Grid item xs={12} sm={6} md={4} key={index}>
-                      <Card variant="outlined">
-                        {photo.fileType === 'image' || !photo.fileType ? (
-                          <Box
-                            component="img"
-                            src={photo.url}
-                            alt={photo.description}
-                            sx={{ width: '100%', height: 160, objectFit: 'cover' }}
-                          />
-                        ) : (
-                          <Box sx={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.100' }}>
-                            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', px: 1 }}>
-                              {photo.description}
-                            </Typography>
-                          </Box>
-                        )}
-                        <CardContent sx={{ py: 1, px: 1.5, '&:last-child': { pb: 1 } }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Typography variant="caption" noWrap sx={{ flex: 1, mr: 1 }}>
-                              {photo.description}
-                            </Typography>
-                            {dialogMode !== 'view' && (
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={async () => {
-                                  try {
-                                    await deleteAdminPhoto({ carId, photoIndex: index }).unwrap();
-                                    if (onShowNotification) onShowNotification('Súbor odstránený', 'success');
-                                  } catch {
-                                    if (onShowNotification) onShowNotification('Odstránenie zlyhalo', 'error');
-                                  }
-                                }}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            )}
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
+                  {adminPhotos.map((photo, index) => {
+                    const isPdf = photo.description?.toLowerCase().endsWith('.pdf');
+                    const isImage = photo.fileType === 'image' || !photo.fileType;
+                    const handleOpen = () => window.open(photo.url, '_blank', 'noopener,noreferrer');
+                    const handleDownload = () => {
+                      const a = document.createElement('a');
+                      a.href = photo.url;
+                      a.download = photo.description || 'file';
+                      a.target = '_blank';
+                      a.rel = 'noopener noreferrer';
+                      a.click();
+                    };
+
+                    return (
+                      <Grid item xs={12} sm={6} md={4} key={index}>
+                        <Card variant="outlined">
+                          {isImage ? (
+                            <Box
+                              component="img"
+                              src={photo.url}
+                              alt={photo.description}
+                              onClick={handleOpen}
+                              sx={{ width: '100%', height: 160, objectFit: 'cover', cursor: 'pointer' }}
+                            />
+                          ) : (
+                            <Box
+                              onClick={isPdf ? handleOpen : handleDownload}
+                              sx={{ height: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.100', cursor: 'pointer', '&:hover': { bgcolor: 'grey.200' } }}
+                            >
+                              {isPdf ? <PdfIcon sx={{ fontSize: 48, color: 'error.main', mb: 1 }} /> : <FileIcon sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />}
+                              <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', px: 1 }}>
+                                {isPdf ? 'Otvoriť PDF' : 'Stiahnuť súbor'}
+                              </Typography>
+                            </Box>
+                          )}
+                          <CardContent sx={{ py: 1, px: 1.5, '&:last-child': { pb: 1 } }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <Typography variant="caption" noWrap sx={{ flex: 1, mr: 1 }} title={photo.description}>
+                                {photo.description}
+                              </Typography>
+                              <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
+                                {isPdf ? (
+                                  <Tooltip title="Otvoriť v novej karte">
+                                    <IconButton size="small" onClick={handleOpen}>
+                                      <OpenInNewIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                ) : (
+                                  <Tooltip title="Stiahnuť">
+                                    <IconButton size="small" onClick={handleDownload}>
+                                      <DownloadIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                )}
+                                {isImage && (
+                                  <Tooltip title="Otvoriť v novej karte">
+                                    <IconButton size="small" onClick={handleOpen}>
+                                      <OpenInNewIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                )}
+                                {dialogMode !== 'view' && (
+                                  <Tooltip title="Odstrániť">
+                                    <IconButton
+                                      size="small"
+                                      color="error"
+                                      onClick={async () => {
+                                        try {
+                                          await deleteAdminPhoto({ carId, photoIndex: index }).unwrap();
+                                          if (onShowNotification) onShowNotification('Súbor odstránený', 'success');
+                                        } catch {
+                                          if (onShowNotification) onShowNotification('Odstránenie zlyhalo', 'error');
+                                        }
+                                      }}
+                                    >
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                )}
+                              </Box>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    );
+                  })}
                 </Grid>
               );
             })()}
