@@ -21,7 +21,7 @@ const {
 } = require('../controllers/carController');
 
 const { protect, requireAdmin, requireStaff, addTenantFilter, restrictRivalDomain } = require('../middleware/authMiddleware');
-const { uploadMultipleCarImages, handleMulterError } = require('../middleware/imageUpload');
+const { uploadMultipleCarImages, uploadAdminFiles, handleMulterError } = require('../middleware/imageUpload');
 
 const router = express.Router();
 
@@ -64,7 +64,7 @@ router.put('/:id/english', requireStaff, updateCarEnglish);
 router.put('/:id/hungarian', requireStaff, updateCarHungarian);
 
 // Admin-only photos/files (LeRent only)
-router.post('/:id/admin-photos', requireAdmin, uploadMultipleCarImages, handleMulterError, uploadAdminPhotos);
+router.post('/:id/admin-photos', requireAdmin, uploadAdminFiles, handleMulterError, uploadAdminPhotos);
 router.delete('/:id/admin-photos/:photoIndex', requireAdmin, deleteAdminPhoto);
 
 module.exports = router; 

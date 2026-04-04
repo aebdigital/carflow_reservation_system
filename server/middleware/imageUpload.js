@@ -7,11 +7,28 @@ const storage = multer.memoryStorage();
 // File filter for images only
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-  
+
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
     cb(new AppError('Invalid file type. Only JPEG, PNG, and WebP images are allowed.', 400), false);
+  }
+};
+
+// File filter that allows images + documents (for admin photos)
+const adminFileFilter = (req, file, cb) => {
+  const allowedTypes = [
+    'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  ];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new AppError('Invalid file type. Allowed: images, PDF, Word, Excel.', 400), false);
   }
 };
 
@@ -25,11 +42,23 @@ const upload = multer({
   }
 });
 
+const uploadAdmin = multer({
+  storage: storage,
+  fileFilter: adminFileFilter,
+  limits: {
+    fileSize: 20971520, // 20MB
+    files: 20
+  }
+});
+
 // Middleware for single car image upload
 const uploadSingleCarImage = upload.single('image');
 
 // Middleware for multiple car images upload
 const uploadMultipleCarImages = upload.array('images', parseInt(process.env.MAX_IMAGES_PER_CAR) || 10);
+
+// Middleware for admin photos (images + documents)
+const uploadAdminFiles = uploadAdmin.array('images', 20);
 
 // Error handling middleware for multer
 const handleMulterError = (error, req, res, next) => {
@@ -50,5 +79,6 @@ const handleMulterError = (error, req, res, next) => {
 module.exports = {
   uploadSingleCarImage,
   uploadMultipleCarImages,
+  uploadAdminFiles,
   handleMulterError
 }; 

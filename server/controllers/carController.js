@@ -87,10 +87,10 @@ const getCars = asyncHandler(async (req, res, next) => {
 // @route   GET /api/cars/:id
 // @access  Private
 const getCar = asyncHandler(async (req, res, next) => {
-  const car = await Car.findOne({ 
-    _id: req.params.id, 
-    tenantId: req.user.tenantId 
-  }).select('brand model year color category fuelType drivetrain transmission seats doors trunkVolume engine fuelConsumption mileage mileageLimits description descriptionEn descriptionHu pricing location features images equipment badges status internalId registrationNumber vin documentValidity damages statistics notifications maintenance insurance addons createdAt updatedAt isActive');
+  const car = await Car.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  }).select('brand model year color category fuelType drivetrain transmission seats doors trunkVolume engine fuelConsumption mileage mileageLimits description descriptionEn descriptionHu pricing location features images equipment badges status internalId registrationNumber vin documentValidity damages statistics notifications maintenance insurance addons adminPhotos createdAt updatedAt isActive');
 
   if (!car) {
     return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
