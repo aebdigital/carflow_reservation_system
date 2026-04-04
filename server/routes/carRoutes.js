@@ -15,7 +15,9 @@ const {
   getCarStatus,
   testFileUpload,
   updateCarEnglish,
-  updateCarHungarian
+  updateCarHungarian,
+  uploadAdminPhotos,
+  deleteAdminPhoto
 } = require('../controllers/carController');
 
 const { protect, requireAdmin, requireStaff, addTenantFilter, restrictRivalDomain } = require('../middleware/authMiddleware');
@@ -60,5 +62,9 @@ router.put('/:id/english', requireStaff, updateCarEnglish);
 
 // Hungarian translation endpoint
 router.put('/:id/hungarian', requireStaff, updateCarHungarian);
+
+// Admin-only photos/files (LeRent only)
+router.post('/:id/admin-photos', requireAdmin, uploadMultipleCarImages, handleMulterError, uploadAdminPhotos);
+router.delete('/:id/admin-photos/:photoIndex', requireAdmin, deleteAdminPhoto);
 
 module.exports = router; 

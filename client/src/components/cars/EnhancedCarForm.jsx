@@ -53,7 +53,7 @@ import {
   Image as ImageIcon
 } from '@mui/icons-material';
 import DamageModal from './DamageModal';
-import { useGetCarQuery, useGetGlobalEquipmentQuery, useGetBrandsQuery, useCreateBrandMutation, useDeleteBrandMutation } from '../../store/store';
+import { useGetCarQuery, useGetGlobalEquipmentQuery, useGetBrandsQuery, useCreateBrandMutation, useDeleteBrandMutation, useUploadAdminPhotosMutation, useDeleteAdminPhotoMutation } from '../../store/store';
 
 // Enhanced car form with comprehensive features
 const EnhancedCarForm = ({
@@ -108,6 +108,12 @@ const EnhancedCarForm = ({
   const [deleteBrand] = useDeleteBrandMutation();
 
   const customBrands = brandsData?.data || [];
+
+  // Admin photos state (LeRent only)
+  const [adminPhotoUploading, setAdminPhotoUploading] = useState(false);
+  const [uploadAdminPhotos] = useUploadAdminPhotosMutation();
+  const [deleteAdminPhoto] = useDeleteAdminPhotoMutation();
+  const adminPhotoInputRef = useRef(null);
 
   // Add ref for file input
   const fileInputRef = useRef(null);
@@ -826,6 +832,7 @@ const EnhancedCarForm = ({
         <Tab label="Štatistiky" />
         <Tab label="Cenník a služby" />
         <Tab label="Výbava a značky" />
+        {isLeRent && <Tab label="Admin fotky" />}
       </Tabs>
 
       {/* Tab 1: Vehicle Identification */}
@@ -2751,6 +2758,123 @@ const EnhancedCarForm = ({
           </Grid>
         </Box>
       </TabPanel>
+
+      {/* Tab 8: Admin Photos (LeRent only) */}
+      {isLeRent && (
+        <TabPanel value={tabValue} index={7}>
+          <Box>
+            <Typography variant="h6" gutterBottom>Interné fotky a súbory</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Tieto fotky a súbory sú viditeľné len v administrácii. Zákazníci ich nevidia.
+            </Typography>
+
+            {/* Upload button */}
+            {dialogMode !== 'view' && (
+              <Box sx={{ mb: 3 }}>
+                <input
+                  ref={adminPhotoInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+                  style={{ display: 'none' }}
+                  onChange={async (e) => {
+                    const files = Array.from(e.target.files);
+                    if (!files.length || !carId) return;
+                    setAdminPhotoUploading(true);
+                    try {
+                      const fd = new FormData();
+                      files.forEach(f => fd.append('images', f));
+                      await uploadAdminPhotos({ carId, formData: fd }).unwrap();
+                      if (onShowNotification) onShowNotification('Súbory nahrané', 'success');
+                    } catch (err) {
+                      if (onShowNotification) onShowNotification('Nahrávanie zlyhalo', 'error');
+                    } finally {
+                      setAdminPhotoUploading(false);
+                      e.target.value = '';
+                    }
+                  }}
+                />
+                <Button
+                  variant="outlined"
+                  startIcon={<ImageIcon />}
+                  onClick={() => adminPhotoInputRef.current?.click()}
+                  disabled={adminPhotoUploading || !carId}
+                >
+                  {adminPhotoUploading ? 'Nahrávam...' : 'Nahrať fotky / súbory'}
+                </Button>
+                {!carId && (
+                  <Typography variant="caption" color="text.secondary" sx={{ ml: 2 }}>
+                    Najprv uložte vozidlo
+                  </Typography>
+                )}
+              </Box>
+            )}
+
+            {/* Display existing admin photos */}
+            {(() => {
+              const adminPhotos = (dialogMode === 'edit' && carData?.data?.adminPhotos)
+                ? carData.data.adminPhotos
+                : (formData.adminPhotos || []);
+
+              if (!adminPhotos.length) {
+                return (
+                  <Typography variant="body2" color="text.secondary">
+                    Žiadne interné súbory
+                  </Typography>
+                );
+              }
+
+              return (
+                <Grid container spacing={2}>
+                  {adminPhotos.map((photo, index) => (
+                    <Grid item xs={12} sm={6} md={4} key={index}>
+                      <Card variant="outlined">
+                        {photo.fileType === 'image' || !photo.fileType ? (
+                          <Box
+                            component="img"
+                            src={photo.url}
+                            alt={photo.description}
+                            sx={{ width: '100%', height: 160, objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <Box sx={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.100' }}>
+                            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', px: 1 }}>
+                              {photo.description}
+                            </Typography>
+                          </Box>
+                        )}
+                        <CardContent sx={{ py: 1, px: 1.5, '&:last-child': { pb: 1 } }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Typography variant="caption" noWrap sx={{ flex: 1, mr: 1 }}>
+                              {photo.description}
+                            </Typography>
+                            {dialogMode !== 'view' && (
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={async () => {
+                                  try {
+                                    await deleteAdminPhoto({ carId, photoIndex: index }).unwrap();
+                                    if (onShowNotification) onShowNotification('Súbor odstránený', 'success');
+                                  } catch {
+                                    if (onShowNotification) onShowNotification('Odstránenie zlyhalo', 'error');
+                                  }
+                                }}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            )}
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              );
+            })()}
+          </Box>
+        </TabPanel>
+      )}
 
       {/* Damage Modal */}
       <DamageModal

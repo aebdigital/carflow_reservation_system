@@ -369,6 +369,22 @@ const carSchema = new mongoose.Schema({
     expiryDate: Date,
     description: String
   }],
+
+  // Admin-only photos/files (LeRent only, not exposed via public API)
+  adminPhotos: [{
+    url: String,
+    description: String,
+    filename: String,
+    fileType: {
+      type: String,
+      enum: ['image', 'document'],
+      default: 'image'
+    },
+    uploadDate: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   
   insurance: {
     provider: String,

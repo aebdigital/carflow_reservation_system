@@ -286,6 +286,23 @@ export const api = createApi({
       },
     }),
     
+    // Admin photos endpoints (LeRent only)
+    uploadAdminPhotos: builder.mutation({
+      query: ({ carId, formData }) => ({
+        url: `cars/${carId}/admin-photos`,
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: (result, error, { carId }) => [{ type: 'Car', id: carId }, 'Car'],
+    }),
+    deleteAdminPhoto: builder.mutation({
+      query: ({ carId, photoIndex }) => ({
+        url: `cars/${carId}/admin-photos/${photoIndex}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (result, error, { carId }) => [{ type: 'Car', id: carId }, 'Car'],
+    }),
+
     // Reservation endpoints
     getReservations: builder.query({
       query: (params = {}) => ({
@@ -1212,6 +1229,8 @@ export const {
   useDeleteCarImageMutation,
   useSetPrimaryCarImageMutation,
   useReorderCarImagesMutation,
+  useUploadAdminPhotosMutation,
+  useDeleteAdminPhotoMutation,
   
   // Reservation hooks
   useGetReservationsQuery,

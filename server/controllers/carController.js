@@ -2523,6 +2523,113 @@ const updateCarHungarian = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Upload admin-only photos/files for a car (LeRent only)
+// @route   POST /api/cars/:id/admin-photos
+// @access  Private/Admin
+const uploadAdminPhotos = asyncHandler(async (req, res, next) => {
+  const car = await Car.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
+
+  if (!car) {
+    return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
+  }
+
+  if (!req.files || req.files.length === 0) {
+    return next(new AppError('No files uploaded', 400));
+  }
+
+  const uploadPromises = req.files.map(async (file) => {
+    try {
+      const isImage = file.mimetype.startsWith('image/');
+      let url, filename;
+
+      if (isImage) {
+        const result = await cloudStorage.uploadCarImage(
+          file.buffer,
+          file.originalname,
+          `${car._id.toString()}/admin`,
+          req.user,
+          file.originalname
+        );
+        url = result.urls.medium;
+        filename = result.filename;
+      } else {
+        const result = await cloudStorage.uploadUserFile(
+          file.buffer,
+          file.originalname,
+          req.user,
+          `cars/${car._id.toString()}/admin`
+        );
+        url = result.url;
+        filename = result.filename;
+      }
+
+      return {
+        url,
+        description: file.originalname,
+        filename,
+        fileType: isImage ? 'image' : 'document',
+        uploadDate: new Date()
+      };
+    } catch (error) {
+      console.error(`Failed to upload admin file:`, error);
+      return null;
+    }
+  });
+
+  const uploaded = (await Promise.all(uploadPromises)).filter(f => f !== null);
+
+  if (uploaded.length === 0) {
+    return next(new AppError('All uploads failed', 500));
+  }
+
+  car.adminPhotos = [...(car.adminPhotos || []), ...uploaded];
+  await car.save();
+
+  res.status(200).json({
+    success: true,
+    data: { adminPhotos: car.adminPhotos }
+  });
+});
+
+// @desc    Delete an admin photo/file from a car (LeRent only)
+// @route   DELETE /api/cars/:id/admin-photos/:photoIndex
+// @access  Private/Admin
+const deleteAdminPhoto = asyncHandler(async (req, res, next) => {
+  const car = await Car.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
+
+  if (!car) {
+    return next(new AppError(`Car not found with id of ${req.params.id}`, 404));
+  }
+
+  const photoIndex = parseInt(req.params.photoIndex);
+
+  if (!car.adminPhotos || photoIndex < 0 || photoIndex >= car.adminPhotos.length) {
+    return next(new AppError('Admin photo not found', 404));
+  }
+
+  const photoToDelete = car.adminPhotos[photoIndex];
+
+  try {
+    if (photoToDelete.filename) {
+      await cloudStorage.deleteCarImages(
+        `${car._id.toString()}/admin`,
+        req.user,
+        photoToDelete.filename
+      );
+    }
+  } catch (error) {
+    console.error('Failed to delete admin file from cloud storage:', error);
+  }
+
+  car.adminPhotos.splice(photoIndex, 1);
+  await car.save();
+
+  res.status(200).json({
+    success: true,
+    data: { adminPhotos: car.adminPhotos }
+  });
+});
+
 module.exports = {
   getCars,
   getCar,
@@ -2540,5 +2647,7 @@ module.exports = {
   getCarStatus,
   testFileUpload,
   updateCarEnglish,
-  updateCarHungarian
-}; 
+  updateCarHungarian,
+  uploadAdminPhotos,
+  deleteAdminPhoto
+};
