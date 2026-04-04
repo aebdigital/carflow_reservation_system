@@ -115,6 +115,7 @@ const EnhancedCarForm = ({
 
   // Admin photos state (LeRent only)
   const [adminPhotoUploading, setAdminPhotoUploading] = useState(false);
+  const [lightboxPhoto, setLightboxPhoto] = useState(null);
   const [uploadAdminPhotos] = useUploadAdminPhotosMutation();
   const [deleteAdminPhoto] = useDeleteAdminPhotoMutation();
   const adminPhotoInputRef = useRef(null);
@@ -2833,7 +2834,7 @@ const EnhancedCarForm = ({
                   {adminPhotos.map((photo, index) => {
                     const isPdf = photo.description?.toLowerCase().endsWith('.pdf');
                     const isImage = photo.fileType === 'image' || !photo.fileType;
-                    const handleOpen = () => window.open(photo.url, '_blank', 'noopener,noreferrer');
+                    const handleOpen = () => setLightboxPhoto(photo);
                     const handleDownload = () => {
                       const a = document.createElement('a');
                       a.href = photo.url;
@@ -2885,7 +2886,7 @@ const EnhancedCarForm = ({
                                   </Tooltip>
                                 )}
                                 {isImage && (
-                                  <Tooltip title="Otvoriť v novej karte">
+                                  <Tooltip title="Zobraziť">
                                     <IconButton size="small" onClick={handleOpen}>
                                       <OpenInNewIcon fontSize="small" />
                                     </IconButton>
@@ -2921,6 +2922,26 @@ const EnhancedCarForm = ({
             })()}
           </Box>
         </TabPanel>
+      )}
+
+      {/* Lightbox for admin photos */}
+      {lightboxPhoto && (
+        <Dialog open onClose={() => setLightboxPhoto(null)} maxWidth={false}>
+          <Box sx={{ position: 'relative', bgcolor: 'black' }}>
+            <IconButton
+              onClick={() => setLightboxPhoto(null)}
+              sx={{ position: 'absolute', top: 8, right: 8, color: 'white', zIndex: 1, bgcolor: 'rgba(0,0,0,0.4)', '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' } }}
+            >
+              <CloseIcon />
+            </IconButton>
+            <Box
+              component="img"
+              src={lightboxPhoto.url}
+              alt={lightboxPhoto.description}
+              sx={{ display: 'block', maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain' }}
+            />
+          </Box>
+        </Dialog>
       )}
 
       {/* Damage Modal */}
