@@ -1,2 +1,2 @@
-NITRA-CAR: Vaša rezervácia vozidla {car_brand} {car_model} od {date} do {date_to} je úspešne potvrdená. Tešíme sa na Vás!
-📞 0910 524 554
+RIVAL Autopožičovňa: Vaša rezervácia vozidla {car_brand} {car_model} od {date} do {date_to} je úspešne potvrdená. Tešíme sa na Vás!
+📞 +421 907 633 517

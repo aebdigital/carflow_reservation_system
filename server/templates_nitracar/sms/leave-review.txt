@@ -1,2 +1,2 @@
-NITRA-CAR: Ako sa Vám páčila jazda s {car_brand} {car_model}? Dajte nám krátku spätnú väzbu: {review_link}
+RIVAL Autopožičovňa: Ako sa Vám páčila jazda s {car_brand} {car_model}? Dajte nám krátku spätnú väzbu: {review_link}
 Ďakujeme za Váš čas a dôveru! ⭐
