@@ -419,6 +419,8 @@ class NitraCarContractPdfService {
    * Section VI - Preberaci protokol (Handover Protocol)
    */
   generateSection6_PreberaciProtokol(doc, contractData) {
+    // header(26) + col headers(20) + 5 rows×26(130) = ~176pt
+    this.ensureSpace(doc, 200);
     this.drawSectionHeader(doc, 'VI.', 'Preberací protokol');
 
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
@@ -469,7 +471,7 @@ class NitraCarContractPdfService {
    * Section VII - Podpisy preberacieho protokolu (Handover Signatures)
    */
   generateSection7_PreberaciePodpisy(doc, contractData) {
-    this.ensureSpace(doc, 120);
+    this.ensureSpace(doc, 145);
     doc.moveDown(0.6);
     this.drawSectionHeader(doc, 'VII.', 'Podpisy preberacieho protokolu');
 
@@ -505,7 +507,7 @@ class NitraCarContractPdfService {
    * Notes Section - Poznamky
    */
   generateSectionNotes(doc, contractData) {
-    this.ensureSpace(doc, 120);
+    this.ensureSpace(doc, 165);
     doc.moveDown(0.5);
     this.drawSectionHeader(doc, '', 'Poznámky');
 
@@ -536,7 +538,7 @@ class NitraCarContractPdfService {
    * Section VIII - Podpisy zmluvnych stran (Contract Signatures)
    */
   generateSection8_Podpisy(doc, contractData) {
-    this.ensureSpace(doc, 120);
+    this.ensureSpace(doc, 145);
     doc.moveDown(0.6);
     this.drawSectionHeader(doc, 'VIII.', 'Podpisy zmluvných strán');
 
@@ -572,7 +574,7 @@ class NitraCarContractPdfService {
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const leftCol = doc.page.margins.left;
 
-    this.ensureSpace(doc, 110);
+    this.ensureSpace(doc, 130);
     doc.moveDown(0.8);
 
     // Thin separator
