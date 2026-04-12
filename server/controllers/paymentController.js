@@ -165,8 +165,9 @@ const createCheckoutSession = asyncHandler(async (req, res, next) => {
     console.log('🔍 [STRIPE] Metadata being sent to Stripe:', metadataToSend);
 
     // Create Stripe checkout session with tenant-specific Stripe instance
+    // Omitting payment_method_types lets Stripe use all methods enabled in the Dashboard
+    // (cards, Google Pay, Apple Pay, etc.)
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
       line_items: [
         {
           price_data: {
