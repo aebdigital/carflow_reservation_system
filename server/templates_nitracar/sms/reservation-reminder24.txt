@@ -1,2 +1,2 @@
-RIVAL Autopožičovňa: Nezabudnite, Váš {car_brand} {car_model} na Vás čaká {date} o {time} na mieste {pickup_location}.
+NITRA-CAR: Nezabudnite, Váš {car_brand} {car_model} na Vás čaká {date} o {time} na mieste {pickup_location}.
 Tešíme sa na Vás! 🚗

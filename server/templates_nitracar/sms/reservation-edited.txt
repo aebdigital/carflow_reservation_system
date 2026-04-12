@@ -1,2 +1,2 @@
-RIVAL Autopožičovňa: Zmenili sme termín Vašej rezervácie {car_brand} {car_model}. Nové dátumy: {date} – {date_to}.
-Ak potrebujete upraviť ďalšie detaily, ozvite sa na +421 907 633 517.
+NITRA-CAR: Zmenili sme termín Vašej rezervácie {car_brand} {car_model}. Nové dátumy: {date} – {date_to}.
+Ak potrebujete upraviť ďalšie detaily, ozvite sa na 0910 524 554.
