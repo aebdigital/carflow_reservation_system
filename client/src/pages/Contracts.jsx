@@ -231,6 +231,8 @@ function Contracts() {
         servicesTotal: res.servicesTotal || 0,
       })
       setEditSelectedServices(res.selectedServices || [])
+      setEditPickupFee(res.pricing?.pickupFee || 0)
+      setEditDropoffFee(res.pricing?.dropoffFee || 0)
       setEditCustomerId(res.customer?._id || null)
       setEditCustomerData({
         firstName: res.customer?.firstName || '',
@@ -750,6 +752,18 @@ function Contracts() {
           contractUpdate['customer.idDocumentType'] = editIdDocumentType
           contractUpdate['customer.idNumber'] = editCustomerData.idNumber || ''
           contractUpdate.secondDriver = editSecondDriver
+
+          // Update rental location strings (include custom address when "Iná adresa")
+          const pickupCustomAddress = editReservationData.pickupLocation?.address?.street || ''
+          const dropoffCustomAddress = editReservationData.dropoffLocation?.address?.street || ''
+          const pickupIsCustom = getLocationFee(editReservationData.pickupLocation?.name).isCustom
+          const dropoffIsCustom = getLocationFee(editReservationData.dropoffLocation?.name).isCustom
+          contractUpdate['rental.pickupLocation'] = (pickupIsCustom && pickupCustomAddress)
+            ? pickupCustomAddress
+            : (editReservationData.pickupLocation?.name || 'Neuvedené')
+          contractUpdate['rental.returnLocation'] = (dropoffIsCustom && dropoffCustomAddress)
+            ? dropoffCustomAddress
+            : (editReservationData.dropoffLocation?.name || 'Neuvedené')
         }
         promises.push(updateContract(contractUpdate).unwrap())
       }
@@ -1636,16 +1650,30 @@ function Contracts() {
                       />
                     </Grid>
                     {getLocationFee(editReservationData.pickupLocation?.name).isCustom && (
-                      <Grid item xs={12} md={6}>
-                        <TextField
-                          fullWidth
-                          label="Cena za pristavenie (€)"
-                          type="number"
-                          value={editPickupFee}
-                          onChange={(e) => setEditPickupFee(Number(e.target.value) || 0)}
-                          inputProps={{ min: 0, step: 1 }}
-                        />
-                      </Grid>
+                      <>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="Individuálna adresa prevzatia"
+                            value={editReservationData.pickupLocation?.address?.street || ''}
+                            onChange={(e) => setEditReservationData(prev => ({
+                              ...prev,
+                              pickupLocation: { ...prev.pickupLocation, address: { ...prev.pickupLocation?.address, street: e.target.value } }
+                            }))}
+                            placeholder="Napr. Piaristická 2, Nitra"
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="Cena za pristavenie (€)"
+                            type="number"
+                            value={editPickupFee}
+                            onChange={(e) => setEditPickupFee(Number(e.target.value) || 0)}
+                            inputProps={{ min: 0, step: 1 }}
+                          />
+                        </Grid>
+                      </>
                     )}
                     <Grid item xs={12} md={6}>
                       <Autocomplete
@@ -1672,16 +1700,30 @@ function Contracts() {
                       />
                     </Grid>
                     {getLocationFee(editReservationData.dropoffLocation?.name).isCustom && (
-                      <Grid item xs={12} md={6}>
-                        <TextField
-                          fullWidth
-                          label="Cena za vrátenie (€)"
-                          type="number"
-                          value={editDropoffFee}
-                          onChange={(e) => setEditDropoffFee(Number(e.target.value) || 0)}
-                          inputProps={{ min: 0, step: 1 }}
-                        />
-                      </Grid>
+                      <>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="Individuálna adresa vrátenia"
+                            value={editReservationData.dropoffLocation?.address?.street || ''}
+                            onChange={(e) => setEditReservationData(prev => ({
+                              ...prev,
+                              dropoffLocation: { ...prev.dropoffLocation, address: { ...prev.dropoffLocation?.address, street: e.target.value } }
+                            }))}
+                            placeholder="Napr. Piaristická 2, Nitra"
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="Cena za vrátenie (€)"
+                            type="number"
+                            value={editDropoffFee}
+                            onChange={(e) => setEditDropoffFee(Number(e.target.value) || 0)}
+                            inputProps={{ min: 0, step: 1 }}
+                          />
+                        </Grid>
+                      </>
                     )}
 
                     {/* Status */}

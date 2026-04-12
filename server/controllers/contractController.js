@@ -405,6 +405,42 @@ const generateContractPDF = asyncHandler(async (req, res, next) => {
         liveCustomer = await User.findById(customerId).select('rodneCislo idNumber licenseNumber');
       }
 
+      // Fetch live reservation data for custom addresses and location fees
+      let liveReservation = null;
+      const reservationId = contract.reservation?._id || contract.reservation;
+      if (reservationId) {
+        liveReservation = await Reservation.findById(reservationId)
+          .select('pickupLocation dropoffLocation pricing selectedServices');
+      }
+
+      // Build pickup/dropoff display strings (prefer custom address over preset name)
+      const pickupCustomAddress = liveReservation?.pickupLocation?.address?.street || '';
+      const dropoffCustomAddress = liveReservation?.dropoffLocation?.address?.street || '';
+      const pickupLocationDisplay = pickupCustomAddress || contract.rental?.pickupLocation || 'Neuvedené';
+      const returnLocationDisplay = dropoffCustomAddress || contract.rental?.returnLocation || 'Neuvedené';
+
+      // Build additional services list including location fees if applicable
+      const baseAdditionalServices = contract.additionalServices || [];
+      const locationServices = [];
+      const pickupFee = liveReservation?.pricing?.pickupFee || 0;
+      const dropoffFee = liveReservation?.pricing?.dropoffFee || 0;
+      if (pickupFee > 0) {
+        locationServices.push({ name: 'Pristavenie vozidla', price: pickupFee, quantity: 1 });
+      }
+      if (dropoffFee > 0) {
+        locationServices.push({ name: 'Vrátenie vozidla', price: dropoffFee, quantity: 1 });
+      }
+
+      // Also include selected services from the reservation if not already in contract.additionalServices
+      const reservationServices = (liveReservation?.selectedServices || []).map(s => ({
+        name: s.name || 'Služba',
+        price: s.unitPrice || 0,
+        quantity: s.quantity || 1
+      }));
+      const allAdditionalServices = baseAdditionalServices.length > 0
+        ? [...baseAdditionalServices, ...locationServices]
+        : [...reservationServices, ...locationServices];
+
       // Prepare contract data for NitraCar PDF
       const contractData = {
         contractNumber: contract.contractNumber,
@@ -432,13 +468,13 @@ const generateContractPDF = asyncHandler(async (req, res, next) => {
         rental: {
           startDate: contract.rental?.startDate,
           endDate: contract.rental?.endDate,
-          pickupLocation: contract.rental?.pickupLocation,
-          returnLocation: contract.rental?.returnLocation,
+          pickupLocation: pickupLocationDisplay,
+          returnLocation: returnLocationDisplay,
           totalDays: contract.rental?.totalDays,
           dailyRate: contract.rental?.dailyRate,
           totalAmount: contract.rental?.totalAmount
         },
-        additionalServices: contract.additionalServices || [],
+        additionalServices: allAdditionalServices,
         rentalRules: contract.rentalRules || {},
         paymentMethod: contract.paymentMethod,
         deposit: contract.deposit,
