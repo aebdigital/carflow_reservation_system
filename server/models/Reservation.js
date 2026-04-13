@@ -137,6 +137,10 @@ const reservationSchema = new mongoose.Schema({
     // From booking payload
     calculatedTotal: Number, // Total amount from booking calculation
     servicesTotal: Number, // Total for all additional services
+    // Location delivery/pickup fees (NitraCar)
+    pickupFee: { type: Number, default: 0 },
+    dropoffFee: { type: Number, default: 0 },
+    locationFeesTotal: { type: Number, default: 0 },
     appliedDiscount: {
       discountAmount: Number,
       discountPercentage: Number,

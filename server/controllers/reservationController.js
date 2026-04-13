@@ -776,13 +776,20 @@ const updateReservation = asyncHandler(async (req, res, next) => {
       const days = Math.ceil((newEndDate - newStartDate) / (1000 * 60 * 60 * 24));
       const subtotal = car.calculateRate(days);
       const dailyRate = subtotal / days;
-      const totalAmount = subtotal + (req.body.pricing?.servicesTotal || reservation.pricing?.servicesTotal || 0);
+      const servicesTotal = req.body.pricing?.servicesTotal || reservation.pricing?.servicesTotal || 0;
+      const pickupFee = req.body.pricing?.pickupFee ?? reservation.pricing?.pickupFee ?? 0;
+      const dropoffFee = req.body.pricing?.dropoffFee ?? reservation.pricing?.dropoffFee ?? 0;
+      const locationFeesTotal = pickupFee + dropoffFee;
+      const totalAmount = subtotal + servicesTotal + locationFeesTotal;
 
       req.body.pricing = {
         ...(req.body.pricing || reservation.pricing),
         dailyRate,
         totalDays: days,
         subtotal,
+        pickupFee,
+        dropoffFee,
+        locationFeesTotal,
         totalAmount
       };
     }
