@@ -1868,16 +1868,112 @@ const generateSlovakAgreement = asyncHandler(async (req, res, next) => {
       role: 'admin'
     });
 
-    console.log('🔄 [PDF] Calling pdfService.generateRentalAgreement...');
-    console.log('📧 [PDF] Tenant email for template selection:', tenantAdmin?.email || req.user.email);
+    const tenantEmail = tenantAdmin?.email || req.user.email;
+    const isNitraCar = tenantEmail?.toLowerCase() === 'nitra-car@nitra-car.sk';
 
-    // Generate the PDF using the PDF service - pass tenant email for template selection
-    const pdfBuffer = await pdfService.generateRentalAgreement(
-      reservation,
-      reservation.car,
-      reservation.customer,
-      tenantAdmin?.email || req.user.email
-    );
+    let pdfBuffer;
+
+    if (isNitraCar) {
+      // Use NitraCar dynamic PDF generator (same as Contracts page)
+      const Contract = require('../models/Contract');
+      const nitracarContractPdfService = require('../services/nitracarContractPdfService');
+
+      // Find the associated contract for this reservation
+      const contract = await Contract.findOne({
+        reservation: reservation._id,
+        tenantId: req.user.tenantId
+      }).populate('reservation', 'reservationNumber');
+
+      if (!contract) {
+        return next(new AppError('Zmluva pre túto rezerváciu nebola nájdená. Najprv vytvorte zmluvu.', 404));
+      }
+
+      // Fetch live customer data
+      let liveCustomer = null;
+      if (reservation.customer._id) {
+        liveCustomer = await User.findById(reservation.customer._id).select('rodneCislo idNumber licenseNumber');
+      }
+
+      // Fetch live reservation data for custom addresses and location fees
+      const liveReservation = await Reservation.findById(reservation._id)
+        .select('pickupLocation dropoffLocation pricing selectedServices');
+
+      // Build pickup/dropoff display strings
+      const pickupCustomAddress = liveReservation?.pickupLocation?.address?.street || '';
+      const dropoffCustomAddress = liveReservation?.dropoffLocation?.address?.street || '';
+      const pickupLocationDisplay = pickupCustomAddress || contract.rental?.pickupLocation || 'Neuvedené';
+      const returnLocationDisplay = dropoffCustomAddress || contract.rental?.returnLocation || 'Neuvedené';
+
+      // Build additional services including location fees
+      const baseAdditionalServices = contract.additionalServices || [];
+      const locationServices = [];
+      const pickupFee = liveReservation?.pricing?.pickupFee || 0;
+      const dropoffFee = liveReservation?.pricing?.dropoffFee || 0;
+      if (pickupFee > 0) locationServices.push({ name: 'Pristavenie vozidla', price: pickupFee, quantity: 1 });
+      if (dropoffFee > 0) locationServices.push({ name: 'Vrátenie vozidla', price: dropoffFee, quantity: 1 });
+      const reservationServices = (liveReservation?.selectedServices || []).map(s => ({
+        name: s.name || 'Služba',
+        price: s.unitPrice || 0,
+        quantity: s.quantity || 1
+      }));
+      const allAdditionalServices = baseAdditionalServices.length > 0
+        ? [...baseAdditionalServices, ...locationServices]
+        : [...reservationServices, ...locationServices];
+
+      const contractData = {
+        contractNumber: contract.contractNumber,
+        reservationNumber: reservation.reservationNumber,
+        customer: {
+          firstName: contract.customer?.firstName,
+          lastName: contract.customer?.lastName,
+          phone: contract.customer?.phone,
+          email: contract.customer?.email,
+          address: contract.customer?.address,
+          idDocumentType: contract.customer?.idDocumentType || 'op',
+          idNumber: contract.customer?.idNumber || contract.customerIdentification?.idCardNumber,
+          rodneCislo: contract.customer?.rodneCislo || liveCustomer?.rodneCislo,
+          licenseNumber: contract.customer?.licenseNumber || contract.customerIdentification?.driverLicenseNumber
+        },
+        secondDriver: contract.secondDriver || null,
+        vehicle: {
+          brand: contract.vehicle?.brand,
+          model: contract.vehicle?.model,
+          year: contract.vehicle?.year,
+          registrationNumber: contract.vehicle?.registrationNumber,
+          vin: contract.vehicle?.vin,
+          color: contract.vehicle?.color
+        },
+        rental: {
+          startDate: contract.rental?.startDate,
+          endDate: contract.rental?.endDate,
+          pickupLocation: pickupLocationDisplay,
+          returnLocation: returnLocationDisplay,
+          totalDays: contract.rental?.totalDays,
+          dailyRate: contract.rental?.dailyRate,
+          totalAmount: contract.rental?.totalAmount
+        },
+        additionalServices: allAdditionalServices,
+        rentalRules: contract.rentalRules || {},
+        paymentMethod: contract.paymentMethod,
+        deposit: contract.deposit,
+        handover: contract.handover || {},
+        return: contract.return || {}
+      };
+
+      pdfBuffer = await nitracarContractPdfService.generateContract(contractData);
+
+    } else {
+      console.log('🔄 [PDF] Calling pdfService.generateRentalAgreement...');
+      console.log('📧 [PDF] Tenant email for template selection:', tenantEmail);
+
+      // Generate the PDF using the template-based PDF service
+      pdfBuffer = await pdfService.generateRentalAgreement(
+        reservation,
+        reservation.car,
+        reservation.customer,
+        tenantEmail
+      );
+    }
 
     console.log('✅ [PDF] PDF buffer generated successfully:', {
       bufferLength: pdfBuffer.length,

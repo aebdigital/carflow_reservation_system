@@ -1711,7 +1711,7 @@ function Reservations() {
                               </IconButton>
                             </Tooltip>
                           )}
-                          <Tooltip title={auth.user?.email === 'lerent@lerent.sk' ? 'Funkcia dočasne nedostupná' : 'Stiahnuť Slovensku zmluvu'}>
+                          <Tooltip title={auth.user?.email === 'lerent@lerent.sk' ? 'Funkcia dočasne nedostupná' : 'Stiahnuť zmluvu'}>
                             <span>
                               <IconButton
                                 size="small"
@@ -1917,7 +1917,7 @@ function Reservations() {
                               <CheckOutIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title={auth.user?.email === 'lerent@lerent.sk' ? 'Funkcia dočasne nedostupná' : 'Stiahnuť Slovensku zmluvu'}>
+                          <Tooltip title={auth.user?.email === 'lerent@lerent.sk' ? 'Funkcia dočasne nedostupná' : 'Stiahnuť zmluvu'}>
                             <span>
                               <IconButton
                                 size="small"
@@ -2166,7 +2166,7 @@ function Reservations() {
                                 </IconButton>
                               </Tooltip>
                           )}
-                          <Tooltip title={auth.user?.email === 'lerent@lerent.sk' ? 'Funkcia dočasne nedostupná' : 'Stiahnuť slovenskú zmluvu'}>
+                          <Tooltip title={auth.user?.email === 'lerent@lerent.sk' ? 'Funkcia dočasne nedostupná' : 'Stiahnuť zmluvu'}>
                             <span>
                               <IconButton
                                 size="small"
@@ -2370,7 +2370,7 @@ function Reservations() {
                               <ViewIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title={auth.user?.email === 'lerent@lerent.sk' ? 'Funkcia dočasne nedostupná' : 'Stiahnuť slovenskú zmluvu'}>
+                          <Tooltip title={auth.user?.email === 'lerent@lerent.sk' ? 'Funkcia dočasne nedostupná' : 'Stiahnuť zmluvu'}>
                             <span>
                               <IconButton
                                 size="small"
