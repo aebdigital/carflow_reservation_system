@@ -6,21 +6,8 @@
     <title>Upomienka platby rezervácie - NITRA-CAR</title>
     <style>
         @media only screen and (max-width: 600px) {
-            .main-table {
-                width: 100% !important;
-            }
-            .payment-box {
-                padding: 15px !important;
-            }
-            .logo-img {
-                max-width: 200px !important;
-            }
-            .footer-social td {
-                width: 50% !important;
-                display: inline-block !important;
-                text-align: center !important;
-                padding: 5px 0 !important;
-            }
+            .main-table { width: 100% !important; }
+            .logo-img { max-width: 200px !important; }
         }
     </style>
 </head>
@@ -36,10 +23,8 @@
         <!-- Title -->
         <tr>
             <td style="padding: 30px 20px 20px 20px; text-align: center;">
-                <div style="width: 60px; height: 60px; background-color: #FF9800; border-radius: 50%; display: inline-block; position: relative; margin-bottom: 15px;">
-                    <span style="color: white; font-size: 30px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">💰</span>
-                </div>
-                <h2 style="color: #666666; font-size: 24px; font-weight: bold; margin: 10px 0 0 0;">UPOMIENKA PLATBY</h2>
+                <p style="font-size: 40px; margin: 0 0 10px 0;">💰</p>
+                <h2 style="color: #666666; font-size: 24px; font-weight: bold; margin: 0;">UPOMIENKA PLATBY</h2>
             </td>
         </tr>
 
@@ -60,7 +45,7 @@
             <td style="padding: 20px;">
                 <table style="width: 100%; border-collapse: collapse; background-color: #f9f9f9; border-left: 4px solid #22D3EE;">
                     <tr>
-                        <td class="payment-box" style="padding: 20px;">
+                        <td style="padding: 20px;">
                             <h3 style="color: #22D3EE; font-size: 18px; margin: 0 0 15px 0;">Detaily rezervácie</h3>
                             <p style="margin: 5px 0; color: #333333;"><strong>Vozidlo:</strong> {{car_brand}} {{car_model}}</p>
                             <p style="margin: 5px 0; color: #333333;"><strong>Dátum vyzdvihnutia:</strong> {{start_date}}</p>
@@ -72,7 +57,7 @@
             </td>
         </tr>
 
-        <!-- Price Total - Fixed €50 -->
+        <!-- Price Total -->
         <tr>
             <td style="padding: 0 20px 20px 20px; text-align: center;">
                 <div style="background-color: #fff3e0; padding: 15px; border-radius: 8px;">
@@ -85,14 +70,14 @@
         <!-- Stripe Payment Button -->
         <tr>
             <td style="padding: 20px; text-align: center;">
-                <table style="width: 100%; max-width: 500px; margin: 0 auto; background: linear-gradient(135deg, #22D3EE 0%, #1BA3C3 100%); border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                <table style="width: 100%; max-width: 500px; margin: 0 auto; background-color: #22D3EE; border-radius: 10px;">
                     <tr>
                         <td style="padding: 25px; text-align: center;">
                             <h3 style="color: #ffffff; font-size: 20px; font-weight: bold; margin: 0 0 10px 0;">💳 Rezervačný poplatok</h3>
                             <p style="color: #ffffff; font-size: 16px; margin: 0 0 20px 0;">
                                 Pre dokončenie rezervácie prosím uhraďte rezervačný poplatok vo výške <strong style="font-size: 24px;">50€</strong>
                             </p>
-                            <a href="{{stripe_payment_url}}" target="_blank" style="display: inline-block; padding: 15px 40px; background-color: #ffffff; color: #22D3EE; text-decoration: none; font-size: 18px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); transition: all 0.3s ease;">
+                            <a href="{{stripe_payment_url}}" target="_blank" style="display: inline-block; padding: 15px 40px; background-color: #ffffff; color: #22D3EE; text-decoration: none; font-size: 18px; font-weight: bold; border-radius: 8px;">
                                 Zaplatiť teraz
                             </a>
                             <p style="color: #ffffff; font-size: 12px; margin: 15px 0 0 0; opacity: 0.9;">
@@ -109,7 +94,7 @@
             <td style="padding: 0 20px 20px 20px;">
                 <div style="background-color: #ffebee; padding: 15px; border-radius: 8px; border-left: 4px solid #ff4444;">
                     <p style="margin: 0; color: #c62828; font-weight: bold; font-size: 14px;">
-                        <span style="font-size: 18px;">⚠️</span> Dôležité
+                        ⚠️ Dôležité
                     </p>
                     <p style="margin: 10px 0 0 0; color: #666666; font-size: 14px;">
                         Bez uhradenia zálohy je Vami vybrané vozidlo naďalej ponúkané ďalším záujemcom a môže sa stať, že už nebude k dispozícii v požadovanom termíne.
@@ -136,7 +121,7 @@
                 <p style="color: white; font-size: 18px; font-weight: bold; margin: 0 0 10px 0;">0910 524 554</p>
                 <p style="color: white; font-size: 16px; margin: 0 0 15px 0;">{{company_email}}</p>
 
-                <table class="footer-social" style="width: 100%; max-width: 400px; margin: 15px auto;">
+                <table style="width: 100%; max-width: 400px; margin: 15px auto;">
                     <tr>
                         <td style="width: 50%; text-align: center; padding: 0 10px;">
                             <a href="{{instagram_url}}" target="_blank" style="text-decoration: none; color: white; display: inline-block;">
