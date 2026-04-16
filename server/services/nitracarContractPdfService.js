@@ -538,8 +538,9 @@ class NitraCarContractPdfService {
    * Section VIII - Podpisy zmluvnych stran (Contract Signatures)
    */
   generateSection8_Podpisy(doc, contractData) {
-    this.ensureSpace(doc, 145);
-    doc.moveDown(0.6);
+    // Reserve space for Section VIII + TermsAcceptance + footer so they stay on the same page
+    this.ensureSpace(doc, 200);
+    doc.moveDown(0.5);
     this.drawSectionHeader(doc, 'VIII.', 'Podpisy zmluvných strán');
 
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
@@ -550,10 +551,10 @@ class NitraCarContractPdfService {
     doc.moveDown(0.3);
 
     // Date and place
-    doc.fontSize(9).font(this.fontRegular).fillColor(this.colors.medium)
+    doc.fontSize(8).font(this.fontRegular).fillColor(this.colors.medium)
       .text(`V Nitre, dňa ${this.formatDate(new Date())}`, leftCol, doc.y, { width: pageWidth, lineBreak: false });
 
-    doc.y += 18;
+    doc.y += 14;
     const y = doc.y;
 
     // Left - Lessor signature
@@ -564,7 +565,7 @@ class NitraCarContractPdfService {
     const tenantName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim();
     this.drawSignatureBlock(doc, 'Nájomca', tenantName, rightCol, y, colWidth);
 
-    doc.y = y + 70;
+    doc.y = y + 60;
   }
 
   /**
@@ -574,29 +575,29 @@ class NitraCarContractPdfService {
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const leftCol = doc.page.margins.left;
 
-    this.ensureSpace(doc, 130);
-    doc.moveDown(0.8);
+    // No ensureSpace here — Section VIII already reserved combined space
+    doc.moveDown(0.4);
 
     // Thin separator
     doc.moveTo(leftCol + pageWidth * 0.2, doc.y)
       .lineTo(leftCol + pageWidth * 0.8, doc.y)
       .strokeColor(this.colors.border).lineWidth(0.5).stroke();
 
-    doc.y += 8;
+    doc.y += 5;
 
     // QR code
     if (fs.existsSync(this.qrCodePath)) {
       try {
-        const qrSize = 60;
+        const qrSize = 42;
         const qrX = leftCol + (pageWidth - qrSize) / 2;
         doc.image(this.qrCodePath, qrX, doc.y, { width: qrSize });
-        doc.y += qrSize + 6;
+        doc.y += qrSize + 4;
       } catch (e) {
         console.log('[NITRACAR PDF] Could not load QR code:', e.message);
       }
     }
 
-    doc.fontSize(7.5).font(this.fontRegular).fillColor(this.colors.light);
+    doc.fontSize(7).font(this.fontRegular).fillColor(this.colors.light);
     doc.text(
       'Svojím podpisom nájomca potvrdzuje, že sa oboznámil s Podmienkami nájmu (dostupné po naskenovaní QR kódu) a súhlasí s nimi.',
       leftCol,
@@ -612,7 +613,7 @@ class NitraCarContractPdfService {
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const left = doc.page.margins.left;
 
-    doc.y += 8;
+    doc.y += 5;
     doc.fontSize(7).font(this.fontRegular).fillColor(this.colors.light)
       .text(
         `${this.companyInfo.name}  |  ${this.companyInfo.email}  |  ${this.companyInfo.website}`,
