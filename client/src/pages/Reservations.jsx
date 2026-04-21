@@ -1600,6 +1600,25 @@ function Reservations() {
                                 </IconButton>
                               </Tooltip>
                           )}
+                          {(auth.user?.email?.includes('nitra-car') || auth.user?.email?.includes('nitracar')) &&
+                            (reservation.status === 'pending' || reservation.status === 'awaiting_payment') && (
+                              <Tooltip title="Poslať upomienku platby">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => {
+                                    console.log('Payment notification clicked for:', reservation._id);
+                                    handleSendPaymentNotification(reservation);
+                                  }}
+                                  color="warning"
+                                  sx={{
+                                    backgroundColor: 'warning.light',
+                                    '&:hover': { backgroundColor: 'warning.main' }
+                                  }}
+                                >
+                                  <EmailIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                          )}
                           {reservation.status === 'confirmed' && (
                             <>
                               {console.log(`[DEBUG] Showing payment buttons for reservation ${reservation.reservationNumber} with status: ${reservation.status}`)}

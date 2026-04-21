@@ -2180,12 +2180,18 @@ const sendPaymentNotification = asyncHandler(async (req, res, next) => {
     return next(new AppError(`Rezervácia s ID ${req.params.id} nebola nájdená`, 404));
   }
 
-  if (reservation.status !== 'confirmed') {
-    return next(new AppError('Upomienka platby sa môže poslať len pre potvrdené rezervácie', 400));
-  }
+  const isNitraCar = req.user.email?.toLowerCase() === 'nitra-car@nitra-car.sk';
 
   if (reservation.status === 'zaplatene') {
     return next(new AppError('Rezervácia je už zaplatená', 400));
+  }
+
+  if (!isNitraCar && reservation.status !== 'confirmed') {
+    return next(new AppError('Upomienka platby sa môže poslať len pre potvrdené rezervácie', 400));
+  }
+
+  if (isNitraCar && ['cancelled', 'completed', 'no-show'].includes(reservation.status)) {
+    return next(new AppError('Upomienka platby sa nedá poslať pre túto rezerváciu', 400));
   }
 
   try {
