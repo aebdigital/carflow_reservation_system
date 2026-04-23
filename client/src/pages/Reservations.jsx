@@ -585,7 +585,7 @@ function Reservations() {
     if (!formData.dropoffLocation.name) errors.dropoffLocationName = t('dropoff_location_required')
 
     // Additional validation
-    if (formData.startDate && formData.startDate < new Date()) {
+    if (!isNitraCarUser && formData.startDate && formData.startDate < new Date()) {
       errors.startDate = t('start_date_cannot_be_in_the_past')
     }
 
@@ -3601,7 +3601,7 @@ function Reservations() {
                     }}
                     disabled={dialogMode === 'view' || !formData.car}
                     shouldDisableDate={shouldDisableDate}
-                    minDate={new Date()}
+                    minDate={isNitraCarUser ? undefined : new Date()}
                     slotProps={{
                       textField: {
                         fullWidth: true,
@@ -3660,7 +3660,7 @@ function Reservations() {
                     }}
                     disabled={dialogMode === 'view' || !formData.car}
                     shouldDisableDate={shouldDisableDate}
-                    minDate={formData.startDate || new Date()}
+                    minDate={formData.startDate || (isNitraCarUser ? undefined : new Date())}
                     slotProps={{
                       textField: {
                         fullWidth: true,
