@@ -1024,7 +1024,6 @@ function Contracts() {
                               <PrintIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          {!isNitraCarUser && (
                           <Tooltip title="Vymazať">
                             <IconButton
                               size="small"
@@ -1032,10 +1031,9 @@ function Contracts() {
                               color="error"
                               disabled={contract.status === 'signed'}
                             >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
                           </Tooltip>
-                          )}
                         </Box>
                     </TableCell>
                   </TableRow>
