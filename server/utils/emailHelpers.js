@@ -116,6 +116,11 @@ function getAdminEmailForTenant(user) {
     if (userEmail === 'lerent@lerent.sk') {
       return 'info@lerent.sk';
     }
+
+    // Special case for nitra-car tenant
+    if (userEmail === 'nitra-car@nitra-car.sk') {
+      return 'nitra-car@nitra-car.sk';
+    }
   }
 
   // Default admin email for all other tenants
