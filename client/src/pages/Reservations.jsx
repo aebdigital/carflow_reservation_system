@@ -1720,7 +1720,7 @@ function Reservations() {
                               <CancelIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          {reservation.status === 'cancelled' && (
+                          {(reservation.status === 'cancelled' || reservation.status === 'completed') && (
                             <Tooltip title="Vymazať rezerváciu">
                               <IconButton
                                 size="small"
