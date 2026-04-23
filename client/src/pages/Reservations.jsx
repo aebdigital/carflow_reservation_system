@@ -354,9 +354,10 @@ function Reservations() {
   const [generateSlovakAgreement] = useGenerateReservationSlovakAgreementMutation()
   const [createUser, { isLoading: creatingUser }] = useCreateUserMutation()
 
-  // Fetch availability for next 6 months when car is selected (for calendar disabled dates)
-  const sixMonthsAhead = useMemo(() => {
+  // Fetch availability for +/- 6 months when car is selected (for calendar disabled dates)
+  const availabilityWindow = useMemo(() => {
     const start = new Date()
+    start.setMonth(start.getMonth() - 6)
     const end = new Date()
     end.setMonth(end.getMonth() + 6)
     return { start, end }
@@ -366,8 +367,8 @@ function Reservations() {
     {
       userEmail: auth.user?.email,
       carId: formData.car?._id,
-      startDate: sixMonthsAhead.start.toISOString(),
-      endDate: sixMonthsAhead.end.toISOString(),
+      startDate: availabilityWindow.start.toISOString(),
+      endDate: availabilityWindow.end.toISOString(),
     },
     {
       skip: !auth.user?.email || !formData.car?._id || dialogMode === 'view' || dialogMode === 'edit'
