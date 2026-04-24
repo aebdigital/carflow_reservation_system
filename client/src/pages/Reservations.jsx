@@ -1349,13 +1349,25 @@ function Reservations() {
 
       {/* Filter section for NitraCar user only */}
       {isNitraCarUser && (
-        <Card sx={{ mb: 2, p: 2 }}>
+        <Card sx={{
+          mb: 2,
+          p: 2,
+          // Prevent iOS Safari input-zoom on tap and align field heights on mobile
+          '& .MuiInputBase-input': {
+            fontSize: { xs: 16, sm: 'inherit' },
+          },
+          '& .MuiInputBase-root': {
+            minHeight: { xs: 44, sm: 'auto' },
+          },
+        }}>
           <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
             Filtre
           </Typography>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} sm={6} md={3}>
               <Autocomplete
+                fullWidth
+                size="small"
                 options={cars}
                 getOptionLabel={(option) => `${option.brand} ${option.model} - ${option.registrationNumber || option.licensePlate || ''}`}
                 value={filterCar}
