@@ -32,7 +32,9 @@ import {
   Tabs,
   Tab,
   IconButton,
-  Tooltip
+  Tooltip,
+  useMediaQuery,
+  useTheme
 } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { TimePicker } from '@mui/x-date-pickers/TimePicker'
@@ -95,7 +97,7 @@ function TabPanel({ children, value, index, ...other }) {
       {...other}
     >
       {value === index && (
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: { xs: 1, sm: 3 } }}>
           {children}
         </Box>
       )}
@@ -205,6 +207,8 @@ function DualScrollbarTableContainer({ children }) {
 }
 
 function Reservations() {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   // Debug: Check authentication state
   const auth = useSelector((state) => state.auth)
   console.log('🔐 [AUTH DEBUG] Current auth state:', {
@@ -1422,7 +1426,13 @@ function Reservations() {
 
       <Card>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
+          <Tabs
+            value={tabValue}
+            onChange={(e, newValue) => setTabValue(newValue)}
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+          >
             <Tab label="Všetky rezervácie" />
             <Tab label={isNitraCarUser ? 'Potvrdené' : 'Aktívne'} />
             <Tab label={isNitraCarUser ? 'Nové / Čakajúce' : 'Čakajúce'} />
@@ -1537,7 +1547,7 @@ function Reservations() {
                         })()}€
                       </TableCell>
                       <TableCell>
-                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', minWidth: 120 }}>
                           <Tooltip title="View">
                             <IconButton
                               size="small"
@@ -2123,7 +2133,7 @@ function Reservations() {
                         })()}€
                       </TableCell>
                       <TableCell>
-                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', minWidth: 120 }}>
                           <Tooltip title="View">
                             <IconButton
                               size="small"
@@ -2472,14 +2482,15 @@ function Reservations() {
       </Card>
 
       {/* Create/Edit Reservation Dialog */}
-      <Dialog 
-        open={openDialog} 
+      <Dialog
+        open={openDialog}
         onClose={handleCloseDialog}
         maxWidth={dialogMode === 'view' ? 'lg' : 'md'}
         fullWidth
+        fullScreen={isMobile}
         scroll={dialogMode === 'view' ? 'body' : 'paper'}
         PaperProps={{
-          sx: dialogMode === 'view' ? { minHeight: '80vh', maxHeight: '90vh' } : {}
+          sx: dialogMode === 'view' && !isMobile ? { minHeight: '80vh', maxHeight: '90vh' } : {}
         }}
       >
         <DialogTitle>
@@ -2510,7 +2521,7 @@ function Reservations() {
                 />
               </Box>
 
-              <Grid container spacing={3} sx={{ pr: 2 }}>
+              <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ pr: { xs: 0, sm: 2 } }}>
                 {/* Customer Information */}
                 <Grid item xs={12} md={6}>
                   <Card variant="outlined">
@@ -4146,6 +4157,7 @@ function Reservations() {
         onClose={handleCloseCustomerDialog}
         maxWidth="md"
         fullWidth
+        fullScreen={isMobile}
       >
         <DialogTitle>Vytvoriť nového zákazníka</DialogTitle>
         <DialogContent>
