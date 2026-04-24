@@ -16,6 +16,19 @@ const getTenantByUserEmail = async (email) => {
   return user.tenantId;
 };
 
+// Helper: returns reservation statuses that block a car from being booked.
+// For NitraCar, pending reservations do NOT block — the car stays available
+// until the reservation is confirmed.
+const getBlockingStatusesForTenant = async (tenantId) => {
+  const defaultStatuses = ['pending', 'confirmed', 'ongoing'];
+  if (!tenantId) return defaultStatuses;
+  const admin = await User.findOne({ tenantId, role: 'admin' }).select('email');
+  const isNitraCar = admin?.email?.toLowerCase() === 'nitra-car@nitra-car.sk';
+  return isNitraCar ? ['confirmed', 'ongoing'] : defaultStatuses;
+};
+
+const isNitraCarEmail = (email) => (email || '').toLowerCase() === 'nitra-car@nitra-car.sk';
+
 // @desc    Get cars for a specific user/tenant (public) with advanced filtering
 // @route   GET /api/public/users/:email/cars
 // @access  Public
@@ -398,10 +411,14 @@ const getCarAvailabilityByUser = asyncHandler(async (req, res, next) => {
       return next(new AppError('End date must be after start date', 400));
     }
 
+    const availabilityStatuses = isNitraCarEmail(email)
+      ? ['confirmed', 'zaplatene', 'ongoing']
+      : ['pending', 'confirmed', 'zaplatene', 'ongoing'];
+
     const overlappingReservations = await Reservation.find({
       car: carId,
       tenantId,
-      status: { $in: ['pending', 'confirmed', 'zaplatene', 'ongoing'] },
+      status: { $in: availabilityStatuses },
       $or: [
         {
           startDate: { $lte: start },
@@ -683,10 +700,11 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
   }
 
   // Check for overlapping reservations within the same tenant
+  const createBlockingStatuses = await getBlockingStatusesForTenant(tenantId);
   const overlappingReservations = await Reservation.find({
     car: carId,
     tenantId,
-    status: { $in: ['confirmed', 'ongoing', 'pending'] },
+    status: { $in: createBlockingStatuses },
     $or: [
       {
         startDate: { $lte: start },
@@ -1773,10 +1791,11 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
   }
 
   // Check for overlapping reservations within the same tenant
+  const createBlockingStatuses = await getBlockingStatusesForTenant(tenantId);
   const overlappingReservations = await Reservation.find({
     car: carId,
     tenantId,
-    status: { $in: ['confirmed', 'ongoing', 'pending'] },
+    status: { $in: createBlockingStatuses },
     $or: [
       {
         startDate: { $lte: start },
@@ -3150,13 +3169,22 @@ const getPublicCars = asyncHandler(async (req, res, next) => {
 
     // Find cars that are available for the specified dates
     const allCars = await Car.find(baseQuery);
-    
+
+    // Cache blocking statuses per tenant to avoid N+1 lookups
+    const publicCarsBlockingCache = new Map();
+    const getBlockingForCar = async (tId) => {
+      if (!publicCarsBlockingCache.has(String(tId))) {
+        publicCarsBlockingCache.set(String(tId), await getBlockingStatusesForTenant(tId));
+      }
+      return publicCarsBlockingCache.get(String(tId));
+    };
+
     for (const car of allCars) {
       // Check for overlapping reservations
       const overlappingReservations = await Reservation.find({
         car: car._id,
         tenantId: car.tenantId,
-        status: { $in: ['pending', 'confirmed', 'ongoing'] },
+        status: { $in: await getBlockingForCar(car.tenantId) },
         $or: [
           {
             startDate: { $lte: start },
@@ -3200,12 +3228,20 @@ const getPublicCars = asyncHandler(async (req, res, next) => {
 
     const fallbackCars = await Car.find(fallbackQuery);
     const availableFallbackCars = [];
-    
+
+    const publicCarsFallbackCache = new Map();
+    const getBlockingForFallbackCar = async (tId) => {
+      if (!publicCarsFallbackCache.has(String(tId))) {
+        publicCarsFallbackCache.set(String(tId), await getBlockingStatusesForTenant(tId));
+      }
+      return publicCarsFallbackCache.get(String(tId));
+    };
+
     for (const car of fallbackCars) {
       const overlappingReservations = await Reservation.find({
         car: car._id,
         tenantId: car.tenantId,
-        status: { $in: ['pending', 'confirmed', 'ongoing'] },
+        status: { $in: await getBlockingForFallbackCar(car.tenantId) },
         $or: [
           {
             startDate: { $lte: new Date(startDate) },
@@ -3803,9 +3839,8 @@ const getCarCalendarByUser = asyncHandler(async (req, res, next) => {
     return next(new AppError('End date must be after start date', 400));
   }
 
-  // Determine which reservation statuses to include
-  const statusesToInclude = ['pending', 'confirmed', 'ongoing'];
-  // Note: Pending reservations are now included by default to prevent double-booking
+  // Determine which reservation statuses to include (NitraCar: pending does not block)
+  const statusesToInclude = await getBlockingStatusesForTenant(tenantId);
 
   // Get all reservations for this car in the date range (tenant-specific)
   const reservations = await Reservation.find({
@@ -3922,9 +3957,8 @@ const getReservedDatesByUser = asyncHandler(async (req, res, next) => {
     });
   }
 
-  // Determine which reservation statuses to include
-  const statusesToInclude = ['pending', 'confirmed', 'ongoing'];
-  // Note: Pending reservations are now included by default to prevent double-booking
+  // Determine which reservation statuses to include (NitraCar: pending does not block)
+  const statusesToInclude = await getBlockingStatusesForTenant(tenantId);
 
   // Get all reservations for these cars in the date range
   const reservations = await Reservation.find({
@@ -4020,9 +4054,8 @@ const getPublicCarCalendar = asyncHandler(async (req, res, next) => {
     return next(new AppError('End date must be after start date', 400));
   }
 
-  // Determine which reservation statuses to include
-  const statusesToInclude = ['pending', 'confirmed', 'ongoing'];
-  // Note: Pending reservations are now included by default to prevent double-booking
+  // Determine which reservation statuses to include (NitraCar: pending does not block)
+  const statusesToInclude = await getBlockingStatusesForTenant(car.tenantId);
 
   // Get all reservations for this car in the date range
   const reservations = await Reservation.find({
@@ -5140,11 +5173,15 @@ const getCarsByBrandByUser = asyncHandler(async (req, res, next) => {
     if (available === 'true' && startDate && endDate) {
       const availableCars = [];
       
+      const carsBlockingStatuses = isNitraCarEmail(email)
+        ? ['confirmed', 'ongoing']
+        : ['pending', 'confirmed', 'ongoing'];
+
       for (const car of cars) {
         const overlappingReservations = await Reservation.find({
           car: car._id,
           tenantId: car.tenantId,
-          status: { $in: ['pending', 'confirmed', 'ongoing'] },
+          status: { $in: carsBlockingStatuses },
           $or: [
             {
               startDate: { $lte: new Date(startDate) },
@@ -5286,11 +5323,15 @@ const getCarsByEquipmentByUser = asyncHandler(async (req, res, next) => {
     if (available === 'true' && startDate && endDate) {
       const availableCars = [];
       
+      const carsBlockingStatuses = isNitraCarEmail(email)
+        ? ['confirmed', 'ongoing']
+        : ['pending', 'confirmed', 'ongoing'];
+
       for (const car of cars) {
         const overlappingReservations = await Reservation.find({
           car: car._id,
           tenantId: car.tenantId,
-          status: { $in: ['pending', 'confirmed', 'ongoing'] },
+          status: { $in: carsBlockingStatuses },
           $or: [
             {
               startDate: { $lte: new Date(startDate) },
@@ -5469,11 +5510,15 @@ const searchCarsByUser = asyncHandler(async (req, res, next) => {
     if (available === 'true' && startDate && endDate) {
       const availableCars = [];
       
+      const carsBlockingStatuses = isNitraCarEmail(email)
+        ? ['confirmed', 'ongoing']
+        : ['pending', 'confirmed', 'ongoing'];
+
       for (const car of cars) {
         const overlappingReservations = await Reservation.find({
           car: car._id,
           tenantId: car.tenantId,
-          status: { $in: ['pending', 'confirmed', 'ongoing'] },
+          status: { $in: carsBlockingStatuses },
           $or: [
             {
               startDate: { $lte: new Date(startDate) },

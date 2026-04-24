@@ -282,13 +282,19 @@ const createReservation = asyncHandler(async (req, res, next) => {
   // Process dates to ensure proper time information
   const { start, end } = processReservationDates(startDate, endDate);
   
+  // NitraCar: pending reservations do not block — car stays available until confirmed
+  const isNitraCarAdmin = req.user.email?.toLowerCase() === 'nitra-car@nitra-car.sk';
+  const overlapBlockingStatuses = isNitraCarAdmin
+    ? ['confirmed', 'ongoing']
+    : ['pending', 'confirmed', 'ongoing'];
+
   const overlappingReservations = await Reservation.find({
     car: car,
     tenantId: req.user.tenantId,
     $or: [
       { startDate: { $lte: end }, endDate: { $gte: start } }
     ],
-    status: { $in: ['pending', 'confirmed', 'ongoing'] }
+    status: { $in: overlapBlockingStatuses }
   });
   
   if (overlappingReservations.length > 0) {
