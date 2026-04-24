@@ -671,9 +671,10 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
 
   // Validate dates - process to ensure proper time information
   const { start, end } = processReservationDates(startDate, endDate);
-  const now = new Date();
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
 
-  if (start < now) {
+  if (start < todayStart) {
     return next(new AppError('Start date cannot be in the past', 400));
   }
 
@@ -1760,9 +1761,10 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
 
   // Validate dates - process to ensure proper time information
   const { start, end } = processReservationDates(startDate, endDate);
-  const now = new Date();
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
 
-  if (start < now) {
+  if (start < todayStart) {
     return next(new AppError('Start date cannot be in the past', 400));
   }
 
