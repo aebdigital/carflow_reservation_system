@@ -16,7 +16,10 @@ const userSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: [true, 'Email is required'],
+    required: function() {
+      // Email is only required for admin/staff accounts; customers may have no email
+      return this.role === 'admin' || this.role === 'staff';
+    },
     lowercase: true,
     trim: true,
     match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email']
@@ -122,8 +125,12 @@ userSchema.index({ role: 1 });
 // Compound index for tenant-based queries
 userSchema.index({ tenantId: 1, role: 1 });
 userSchema.index({ tenantId: 1, isActive: 1 });
-// Compound unique index: email is unique within each tenant
-userSchema.index({ email: 1, tenantId: 1 }, { unique: true });
+// Compound unique index: email is unique within each tenant (only when email is set,
+// since customers may now be created without an email)
+userSchema.index(
+  { email: 1, tenantId: 1 },
+  { unique: true, partialFilterExpression: { email: { $type: 'string' } } }
+);
 // Compound unique index: license number is unique within each tenant (allows same customer across tenants)
 userSchema.index({ licenseNumber: 1, tenantId: 1 }, { unique: true, sparse: true });
 

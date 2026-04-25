@@ -229,8 +229,10 @@ function Customers() {
     
     if (!formData.firstName.trim()) errors.firstName = 'Meno je povinné'
     if (!formData.lastName.trim()) errors.lastName = 'Priezvisko je povinné'
-    if (!formData.email.trim()) errors.email = 'Email je povinný'
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = 'Neplatný email formát'
+    // Email is optional; validate format only when a value is provided
+    if (formData.email.trim() && !/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.email = 'Neplatný email formát'
+    }
     
     // Phone number validation - only check if provided, no format validation
     if (!formData.phone.trim()) {
@@ -806,7 +808,6 @@ function Customers() {
                   disabled={dialogMode === 'view'}
                   error={!!formErrors.email}
                   helperText={formErrors.email}
-                  required
                 />
               </Grid>
               <Grid item xs={12} md={6}>

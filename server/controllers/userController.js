@@ -180,24 +180,31 @@ const createUser = asyncHandler(async (req, res, next) => {
     rodneCislo
   } = req.body;
 
-  // Check if user already exists in this tenant
-  const existingUser = await User.findOne({ 
-    email,
-    tenantId: req.user.tenantId 
-  });
-  if (existingUser) {
-    return next(new AppError('User with this email already exists in this tenant', 400));
+  // Check if user already exists in this tenant (only when email is provided —
+  // customers may be created without an email)
+  if (email) {
+    const existingUser = await User.findOne({
+      email,
+      tenantId: req.user.tenantId
+    });
+    if (existingUser) {
+      return next(new AppError('User with this email already exists in this tenant', 400));
+    }
   }
 
   // Create user data with tenant information
   const userData = {
     firstName,
     lastName,
-    email,
     phone,
     role: role || 'customer',
     tenantId: req.user.tenantId  // Assign to the same tenant as the creator
   };
+
+  // Only include email if provided (customers may have no email)
+  if (email) {
+    userData.email = email;
+  }
 
   // Only add password if provided (required for admin/staff, optional for customers)
   if (password) {

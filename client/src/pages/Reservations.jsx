@@ -811,8 +811,11 @@ function Reservations() {
 
     if (!customerFormData.firstName) errors.firstName = 'First name is required'
     if (!customerFormData.lastName) errors.lastName = 'Last name is required'
-    if (!customerFormData.email) errors.email = 'Email is required'
     if (!customerFormData.phone) errors.phone = 'Phone is required'
+    // Email is optional; validate format only when provided
+    if (customerFormData.email && !/\S+@\S+\.\S+/.test(customerFormData.email)) {
+      errors.email = 'Neplatný email formát'
+    }
     // dateOfBirth, licenseNumber, and licenseExpiry are optional
 
     setCustomerFormErrors(errors)
@@ -4207,7 +4210,6 @@ function Reservations() {
                   onChange={(e) => setCustomerFormData({ ...customerFormData, email: e.target.value })}
                   error={!!customerFormErrors.email}
                   helperText={customerFormErrors.email}
-                  required
                 />
               </Grid>
               <Grid item xs={12} sm={6}>

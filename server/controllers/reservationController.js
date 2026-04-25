@@ -204,28 +204,31 @@ const createReservation = asyncHandler(async (req, res, next) => {
       licenseExpiry
     } = customerDetails;
 
-    // Validate required customer fields
-    if (!firstName || !lastName || !email || !phone || !licenseNumber) {
-      return next(new AppError('Chýbajú povinné polia zákazníka: firstName, lastName, email, phone, licenseNumber', 400));
+    // Validate required customer fields (email is optional)
+    if (!firstName || !lastName || !phone || !licenseNumber) {
+      return next(new AppError('Chýbajú povinné polia zákazníka: firstName, lastName, phone, licenseNumber', 400));
     }
 
-    // Check if customer already exists for this tenant
-    const existingCustomer = await User.findOne({ 
-      email: email.toLowerCase(),
-      tenantId: req.user.tenantId 
-    });
+    // Check if customer already exists for this tenant (only when email is provided)
+    const existingCustomer = email
+      ? await User.findOne({
+          email: email.toLowerCase(),
+          tenantId: req.user.tenantId
+        })
+      : null;
 
     if (existingCustomer) {
       // Use existing customer
       customerDoc = existingCustomer;
     } else {
-      // Check if customer exists in a different tenant
-      const existingGlobalCustomer = await User.findOne({ 
-        email: email.toLowerCase()
-      });
+      // Check if customer exists in a different tenant (license-uniqueness only matters
+      // for cross-tenant matching; we still rely on email when present)
+      const existingGlobalCustomer = email
+        ? await User.findOne({ email: email.toLowerCase() })
+        : null;
 
       let uniqueLicenseNumber = licenseNumber;
-      
+
       if (existingGlobalCustomer) {
         // Create unique license number for cross-tenant customer
         uniqueLicenseNumber = `${licenseNumber}-${req.user.tenantId.toString().slice(-4)}`;
@@ -234,11 +237,10 @@ const createReservation = asyncHandler(async (req, res, next) => {
       // Create new customer
       const bcrypt = require('bcryptjs');
       const salt = await bcrypt.genSalt(10);
-      
-      customerDoc = await User.create({
+
+      const newCustomerData = {
         firstName,
         lastName,
-        email: email.toLowerCase(),
         password: await bcrypt.hash('customer123', salt),
         phone,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
@@ -254,7 +256,12 @@ const createReservation = asyncHandler(async (req, res, next) => {
         role: 'customer',
         isActive: true,
         tenantId: req.user.tenantId
-      });
+      };
+      if (email) {
+        newCustomerData.email = email.toLowerCase();
+      }
+
+      customerDoc = await User.create(newCustomerData);
 
       console.log('🔍 [RESERVATION CONTROLLER] Created new customer:', {
         id: customerDoc._id,

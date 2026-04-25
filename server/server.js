@@ -189,6 +189,14 @@ const connectDB = async () => {
       useUnifiedTopology: true,
     });
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+
+    // Migrate any out-of-date indexes (idempotent, safe to run on every boot)
+    try {
+      const { ensureUserIndexes } = require('./utils/ensureUserIndexes');
+      await ensureUserIndexes();
+    } catch (idxErr) {
+      console.error('⚠️  Index migration failed (server continuing):', idxErr.message);
+    }
   } catch (error) {
     console.error('Database connection error:', error);
     process.exit(1);
