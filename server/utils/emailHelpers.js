@@ -150,7 +150,7 @@ async function sendAdminNotificationEmail(reservation, car, customer, user = nul
     const adminEmail = getAdminEmailForTenant(user);
     console.log('📧 [EMAIL] Admin email for tenant:', adminEmail, '(User:', user?.email || 'No user context', ')');
 
-    const result = await emailService.sendAdminReservationNotification(adminEmail, emailData, user);
+    const result = await emailService.sendAdminReservationNotification(adminEmail, emailData, user, reservation);
 
     console.log('✅ [EMAIL] Admin notification sent successfully to:', adminEmail);
     return { success: true, result };
@@ -187,7 +187,7 @@ async function sendReservationEmails(reservation, car, customer, user = null) {
       const adminEmail = getAdminEmailForTenant(user);
       console.log('📧 [EMAIL] Sending admin notification to:', adminEmail);
       console.log('📧 [EMAIL] Admin email user context:', user ? { email: user.email, tenantId: user.tenantId } : 'No user context');
-      const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData, user);
+      const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData, user, reservation);
       results.push({ type: 'admin', success: true, result: adminResult });
       console.log('✅ [EMAIL] Admin notification sent successfully to:', adminEmail);
     } catch (adminError) {
@@ -195,21 +195,23 @@ async function sendReservationEmails(reservation, car, customer, user = null) {
       results.push({ type: 'admin', success: false, error: adminError.message });
     }
     
-    // Send confirmation email to customer
-    try {
-      // DEBUG: Log all customer data to identify the email issue
-      console.log('📧 [EMAIL] Sending customer confirmation to:', customer.email);
-      console.log('📧 [EMAIL] Customer data full object:', JSON.stringify(customer, null, 2));
-      console.log('📧 [EMAIL] Customer email user context:', user ? { email: user.email, tenantId: user.tenantId } : 'No user context');
-      console.log('📧 [EMAIL] Actual recipient should be:', customer.email, 'NOT admin email');
-      
-      const customerResult = await emailService.sendCustomerReservationConfirmation(customer.email, emailData, user, reservation);
-      results.push({ type: 'customer_email', success: true, result: customerResult });
-      console.log('✅ [EMAIL] Customer confirmation sent successfully to:', customer.email);
-    } catch (customerError) {
-      console.error('❌ [EMAIL] Failed to send customer confirmation:', customerError.message);
-      console.error('❌ [EMAIL] Customer error stack:', customerError.stack);
-      results.push({ type: 'customer_email', success: false, error: customerError.message });
+    // Send confirmation email to customer (unless suppressed at the reservation level)
+    if (reservation?.disableEmails === true) {
+      console.log('📭 [EMAIL] Skipping customer confirmation: reservation has disableEmails=true');
+      results.push({ type: 'customer_email', success: false, skipped: true, error: 'Customer emails disabled for this reservation' });
+    } else {
+      try {
+        console.log('📧 [EMAIL] Sending customer confirmation to:', customer.email);
+        console.log('📧 [EMAIL] Customer email user context:', user ? { email: user.email, tenantId: user.tenantId } : 'No user context');
+
+        const customerResult = await emailService.sendCustomerReservationConfirmation(customer.email, emailData, user, reservation);
+        results.push({ type: 'customer_email', success: true, result: customerResult });
+        console.log('✅ [EMAIL] Customer confirmation sent successfully to:', customer.email);
+      } catch (customerError) {
+        console.error('❌ [EMAIL] Failed to send customer confirmation:', customerError.message);
+        console.error('❌ [EMAIL] Customer error stack:', customerError.stack);
+        results.push({ type: 'customer_email', success: false, error: customerError.message });
+      }
     }
     
     // Send confirmation SMS to customer (ONLY for rival@test.sk tenant)

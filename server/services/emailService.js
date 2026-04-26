@@ -58,57 +58,77 @@ class EmailService {
   }
 
   // Admin reservation notification
-  async sendAdminReservationNotification(adminEmail, reservationData, user = null) {
+  async sendAdminReservationNotification(adminEmail, reservationData, user = null, rawReservation = null) {
     // Use SMTP2GO service which has the correct implementation
-    return await smtp2goService.sendAdminReservationNotification(adminEmail, reservationData, user);
+    return await smtp2goService.sendAdminReservationNotification(adminEmail, reservationData, user, rawReservation);
+  }
+
+  // Reservation-level "do not email this customer" guard.
+  // Returns a skipped result if the reservation has disableEmails=true so the call
+  // is a safe no-op. Manual admin actions (e.g. payment reminder) bypass this by
+  // going through sendTemplatedEmail directly without a rawReservation.
+  _isReservationEmailSuppressed(rawReservation, methodName) {
+    if (rawReservation && rawReservation.disableEmails === true) {
+      console.log(`📭 [EMAIL] Skipping ${methodName} for reservation ${rawReservation.reservationNumber || rawReservation._id}: disableEmails=true`);
+      return { success: false, skipped: true, reason: 'Reservation has disableEmails=true' };
+    }
+    return null;
   }
 
   // Customer reservation confirmation
   async sendCustomerReservationConfirmation(customerEmail, reservationData, user = null, rawReservation = null) {
-    // Use SMTP2GO service which has the correct implementation
+    const suppressed = this._isReservationEmailSuppressed(rawReservation, 'sendCustomerReservationConfirmation');
+    if (suppressed) return suppressed;
     return await smtp2goService.sendCustomerReservationConfirmation(customerEmail, reservationData, user, rawReservation);
   }
 
   // Customer reservation confirmed (after admin approval)
   // skipPaymentInfo: if true, sends email without QR codes/payment links (NitraCar "Potvrdiť bez zálohy")
   async sendCustomerReservationConfirmed(customerEmail, reservationData, user = null, rawReservation = null, attachments = [], skipPaymentInfo = false) {
-    // Use SMTP2GO service which has the correct implementation
+    const suppressed = this._isReservationEmailSuppressed(rawReservation, 'sendCustomerReservationConfirmed');
+    if (suppressed) return suppressed;
     return await smtp2goService.sendCustomerReservationConfirmed(customerEmail, reservationData, user, rawReservation, attachments, skipPaymentInfo);
   }
 
   // Customer deposit email (NitraCar only)
   async sendCustomerDepositEmail(customerEmail, reservationData, user = null, rawReservation = null) {
-    // Use SMTP2GO service which has the correct implementation
+    const suppressed = this._isReservationEmailSuppressed(rawReservation, 'sendCustomerDepositEmail');
+    if (suppressed) return suppressed;
     return await smtp2goService.sendCustomerDepositEmail(customerEmail, reservationData, user, rawReservation);
   }
 
   // Customer reservation edited notification (after admin edits)
   async sendCustomerReservationEdited(customerEmail, reservationData, user = null, rawReservation = null) {
-    // Use SMTP2GO service which has the correct implementation
+    const suppressed = this._isReservationEmailSuppressed(rawReservation, 'sendCustomerReservationEdited');
+    if (suppressed) return suppressed;
     return await smtp2goService.sendCustomerReservationEdited(customerEmail, reservationData, user, rawReservation);
   }
 
   // Customer 24-hour reminder notification (before pickup)
   async sendCustomerReservationReminder24(customerEmail, reservationData, user = null, rawReservation = null) {
-    // Use SMTP2GO service which has the correct implementation
+    const suppressed = this._isReservationEmailSuppressed(rawReservation, 'sendCustomerReservationReminder24');
+    if (suppressed) return suppressed;
     return await smtp2goService.sendCustomerReservationReminder24(customerEmail, reservationData, user, rawReservation);
   }
 
   // Customer 24-hour return reminder notification (before return date)
   async sendCustomerReturnReminder24(customerEmail, reservationData, user = null, rawReservation = null) {
-    // Use SMTP2GO service which has the correct implementation
+    const suppressed = this._isReservationEmailSuppressed(rawReservation, 'sendCustomerReturnReminder24');
+    if (suppressed) return suppressed;
     return await smtp2goService.sendCustomerReturnReminder24(customerEmail, reservationData, user, rawReservation);
   }
 
   // Customer review request (24h after trip ends)
   async sendCustomerReviewRequest(customerEmail, reservationData, user = null, rawReservation = null) {
-    // Use SMTP2GO service which has the correct implementation
+    const suppressed = this._isReservationEmailSuppressed(rawReservation, 'sendCustomerReviewRequest');
+    if (suppressed) return suppressed;
     return await smtp2goService.sendCustomerReviewRequest(customerEmail, reservationData, user, rawReservation);
   }
 
   // Customer cancellation notification
   async sendCustomerCancellationNotification(customerEmail, cancellationData, user = null, rawReservation = null) {
-    // Use SMTP2GO service which has the correct implementation
+    const suppressed = this._isReservationEmailSuppressed(rawReservation, 'sendCustomerCancellationNotification');
+    if (suppressed) return suppressed;
     return await smtp2goService.sendCustomerCancellationNotification(customerEmail, cancellationData, user, rawReservation);
   }
 

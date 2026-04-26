@@ -34,7 +34,9 @@ import {
   IconButton,
   Tooltip,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Switch,
+  FormControlLabel
 } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { TimePicker } from '@mui/x-date-pickers/TimePicker'
@@ -305,6 +307,7 @@ function Reservations() {
     },
     additionalDrivers: [],
     specialRequests: '',
+    disableEmails: false,
     status: 'pending',
     selectedServices: [],
     servicesTotal: 0,
@@ -612,7 +615,8 @@ function Reservations() {
         pickupLocation: formData.pickupLocation,
         dropoffLocation: formData.dropoffLocation,
         additionalDrivers: formData.additionalDrivers || [],
-        specialRequests: formData.specialRequests || ''
+        specialRequests: formData.specialRequests || '',
+        disableEmails: !!formData.disableEmails
       }
 
       // For NitraCar edit mode, include services and recalculated pricing
@@ -734,6 +738,7 @@ function Reservations() {
         },
         additionalDrivers: reservation.additionalDrivers || [],
         specialRequests: reservation.specialRequests || '',
+        disableEmails: !!reservation.disableEmails,
         status: reservation.status,
         pricing: reservation.pricing || {},
         selectedServices: reservation.selectedServices || [],
@@ -4143,6 +4148,20 @@ function Reservations() {
                   value={formData.specialRequests}
                   onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
                   disabled={dialogMode === 'view'}
+                />
+              </Grid>
+
+              {/* Disable customer emails toggle */}
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={!!formData.disableEmails}
+                      onChange={(e) => setFormData({ ...formData, disableEmails: e.target.checked })}
+                      disabled={dialogMode === 'view'}
+                    />
+                  }
+                  label="Vypnúť všetky emaily pre zákazníka (upomienka platby sa stále dá poslať manuálne)"
                 />
               </Grid>
 

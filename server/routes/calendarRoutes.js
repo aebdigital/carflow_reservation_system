@@ -103,6 +103,29 @@ router.get('/ics', async (req, res) => {
         location: reservation.pickupLocation?.name || '',
         url: `https://admindemo.carflow.sk/reservations?id=${reservation._id}`
       });
+
+      // Additional timed event marking the exact end-of-rental hour
+      // (e.g. "Toyota Yaris (BL-123XY) - koniec" at 14:00 if rental ends at 14:00).
+      // Useful at-a-glance reminder in Apple Calendar so the dropoff time isn't
+      // hidden inside the all-day band.
+      const endEventLabel = `${carInfo}${licensePlate ? ` (${licensePlate})` : ''} - koniec`;
+      const endEventStart = new Date(endDate);
+      const endEventEnd = new Date(endDate);
+      endEventEnd.setMinutes(endEventEnd.getMinutes() + 30);
+
+      calendar.createEvent({
+        id: `${reservation._id.toString()}-end`,
+        summary: endEventLabel,
+        description: `Koniec prenajmu: ${customerName}\n${description}`,
+        start: endEventStart,
+        end: endEventEnd,
+        allDay: false,
+        timestamp: reservation.updatedAt || reservation.createdAt,
+        categories: [{ name: 'Koniec prenajmu' }],
+        status: 'CONFIRMED',
+        location: reservation.dropoffLocation?.name || reservation.pickupLocation?.name || '',
+        url: `https://admindemo.carflow.sk/reservations?id=${reservation._id}`
+      });
     }
 
     // Generate ICS content

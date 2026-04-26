@@ -172,7 +172,9 @@ const createReservation = asyncHandler(async (req, res, next) => {
     calculatedTotal,
     extraOptions,
     // Payment type (optional: 'stripe' or 'prevod')
-    paymentType
+    paymentType,
+    // Suppress all automatic customer emails for this reservation when true
+    disableEmails
   } = req.body;
 
   // Validate car exists and is available (tenant-scoped)
@@ -490,6 +492,8 @@ const createReservation = asyncHandler(async (req, res, next) => {
     extendedInsurancePrices: extendedInsurancePrices || {},
     // Payment type (optional: 'stripe' or 'prevod')
     paymentType: paymentType || undefined,
+    // Suppress all automatic customer emails when true
+    disableEmails: disableEmails === true,
     tenantId: req.user.tenantId,
     createdBy: req.user._id
   };
@@ -666,10 +670,15 @@ const createReservation = asyncHandler(async (req, res, next) => {
       const emailData = prepareReservationEmailData(reservation, carDoc, customerDoc);
       const results = [];
 
-      // Send admin notification (without attachment)
+      // Send admin notification (without attachment).
+      // Inline car/customer onto a plain copy so the admin email helper can read
+      // mileageLimits, registration, etc. without an extra populate call.
+      const enrichedReservation = (reservation.toObject ? reservation.toObject() : { ...reservation });
+      enrichedReservation.car = carDoc;
+      enrichedReservation.customer = customerDoc;
       try {
         const adminEmail = getAdminEmailForTenant(req.user);
-        const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData, req.user);
+        const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData, req.user, enrichedReservation);
         results.push({ type: 'admin', success: true, result: adminResult });
         console.log('✅ [EMAIL] Admin notification sent to:', adminEmail);
       } catch (adminError) {
@@ -886,6 +895,8 @@ const cancelReservation = asyncHandler(async (req, res, next) => {
     return next(new AppError('Cannot cancel completed or already cancelled reservation', 400));
   }
 
+  // Capture previous status so the cancellation email can mention any pending payment
+  const previousStatus = reservation.status;
   reservation.status = 'cancelled';
   reservation.cancellation = {
     date: new Date(),
@@ -914,7 +925,11 @@ const cancelReservation = asyncHandler(async (req, res, next) => {
         startDate,
         endDate,
         cancellationDate,
-        reason: reason || null
+        reason: reason || null,
+        // True when the deposit/payment request had already been sent (status before
+        // cancel was awaiting_payment). Used by templates to show a "please ignore
+        // the previous payment email" notice.
+        hadPendingPayment: previousStatus === 'awaiting_payment'
       };
 
       // Use the simple Slovak cancellation email template from emailService, pass raw reservation

@@ -489,13 +489,143 @@ class SMTP2GOService {
   }
 
   // UPDATED: Admin notification email with exact user-provided structure
-  async sendAdminReservationNotification(to, reservationData, user = null) {
-    const subject = `Nova rezervacia #${reservationData.reservationNumber} - ${reservationData.carInfo}`;
-    
-    const html = `<html><body><h2>Nova rezervacia</h2><p>Rezervacia: ${reservationData.reservationNumber}</p><p>Auto: ${reservationData.carInfo}</p><p>Zakaznik: ${reservationData.customerName}</p><p>Email: ${reservationData.customerEmail}</p><p>Cena: ${reservationData.totalPrice}€</p></body></html>`;
-    
-    const text = `Nova rezervacia Rezervacia: ${reservationData.reservationNumber} Auto: ${reservationData.carInfo} Zakaznik: ${reservationData.customerName} Email: ${reservationData.customerEmail} Cena: ${reservationData.totalPrice}€`;
-    
+  async sendAdminReservationNotification(to, reservationData, user = null, rawReservation = null) {
+    const escape = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const fmtDateTime = (d) => d ? new Date(d).toLocaleString('sk-SK', { timeZone: 'Europe/Bratislava', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+    const isNitraCar = (user?.email || '').toLowerCase() === 'nitra-car@nitra-car.sk';
+
+    // Pull the underlying numbers from rawReservation when available, fall back to emailData
+    const startDate = rawReservation?.startDate || reservationData.startDate;
+    const endDate = rawReservation?.endDate || reservationData.endDate;
+    const totalDays = rawReservation?.pricing?.totalDays || reservationData.duration || (startDate && endDate ? Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24))) : 0);
+
+    // Pricing breakdown
+    const rentalSubtotal = Number(rawReservation?.pricing?.subtotal || rawReservation?.pricing?.rentalTotal || reservationData.subtotal || 0);
+    const servicesTotal = Number(rawReservation?.servicesTotal || rawReservation?.pricing?.servicesTotal || 0);
+    const additionalInsurance = rawReservation?.selectedAdditionalInsurance || [];
+    const extendedInsurance = rawReservation?.selectedExtendedInsurance || [];
+    const additionalInsuranceTotal = additionalInsurance.reduce((s, i) => s + Number(i.calculatedPrice || i.totalPrice || 0), 0);
+    const extendedInsuranceTotal = extendedInsurance.reduce((s, i) => s + Number(i.calculatedPrice || i.totalPrice || 0), 0);
+    const totalAmount = Number(rawReservation?.pricing?.totalAmount || reservationData.totalPrice || (rentalSubtotal + servicesTotal + additionalInsuranceTotal + extendedInsuranceTotal));
+    const priceWithoutServices = Number((totalAmount - servicesTotal - additionalInsuranceTotal - extendedInsuranceTotal).toFixed(2));
+
+    // Selected services / insurance lines
+    const selectedServices = rawReservation?.selectedServices || [];
+    const serviceLines = [
+      ...selectedServices.map(s => ({
+        name: s.name || s.serviceName || 'Sluzba',
+        price: Number(s.calculatedPrice || s.totalPrice || s.price || 0).toFixed(2),
+        qty: s.quantity || 1
+      })),
+      ...additionalInsurance.map(i => ({
+        name: `${i.name || 'Pripoistenie'}`,
+        price: Number(i.calculatedPrice || i.totalPrice || 0).toFixed(2),
+        qty: i.quantity || 1
+      })),
+      ...extendedInsurance.map(i => ({
+        name: `${i.name || 'Rozšírené poistenie'}`,
+        price: Number(i.calculatedPrice || i.totalPrice || 0).toFixed(2),
+        qty: i.quantity || 1
+      }))
+    ];
+
+    // Total allowed km = base daily limit * days + any "km" service quantity
+    const carDailyKm = rawReservation?.car?.mileageLimits?.dailyLimit;
+    const reservationKmLimit = rawReservation?.terms?.mileageLimit;
+    const baseKmPerDay = (typeof reservationKmLimit === 'number' && reservationKmLimit > 0)
+      ? reservationKmLimit
+      : (typeof carDailyKm === 'number' && carDailyKm > 0 ? carDailyKm : null);
+    const baseKmTotal = baseKmPerDay ? baseKmPerDay * totalDays : null;
+    const extraKmFromServices = selectedServices
+      .filter(s => /\bkm\b/i.test(s.name || s.serviceName || ''))
+      .reduce((sum, s) => sum + Number(s.quantity || 0), 0);
+    let allowedKmDisplay;
+    if (baseKmTotal === null && extraKmFromServices === 0) {
+      allowedKmDisplay = 'Neobmedzene';
+    } else {
+      const total = (baseKmTotal || 0) + extraKmFromServices;
+      const breakdown = baseKmTotal !== null && extraKmFromServices > 0
+        ? ` (${baseKmTotal} základ + ${extraKmFromServices} extra)`
+        : '';
+      allowedKmDisplay = `${total} km${breakdown}`;
+    }
+
+    // Car details
+    const carBrand = rawReservation?.car?.brand || reservationData.carBrand || '';
+    const carModel = rawReservation?.car?.model || reservationData.carModel || '';
+    const carYear = rawReservation?.car?.year || reservationData.carYear || '';
+    const carRegistration = rawReservation?.car?.registrationNumber || rawReservation?.car?.licensePlate || reservationData.carRegistration || '';
+    const carDisplay = `${carBrand} ${carModel}${carYear ? ' ' + carYear : ''}`.trim();
+
+    // Notes
+    const notes = rawReservation?.specialRequests || rawReservation?.notes || reservationData.specialRequests || '';
+
+    // Reservation IDs
+    const reservationNumber = rawReservation?.reservationNumber || reservationData.reservationNumber || '';
+    const reservationMongoId = rawReservation?._id ? String(rawReservation._id) : '';
+
+    const customerName = reservationData.customerName || (rawReservation?.customer ? `${rawReservation.customer.firstName || ''} ${rawReservation.customer.lastName || ''}`.trim() : '');
+    const customerEmail = reservationData.customerEmail || rawReservation?.customer?.email || '';
+    const customerPhone = reservationData.customerPhone || rawReservation?.customer?.phone || '';
+
+    const subject = `Nova rezervacia #${reservationNumber} - ${carDisplay || reservationData.carInfo || ''}`;
+
+    const row = (label, value) => `<tr><td style="padding:6px 12px;background:#f5f7fa;color:#666;font-size:13px;width:200px;border-bottom:1px solid #e5e7eb;">${escape(label)}</td><td style="padding:6px 12px;color:#111;font-size:14px;font-weight:500;border-bottom:1px solid #e5e7eb;">${value}</td></tr>`;
+
+    const servicesHtml = serviceLines.length
+      ? `<h3 style="margin:24px 0 8px;color:#111;font-size:15px;">Doplnkové služby</h3>
+         <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb;">
+           ${serviceLines.map(s => `<tr><td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;">${escape(s.name)}${s.qty > 1 ? ` × ${s.qty}` : ''}</td><td style="padding:6px 12px;text-align:right;border-bottom:1px solid #f0f0f0;font-weight:600;">${escape(s.price)}€</td></tr>`).join('')}
+         </table>`
+      : `<p style="color:#666;font-size:13px;margin:16px 0 0;">Bez doplnkových služieb.</p>`;
+
+    const html = `<!doctype html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:24px;background:#f5f5f5;font-family:Arial,sans-serif;">
+  <div style="max-width:640px;margin:0 auto;background:#fff;padding:24px;border-radius:8px;">
+    <h2 style="margin:0 0 8px;color:#111;">Nová rezervácia${reservationNumber ? ' #' + escape(reservationNumber) : ''}</h2>
+    <p style="margin:0 0 20px;color:#666;font-size:14px;">${escape(carDisplay)}${carRegistration ? ' (' + escape(carRegistration) + ')' : ''} — ${escape(customerName)}</p>
+
+    <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb;">
+      ${row('Zákazník', escape(customerName))}
+      ${customerEmail ? row('Email', escape(customerEmail)) : ''}
+      ${customerPhone ? row('Telefón', escape(customerPhone)) : ''}
+      ${row('Vozidlo', escape(carDisplay) + (carRegistration ? ` <span style="color:#666;">(${escape(carRegistration)})</span>` : ''))}
+      ${row('Začiatok prenájmu', escape(fmtDateTime(startDate)))}
+      ${row('Koniec prenájmu', escape(fmtDateTime(endDate)))}
+      ${row('Počet dní', escape(totalDays))}
+      ${row('Povolené km (spolu)', escape(allowedKmDisplay))}
+      ${row('Cena bez doplnkových služieb', escape(priceWithoutServices.toFixed(2)) + '€')}
+      ${row('Doplnkové služby spolu', escape((servicesTotal + additionalInsuranceTotal + extendedInsuranceTotal).toFixed(2)) + '€')}
+      <tr><td style="padding:10px 12px;background:#22D3EE;color:#fff;font-size:14px;font-weight:700;">Celková cena</td><td style="padding:10px 12px;background:#22D3EE;color:#fff;font-size:16px;font-weight:700;">${escape(totalAmount.toFixed(2))}€</td></tr>
+    </table>
+
+    ${servicesHtml}
+
+    ${notes ? `<h3 style="margin:24px 0 8px;color:#111;font-size:15px;">Poznámky</h3><div style="padding:12px;background:#fffaf0;border:1px solid #f0e6c8;border-radius:6px;color:#333;white-space:pre-wrap;font-size:14px;">${escape(notes)}</div>` : ''}
+
+    ${isNitraCar && reservationMongoId ? `<p style="margin:24px 0 0;color:#999;font-size:12px;">Reservation ID: <code style="background:#f5f5f5;padding:2px 6px;border-radius:3px;">${escape(reservationMongoId)}</code></p>` : ''}
+  </div>
+</body></html>`;
+
+    const text = [
+      `Nová rezervácia${reservationNumber ? ' #' + reservationNumber : ''}`,
+      `Zákazník: ${customerName}`,
+      customerEmail ? `Email: ${customerEmail}` : null,
+      customerPhone ? `Telefón: ${customerPhone}` : null,
+      `Vozidlo: ${carDisplay}${carRegistration ? ' (' + carRegistration + ')' : ''}`,
+      `Začiatok: ${fmtDateTime(startDate)}`,
+      `Koniec: ${fmtDateTime(endDate)}`,
+      `Počet dní: ${totalDays}`,
+      `Povolené km (spolu): ${allowedKmDisplay}`,
+      `Cena bez doplnkových služieb: ${priceWithoutServices.toFixed(2)}€`,
+      serviceLines.length ? 'Doplnkové služby:' : 'Bez doplnkových služieb.',
+      ...serviceLines.map(s => ` - ${s.name}${s.qty > 1 ? ' × ' + s.qty : ''}: ${s.price}€`),
+      `Celková cena: ${totalAmount.toFixed(2)}€`,
+      notes ? `Poznámky: ${notes}` : null,
+      isNitraCar && reservationMongoId ? `Reservation ID: ${reservationMongoId}` : null
+    ].filter(Boolean).join('\n');
+
     return this.sendEmail(to, subject, html, text, user);
   }
 
@@ -1409,7 +1539,10 @@ class SMTP2GOService {
       company_name: user?.businessName || user?.companyName || 'Autopožičovňa',
       company_email: emailConfig.emailFrom,
       company_phone: user?.phoneNumber || user?.phone || '+421 XXX XXX XXX',
-      link_new: `https://www.pozicauto.sk`
+      link_new: `https://www.pozicauto.sk`,
+      // True when a deposit/payment email had been sent before cancellation —
+      // template can use this to add a "please ignore the prior payment request" note
+      had_pending_payment: cancellationData.hadPendingPayment === true || rawReservation?.status === 'awaiting_payment'
     };
 
     // Get language from reservation for NitraCar (defaults to 'sk')

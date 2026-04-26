@@ -89,6 +89,19 @@
             </td>
         </tr>
 
+        {{#if had_pending_payment}}
+        <!-- Notice: ignore prior payment request -->
+        <tr>
+            <td style="padding: 0 20px 20px 20px;">
+                <div style="background-color: #fff3cd; border-left: 4px solid #ffb300; padding: 15px; border-radius: 6px;">
+                    <p style="color: #5c4500; font-size: 14px; margin: 0; line-height: 1.5;">
+                        ⚠️ Ak ste predtým obdržali email s upomienkou platby alebo žiadosťou o úhradu zálohy, prosím <strong>ignorujte ho</strong>. Táto rezervácia je zrušená a žiadnu platbu už neuhrádzajte.
+                    </p>
+                </div>
+            </td>
+        </tr>
+        {{/if}}
+
         <!-- New Reservation Call-to-Action -->
         <tr>
             <td style="padding: 20px; text-align: center;">

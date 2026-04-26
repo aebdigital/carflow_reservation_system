@@ -1475,7 +1475,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
         // Send admin notification (without attachment)
         try {
           const adminEmail = getAdminEmailForTenant(tenantAdminUser);
-          const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData, tenantAdminUser);
+          const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData, tenantAdminUser, populatedReservation);
           results.push({ type: 'admin', success: true, result: adminResult });
           console.log('✅ [EMAIL] Admin notification sent to:', adminEmail);
         } catch (adminError) {
@@ -2360,7 +2360,7 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
         // Send admin notification (without attachment)
         try {
           const adminEmail = getAdminEmailForTenant(tenantAdminUser);
-          const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData, tenantAdminUser);
+          const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData, tenantAdminUser, populatedReservation);
           results.push({ type: 'admin', success: true, result: adminResult });
           console.log('✅ [EMAIL] Admin notification sent to:', adminEmail);
         } catch (adminError) {

@@ -325,6 +325,15 @@ const reservationSchema = new mongoose.Schema({
   extendedInsurancePrices: mongoose.Schema.Types.Mixed,
   
   specialRequests: String,
+
+  // When true, suppress all automatic customer-facing emails for this reservation
+  // (creation, confirmation, edit, cancellation, reminders, deposit, etc.).
+  // Manually-triggered admin actions like "Send payment reminder" still go through.
+  disableEmails: {
+    type: Boolean,
+    default: false
+  },
+
   terms: {
     mileageLimit: {
       type: Number,
