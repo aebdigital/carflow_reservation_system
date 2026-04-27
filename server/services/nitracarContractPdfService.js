@@ -26,7 +26,7 @@ class NitraCarContractPdfService {
       address: 'Novozámocká 138',
       city: '949 05 Nitra',
       ico: '46 600 400',
-      dic: '',
+      dic: '2023487103',
       email: 'nitra-car@nitra-car.sk',
       website: 'www.nitra-car.sk',
       phone: '0910 524 554'

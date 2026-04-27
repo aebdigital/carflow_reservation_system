@@ -2680,22 +2680,24 @@ const generateNitraCarInvoice = asyncHandler(async (req, res, next) => {
     return res.status(200).json({ success: true, data: buildInvoicePayload(reservation) });
   }
 
-  // Compute next fa### number for this tenant
+  // Compute next sequential invoice number for this tenant. Accept both the
+  // legacy "faNNN" prefix and the current plain "NNN" format so old records
+  // still bump the counter.
   const existing = await Reservation.find({
     tenantId: req.user.tenantId,
-    'invoice.number': { $regex: '^fa', $options: 'i' }
+    'invoice.number': { $exists: true, $ne: null }
   }).select('invoice.number');
 
   let maxSeq = 0;
   for (const r of existing) {
-    const match = String(r.invoice?.number || '').match(/^fa(\d+)$/i);
+    const match = String(r.invoice?.number || '').match(/^(?:fa)?(\d+)$/i);
     if (match) {
       const n = parseInt(match[1], 10);
       if (!isNaN(n) && n > maxSeq) maxSeq = n;
     }
   }
   const nextSeq = maxSeq + 1;
-  const invoiceNumber = `fa${String(nextSeq).padStart(3, '0')}`;
+  const invoiceNumber = String(nextSeq).padStart(3, '0');
 
   // Build customer snapshot
   const cust = reservation.customer || {};
@@ -2790,7 +2792,7 @@ function buildInvoicePayload(reservation) {
       address: 'Novozámocká 138',
       city: '949 05 Nitra',
       ico: '46 600 400',
-      dic: '',
+      dic: '2023487103',
       email: 'nitra-car@nitra-car.sk',
       phone: '0910 524 554',
       website: 'www.nitra-car.sk'
