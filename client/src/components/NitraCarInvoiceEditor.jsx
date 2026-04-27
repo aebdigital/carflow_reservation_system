@@ -11,9 +11,7 @@ import {
   Box,
   Alert,
   Tooltip,
-  CircularProgress,
-  useTheme,
-  useMediaQuery
+  CircularProgress
 } from '@mui/material'
 import {
   Add as AddIcon,
@@ -30,8 +28,6 @@ import { generateNitraCarInvoicePdf, getNitraCarInvoicePdfBlob } from '../utils/
  * edit the line items (name + price) before downloading or persisting.
  */
 export default function NitraCarInvoiceEditor({ open, onClose, reservationId, invoiceData }) {
-  const theme = useTheme()
-  const fullScreen = useMediaQuery(theme.breakpoints.down('md'))
   const [items, setItems] = useState([])
   const [previewUrl, setPreviewUrl] = useState(null)
   const [previewLoading, setPreviewLoading] = useState(false)
@@ -143,7 +139,7 @@ export default function NitraCarInvoiceEditor({ open, onClose, reservationId, in
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth fullScreen={fullScreen}>
+    <Dialog open={open} onClose={onClose} fullScreen>
       <DialogTitle>
         Faktúra {invoiceData?.number || ''}
         {!saved && (
@@ -222,8 +218,8 @@ export default function NitraCarInvoiceEditor({ open, onClose, reservationId, in
             <Box
               sx={{
                 width: '100%',
-                height: { xs: 400, md: 'calc(100vh - 320px)' },
-                minHeight: 400,
+                height: { xs: 500, md: 'calc(100vh - 220px)' },
+                minHeight: 500,
                 border: '1px solid',
                 borderColor: 'divider',
                 borderRadius: 1,
