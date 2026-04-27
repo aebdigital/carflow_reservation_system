@@ -368,6 +368,14 @@ export const api = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [{ type: 'Reservation', id }, 'Reservation'],
     }),
+    updateNitraCarInvoice: builder.mutation({
+      query: ({ id, items }) => ({
+        url: `reservations/${id}/invoice`,
+        method: 'PUT',
+        body: { items },
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Reservation', id }, 'Reservation'],
+    }),
     deleteNitraCarInvoice: builder.mutation({
       query: ({ id }) => ({
         url: `reservations/${id}/invoice`,
@@ -1256,6 +1264,7 @@ export const {
   useSendPaymentNotificationMutation,
   useSendDepositEmailMutation,
   useGenerateNitraCarInvoiceMutation,
+  useUpdateNitraCarInvoiceMutation,
   useDeleteNitraCarInvoiceMutation,
   useSendConfirmationEmailMutation,
   useCreateInvoiceMutation,

@@ -46,10 +46,10 @@ function formatIban(iban) {
 }
 
 /**
- * Generate and download the Slovak invoice PDF for a NitraCar reservation.
- * `data` is the payload returned by the backend `/api/reservations/:id/invoice` endpoint.
+ * Build the jsPDF document for a NitraCar invoice.
+ * Internal helper used by both the download and blob-preview paths.
  */
-export async function generateNitraCarInvoicePdf(data) {
+async function buildInvoiceDoc(data) {
   const { regular, bold } = await loadRobotoFonts()
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
@@ -204,17 +204,16 @@ export async function generateNitraCarInvoicePdf(data) {
   }
   const afterPaymentY = Math.max(payY + 2, qrY + qrSize + 12)
 
-  // ---- Items table (Číslo / Názov / Množstvo / MJ / Cena za MJ / Celkom)
-  const totalDays = data?.reservation?.totalDays || 1
-  const total = Number(data.totalAmount || 0)
-  const unitPrice = totalDays > 0 ? total / totalDays : total
+  // ---- Items table (Č. / Názov / Cena)
+  const items = Array.isArray(data.items) && data.items.length
+    ? data.items
+    : [{ name: data.itemDescription || 'Prenájom motorového vozidla', price: Number(data.totalAmount || 0) }]
+  const total = items.reduce((s, i) => s + (Number(i.price) || 0), 0)
 
   autoTable(doc, {
     startY: afterPaymentY,
-    head: [['Č.', 'Názov', 'Množstvo', 'MJ', 'Cena za MJ', 'Celkom']],
-    body: [
-      ['1', data.itemDescription || 'Prenájom motorového vozidla', String(totalDays), totalDays === 1 ? 'deň' : 'dní', eur(unitPrice), eur(total)]
-    ],
+    head: [['Č.', 'Názov', 'Cena']],
+    body: items.map((it, idx) => [String(idx + 1), it.name || '', eur(it.price)]),
     theme: 'plain',
     styles: {
       font: 'Roboto',
@@ -234,10 +233,7 @@ export async function generateNitraCarInvoicePdf(data) {
     columnStyles: {
       0: { cellWidth: 10, halign: 'left' },
       1: { cellWidth: 'auto' },
-      2: { cellWidth: 22, halign: 'right' },
-      3: { cellWidth: 14, halign: 'left' },
-      4: { cellWidth: 28, halign: 'right' },
-      5: { cellWidth: 30, halign: 'right' }
+      2: { cellWidth: 35, halign: 'right' }
     },
     margin: { left: margin, right: margin }
   })
@@ -333,5 +329,21 @@ export async function generateNitraCarInvoicePdf(data) {
     doc.text(supplier.website, pageWidth - margin, footerY, { align: 'right' })
   }
 
+  return doc
+}
+
+/**
+ * Generate and download the Slovak invoice PDF for a NitraCar reservation.
+ */
+export async function generateNitraCarInvoicePdf(data) {
+  const doc = await buildInvoiceDoc(data)
   doc.save(`${data.number || 'faktura'}.pdf`)
+}
+
+/**
+ * Render the same invoice and return a Blob (used for the in-app preview iframe).
+ */
+export async function getNitraCarInvoicePdfBlob(data) {
+  const doc = await buildInvoiceDoc(data)
+  return doc.output('blob')
 }

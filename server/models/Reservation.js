@@ -335,13 +335,21 @@ const reservationSchema = new mongoose.Schema({
   },
 
   // Slovak invoice issued for this reservation (NitraCar). Snapshot is frozen at
-  // generation time so re-downloads stay identical regardless of later edits.
+  // generation time and editable through the invoice editor (items array).
   invoice: {
-    number: String,            // e.g. "fa001"
+    number: String,            // e.g. "2026001"
     issueDate: Date,
     dueDate: Date,
-    totalAmount: Number,       // EUR
-    itemDescription: String,   // "Prenajom auta od ... do ..."
+    totalAmount: Number,       // EUR — derived from sum(items.price)
+    itemDescription: String,   // legacy single-line description (still kept on first generation)
+    items: {                   // editable line items shown in the invoice table
+      type: [{
+        _id: false,
+        name: { type: String, default: '' },
+        price: { type: Number, default: 0 }
+      }],
+      default: undefined
+    },
     iban: String,
     customerSnapshot: {
       name: String,

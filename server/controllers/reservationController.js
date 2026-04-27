@@ -2733,6 +2733,7 @@ const generateNitraCarInvoice = asyncHandler(async (req, res, next) => {
     dueDate,
     totalAmount,
     itemDescription,
+    items: [{ name: itemDescription, price: totalAmount }],
     iban: NITRACAR_BANK.iban,
     customerSnapshot: {
       name: customerName,
@@ -2745,6 +2746,55 @@ const generateNitraCarInvoice = asyncHandler(async (req, res, next) => {
     generatedBy: req.user._id
   };
 
+  await reservation.save();
+
+  const payload = buildInvoicePayload(reservation);
+  payload.qrDataUrl = await buildPayBySquareQrDataUrl(payload);
+  res.status(200).json({ success: true, data: payload });
+});
+
+// @desc    Update the items on a saved NitraCar invoice
+// @route   PUT /api/reservations/:id/invoice
+// @access  Private/Staff (NitraCar only)
+const updateNitraCarInvoice = asyncHandler(async (req, res, next) => {
+  const isNitraCar = req.user.email?.toLowerCase() === 'nitra-car@nitra-car.sk';
+  if (!isNitraCar) {
+    return next(new AppError('Faktúra je dostupná iba pre NitraCar', 403));
+  }
+
+  const reservation = await Reservation.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  }).populate([
+    { path: 'customer', select: 'firstName lastName email phone address' },
+    { path: 'car', select: 'brand model year registrationNumber' }
+  ]);
+
+  if (!reservation) {
+    return next(new AppError('Rezervácia nebola nájdená', 404));
+  }
+  if (!reservation.invoice || !reservation.invoice.number) {
+    return next(new AppError('Faktúra ešte nebola vygenerovaná', 400));
+  }
+
+  const incoming = Array.isArray(req.body?.items) ? req.body.items : null;
+  if (!incoming) {
+    return next(new AppError('Neplatné dáta — očakáva sa pole "items"', 400));
+  }
+
+  const cleaned = incoming
+    .map(i => ({
+      name: typeof i?.name === 'string' ? i.name.trim() : '',
+      price: Number(i?.price) || 0
+    }))
+    .filter(i => i.name.length > 0 || i.price !== 0);
+
+  if (cleaned.length === 0) {
+    return next(new AppError('Faktúra musí obsahovať aspoň jednu položku', 400));
+  }
+
+  reservation.invoice.items = cleaned;
+  reservation.invoice.totalAmount = cleaned.reduce((s, i) => s + i.price, 0);
   await reservation.save();
 
   const payload = buildInvoicePayload(reservation);
@@ -2827,12 +2877,21 @@ async function buildPayBySquareQrDataUrl(payload) {
 // Helper: shape the response payload the frontend uses to render the PDF
 function buildInvoicePayload(reservation) {
   const inv = reservation.invoice || {};
+  // Derive items from the editable array, falling back to the legacy
+  // itemDescription/totalAmount snapshot if older records lack `items`.
+  let items = Array.isArray(inv.items) && inv.items.length
+    ? inv.items.map(i => ({ name: i.name || '', price: Number(i.price) || 0 }))
+    : [{ name: inv.itemDescription || '', price: Number(inv.totalAmount) || 0 }];
+  const computedTotal = items.reduce((sum, i) => sum + (Number(i.price) || 0), 0);
+
   return {
     number: inv.number,
     issueDate: inv.issueDate,
     dueDate: inv.dueDate,
-    totalAmount: inv.totalAmount,
+    // Always trust sum(items) so edits stay consistent with what's displayed
+    totalAmount: computedTotal,
     itemDescription: inv.itemDescription,
+    items,
     // Always pull current bank info — even for previously-saved invoices,
     // so changing the constant updates display + QR everywhere.
     iban: NITRACAR_BANK.iban,
@@ -2893,5 +2952,6 @@ module.exports = {
   sendDepositEmail,
   sendConfirmationEmail,
   generateNitraCarInvoice,
+  updateNitraCarInvoice,
   deleteNitraCarInvoice
 };

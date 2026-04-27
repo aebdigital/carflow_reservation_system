@@ -91,6 +91,7 @@ import { t } from '../utils/translations'
 import QRCodeDisplay from '../components/QRCodeDisplay'
 import { useSelector } from 'react-redux'
 import { generateNitraCarInvoicePdf } from '../utils/nitraCarInvoicePdf'
+import NitraCarInvoiceEditor from '../components/NitraCarInvoiceEditor'
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -360,6 +361,9 @@ function Reservations() {
   const [sendDepositEmail] = useSendDepositEmailMutation()
   const [generateNitraCarInvoice, { isLoading: generatingInvoice }] = useGenerateNitraCarInvoiceMutation()
   const [deleteNitraCarInvoice, { isLoading: deletingInvoice }] = useDeleteNitraCarInvoiceMutation()
+  const [invoiceEditorOpen, setInvoiceEditorOpen] = useState(false)
+  const [invoiceEditorData, setInvoiceEditorData] = useState(null)
+  const [invoiceEditorReservationId, setInvoiceEditorReservationId] = useState(null)
   const [createInvoice] = useCreateInvoiceMutation()
   const [checkInReservation] = useCheckInReservationMutation()
   const [checkOutReservation] = useCheckOutReservationMutation()
@@ -995,7 +999,10 @@ function Reservations() {
       const result = await generateNitraCarInvoice({ id: reservation._id }).unwrap()
       const data = result?.data
       if (!data) throw new Error('Server nevrátil dáta faktúry')
-      await generateNitraCarInvoicePdf(data)
+      // Open the editor with the live PDF preview instead of downloading immediately
+      setInvoiceEditorData(data)
+      setInvoiceEditorReservationId(reservation._id)
+      setInvoiceEditorOpen(true)
     } catch (error) {
       console.error('Error generating invoice:', error)
       alert('Chyba pri generovaní faktúry: ' + (error?.data?.message || error.message))
@@ -4565,6 +4572,14 @@ function Reservations() {
         reservationId={selectedReservationForQR?._id}
         open={qrDialogOpen}
         onClose={handleCloseQRDialog}
+      />
+
+      {/* NitraCar Invoice Editor */}
+      <NitraCarInvoiceEditor
+        open={invoiceEditorOpen}
+        onClose={() => setInvoiceEditorOpen(false)}
+        reservationId={invoiceEditorReservationId}
+        invoiceData={invoiceEditorData}
       />
     </Box>
   )

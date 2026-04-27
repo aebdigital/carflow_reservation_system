@@ -20,6 +20,7 @@ const {
   sendDepositEmail,
   sendConfirmationEmail,
   generateNitraCarInvoice,
+  updateNitraCarInvoice,
   deleteNitraCarInvoice
 } = require('../controllers/reservationController');
 
@@ -56,6 +57,7 @@ router.post('/:id/send-payment-notification', requireStaff, sendPaymentNotificat
 router.post('/:id/send-deposit-email', requireStaff, sendDepositEmail);
 router.post('/:id/send-confirmation-email', requireStaff, sendConfirmationEmail);
 router.post('/:id/invoice', requireStaff, generateNitraCarInvoice);
+router.put('/:id/invoice', requireStaff, updateNitraCarInvoice);
 router.delete('/:id/invoice', requireStaff, deleteNitraCarInvoice);
 router.put('/:id/checkin', requireStaff, checkInReservation);
 router.put('/:id/checkout', requireStaff, checkOutReservation);
