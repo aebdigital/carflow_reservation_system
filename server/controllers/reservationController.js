@@ -2675,9 +2675,11 @@ const generateNitraCarInvoice = asyncHandler(async (req, res, next) => {
     return next(new AppError('Rezervácia nebola nájdená', 404));
   }
 
-  // Idempotent: if invoice already exists, return it as-is
+  // Idempotent: if invoice already exists, return it as-is (QR re-rendered on the fly)
   if (reservation.invoice && reservation.invoice.number) {
-    return res.status(200).json({ success: true, data: buildInvoicePayload(reservation) });
+    const payload = buildInvoicePayload(reservation);
+    payload.qrDataUrl = await buildPayBySquareQrDataUrl(payload);
+    return res.status(200).json({ success: true, data: payload });
   }
 
   // Compute next sequential invoice number for this tenant. Accept both the
@@ -2730,7 +2732,8 @@ const generateNitraCarInvoice = asyncHandler(async (req, res, next) => {
     dueDate,
     totalAmount,
     itemDescription,
-    iban: 'SKXX XXXX XXXX XXXX XXXX', // placeholder; will be wired later
+    // Valid-format placeholder IBAN (passes Pay-by-Square ISO 13616 check) — replace later
+    iban: 'SK5012000000000000000000',
     customerSnapshot: {
       name: customerName,
       address: customerAddress,
@@ -2744,7 +2747,9 @@ const generateNitraCarInvoice = asyncHandler(async (req, res, next) => {
 
   await reservation.save();
 
-  res.status(200).json({ success: true, data: buildInvoicePayload(reservation) });
+  const payload = buildInvoicePayload(reservation);
+  payload.qrDataUrl = await buildPayBySquareQrDataUrl(payload);
+  res.status(200).json({ success: true, data: payload });
 });
 
 // @desc    Delete the saved invoice snapshot from a reservation (NitraCar only)
@@ -2774,6 +2779,38 @@ const deleteNitraCarInvoice = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({ success: true, message: 'Faktúra bola zmazaná.' });
 });
+
+// Helper: generate a Pay-by-Square QR data URL from an invoice payload.
+// Returns null on failure so invoice creation never blocks on QR rendering.
+async function buildPayBySquareQrDataUrl(payload) {
+  try {
+    const bysquare = require('bysquare');
+    const QRCode = require('qrcode');
+    const iban = (payload.iban || '').replace(/\s+/g, '').toUpperCase();
+    if (!iban) return null;
+    const dueDateStr = payload.dueDate
+      ? new Date(payload.dueDate).toISOString().slice(0, 10)
+      : new Date().toISOString().slice(0, 10);
+
+    const encoded = await bysquare.generate({
+      invoiceId: String(payload.number || ''),
+      payments: [{
+        type: 1, // PaymentOrder
+        amount: Number(payload.totalAmount || 0),
+        currencyCode: 'EUR',
+        variableSymbol: String(payload.variableSymbol || payload.number || ''),
+        paymentDueDate: dueDateStr,
+        bankAccounts: [{ iban }],
+        beneficiary: { name: payload.supplier?.name || '' }
+      }]
+    });
+
+    return await QRCode.toDataURL(encoded, { errorCorrectionLevel: 'M', margin: 1, width: 280 });
+  } catch (err) {
+    console.error('⚠️ [INVOICE QR] Failed to build Pay-by-Square QR:', err.message);
+    return null;
+  }
+}
 
 // Helper: shape the response payload the frontend uses to render the PDF
 function buildInvoicePayload(reservation) {

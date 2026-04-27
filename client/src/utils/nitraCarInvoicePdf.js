@@ -40,6 +40,11 @@ function eur(n) {
   return `${Number(n || 0).toFixed(2)} €`
 }
 
+function formatIban(iban) {
+  if (!iban) return ''
+  return String(iban).replace(/\s+/g, '').toUpperCase().replace(/(.{4})/g, '$1 ').trim()
+}
+
 /**
  * Generate and download the Slovak invoice PDF for a NitraCar reservation.
  * `data` is the payload returned by the backend `/api/reservations/:id/invoice` endpoint.
@@ -150,7 +155,7 @@ export async function generateNitraCarInvoicePdf(data) {
     doc.text(String(c.value || ''), x, stripTop + 16)
   })
 
-  // ---- IBAN line
+  // ---- IBAN line + Pay-by-Square QR (if available)
   const ibanY = stripTop + 30
   doc.setFont('Roboto', 'normal')
   doc.setFontSize(10)
@@ -158,11 +163,25 @@ export async function generateNitraCarInvoicePdf(data) {
   doc.text('IBAN:', margin, ibanY)
   doc.setFont('Roboto', 'bold')
   doc.setTextColor(...dark)
-  doc.text(data.iban || '', margin + 14, ibanY)
+  doc.text(formatIban(data.iban) || '', margin + 14, ibanY)
+
+  let afterPaymentY = ibanY + 8
+  if (data.qrDataUrl) {
+    const qrSize = 32 // mm
+    const qrX = pageWidth - margin - qrSize
+    const qrY = stripTop + 26
+    doc.addImage(data.qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize)
+    doc.setFont('Roboto', 'normal')
+    doc.setFontSize(8)
+    doc.setTextColor(...muted)
+    doc.text('Pay by Square', qrX + qrSize / 2, qrY + qrSize + 3.5, { align: 'center' })
+    doc.text('Naskenujte v bankovej aplikácii', qrX + qrSize / 2, qrY + qrSize + 7.5, { align: 'center' })
+    afterPaymentY = Math.max(afterPaymentY, qrY + qrSize + 12)
+  }
 
   // ---- Items table
   autoTable(doc, {
-    startY: ibanY + 8,
+    startY: afterPaymentY,
     head: [['Názov a popis položky', 'Cena']],
     body: [
       [data.itemDescription || '', eur(data.totalAmount)]
