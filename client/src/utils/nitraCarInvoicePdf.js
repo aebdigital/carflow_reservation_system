@@ -262,25 +262,27 @@ async function buildInvoiceDoc(data) {
   doc.text(eur(total), recapXBase, cursorY, { align: 'left' })
   doc.text(eur(0), recapXVat, cursorY, { align: 'left' })
 
-  // Right-side payment summary
+  // Right-side payment summary — labels right-aligned at a fixed gutter so
+  // they never collide with the value column on the far right.
   const sumX = pageWidth - margin
+  const labelX = sumX - 38 // right edge for labels; values use sumX
   let sumY = cursorY - 5
   doc.setFont('Roboto', 'normal')
   doc.setFontSize(10)
   doc.setTextColor(...muted)
-  doc.text('Celkom:', sumX - 30, sumY, { align: 'left' })
+  doc.text('Celkom:', labelX, sumY, { align: 'right' })
   doc.setTextColor(...dark)
   doc.text(eur(total), sumX, sumY, { align: 'right' })
   sumY += 5
   doc.setTextColor(...muted)
-  doc.text('Záloha:', sumX - 30, sumY, { align: 'left' })
+  doc.text('Záloha:', labelX, sumY, { align: 'right' })
   doc.setTextColor(...dark)
   doc.text(eur(0), sumX, sumY, { align: 'right' })
   sumY += 6
   doc.setFont('Roboto', 'bold')
   doc.setFontSize(12)
   doc.setTextColor(...accent)
-  doc.text('Na úhradu:', sumX - 30, sumY, { align: 'left' })
+  doc.text('Na úhradu:', labelX, sumY, { align: 'right' })
   doc.text(eur(total), sumX, sumY, { align: 'right' })
 
   cursorY = Math.max(cursorY + 8, sumY + 6)
