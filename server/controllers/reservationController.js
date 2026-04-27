@@ -2682,24 +2682,25 @@ const generateNitraCarInvoice = asyncHandler(async (req, res, next) => {
     return res.status(200).json({ success: true, data: payload });
   }
 
-  // Compute next sequential invoice number for this tenant. Accept both the
-  // legacy "faNNN" prefix and the current plain "NNN" format so old records
-  // still bump the counter.
+  // Compute next sequential invoice number for this tenant in the format
+  // "<YYYY><NNN>" (e.g. 2026001). Sequence resets per calendar year.
+  const currentYear = new Date().getFullYear();
+  const yearPrefix = String(currentYear);
   const existing = await Reservation.find({
     tenantId: req.user.tenantId,
-    'invoice.number': { $exists: true, $ne: null }
+    'invoice.number': { $regex: `^${yearPrefix}\\d+$` }
   }).select('invoice.number');
 
   let maxSeq = 0;
   for (const r of existing) {
-    const match = String(r.invoice?.number || '').match(/^(?:fa)?(\d+)$/i);
+    const match = String(r.invoice?.number || '').match(new RegExp(`^${yearPrefix}(\\d+)$`));
     if (match) {
       const n = parseInt(match[1], 10);
       if (!isNaN(n) && n > maxSeq) maxSeq = n;
     }
   }
   const nextSeq = maxSeq + 1;
-  const invoiceNumber = String(nextSeq).padStart(3, '0');
+  const invoiceNumber = `${yearPrefix}${String(nextSeq).padStart(3, '0')}`;
 
   // Build customer snapshot
   const cust = reservation.customer || {};
@@ -2784,7 +2785,11 @@ const deleteNitraCarInvoice = asyncHandler(async (req, res, next) => {
 // is operational (changes on bank switch), so we always render the latest.
 const NITRACAR_BANK = {
   iban: 'SK6511000000002922873659',
-  name: 'Tatrabanka a.s.'
+  name: 'Tatra banka, a.s.',
+  branch: 'Nitra',
+  swift: 'TATRSKBX',
+  // Slovak local BBAN format = "<account>/<bank-code>" derived from the IBAN above
+  accountLocal: '2922873659/1100'
 };
 
 // Helper: generate a Pay-by-Square QR data URL from an invoice payload.
@@ -2832,14 +2837,24 @@ function buildInvoicePayload(reservation) {
     // so changing the constant updates display + QR everywhere.
     iban: NITRACAR_BANK.iban,
     bankName: NITRACAR_BANK.name,
+    bankBranch: NITRACAR_BANK.branch,
+    bankSwift: NITRACAR_BANK.swift,
+    bankAccountLocal: NITRACAR_BANK.accountLocal,
+    paymentMethod: 'Prevodný príkaz',
+    constantSymbol: '0308',
     variableSymbol: inv.number, // VS = invoice number
+    orderNumber: reservation.reservationNumber || '',
+    issuedBy: 'Admin',
+    notVatPayer: true,
     customer: inv.customerSnapshot || {},
     supplier: {
-      name: 'VP invest, s.r.o.',
+      name: 'VP INVEST s.r.o.',
       address: 'Novozámocká 138',
       city: '949 05 Nitra',
-      ico: '46 600 400',
+      ico: '46600400',
       dic: '2023487103',
+      icDph: '',
+      register: 'OR OS Nitra, KB-3315/12, vl.č. 31214/N',
       email: 'nitra-car@nitra-car.sk',
       phone: '0910 524 554',
       website: 'www.nitra-car.sk'
@@ -2849,7 +2864,10 @@ function buildInvoicePayload(reservation) {
       car: reservation.car ? `${reservation.car.brand || ''} ${reservation.car.model || ''}`.trim() : '',
       registrationNumber: reservation.car?.registrationNumber || '',
       startDate: reservation.startDate,
-      endDate: reservation.endDate
+      endDate: reservation.endDate,
+      totalDays: reservation.pricing?.totalDays || (reservation.startDate && reservation.endDate
+        ? Math.max(1, Math.ceil((new Date(reservation.endDate) - new Date(reservation.startDate)) / (1000 * 60 * 60 * 24)))
+        : 1)
     }
   };
 }

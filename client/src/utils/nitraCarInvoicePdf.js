@@ -68,27 +68,35 @@ export async function generateNitraCarInvoicePdf(data) {
   const muted = [120, 120, 120]
   const dark = [30, 30, 30]
 
-  // ---- Top band: title + invoice number
+  const supplier = data.supplier || {}
+  const customer = data.customer || {}
+
+  // ---- Top band: title + invoice number + tax-document subtitle
   doc.setFont('Roboto', 'bold')
   doc.setFontSize(22)
   doc.setTextColor(...dark)
   doc.text('Faktúra', margin, 24)
+  doc.setFont('Roboto', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(...muted)
+  doc.text('(Daňový doklad)', margin, 29)
 
   doc.setFontSize(11)
   doc.setTextColor(...muted)
-  doc.text(`Číslo: ${data.number || ''}`, pageWidth - margin, 18, { align: 'right' })
+  doc.text(`Číslo:`, pageWidth - margin - 30, 18, { align: 'left' })
   doc.setTextColor(...accent)
-  doc.setFontSize(14)
-  doc.text(String(data.number || '').toUpperCase(), pageWidth - margin, 26, { align: 'right' })
+  doc.setFont('Roboto', 'bold')
+  doc.setFontSize(16)
+  doc.text(String(data.number || ''), pageWidth - margin, 24, { align: 'right' })
 
   // Thin accent rule
   doc.setDrawColor(...accent)
   doc.setLineWidth(0.5)
-  doc.line(margin, 30, pageWidth - margin, 30)
+  doc.line(margin, 33, pageWidth - margin, 33)
 
   // ---- Dodávateľ / Odberateľ side-by-side
   const colWidth = (pageWidth - margin * 2 - 8) / 2
-  const colTop = 38
+  const colTop = 41
 
   const drawParty = (title, lines, x) => {
     doc.setFont('Roboto', 'bold')
@@ -97,29 +105,28 @@ export async function generateNitraCarInvoicePdf(data) {
     doc.text(title.toUpperCase(), x, colTop)
 
     doc.setFont('Roboto', 'normal')
-    doc.setFontSize(11)
+    doc.setFontSize(10)
     doc.setTextColor(...dark)
     let y = colTop + 6
     lines.filter(Boolean).forEach((line, i) => {
       if (i === 0) doc.setFont('Roboto', 'bold')
       else doc.setFont('Roboto', 'normal')
       doc.text(line, x, y)
-      y += 5.5
+      y += 5
     })
+    return y
   }
 
-  const supplier = data.supplier || {}
   const supplierLines = [
     supplier.name,
     supplier.address,
     supplier.city,
     supplier.ico ? `IČO: ${supplier.ico}` : null,
     supplier.dic ? `DIČ: ${supplier.dic}` : null,
-    supplier.email,
-    supplier.phone
+    supplier.icDph ? `IČ DPH: ${supplier.icDph}` : 'IČ DPH: nie je platca DPH',
+    supplier.register ? supplier.register : null
   ]
 
-  const customer = data.customer || {}
   const customerLines = [
     customer.name || '—',
     customer.address || null,
@@ -127,125 +134,200 @@ export async function generateNitraCarInvoicePdf(data) {
     customer.isCompany && customer.dic ? `DIČ: ${customer.dic}` : null
   ]
 
-  drawParty('Dodávateľ', supplierLines, margin)
+  const supplierBottomY = drawParty('Dodávateľ', supplierLines, margin)
   drawParty('Odberateľ', customerLines, margin + colWidth + 8)
 
-  // ---- Dates / IBAN / VS strip
-  const stripTop = colTop + 50
+  // ---- Dates / symbols strip (6 fields in two rows of 3)
+  const stripTop = supplierBottomY + 4
+  const stripHeight = 24
   doc.setDrawColor(225, 225, 225)
   doc.setFillColor(248, 248, 248)
-  doc.roundedRect(margin, stripTop, pageWidth - margin * 2, 22, 1.5, 1.5, 'FD')
+  doc.roundedRect(margin, stripTop, pageWidth - margin * 2, stripHeight, 1.5, 1.5, 'FD')
 
-  const cellW = (pageWidth - margin * 2) / 4
-  const stripCells = [
+  const cellsRow1 = [
     { label: 'Dátum vystavenia', value: fmtDate(data.issueDate) },
     { label: 'Dátum dodania', value: fmtDate(data.issueDate) },
-    { label: 'Dátum splatnosti', value: fmtDate(data.dueDate) },
-    { label: 'Variabilný symbol', value: data.variableSymbol || data.number || '' }
+    { label: 'Dátum splatnosti', value: fmtDate(data.dueDate), bold: true }
   ]
-  stripCells.forEach((c, i) => {
-    const x = margin + cellW * i + 4
+  const cellsRow2 = [
+    { label: 'Variabilný symbol', value: data.variableSymbol || data.number || '' },
+    { label: 'Konštantný symbol', value: data.constantSymbol || '' },
+    { label: 'Číslo objednávky', value: data.orderNumber || '' }
+  ]
+  const cellWidthStrip = (pageWidth - margin * 2) / 3
+  const drawStripCell = (cell, col, row) => {
+    const x = margin + cellWidthStrip * col + 4
+    const y = stripTop + 5 + row * 11
     doc.setFont('Roboto', 'normal')
-    doc.setFontSize(8)
+    doc.setFontSize(7.5)
     doc.setTextColor(...muted)
-    doc.text(c.label.toUpperCase(), x, stripTop + 7)
-    doc.setFont('Roboto', 'bold')
-    doc.setFontSize(11)
-    doc.setTextColor(...dark)
-    doc.text(String(c.value || ''), x, stripTop + 16)
-  })
-
-  // ---- IBAN line + bank name + Pay-by-Square QR (if available)
-  const ibanY = stripTop + 30
-  doc.setFont('Roboto', 'normal')
-  doc.setFontSize(10)
-  doc.setTextColor(...muted)
-  doc.text('IBAN:', margin, ibanY)
-  doc.setFont('Roboto', 'bold')
-  doc.setTextColor(...dark)
-  doc.text(formatIban(data.iban) || '', margin + 14, ibanY)
-
-  let afterPaymentY = ibanY + 8
-
-  if (data.bankName) {
-    const bankY = ibanY + 6
-    doc.setFont('Roboto', 'normal')
+    doc.text(cell.label.toUpperCase(), x, y)
+    doc.setFont('Roboto', cell.bold ? 'bold' : 'bold')
     doc.setFontSize(10)
-    doc.setTextColor(...muted)
-    doc.text('Banka:', margin, bankY)
-    doc.setFont('Roboto', 'bold')
     doc.setTextColor(...dark)
-    doc.text(String(data.bankName), margin + 14, bankY)
-    afterPaymentY = Math.max(afterPaymentY, bankY + 6)
+    doc.text(String(cell.value || '—'), x, y + 5)
   }
+  cellsRow1.forEach((c, i) => drawStripCell(c, i, 0))
+  cellsRow2.forEach((c, i) => drawStripCell(c, i, 1))
+
+  // ---- Payment details block (left) + Pay-by-Square QR (right)
+  const payTop = stripTop + stripHeight + 5
+  const qrSize = 32
+  const qrX = pageWidth - margin - qrSize
+  const qrY = payTop - 2
+  let payY = payTop + 4
+
+  const drawPayLine = (label, value, bold = false) => {
+    doc.setFont('Roboto', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(...muted)
+    doc.text(label, margin, payY)
+    doc.setFont('Roboto', bold ? 'bold' : 'normal')
+    doc.setTextColor(...dark)
+    doc.text(String(value || ''), margin + 35, payY)
+    payY += 5
+  }
+  drawPayLine('Forma úhrady:', data.paymentMethod || 'Prevodný príkaz')
+  drawPayLine('Peňažný ústav:', data.bankName || '')
+  if (data.bankBranch) drawPayLine('Pobočka:', data.bankBranch)
+  if (data.bankAccountLocal) drawPayLine('Číslo účtu:', data.bankAccountLocal)
+  drawPayLine('IBAN:', formatIban(data.iban), true)
+  if (data.bankSwift) drawPayLine('SWIFT:', data.bankSwift)
+
   if (data.qrDataUrl) {
-    const qrSize = 32 // mm
-    const qrX = pageWidth - margin - qrSize
-    const qrY = stripTop + 26
     doc.addImage(data.qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize)
     doc.setFont('Roboto', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(...muted)
     doc.text('Pay by Square', qrX + qrSize / 2, qrY + qrSize + 3.5, { align: 'center' })
-    doc.text('Naskenujte v bankovej aplikácii', qrX + qrSize / 2, qrY + qrSize + 7.5, { align: 'center' })
-    afterPaymentY = Math.max(afterPaymentY, qrY + qrSize + 12)
+    doc.text('Naskenujte v bankovej app.', qrX + qrSize / 2, qrY + qrSize + 7.5, { align: 'center' })
   }
+  const afterPaymentY = Math.max(payY + 2, qrY + qrSize + 12)
 
-  // ---- Items table
+  // ---- Items table (Číslo / Názov / Množstvo / MJ / Cena za MJ / Celkom)
+  const totalDays = data?.reservation?.totalDays || 1
+  const total = Number(data.totalAmount || 0)
+  const unitPrice = totalDays > 0 ? total / totalDays : total
+
   autoTable(doc, {
     startY: afterPaymentY,
-    head: [['Názov a popis položky', 'Cena']],
+    head: [['Č.', 'Názov', 'Množstvo', 'MJ', 'Cena za MJ', 'Celkom']],
     body: [
-      [data.itemDescription || '', eur(data.totalAmount)]
+      ['1', data.itemDescription || 'Prenájom motorového vozidla', String(totalDays), totalDays === 1 ? 'deň' : 'dní', eur(unitPrice), eur(total)]
     ],
     theme: 'plain',
     styles: {
       font: 'Roboto',
-      fontSize: 11,
+      fontSize: 10,
       textColor: dark,
-      cellPadding: { top: 4, right: 4, bottom: 4, left: 0 }
+      cellPadding: { top: 4, right: 3, bottom: 4, left: 3 }
     },
     headStyles: {
       font: 'Roboto',
       fontStyle: 'bold',
-      fontSize: 9,
+      fontSize: 8.5,
       textColor: muted,
       lineWidth: { bottom: 0.4 },
       lineColor: accent,
-      fillColor: [255, 255, 255],
-      cellPadding: { top: 3, right: 4, bottom: 3, left: 0 }
+      fillColor: [255, 255, 255]
     },
     columnStyles: {
-      0: { cellWidth: 'auto' },
-      1: { halign: 'right', cellWidth: 40 }
+      0: { cellWidth: 10, halign: 'left' },
+      1: { cellWidth: 'auto' },
+      2: { cellWidth: 22, halign: 'right' },
+      3: { cellWidth: 14, halign: 'left' },
+      4: { cellWidth: 28, halign: 'right' },
+      5: { cellWidth: 30, halign: 'right' }
     },
     margin: { left: margin, right: margin }
   })
 
   let cursorY = doc.lastAutoTable.finalY + 6
 
-  // ---- Total
-  doc.setDrawColor(...accent)
-  doc.setLineWidth(0.5)
-  doc.line(margin, cursorY, pageWidth - margin, cursorY)
-  cursorY += 8
-
-  doc.setFont('Roboto', 'bold')
-  doc.setFontSize(13)
-  doc.setTextColor(...dark)
-  doc.text('Celková suma:', margin, cursorY)
-  doc.setTextColor(...accent)
-  doc.text(eur(data.totalAmount), pageWidth - margin, cursorY, { align: 'right' })
-
-  // ---- Footer (contact)
-  const footerY = pageHeight - 18
+  // ---- DPH recap block
   doc.setDrawColor(225, 225, 225)
   doc.setLineWidth(0.3)
-  doc.line(margin, footerY - 6, pageWidth - margin, footerY - 6)
+  doc.line(margin, cursorY, pageWidth - margin, cursorY)
+  cursorY += 5
+
+  doc.setFont('Roboto', 'bold')
+  doc.setFontSize(9)
+  doc.setTextColor(...muted)
+  doc.text('REKAPITULÁCIA DPH (EUR)', margin, cursorY)
+  cursorY += 5
+
+  doc.setFont('Roboto', 'normal')
+  doc.setFontSize(10)
+  doc.setTextColor(...dark)
+  const recapXLabel = margin
+  const recapXBase = margin + 60
+  const recapXVat = margin + 95
+  doc.text('Bez DPH (0%)', recapXLabel, cursorY)
+  doc.text(eur(total), recapXBase, cursorY, { align: 'left' })
+  doc.text(eur(0), recapXVat, cursorY, { align: 'left' })
+
+  // Right-side payment summary
+  const sumX = pageWidth - margin
+  let sumY = cursorY - 5
+  doc.setFont('Roboto', 'normal')
+  doc.setFontSize(10)
+  doc.setTextColor(...muted)
+  doc.text('Celkom:', sumX - 30, sumY, { align: 'left' })
+  doc.setTextColor(...dark)
+  doc.text(eur(total), sumX, sumY, { align: 'right' })
+  sumY += 5
+  doc.setTextColor(...muted)
+  doc.text('Záloha:', sumX - 30, sumY, { align: 'left' })
+  doc.setTextColor(...dark)
+  doc.text(eur(0), sumX, sumY, { align: 'right' })
+  sumY += 6
+  doc.setFont('Roboto', 'bold')
+  doc.setFontSize(12)
+  doc.setTextColor(...accent)
+  doc.text('Na úhradu:', sumX - 30, sumY, { align: 'left' })
+  doc.text(eur(total), sumX, sumY, { align: 'right' })
+
+  cursorY = Math.max(cursorY + 8, sumY + 6)
+
+  // ---- "Firma nie je platcom DPH" note
+  if (data.notVatPayer) {
+    doc.setFont('Roboto', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(...muted)
+    doc.text('Firma nie je platcom DPH.', margin, cursorY)
+    cursorY += 6
+  }
+
+  // ---- Signature block (Vystavil / Prevzal)
+  const signTop = pageHeight - 38
+  const signLineY = signTop + 6
+  const signColWidth = (pageWidth - margin * 2) / 2 - 6
+  const sigX1 = margin
+  const sigX2 = margin + signColWidth + 12
+
   doc.setFont('Roboto', 'normal')
   doc.setFontSize(9)
   doc.setTextColor(...muted)
-  const footerLeft = `${supplier.phone || ''}    ${supplier.email || ''}`
+  doc.text(`Vystavil: ${data.issuedBy || 'Admin'}`, sigX1, signTop)
+  doc.text('Prevzal:', sigX2, signTop)
+
+  doc.setDrawColor(180, 180, 180)
+  doc.setLineWidth(0.3)
+  doc.line(sigX1, signLineY + 6, sigX1 + signColWidth, signLineY + 6)
+  doc.line(sigX2, signLineY + 6, sigX2 + signColWidth, signLineY + 6)
+  doc.setFontSize(8)
+  doc.text('Podpis a pečiatka', sigX1 + signColWidth / 2, signLineY + 10, { align: 'center' })
+  doc.text('Podpis a pečiatka', sigX2 + signColWidth / 2, signLineY + 10, { align: 'center' })
+
+  // ---- Footer (contact)
+  const footerY = pageHeight - 12
+  doc.setDrawColor(225, 225, 225)
+  doc.setLineWidth(0.3)
+  doc.line(margin, footerY - 4, pageWidth - margin, footerY - 4)
+  doc.setFont('Roboto', 'normal')
+  doc.setFontSize(8.5)
+  doc.setTextColor(...muted)
+  const footerLeft = `Tel.: ${supplier.phone || ''}    ${supplier.email || ''}`
   doc.text(footerLeft, margin, footerY)
   if (supplier.website) {
     doc.text(supplier.website, pageWidth - margin, footerY, { align: 'right' })
