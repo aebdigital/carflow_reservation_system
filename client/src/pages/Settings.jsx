@@ -41,8 +41,11 @@ import {
   Close as CloseIcon,
   Payment as PaymentIcon,
   Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon
+  VisibilityOff as VisibilityOffIcon,
+  Description as DescriptionIcon,
+  Download as DownloadIcon
 } from '@mui/icons-material'
+import { useSelector } from 'react-redux'
 import {
   useGetSettingsQuery,
   useAddPickupLocationMutation,
@@ -53,6 +56,47 @@ import {
 } from '../store/store'
 
 function Settings() {
+  const auth = useSelector((state) => state.auth)
+  const isNitraCarUser = auth?.user?.email?.toLowerCase() === 'nitra-car@nitra-car.sk'
+
+  // ---- Invoice export (NitraCar only) ----
+  const now = new Date()
+  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const [invoiceExportMonth, setInvoiceExportMonth] = useState(defaultMonth)
+  const [invoiceExporting, setInvoiceExporting] = useState(false)
+
+  const handleExportInvoicesXml = async () => {
+    if (!invoiceExportMonth) return
+    setInvoiceExporting(true)
+    try {
+      const apiBase = (import.meta.env?.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/+$/, '')
+      const url = `${apiBase}/reservations/invoices/export?month=${encodeURIComponent(invoiceExportMonth)}`
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${auth.token}` }
+      })
+      if (!res.ok) {
+        let msg = `Server vrátil ${res.status}`
+        try { const j = await res.json(); msg = j?.message || msg } catch (_) {}
+        throw new Error(msg)
+      }
+      const blob = await res.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = `invoices_${invoiceExportMonth}.xml`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(blobUrl)
+    } catch (err) {
+      console.error('Invoice export failed:', err)
+      alert('Export faktúr zlyhal: ' + err.message)
+    } finally {
+      setInvoiceExporting(false)
+    }
+  }
+
   const { data: settings, isLoading, error } = useGetSettingsQuery()
   const [addLocation] = useAddPickupLocationMutation()
   const [updateLocation] = useUpdatePickupLocationMutation()
@@ -631,6 +675,50 @@ function Settings() {
             </CardContent>
           </Card>
         </Grid>
+
+        {/* Invoice Export (NitraCar only) */}
+        {isNitraCarUser && (
+          <Grid item xs={12}>
+            <Card>
+              <CardHeader
+                title={
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <DescriptionIcon color="primary" />
+                    <Typography variant="h6">Export faktúr (XML)</Typography>
+                  </Box>
+                }
+              />
+              <CardContent>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Vyexportujte všetky vystavené faktúry za vybraný kalendárny mesiac do XML súboru kompatibilného s OBERON.
+                </Typography>
+                <Grid container spacing={2} alignItems="center">
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      fullWidth
+                      type="month"
+                      label="Mesiac"
+                      InputLabelProps={{ shrink: true }}
+                      value={invoiceExportMonth}
+                      onChange={(e) => setInvoiceExportMonth(e.target.value)}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Button
+                      variant="contained"
+                      startIcon={<DownloadIcon />}
+                      onClick={handleExportInvoicesXml}
+                      disabled={invoiceExporting || !invoiceExportMonth}
+                      fullWidth
+                    >
+                      {invoiceExporting ? 'Exportuje sa…' : 'Stiahnuť XML'}
+                    </Button>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
       </Grid>
 
       {/* Location Dialog */}

@@ -2802,6 +2802,171 @@ const updateNitraCarInvoice = asyncHandler(async (req, res, next) => {
   res.status(200).json({ success: true, data: payload });
 });
 
+// @desc    Export issued invoices for a calendar month as OBERON XML (NitraCar only)
+// @route   GET /api/reservations/invoices/export?month=YYYY-MM
+// @access  Private/Staff (NitraCar only)
+const exportNitraCarInvoicesXml = asyncHandler(async (req, res, next) => {
+  const isNitraCar = req.user.email?.toLowerCase() === 'nitra-car@nitra-car.sk';
+  if (!isNitraCar) {
+    return next(new AppError('Export faktúr je dostupný iba pre NitraCar', 403));
+  }
+
+  const { month } = req.query;
+  if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+    return next(new AppError('Parameter "month" je povinný v tvare YYYY-MM', 400));
+  }
+
+  const [yearStr, monthStr] = month.split('-');
+  const year = parseInt(yearStr, 10);
+  const monthIndex = parseInt(monthStr, 10) - 1;
+  const periodStart = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0, 0));
+  const periodEnd = new Date(Date.UTC(year, monthIndex + 1, 1, 0, 0, 0, 0));
+
+  const reservations = await Reservation.find({
+    tenantId: req.user.tenantId,
+    'invoice.number': { $exists: true, $ne: null },
+    'invoice.issueDate': { $gte: periodStart, $lt: periodEnd }
+  })
+    .populate([
+      { path: 'customer', select: 'firstName lastName email phone address' },
+      { path: 'car', select: 'brand model year registrationNumber' }
+    ])
+    .sort({ 'invoice.number': 1 });
+
+  // ---- XML helpers ----
+  const xmlEscape = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
+  const fmtDate = (d) => {
+    if (!d) return '';
+    const x = new Date(d);
+    return `${String(x.getDate()).padStart(2, '0')}.${String(x.getMonth() + 1).padStart(2, '0')}.${x.getFullYear()}`;
+  };
+  const fmtDateTime = (d) => {
+    const x = new Date(d);
+    return `${fmtDate(x)} ${String(x.getHours()).padStart(2, '0')}:${String(x.getMinutes()).padStart(2, '0')}:${String(x.getSeconds()).padStart(2, '0')}`;
+  };
+  const num = (n) => Number(n || 0);
+
+  const supplier = {
+    name: 'VP INVEST s.r.o.',
+    street: 'Novozámocká 138',
+    postCode: '94905',
+    city: 'Nitra',
+    country: 'Slovenská republika',
+    countryCode: 'SVK',
+    ico: '46600400',
+    dic: '2023487103',
+    icDph: '',
+    register1: 'OR OS Nitra',
+    register2: 'KB-3315/12, vl.č. 31214/N',
+    email: 'nitra-car@nitra-car.sk',
+    phone: '0910 524 554'
+  };
+
+  const supplierXml = `<Company><Name>${xmlEscape(supplier.name)}</Name><Address_Residence><Street>${xmlEscape(supplier.street)}</Street><Region></Region><PostalCode>${xmlEscape(supplier.postCode)}</PostalCode><City>${xmlEscape(supplier.city)}</City><Country>${xmlEscape(supplier.country)}</Country><CountryCode>${xmlEscape(supplier.countryCode)}</CountryCode><Notice></Notice></Address_Residence><IdentificationNumber>${xmlEscape(supplier.ico)}</IdentificationNumber><IdentificationNumber_Tax>${xmlEscape(supplier.dic)}</IdentificationNumber_Tax><IdentificationNumber_VAT>${xmlEscape(supplier.icDph)}</IdentificationNumber_VAT><BusinessRegister_1>${xmlEscape(supplier.register1)}</BusinessRegister_1><BusinessRegister_2>${xmlEscape(supplier.register2)}</BusinessRegister_2><EMail>${xmlEscape(supplier.email)}</EMail><PhoneNumber>${xmlEscape(supplier.phone)}</PhoneNumber><Branch><Name></Name><Address_Residence><Street></Street><Region></Region><PostalCode></PostalCode><City></City><Country></Country><CountryCode></CountryCode><Notice></Notice></Address_Residence></Branch></Company>`;
+
+  const records = reservations.map((r, idx) => {
+    const inv = r.invoice || {};
+    const items = Array.isArray(inv.items) && inv.items.length
+      ? inv.items
+      : [{ name: inv.itemDescription || 'Prenájom motorového vozidla', price: num(inv.totalAmount) }];
+    const total = items.reduce((s, i) => s + num(i.price), 0);
+
+    // Customer details from snapshot (frozen at invoice issue time)
+    const cs = inv.customerSnapshot || {};
+    const partnerName = cs.name || (r.customer ? `${r.customer.firstName || ''} ${r.customer.lastName || ''}`.trim() : '');
+    const partnerStreet = cs.address || (r.customer?.address?.street || '');
+    const partnerCity = r.customer?.address?.city || '';
+    const partnerZip = r.customer?.address?.zipCode || '';
+    const partnerIco = cs.ico || '';
+    const partnerDic = cs.dic || '';
+    const partnerIcDph = '';
+
+    const itemsXml = items.map((it, i) => {
+      const p = num(it.price);
+      return `<Item><Number>${i + 1}</Number><Name>${xmlEscape(it.name || '')}</Name><Unit>ks</Unit><VAT_Rate>0</VAT_Rate><Price_WithoutVAT>${p}</Price_WithoutVAT><Price_WithoutVAT_Unit>${p}</Price_WithoutVAT_Unit><Price_WithVAT>${p}</Price_WithVAT><Price_WithVAT_Unit>${p}</Price_WithVAT_Unit><Price_WithVAT_WithoutDiscount>${p}</Price_WithVAT_WithoutDiscount><Amount_Unit>1</Amount_Unit><BarCode></BarCode><CustomsTariffCode></CustomsTariffCode><Discount>0</Discount><FC_CurrencyCode></FC_CurrencyCode></Item>`;
+    }).join('');
+
+    const carInfo = r.car ? `${r.car.brand || ''} ${r.car.model || ''}`.trim() : '';
+    const reg = r.car?.registrationNumber || '';
+    const subjectText = `Prenájom motorového vozidla${carInfo ? ' ' + carInfo : ''}${reg ? ' (' + reg + ')' : ''}`;
+    const startStr = inv.startDate ? fmtDate(inv.startDate) : (r.startDate ? fmtDate(r.startDate) : '');
+    const endStr = r.endDate ? fmtDate(r.endDate) : '';
+    const beforeText = `<![CDATA[<p>Prenájom motorového vozidla${carInfo ? ' ' + xmlEscape(carInfo) : ''}${reg ? ' (' + xmlEscape(reg) + ')' : ''} v období ${xmlEscape(startStr)} - ${xmlEscape(endStr)}.</p>]]>`;
+
+    const expirationDays = inv.issueDate && inv.dueDate
+      ? Math.max(0, Math.round((new Date(inv.dueDate) - new Date(inv.issueDate)) / (1000 * 60 * 60 * 24)))
+      : 7;
+
+    const partnerXml = `<BusinessPartner IDNum="${idx + 1}"><Name>${xmlEscape(partnerName)}</Name><Address_Residence><Street>${xmlEscape(partnerStreet)}</Street><Region></Region><PostalCode>${xmlEscape(partnerZip)}</PostalCode><City>${xmlEscape(partnerCity)}</City><Country></Country><CountryCode></CountryCode><Notice></Notice></Address_Residence><IdentificationNumber>${xmlEscape(partnerIco)}</IdentificationNumber><IdentificationNumber_Tax>${xmlEscape(partnerDic)}</IdentificationNumber_Tax><IdentificationNumber_VAT>${xmlEscape(partnerIcDph)}</IdentificationNumber_VAT><Branch><Caption></Caption><Address_Residence><Street></Street><Region></Region><PostalCode></PostalCode><City></City><Country></Country><CountryCode></CountryCode><Notice></Notice></Address_Residence></Branch></BusinessPartner>`;
+
+    return `<Record IDNum="${2000 + idx + 1}" Number="${xmlEscape(inv.number || '')}">`
+      + `<Document_Number>${xmlEscape(inv.number || '')}</Document_Number>`
+      + `<Document_Type>Faktúra</Document_Type>`
+      + `<Date_Document>${xmlEscape(fmtDate(inv.issueDate))}</Date_Document>`
+      + `<Date_Delivery>${xmlEscape(fmtDate(inv.issueDate))}</Date_Delivery>`
+      + `<Date_Expiration>${xmlEscape(fmtDate(inv.dueDate))}</Date_Expiration>`
+      + `<Date_VAT>${xmlEscape(fmtDate(inv.issueDate))}</Date_VAT>`
+      + `<Expiration_Term>${expirationDays}</Expiration_Term>`
+      + `<Number_Order>${xmlEscape(r.reservationNumber || '')}</Number_Order>`
+      + `<Person_Registered>Admin</Person_Registered>`
+      + `<Subject>${xmlEscape(subjectText)}</Subject>`
+      + `<VAT_Type>Oslobodené od DPH (neplátca)</VAT_Type>`
+      + `<VAT_KV_Section>-1</VAT_KV_Section>`
+      + `<User_Add>A</User_Add>`
+      + `<Document_Text_BeforeItems>${beforeText}</Document_Text_BeforeItems>`
+      + `<Payment_Method>Prevodný príkaz</Payment_Method>`
+      + `<Bank_Account>${xmlEscape(NITRACAR_BANK.iban)}</Bank_Account>`
+      + `<Symbol_Variable>${xmlEscape(inv.number || '')}</Symbol_Variable>`
+      + `<Symbol_Constant>0308</Symbol_Constant>`
+      + `<Document_PriceValues>`
+      + `<CurrencyCode>EUR</CurrencyCode>`
+      + `<VAT_Rate_Lower>0</VAT_Rate_Lower>`
+      + `<VAT_Rate_Upper>0</VAT_Rate_Upper>`
+      + `<Price_Total>${total}</Price_Total>`
+      + `<Price_ToPay>${total}</Price_ToPay>`
+      + `<Price_Payment_Advance>0</Price_Payment_Advance>`
+      + `<Price_VAT_Base_Lower>0</Price_VAT_Base_Lower>`
+      + `<Price_VAT_Base_Upper>0</Price_VAT_Base_Upper>`
+      + `<Price_VAT_Lower>0</Price_VAT_Lower>`
+      + `<Price_VAT_Upper>0</Price_VAT_Upper>`
+      + `<Price_VAT_Base_Zero>${total}</Price_VAT_Base_Zero>`
+      + `<Price_Rounding>0</Price_Rounding>`
+      + `<Discount_Percento>0</Discount_Percento>`
+      + `<Discount_Value>0</Discount_Value>`
+      + `<FC_CurrencyCode></FC_CurrencyCode>`
+      + `</Document_PriceValues>`
+      + `<DocumentTotal><DocumentCurrencyCode>EUR</DocumentCurrencyCode><CurrencyTotal CurrencyCode="EUR"><Total>${total}</Total><PaymentAdvance>0</PaymentAdvance><ToPay>${total}</ToPay><TaxSubtotal><TaxRate>0</TaxRate><TaxableAmount>${total}</TaxableAmount><TaxAmount>0</TaxAmount></TaxSubtotal></CurrencyTotal></DocumentTotal>`
+      + supplierXml
+      + partnerXml
+      + `<Items><Number_of_items>${items.length}</Number_of_items>${itemsXml}</Items>`
+      + `</Record>`;
+  }).join('');
+
+  const xml = `<?xml version="1.0" encoding="utf-8"?>`
+    + `<OBERON>`
+    + `<Header>`
+    + `<DocumentType>101</DocumentType>`
+    + `<DocumentTypeText>Export/import dokumentu (faktúra, objednávka, výdajka, príjemka ...)</DocumentTypeText>`
+    + `<DocumentDateTime>${xmlEscape(fmtDateTime(new Date()))}</DocumentDateTime>`
+    + `<CompanyName>${xmlEscape(supplier.name)}</CompanyName>`
+    + `<User>Admin</User>`
+    + `<OBERONVersion>NitraCar Export</OBERONVersion>`
+    + `<OBERONVersionDB>523</OBERONVersionDB>`
+    + `<Description>Export faktúr za ${xmlEscape(month)}</Description>`
+    + `</Header>`
+    + `<Data>`
+    + `<!--Kniha pohľadávok-->`
+    + `<InvoicesIssued>${records}</InvoicesIssued>`
+    + `</Data>`
+    + `</OBERON>`;
+
+  res.set({
+    'Content-Type': 'application/xml; charset=utf-8',
+    'Content-Disposition': `attachment; filename="invoices_${month}.xml"`
+  });
+  res.send(xml);
+});
+
 // @desc    Delete the saved invoice snapshot from a reservation (NitraCar only)
 // @route   DELETE /api/reservations/:id/invoice
 // @access  Private/Staff (NitraCar only)
@@ -2953,5 +3118,6 @@ module.exports = {
   sendConfirmationEmail,
   generateNitraCarInvoice,
   updateNitraCarInvoice,
-  deleteNitraCarInvoice
+  deleteNitraCarInvoice,
+  exportNitraCarInvoicesXml
 };

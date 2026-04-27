@@ -21,7 +21,8 @@ const {
   sendConfirmationEmail,
   generateNitraCarInvoice,
   updateNitraCarInvoice,
-  deleteNitraCarInvoice
+  deleteNitraCarInvoice,
+  exportNitraCarInvoicesXml
 } = require('../controllers/reservationController');
 
 const { protect, requireStaff, addTenantFilter, restrictRivalDomain } = require('../middleware/authMiddleware');
@@ -56,6 +57,7 @@ router.put('/:id/confirm-payment', requireStaff, confirmPayment);
 router.post('/:id/send-payment-notification', requireStaff, sendPaymentNotification);
 router.post('/:id/send-deposit-email', requireStaff, sendDepositEmail);
 router.post('/:id/send-confirmation-email', requireStaff, sendConfirmationEmail);
+router.get('/invoices/export', requireStaff, exportNitraCarInvoicesXml);
 router.post('/:id/invoice', requireStaff, generateNitraCarInvoice);
 router.put('/:id/invoice', requireStaff, updateNitraCarInvoice);
 router.delete('/:id/invoice', requireStaff, deleteNitraCarInvoice);
