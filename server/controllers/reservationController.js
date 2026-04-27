@@ -2654,6 +2654,157 @@ const sendConfirmationEmail = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Generate (or fetch existing) Slovak invoice snapshot for a NitraCar reservation
+// @route   POST /api/reservations/:id/invoice
+// @access  Private/Staff (NitraCar only)
+const generateNitraCarInvoice = asyncHandler(async (req, res, next) => {
+  const isNitraCar = req.user.email?.toLowerCase() === 'nitra-car@nitra-car.sk';
+  if (!isNitraCar) {
+    return next(new AppError('Faktúra je dostupná iba pre NitraCar', 403));
+  }
+
+  const reservation = await Reservation.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  }).populate([
+    { path: 'customer', select: 'firstName lastName email phone address' },
+    { path: 'car', select: 'brand model year registrationNumber' }
+  ]);
+
+  if (!reservation) {
+    return next(new AppError('Rezervácia nebola nájdená', 404));
+  }
+
+  // Idempotent: if invoice already exists, return it as-is
+  if (reservation.invoice && reservation.invoice.number) {
+    return res.status(200).json({ success: true, data: buildInvoicePayload(reservation) });
+  }
+
+  // Compute next fa### number for this tenant
+  const existing = await Reservation.find({
+    tenantId: req.user.tenantId,
+    'invoice.number': { $regex: '^fa', $options: 'i' }
+  }).select('invoice.number');
+
+  let maxSeq = 0;
+  for (const r of existing) {
+    const match = String(r.invoice?.number || '').match(/^fa(\d+)$/i);
+    if (match) {
+      const n = parseInt(match[1], 10);
+      if (!isNaN(n) && n > maxSeq) maxSeq = n;
+    }
+  }
+  const nextSeq = maxSeq + 1;
+  const invoiceNumber = `fa${String(nextSeq).padStart(3, '0')}`;
+
+  // Build customer snapshot
+  const cust = reservation.customer || {};
+  const firma = reservation.firma || {};
+  const isCompany = !!firma.isCompany;
+  const customerName = isCompany
+    ? (firma.companyName || `${cust.firstName || ''} ${cust.lastName || ''}`.trim())
+    : `${cust.firstName || ''} ${cust.lastName || ''}`.trim();
+
+  const addressParts = [];
+  if (cust.address?.street) addressParts.push(cust.address.street);
+  const cityZip = [cust.address?.zipCode, cust.address?.city].filter(Boolean).join(' ');
+  if (cityZip) addressParts.push(cityZip);
+  if (cust.address?.country) addressParts.push(cust.address.country);
+  const customerAddress = addressParts.join(', ');
+
+  const issueDate = new Date();
+  const dueDate = new Date(issueDate);
+  dueDate.setDate(dueDate.getDate() + 7);
+
+  // Item description: "Prenajom auta od <start> do <end>"
+  const fmt = (d) => new Date(d).toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' });
+  const itemDescription = `Prenájom auta od ${fmt(reservation.startDate)} do ${fmt(reservation.endDate)}`;
+
+  const totalAmount = Number(reservation.pricing?.totalAmount || 0);
+
+  reservation.invoice = {
+    number: invoiceNumber,
+    issueDate,
+    dueDate,
+    totalAmount,
+    itemDescription,
+    iban: 'SKXX XXXX XXXX XXXX XXXX', // placeholder; will be wired later
+    customerSnapshot: {
+      name: customerName,
+      address: customerAddress,
+      ico: isCompany ? (firma.ico || '') : '',
+      dic: isCompany ? (firma.dic || '') : '',
+      isCompany
+    },
+    generatedAt: new Date(),
+    generatedBy: req.user._id
+  };
+
+  await reservation.save();
+
+  res.status(200).json({ success: true, data: buildInvoicePayload(reservation) });
+});
+
+// @desc    Delete the saved invoice snapshot from a reservation (NitraCar only)
+// @route   DELETE /api/reservations/:id/invoice
+// @access  Private/Staff (NitraCar only)
+const deleteNitraCarInvoice = asyncHandler(async (req, res, next) => {
+  const isNitraCar = req.user.email?.toLowerCase() === 'nitra-car@nitra-car.sk';
+  if (!isNitraCar) {
+    return next(new AppError('Faktúra je dostupná iba pre NitraCar', 403));
+  }
+
+  const reservation = await Reservation.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  });
+
+  if (!reservation) {
+    return next(new AppError('Rezervácia nebola nájdená', 404));
+  }
+
+  if (!reservation.invoice || !reservation.invoice.number) {
+    return res.status(200).json({ success: true, message: 'Faktúra neexistuje, nič na zmazanie.' });
+  }
+
+  reservation.invoice = undefined;
+  await reservation.save();
+
+  res.status(200).json({ success: true, message: 'Faktúra bola zmazaná.' });
+});
+
+// Helper: shape the response payload the frontend uses to render the PDF
+function buildInvoicePayload(reservation) {
+  const inv = reservation.invoice || {};
+  return {
+    number: inv.number,
+    issueDate: inv.issueDate,
+    dueDate: inv.dueDate,
+    totalAmount: inv.totalAmount,
+    itemDescription: inv.itemDescription,
+    iban: inv.iban,
+    variableSymbol: inv.number, // VS = invoice number
+    customer: inv.customerSnapshot || {},
+    supplier: {
+      name: 'VP invest, s.r.o.',
+      address: 'Novozámocká 138',
+      city: '949 05 Nitra',
+      ico: '46 600 400',
+      dic: '',
+      email: 'nitra-car@nitra-car.sk',
+      phone: '0910 524 554',
+      website: 'www.nitra-car.sk'
+    },
+    reservation: {
+      number: reservation.reservationNumber,
+      car: reservation.car ? `${reservation.car.brand || ''} ${reservation.car.model || ''}`.trim() : '',
+      registrationNumber: reservation.car?.registrationNumber || '',
+      startDate: reservation.startDate,
+      endDate: reservation.endDate
+    }
+  };
+}
+
 module.exports = {
   getReservations,
   getReservation,
@@ -2673,5 +2824,7 @@ module.exports = {
   createInvoice,
   downloadInvoicePdf,
   sendDepositEmail,
-  sendConfirmationEmail
+  sendConfirmationEmail,
+  generateNitraCarInvoice,
+  deleteNitraCarInvoice
 };
