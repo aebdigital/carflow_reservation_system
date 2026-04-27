@@ -139,7 +139,7 @@ export async function generateNitraCarInvoicePdf(data) {
   const cellW = (pageWidth - margin * 2) / 4
   const stripCells = [
     { label: 'Dátum vystavenia', value: fmtDate(data.issueDate) },
-    { label: 'Dátum vydania', value: fmtDate(data.issueDate) },
+    { label: 'Dátum dodania', value: fmtDate(data.issueDate) },
     { label: 'Dátum splatnosti', value: fmtDate(data.dueDate) },
     { label: 'Variabilný symbol', value: data.variableSymbol || data.number || '' }
   ]
