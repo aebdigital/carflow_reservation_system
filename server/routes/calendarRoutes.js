@@ -76,40 +76,35 @@ router.get('/ics', async (req, res) => {
 
       const licensePlate = reservation.car?.registrationNumber || reservation.car?.licensePlate || '';
 
-      // Create event summary: "BRAND MODEL - Customer Name"
-      const summary = `${carInfo}${licensePlate ? ` (${licensePlate})` : ''} - ${customerName}`;
-
-      // Create detailed description
+      // Detailed description shared by start and end markers
       const description = buildEventDescription(reservation, customerName, carInfo);
 
-      // Create a single all-day spanning event for the entire rental period
       const startDate = new Date(reservation.startDate);
       const endDate = new Date(reservation.endDate);
 
-      // For all-day events, end date must be the day AFTER the last day (exclusive)
-      const endDateExclusive = new Date(endDate);
-      endDateExclusive.setDate(endDateExclusive.getDate() + 1);
+      // Timed event marking the exact start-of-rental hour
+      // (e.g. "Toyota Yaris (BL-123XY) - zaciatok" at 10:00 if rental starts at 10:00).
+      const startEventLabel = `${carInfo}${licensePlate ? ` (${licensePlate})` : ''} - zaciatok`;
+      const startEventEnd = new Date(startDate);
+      startEventEnd.setMinutes(startEventEnd.getMinutes() + 30);
 
       calendar.createEvent({
-        id: reservation._id.toString(),
-        summary: summary,
-        description: description,
+        id: `${reservation._id.toString()}-start`,
+        summary: startEventLabel,
+        description: `Zaciatok prenajmu: ${customerName}\n${description}`,
         start: startDate,
-        end: endDateExclusive,
-        allDay: true,
+        end: startEventEnd,
+        allDay: false,
         timestamp: reservation.updatedAt || reservation.createdAt,
-        categories: [{ name: 'Rezervacia' }],
+        categories: [{ name: 'Zaciatok prenajmu' }],
         status: 'CONFIRMED',
         location: reservation.pickupLocation?.name || '',
         url: `https://admindemo.carflow.sk/reservations?id=${reservation._id}`
       });
 
-      // Additional timed event marking the exact end-of-rental hour
+      // Timed event marking the exact end-of-rental hour
       // (e.g. "Toyota Yaris (BL-123XY) - koniec" at 14:00 if rental ends at 14:00).
-      // Useful at-a-glance reminder in Apple Calendar so the dropoff time isn't
-      // hidden inside the all-day band.
       const endEventLabel = `${carInfo}${licensePlate ? ` (${licensePlate})` : ''} - koniec`;
-      const endEventStart = new Date(endDate);
       const endEventEnd = new Date(endDate);
       endEventEnd.setMinutes(endEventEnd.getMinutes() + 30);
 
@@ -117,7 +112,7 @@ router.get('/ics', async (req, res) => {
         id: `${reservation._id.toString()}-end`,
         summary: endEventLabel,
         description: `Koniec prenajmu: ${customerName}\n${description}`,
-        start: endEventStart,
+        start: endDate,
         end: endEventEnd,
         allDay: false,
         timestamp: reservation.updatedAt || reservation.createdAt,
