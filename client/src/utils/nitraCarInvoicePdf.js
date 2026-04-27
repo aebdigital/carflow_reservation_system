@@ -155,7 +155,7 @@ export async function generateNitraCarInvoicePdf(data) {
     doc.text(String(c.value || ''), x, stripTop + 16)
   })
 
-  // ---- IBAN line + Pay-by-Square QR (if available)
+  // ---- IBAN line + bank name + Pay-by-Square QR (if available)
   const ibanY = stripTop + 30
   doc.setFont('Roboto', 'normal')
   doc.setFontSize(10)
@@ -166,6 +166,18 @@ export async function generateNitraCarInvoicePdf(data) {
   doc.text(formatIban(data.iban) || '', margin + 14, ibanY)
 
   let afterPaymentY = ibanY + 8
+
+  if (data.bankName) {
+    const bankY = ibanY + 6
+    doc.setFont('Roboto', 'normal')
+    doc.setFontSize(10)
+    doc.setTextColor(...muted)
+    doc.text('Banka:', margin, bankY)
+    doc.setFont('Roboto', 'bold')
+    doc.setTextColor(...dark)
+    doc.text(String(data.bankName), margin + 14, bankY)
+    afterPaymentY = Math.max(afterPaymentY, bankY + 6)
+  }
   if (data.qrDataUrl) {
     const qrSize = 32 // mm
     const qrX = pageWidth - margin - qrSize

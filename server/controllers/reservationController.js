@@ -2732,8 +2732,7 @@ const generateNitraCarInvoice = asyncHandler(async (req, res, next) => {
     dueDate,
     totalAmount,
     itemDescription,
-    // Valid-format placeholder IBAN (passes Pay-by-Square ISO 13616 check) — replace later
-    iban: 'SK5012000000000000000000',
+    iban: NITRACAR_BANK.iban,
     customerSnapshot: {
       name: customerName,
       address: customerAddress,
@@ -2780,6 +2779,14 @@ const deleteNitraCarInvoice = asyncHandler(async (req, res, next) => {
   res.status(200).json({ success: true, message: 'Faktúra bola zmazaná.' });
 });
 
+// NitraCar bank details — centralized so both stored snapshots and existing
+// invoice retrievals can reflect the current bank in display + QR. Bank info
+// is operational (changes on bank switch), so we always render the latest.
+const NITRACAR_BANK = {
+  iban: 'SK6511000000002922873659',
+  name: 'Tatrabanka a.s.'
+};
+
 // Helper: generate a Pay-by-Square QR data URL from an invoice payload.
 // Returns null on failure so invoice creation never blocks on QR rendering.
 async function buildPayBySquareQrDataUrl(payload) {
@@ -2821,7 +2828,10 @@ function buildInvoicePayload(reservation) {
     dueDate: inv.dueDate,
     totalAmount: inv.totalAmount,
     itemDescription: inv.itemDescription,
-    iban: inv.iban,
+    // Always pull current bank info — even for previously-saved invoices,
+    // so changing the constant updates display + QR everywhere.
+    iban: NITRACAR_BANK.iban,
+    bankName: NITRACAR_BANK.name,
     variableSymbol: inv.number, // VS = invoice number
     customer: inv.customerSnapshot || {},
     supplier: {
