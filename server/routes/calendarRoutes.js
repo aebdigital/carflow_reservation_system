@@ -102,6 +102,40 @@ router.get('/ics', async (req, res) => {
         url: `https://admindemo.carflow.sk/reservations?id=${reservation._id}`
       });
 
+      // All-day "occupied" markers for every full day between the pickup and return
+      // dates (exclusive of both). Makes it obvious in month/week view that the car
+      // is booked all day on those in-between days.
+      const dayLabel = `${carInfo}${licensePlate ? ` (${licensePlate})` : ''} - ${customerName}`;
+      const startDay = new Date(startDate);
+      startDay.setHours(0, 0, 0, 0);
+      const endDay = new Date(endDate);
+      endDay.setHours(0, 0, 0, 0);
+
+      const cursor = new Date(startDay);
+      cursor.setDate(cursor.getDate() + 1); // first day after pickup
+      while (cursor < endDay) {
+        const dayStart = new Date(cursor);
+        const dayEnd = new Date(cursor);
+        dayEnd.setDate(dayEnd.getDate() + 1); // ICS all-day end is exclusive
+        const dayId = `${reservation._id.toString()}-day-${cursor.toISOString().slice(0, 10)}`;
+
+        calendar.createEvent({
+          id: dayId,
+          summary: dayLabel,
+          description: `Prenajom: ${customerName}\n${description}`,
+          start: dayStart,
+          end: dayEnd,
+          allDay: true,
+          timestamp: reservation.updatedAt || reservation.createdAt,
+          categories: [{ name: 'Obsadene' }],
+          status: 'CONFIRMED',
+          location: reservation.pickupLocation?.name || '',
+          url: `https://admindemo.carflow.sk/reservations?id=${reservation._id}`
+        });
+
+        cursor.setDate(cursor.getDate() + 1);
+      }
+
       // Timed event marking the exact end-of-rental hour
       // (e.g. "Toyota Yaris (BL-123XY) - koniec" at 14:00 if rental ends at 14:00).
       const endEventLabel = `${carInfo}${licensePlate ? ` (${licensePlate})` : ''} - koniec`;
