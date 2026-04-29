@@ -991,17 +991,33 @@ function Contracts() {
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2">
-                          {contract.customer.firstName} {contract.customer.lastName}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {contract.customer.email}
-                        </Typography>
-                        {isNitraCarUser && contract.customer.rodneCislo && (
-                          <Typography variant="caption" display="block" color="text.secondary">
-                            RČ: {contract.customer.rodneCislo}
-                          </Typography>
-                        )}
+                        {/*
+                          Show LIVE customer info from the User collection (via
+                          reservation.customer). Falls back to the embedded
+                          contract.customer snapshot only when the linked
+                          customer was deleted or not populated.
+                        */}
+                        {(() => {
+                          const live = contract.reservation?.customer
+                          const firstName = live?.firstName || contract.customer.firstName
+                          const lastName = live?.lastName || contract.customer.lastName
+                          const email = live?.email || contract.customer.email
+                          return (
+                            <>
+                              <Typography variant="body2">
+                                {firstName} {lastName}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {email}
+                              </Typography>
+                              {isNitraCarUser && contract.customer.rodneCislo && (
+                                <Typography variant="caption" display="block" color="text.secondary">
+                                  RČ: {contract.customer.rodneCislo}
+                                </Typography>
+                              )}
+                            </>
+                          )
+                        })()}
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">

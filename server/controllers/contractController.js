@@ -53,11 +53,14 @@ const getContracts = asyncHandler(async (req, res, next) => {
   
   query = query.skip(startIndex).limit(limit);
   
-  // Populate related fields
+  // Populate related fields. We also follow reservation.customer so the table
+  // can show the LIVE customer email/name (the embedded contract.customer is
+  // a frozen snapshot from creation time and goes stale after edits).
   query = query.populate([
     {
       path: 'reservation',
-      select: 'reservationNumber status startDate endDate invoice'
+      select: 'reservationNumber status startDate endDate invoice customer',
+      populate: { path: 'customer', select: 'firstName lastName email phone' }
     },
     {
       path: 'createdBy',
@@ -103,7 +106,8 @@ const getContract = asyncHandler(async (req, res, next) => {
   }).populate([
     {
       path: 'reservation',
-      select: 'reservationNumber status startDate endDate pricing'
+      select: 'reservationNumber status startDate endDate pricing customer',
+      populate: { path: 'customer', select: 'firstName lastName email phone' }
     },
     {
       path: 'createdBy',
