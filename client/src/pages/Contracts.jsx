@@ -246,7 +246,12 @@ function Contracts() {
   const cars = carsData?.data || []
   const pickupLocations = (settingsData?.data?.business?.pickupLocations || []).filter(loc => loc.isActive !== false)
 
-  const contracts = contractsData?.data || []
+  const allContracts = contractsData?.data || []
+  // For NitraCar: only show contracts whose linked reservation is "confirmed".
+  // Other tenants keep the full list.
+  const contracts = isNitraCarUser
+    ? allContracts.filter(c => c.reservation?.status === 'confirmed')
+    : allContracts
   const stats = contractStatsData?.data || {}
   const availableReservations = reservationsData?.data || []
 
