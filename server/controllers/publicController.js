@@ -647,7 +647,18 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
   if (!customerEmail) {
     return next(new AppError('customerEmail is required in request body - cannot use admin email as customer email', 400));
   }
-  
+
+  // Hard reject: a customer must never reuse a privileged tenant address.
+  // (Same protection that admin createReservation already enforces — extended
+  // here so public booking can't slip a privileged email through either.)
+  const privilegedOwner = await User.findOne({
+    email: customerEmail.toLowerCase(),
+    role: { $in: ['admin', 'staff'] }
+  }).select('email role');
+  if (privilegedOwner) {
+    return next(new AppError(`Email "${customerEmail}" patrí používateľovi s rolou "${privilegedOwner.role}". Použite iný email.`, 400));
+  }
+
   const finalCustomerEmail = customerEmail;
   
   console.log('📧 [CUSTOMER EMAIL DEBUG] Final customer email:', finalCustomerEmail);
@@ -1752,13 +1763,22 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     return next(new AppError('Missing required fields: firstName, lastName, email, phone, carId, startDate, endDate', 400));
   }
 
+  // Hard reject: a customer must never reuse a privileged tenant address.
+  const privilegedOwner = await User.findOne({
+    email: email.toLowerCase(),
+    role: { $in: ['admin', 'staff'] }
+  }).select('email role');
+  if (privilegedOwner) {
+    return next(new AppError(`Email "${email}" patrí používateľovi s rolou "${privilegedOwner.role}". Použite iný email.`, 400));
+  }
+
   // 🔧 FIX: Get tenant ID from the car being booked
   // Check if car exists and is available
   const car = await Car.findOne({
     _id: carId,
     isActive: true
   });
-  
+
   if (!car) {
     return next(new AppError('Car not found', 404));
   }
