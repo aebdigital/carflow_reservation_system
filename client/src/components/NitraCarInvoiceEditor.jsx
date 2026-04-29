@@ -27,8 +27,22 @@ import { generateNitraCarInvoicePdf, getNitraCarInvoicePdfBlob } from '../utils/
  * Receives the invoice payload from the backend and lets the user
  * edit the line items (name + price) before downloading or persisting.
  */
+// Convert any date-ish value (Date, ISO string) to "YYYY-MM-DD" for <input type="date">.
+function toIsoDay(d) {
+  if (!d) return ''
+  const x = new Date(d)
+  if (isNaN(x.getTime())) return ''
+  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`
+}
+
 export default function NitraCarInvoiceEditor({ open, onClose, reservationId, invoiceData }) {
   const [items, setItems] = useState([])
+  const [number, setNumber] = useState('')
+  const [issueDate, setIssueDate] = useState('')
+  const [deliveryDate, setDeliveryDate] = useState('')
+  const [dueDate, setDueDate] = useState('')
+  const [variableSymbol, setVariableSymbol] = useState('')
+  const [constantSymbol, setConstantSymbol] = useState('')
   const [previewUrl, setPreviewUrl] = useState(null)
   const [previewLoading, setPreviewLoading] = useState(false)
   const [saved, setSaved] = useState(true)
@@ -38,13 +52,19 @@ export default function NitraCarInvoiceEditor({ open, onClose, reservationId, in
   const lastBlobUrl = useRef(null)
   const renderTimer = useRef(null)
 
-  // Seed items from incoming invoice
+  // Seed all editable fields from the incoming invoice
   useEffect(() => {
     if (!invoiceData) return
     const incoming = Array.isArray(invoiceData.items) && invoiceData.items.length
       ? invoiceData.items
       : [{ name: invoiceData.itemDescription || '', price: Number(invoiceData.totalAmount) || 0 }]
     setItems(incoming.map(i => ({ name: i.name || '', price: Number(i.price) || 0 })))
+    setNumber(invoiceData.number || '')
+    setIssueDate(toIsoDay(invoiceData.issueDate))
+    setDeliveryDate(toIsoDay(invoiceData.deliveryDate || invoiceData.issueDate))
+    setDueDate(toIsoDay(invoiceData.dueDate))
+    setVariableSymbol(invoiceData.variableSymbol || invoiceData.number || '')
+    setConstantSymbol(invoiceData.constantSymbol || '0308')
     setSaved(true)
     setError(null)
   }, [invoiceData])
@@ -54,15 +74,21 @@ export default function NitraCarInvoiceEditor({ open, onClose, reservationId, in
     [items]
   )
 
-  // Build a payload that mirrors what the backend would send if items were saved
+  // Build a payload that mirrors what the backend would send if everything were saved
   const previewPayload = useMemo(() => {
     if (!invoiceData) return null
     return {
       ...invoiceData,
       items,
-      totalAmount: total
+      totalAmount: total,
+      number: number || invoiceData.number,
+      issueDate: issueDate ? new Date(issueDate) : invoiceData.issueDate,
+      deliveryDate: deliveryDate ? new Date(deliveryDate) : (invoiceData.deliveryDate || invoiceData.issueDate),
+      dueDate: dueDate ? new Date(dueDate) : invoiceData.dueDate,
+      variableSymbol: variableSymbol || invoiceData.variableSymbol || number || invoiceData.number,
+      constantSymbol: constantSymbol || invoiceData.constantSymbol || '0308'
     }
-  }, [invoiceData, items, total])
+  }, [invoiceData, items, total, number, issueDate, deliveryDate, dueDate, variableSymbol, constantSymbol])
 
   // Re-render the PDF preview whenever items change (debounced)
   useEffect(() => {
@@ -121,8 +147,25 @@ export default function NitraCarInvoiceEditor({ open, onClose, reservationId, in
       setError('Faktúra musí obsahovať aspoň jednu položku.')
       return
     }
+    if (!number.trim()) {
+      setError('Číslo faktúry nemôže byť prázdne.')
+      return
+    }
+    if (!issueDate || !dueDate) {
+      setError('Dátum vystavenia a splatnosti sú povinné.')
+      return
+    }
     try {
-      await updateInvoice({ id: reservationId, items: cleaned }).unwrap()
+      await updateInvoice({
+        id: reservationId,
+        items: cleaned,
+        number: number.trim(),
+        issueDate: new Date(issueDate).toISOString(),
+        deliveryDate: deliveryDate ? new Date(deliveryDate).toISOString() : new Date(issueDate).toISOString(),
+        dueDate: new Date(dueDate).toISOString(),
+        variableSymbol: variableSymbol.trim(),
+        constantSymbol: constantSymbol.trim()
+      }).unwrap()
       setSaved(true)
     } catch (err) {
       setError('Uloženie zlyhalo: ' + (err?.data?.message || err.message))
@@ -153,6 +196,58 @@ export default function NitraCarInvoiceEditor({ open, onClose, reservationId, in
         <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
           {/* Left: editor */}
           <Box sx={{ flex: 1, minWidth: 0 }}>
+            {/* Header (number / dates / symbols) */}
+            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+              Údaje faktúry
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1, mb: 2 }}>
+              <TextField
+                size="small"
+                label="Číslo faktúry"
+                value={number}
+                onChange={(e) => { setNumber(e.target.value); setSaved(false) }}
+                required
+              />
+              <TextField
+                size="small"
+                label="Variabilný symbol"
+                value={variableSymbol}
+                onChange={(e) => { setVariableSymbol(e.target.value); setSaved(false) }}
+              />
+              <TextField
+                size="small"
+                label="Dátum vystavenia"
+                type="date"
+                value={issueDate}
+                onChange={(e) => { setIssueDate(e.target.value); setSaved(false) }}
+                InputLabelProps={{ shrink: true }}
+                required
+              />
+              <TextField
+                size="small"
+                label="Dátum dodania"
+                type="date"
+                value={deliveryDate}
+                onChange={(e) => { setDeliveryDate(e.target.value); setSaved(false) }}
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                size="small"
+                label="Dátum splatnosti"
+                type="date"
+                value={dueDate}
+                onChange={(e) => { setDueDate(e.target.value); setSaved(false) }}
+                InputLabelProps={{ shrink: true }}
+                required
+              />
+              <TextField
+                size="small"
+                label="Konštantný symbol"
+                value={constantSymbol}
+                onChange={(e) => { setConstantSymbol(e.target.value); setSaved(false) }}
+              />
+            </Box>
+
             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
               Položky
             </Typography>

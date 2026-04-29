@@ -146,7 +146,7 @@ async function buildInvoiceDoc(data) {
 
   const cellsRow1 = [
     { label: 'Dátum vystavenia', value: fmtDate(data.issueDate) },
-    { label: 'Dátum dodania', value: fmtDate(data.issueDate) },
+    { label: 'Dátum dodania', value: fmtDate(data.deliveryDate || data.issueDate) },
     { label: 'Dátum splatnosti', value: fmtDate(data.dueDate), bold: true }
   ]
   const cellsRow2 = [

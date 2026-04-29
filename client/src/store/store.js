@@ -369,10 +369,10 @@ export const api = createApi({
       invalidatesTags: (result, error, { id }) => [{ type: 'Reservation', id }, 'Reservation'],
     }),
     updateNitraCarInvoice: builder.mutation({
-      query: ({ id, items }) => ({
+      query: ({ id, items, ...rest }) => ({
         url: `reservations/${id}/invoice`,
         method: 'PUT',
-        body: { items },
+        body: { items, ...rest },
       }),
       invalidatesTags: (result, error, { id }) => [{ type: 'Reservation', id }, 'Reservation'],
     }),

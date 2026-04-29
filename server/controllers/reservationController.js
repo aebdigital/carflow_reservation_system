@@ -2739,7 +2739,10 @@ const generateNitraCarInvoice = asyncHandler(async (req, res, next) => {
   reservation.invoice = {
     number: invoiceNumber,
     issueDate,
+    deliveryDate: issueDate,
     dueDate,
+    variableSymbol: invoiceNumber,
+    constantSymbol: '0308',
     totalAmount,
     itemDescription,
     items: [{ name: itemDescription, price: totalAmount }],
@@ -2804,6 +2807,41 @@ const updateNitraCarInvoice = asyncHandler(async (req, res, next) => {
 
   reservation.invoice.items = cleaned;
   reservation.invoice.totalAmount = cleaned.reduce((s, i) => s + i.price, 0);
+
+  // Optional editable invoice header fields. Each is overwritten only when the
+  // client actually sent a value, so omitting them in PUT is a safe no-op.
+  const parseDate = (v) => {
+    if (v === null || v === undefined || v === '') return null;
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? null : d;
+  };
+  if (req.body.number !== undefined) {
+    const trimmed = String(req.body.number || '').trim();
+    if (!trimmed) return next(new AppError('Číslo faktúry nemôže byť prázdne', 400));
+    reservation.invoice.number = trimmed;
+  }
+  if (req.body.issueDate !== undefined) {
+    const d = parseDate(req.body.issueDate);
+    if (!d) return next(new AppError('Neplatný dátum vystavenia', 400));
+    reservation.invoice.issueDate = d;
+  }
+  if (req.body.deliveryDate !== undefined) {
+    const d = parseDate(req.body.deliveryDate);
+    if (!d) return next(new AppError('Neplatný dátum dodania', 400));
+    reservation.invoice.deliveryDate = d;
+  }
+  if (req.body.dueDate !== undefined) {
+    const d = parseDate(req.body.dueDate);
+    if (!d) return next(new AppError('Neplatný dátum splatnosti', 400));
+    reservation.invoice.dueDate = d;
+  }
+  if (req.body.variableSymbol !== undefined) {
+    reservation.invoice.variableSymbol = String(req.body.variableSymbol || '').trim();
+  }
+  if (req.body.constantSymbol !== undefined) {
+    reservation.invoice.constantSymbol = String(req.body.constantSymbol || '').trim();
+  }
+
   await reservation.save();
 
   const payload = buildInvoicePayload(reservation);
@@ -3061,6 +3099,7 @@ function buildInvoicePayload(reservation) {
   return {
     number: inv.number,
     issueDate: inv.issueDate,
+    deliveryDate: inv.deliveryDate || inv.issueDate,
     dueDate: inv.dueDate,
     // Always trust sum(items) so edits stay consistent with what's displayed
     totalAmount: computedTotal,
@@ -3074,8 +3113,8 @@ function buildInvoicePayload(reservation) {
     bankSwift: NITRACAR_BANK.swift,
     bankAccountLocal: NITRACAR_BANK.accountLocal,
     paymentMethod: 'Prevodný príkaz',
-    constantSymbol: '0308',
-    variableSymbol: inv.number, // VS = invoice number
+    constantSymbol: inv.constantSymbol || '0308',
+    variableSymbol: inv.variableSymbol || inv.number, // VS defaults to invoice number
     orderNumber: reservation.reservationNumber || '',
     issuedBy: 'Admin',
     notVatPayer: true,

@@ -339,7 +339,10 @@ const reservationSchema = new mongoose.Schema({
   invoice: {
     number: String,            // e.g. "2026001"
     issueDate: Date,
+    deliveryDate: Date,        // Dátum dodania (defaults to issueDate)
     dueDate: Date,
+    variableSymbol: String,    // VS — defaults to invoice number
+    constantSymbol: String,    // KS — defaults to "0308"
     totalAmount: Number,       // EUR — derived from sum(items.price)
     itemDescription: String,   // legacy single-line description (still kept on first generation)
     items: {                   // editable line items shown in the invoice table
