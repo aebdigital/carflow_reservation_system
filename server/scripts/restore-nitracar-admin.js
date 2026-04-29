@@ -18,7 +18,7 @@ const TARGET = {
   desiredFirstName: 'NitraCar',
   desiredLastName: 'Admin',
   // Identify the affected user by either of these — adjust if your situation differs
-  knownBadEmails: ['aliksei@gmail.com'],
+  knownBadEmails: ['test@test.sk', 'aliksei@gmail.com'],
   knownBadName: { firstName: 'Aliksei', lastName: 'Netserau' }
 };
 
