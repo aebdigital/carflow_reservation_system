@@ -997,23 +997,20 @@ function Contracts() {
                       </TableCell>
                       <TableCell>
                         {/*
-                          Show LIVE customer info from the User collection (via
+                          Show LIVE customer name from the User collection (via
                           reservation.customer). Falls back to the embedded
                           contract.customer snapshot only when the linked
-                          customer was deleted or not populated.
+                          customer was deleted or not populated. Email is
+                          intentionally hidden here.
                         */}
                         {(() => {
                           const live = contract.reservation?.customer
                           const firstName = live?.firstName || contract.customer.firstName
                           const lastName = live?.lastName || contract.customer.lastName
-                          const email = live?.email || contract.customer.email
                           return (
                             <>
                               <Typography variant="body2">
                                 {firstName} {lastName}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {email}
                               </Typography>
                               {isNitraCarUser && contract.customer.rodneCislo && (
                                 <Typography variant="caption" display="block" color="text.secondary">
