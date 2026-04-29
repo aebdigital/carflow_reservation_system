@@ -220,7 +220,16 @@ const createReservation = asyncHandler(async (req, res, next) => {
       : null;
 
     if (existingCustomer) {
-      // Use existing customer
+      // SAFETY: never reuse an admin/staff user as a reservation customer.
+      // Otherwise editing the "customer" later (name, email) silently mutates
+      // the staff identity. Reject loudly so the operator picks a different
+      // email instead of the admin's own.
+      if (existingCustomer.role && existingCustomer.role !== 'customer') {
+        return next(new AppError(
+          `Email "${email}" patrí používateľovi s rolou "${existingCustomer.role}". Použite iný email pre zákazníka.`,
+          400
+        ));
+      }
       customerDoc = existingCustomer;
     } else {
       // Check if customer exists in a different tenant (license-uniqueness only matters

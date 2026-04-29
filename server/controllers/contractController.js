@@ -57,7 +57,7 @@ const getContracts = asyncHandler(async (req, res, next) => {
   query = query.populate([
     {
       path: 'reservation',
-      select: 'reservationNumber status startDate endDate'
+      select: 'reservationNumber status startDate endDate invoice'
     },
     {
       path: 'createdBy',

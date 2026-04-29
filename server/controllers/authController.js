@@ -170,12 +170,19 @@ const getMe = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/auth/me
 // @access  Private
 const updateDetails = asyncHandler(async (req, res, next) => {
-  const fieldsToUpdate = {
-    firstName: req.body.firstName,
-    lastName: req.body.lastName,
-    email: req.body.email,
-    phone: req.body.phone
-  };
+  // SAFETY: admin/staff identity (firstName/lastName/email) must NOT be
+  // mutable via this endpoint — otherwise a stolen token or a reservation
+  // edit flow that accidentally targets the admin user can rename or
+  // reassign the tenant. Customers can still change their own info.
+  const isPrivileged = req.user.role === 'admin' || req.user.role === 'staff';
+  const fieldsToUpdate = isPrivileged
+    ? { phone: req.body.phone }
+    : {
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        email: req.body.email,
+        phone: req.body.phone
+      };
 
   // Remove undefined fields
   Object.keys(fieldsToUpdate).forEach(key => {
@@ -183,6 +190,10 @@ const updateDetails = asyncHandler(async (req, res, next) => {
       delete fieldsToUpdate[key];
     }
   });
+
+  if (Object.keys(fieldsToUpdate).length === 0) {
+    return next(new AppError('Žiadne povolené polia na aktualizáciu (admin a staff môžu meniť iba telefón cez tento endpoint).', 400));
+  }
 
   const user = await User.findByIdAndUpdate(req.user._id, fieldsToUpdate, {
     new: true,

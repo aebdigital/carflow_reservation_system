@@ -73,8 +73,6 @@ import {
   useConfirmReservationPaymentMutation,
   useSendPaymentNotificationMutation,
   useSendDepositEmailMutation,
-  useGenerateNitraCarInvoiceMutation,
-  useDeleteNitraCarInvoiceMutation,
   useCreateInvoiceMutation,
   useCheckInReservationMutation,
   useCheckOutReservationMutation,
@@ -90,8 +88,6 @@ import { useNavigate } from 'react-router-dom'
 import { t } from '../utils/translations'
 import QRCodeDisplay from '../components/QRCodeDisplay'
 import { useSelector } from 'react-redux'
-import { generateNitraCarInvoicePdf } from '../utils/nitraCarInvoicePdf'
-import NitraCarInvoiceEditor from '../components/NitraCarInvoiceEditor'
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -359,11 +355,6 @@ function Reservations() {
   const [confirmReservationPayment] = useConfirmReservationPaymentMutation()
   const [sendPaymentNotification] = useSendPaymentNotificationMutation()
   const [sendDepositEmail] = useSendDepositEmailMutation()
-  const [generateNitraCarInvoice, { isLoading: generatingInvoice }] = useGenerateNitraCarInvoiceMutation()
-  const [deleteNitraCarInvoice, { isLoading: deletingInvoice }] = useDeleteNitraCarInvoiceMutation()
-  const [invoiceEditorOpen, setInvoiceEditorOpen] = useState(false)
-  const [invoiceEditorData, setInvoiceEditorData] = useState(null)
-  const [invoiceEditorReservationId, setInvoiceEditorReservationId] = useState(null)
   const [createInvoice] = useCreateInvoiceMutation()
   const [checkInReservation] = useCheckInReservationMutation()
   const [checkOutReservation] = useCheckOutReservationMutation()
@@ -994,33 +985,6 @@ function Reservations() {
     }
   }
 
-  const handleGenerateNitraCarInvoice = async (reservation) => {
-    try {
-      const result = await generateNitraCarInvoice({ id: reservation._id }).unwrap()
-      const data = result?.data
-      if (!data) throw new Error('Server nevrátil dáta faktúry')
-      // Open the editor with the live PDF preview instead of downloading immediately
-      setInvoiceEditorData(data)
-      setInvoiceEditorReservationId(reservation._id)
-      setInvoiceEditorOpen(true)
-    } catch (error) {
-      console.error('Error generating invoice:', error)
-      alert('Chyba pri generovaní faktúry: ' + (error?.data?.message || error.message))
-    }
-  }
-
-  const handleDeleteNitraCarInvoice = async (reservation) => {
-    const num = reservation.invoice?.number
-    if (!num) return
-    const ok = window.confirm(`Naozaj chcete zmazať faktúru ${num}? Po zmazaní bude možné vygenerovať novú.`)
-    if (!ok) return
-    try {
-      await deleteNitraCarInvoice({ id: reservation._id }).unwrap()
-    } catch (error) {
-      console.error('Error deleting invoice:', error)
-      alert('Chyba pri mazaní faktúry: ' + (error?.data?.message || error.message))
-    }
-  }
 
 
   const handleCreateInvoice = async (reservation) => {
@@ -1811,40 +1775,6 @@ function Reservations() {
                               </IconButton>
                             </span>
                           </Tooltip>
-                          {auth.user?.email === 'nitra-car@nitra-car.sk' && (
-                            <>
-                              <Tooltip title={reservation.invoice?.number ? `Faktúra ${reservation.invoice.number}` : 'Generovať faktúru'}>
-                                <span>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleGenerateNitraCarInvoice(reservation)}
-                                    color="primary"
-                                    disabled={generatingInvoice}
-                                    sx={{
-                                      backgroundColor: reservation.invoice?.number ? 'success.light' : 'primary.light',
-                                      '&:hover': { backgroundColor: reservation.invoice?.number ? 'success.main' : 'primary.main' }
-                                    }}
-                                  >
-                                    <InvoiceIcon fontSize="small" />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-                              {reservation.invoice?.number && (
-                                <Tooltip title={`Zmazať faktúru ${reservation.invoice.number}`}>
-                                  <span>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => handleDeleteNitraCarInvoice(reservation)}
-                                      color="error"
-                                      disabled={deletingInvoice}
-                                    >
-                                      <DeleteIcon fontSize="small" />
-                                    </IconButton>
-                                  </span>
-                                </Tooltip>
-                              )}
-                            </>
-                          )}
                           {auth.user?.email !== 'lerent@lerent.sk' && auth.user?.email !== 'nitra-car@nitra-car.sk' && (
                             <Tooltip title="Generovanie QR kódu">
                               <IconButton
@@ -2051,40 +1981,6 @@ function Reservations() {
                               </IconButton>
                             </span>
                           </Tooltip>
-                          {auth.user?.email === 'nitra-car@nitra-car.sk' && (
-                            <>
-                              <Tooltip title={reservation.invoice?.number ? `Faktúra ${reservation.invoice.number}` : 'Generovať faktúru'}>
-                                <span>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleGenerateNitraCarInvoice(reservation)}
-                                    color="primary"
-                                    disabled={generatingInvoice}
-                                    sx={{
-                                      backgroundColor: reservation.invoice?.number ? 'success.light' : 'primary.light',
-                                      '&:hover': { backgroundColor: reservation.invoice?.number ? 'success.main' : 'primary.main' }
-                                    }}
-                                  >
-                                    <InvoiceIcon fontSize="small" />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-                              {reservation.invoice?.number && (
-                                <Tooltip title={`Zmazať faktúru ${reservation.invoice.number}`}>
-                                  <span>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => handleDeleteNitraCarInvoice(reservation)}
-                                      color="error"
-                                      disabled={deletingInvoice}
-                                    >
-                                      <DeleteIcon fontSize="small" />
-                                    </IconButton>
-                                  </span>
-                                </Tooltip>
-                              )}
-                            </>
-                          )}
                           {auth.user?.email !== 'lerent@lerent.sk' && auth.user?.email !== 'nitra-car@nitra-car.sk' && (
                             <Tooltip title="Generovanie QR kódu">
                               <IconButton
@@ -2334,40 +2230,6 @@ function Reservations() {
                               </IconButton>
                             </span>
                           </Tooltip>
-                          {auth.user?.email === 'nitra-car@nitra-car.sk' && (
-                            <>
-                              <Tooltip title={reservation.invoice?.number ? `Faktúra ${reservation.invoice.number}` : 'Generovať faktúru'}>
-                                <span>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleGenerateNitraCarInvoice(reservation)}
-                                    color="primary"
-                                    disabled={generatingInvoice}
-                                    sx={{
-                                      backgroundColor: reservation.invoice?.number ? 'success.light' : 'primary.light',
-                                      '&:hover': { backgroundColor: reservation.invoice?.number ? 'success.main' : 'primary.main' }
-                                    }}
-                                  >
-                                    <InvoiceIcon fontSize="small" />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-                              {reservation.invoice?.number && (
-                                <Tooltip title={`Zmazať faktúru ${reservation.invoice.number}`}>
-                                  <span>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => handleDeleteNitraCarInvoice(reservation)}
-                                      color="error"
-                                      disabled={deletingInvoice}
-                                    >
-                                      <DeleteIcon fontSize="small" />
-                                    </IconButton>
-                                  </span>
-                                </Tooltip>
-                              )}
-                            </>
-                          )}
                           <Tooltip title="Cancel">
                             <IconButton
                               size="small"
@@ -2572,40 +2434,6 @@ function Reservations() {
                               </IconButton>
                             </span>
                           </Tooltip>
-                          {auth.user?.email === 'nitra-car@nitra-car.sk' && (
-                            <>
-                              <Tooltip title={reservation.invoice?.number ? `Faktúra ${reservation.invoice.number}` : 'Generovať faktúru'}>
-                                <span>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleGenerateNitraCarInvoice(reservation)}
-                                    color="primary"
-                                    disabled={generatingInvoice}
-                                    sx={{
-                                      backgroundColor: reservation.invoice?.number ? 'success.light' : 'primary.light',
-                                      '&:hover': { backgroundColor: reservation.invoice?.number ? 'success.main' : 'primary.main' }
-                                    }}
-                                  >
-                                    <InvoiceIcon fontSize="small" />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-                              {reservation.invoice?.number && (
-                                <Tooltip title={`Zmazať faktúru ${reservation.invoice.number}`}>
-                                  <span>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => handleDeleteNitraCarInvoice(reservation)}
-                                      color="error"
-                                      disabled={deletingInvoice}
-                                    >
-                                      <DeleteIcon fontSize="small" />
-                                    </IconButton>
-                                  </span>
-                                </Tooltip>
-                              )}
-                            </>
-                          )}
                           {auth.user?.email !== 'lerent@lerent.sk' && auth.user?.email !== 'nitra-car@nitra-car.sk' && (
                             <Tooltip title="Generovanie QR kódu">
                               <IconButton
@@ -4574,13 +4402,6 @@ function Reservations() {
         onClose={handleCloseQRDialog}
       />
 
-      {/* NitraCar Invoice Editor */}
-      <NitraCarInvoiceEditor
-        open={invoiceEditorOpen}
-        onClose={() => setInvoiceEditorOpen(false)}
-        reservationId={invoiceEditorReservationId}
-        invoiceData={invoiceEditorData}
-      />
     </Box>
   )
 }

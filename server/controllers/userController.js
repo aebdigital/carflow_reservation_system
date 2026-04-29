@@ -250,6 +250,21 @@ const updateUser = asyncHandler(async (req, res, next) => {
     return next(new AppError('Not authorized to update this user', 403));
   }
 
+  // SAFETY: admin/staff records must not be mutable through the customer-update
+  // endpoint. The reservation edit flow (customer fields) routes through here and
+  // can otherwise rename the tenant admin if they were inadvertently linked as
+  // a customer on a reservation. The only exception is the user updating their
+  // own record (and even then, identity fields are still filtered below).
+  if (
+    user.role && user.role !== 'customer' &&
+    req.user._id.toString() !== user._id.toString()
+  ) {
+    return next(new AppError(
+      `Používateľ s rolou "${user.role}" sa nedá upravovať cez tento endpoint. Nastavenia účtu zmeňte priamo pre prihláseného používateľa.`,
+      403
+    ));
+  }
+
   // Remove sensitive fields that shouldn't be updated via this route
   const allowedFields = [
     'firstName',

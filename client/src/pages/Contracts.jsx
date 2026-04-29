@@ -62,6 +62,7 @@ import {
   MonetizationOn as MonetizationOnIcon,
   Rule as RuleIcon,
   Assignment as AssignmentIcon,
+  Receipt as InvoiceIcon,
 } from '@mui/icons-material'
 import { useSelector } from 'react-redux'
 import {
@@ -81,8 +82,11 @@ import {
   useUpdateUserMutation,
   useGetCarsQuery,
   useGetSettingsQuery,
+  useGenerateNitraCarInvoiceMutation,
+  useDeleteNitraCarInvoiceMutation,
 } from '../store/store'
 import { t } from '../utils/translations'
+import NitraCarInvoiceEditor from '../components/NitraCarInvoiceEditor'
 
 function Contracts() {
   const [openDialog, setOpenDialog] = useState(false)
@@ -190,6 +194,41 @@ function Contracts() {
   const [createContract, { isLoading: creating }] = useCreateContractMutation()
   const [updateContract, { isLoading: updating }] = useUpdateContractMutation()
   const [deleteContract, { isLoading: deleting }] = useDeleteContractMutation()
+  const [generateNitraCarInvoice, { isLoading: generatingInvoice }] = useGenerateNitraCarInvoiceMutation()
+  const [deleteNitraCarInvoice, { isLoading: deletingInvoice }] = useDeleteNitraCarInvoiceMutation()
+  const [invoiceEditorOpen, setInvoiceEditorOpen] = useState(false)
+  const [invoiceEditorData, setInvoiceEditorData] = useState(null)
+  const [invoiceEditorReservationId, setInvoiceEditorReservationId] = useState(null)
+
+  const handleGenerateNitraCarInvoice = async (reservationId) => {
+    if (!reservationId) {
+      alert('Faktúra: rezervácia nie je dostupná pre túto zmluvu.')
+      return
+    }
+    try {
+      const result = await generateNitraCarInvoice({ id: reservationId }).unwrap()
+      const data = result?.data
+      if (!data) throw new Error('Server nevrátil dáta faktúry')
+      setInvoiceEditorData(data)
+      setInvoiceEditorReservationId(reservationId)
+      setInvoiceEditorOpen(true)
+    } catch (error) {
+      console.error('Error generating invoice:', error)
+      alert('Chyba pri generovaní faktúry: ' + (error?.data?.message || error.message))
+    }
+  }
+
+  const handleDeleteNitraCarInvoice = async (reservationId, invoiceNumber) => {
+    if (!reservationId || !invoiceNumber) return
+    const ok = window.confirm(`Naozaj chcete zmazať faktúru ${invoiceNumber}? Po zmazaní bude možné vygenerovať novú.`)
+    if (!ok) return
+    try {
+      await deleteNitraCarInvoice({ id: reservationId }).unwrap()
+    } catch (error) {
+      console.error('Error deleting invoice:', error)
+      alert('Chyba pri mazaní faktúry: ' + (error?.data?.message || error.message))
+    }
+  }
   const [updateContractStatus] = useUpdateContractStatusMutation()
   const [signContractStaff] = useSignContractStaffMutation()
   const [generateContractPDF] = useGenerateContractPDFMutation()
@@ -1034,6 +1073,44 @@ function Contracts() {
                               <DeleteIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          {isNitraCarUser && (() => {
+                            const resId = contract.reservation?._id || contract.reservation
+                            const invNum = contract.reservation?.invoice?.number
+                            return (
+                              <>
+                                <Tooltip title={invNum ? `Faktúra ${invNum}` : 'Generovať faktúru'}>
+                                  <span>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleGenerateNitraCarInvoice(resId)}
+                                      color="primary"
+                                      disabled={generatingInvoice || !resId}
+                                      sx={{
+                                        backgroundColor: invNum ? 'success.light' : 'primary.light',
+                                        '&:hover': { backgroundColor: invNum ? 'success.main' : 'primary.main' }
+                                      }}
+                                    >
+                                      <InvoiceIcon fontSize="small" />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                                {invNum && (
+                                  <Tooltip title={`Zmazať faktúru ${invNum}`}>
+                                    <span>
+                                      <IconButton
+                                        size="small"
+                                        onClick={() => handleDeleteNitraCarInvoice(resId, invNum)}
+                                        color="error"
+                                        disabled={deletingInvoice}
+                                      >
+                                        <DeleteIcon fontSize="small" />
+                                      </IconButton>
+                                    </span>
+                                  </Tooltip>
+                                )}
+                              </>
+                            )
+                          })()}
                         </Box>
                     </TableCell>
                   </TableRow>
@@ -2201,6 +2278,14 @@ function Contracts() {
           </DialogActions>
         </Dialog>
       )}
+
+      {/* NitraCar Invoice Editor */}
+      <NitraCarInvoiceEditor
+        open={invoiceEditorOpen}
+        onClose={() => setInvoiceEditorOpen(false)}
+        reservationId={invoiceEditorReservationId}
+        invoiceData={invoiceEditorData}
+      />
     </Box>
   )
 }
