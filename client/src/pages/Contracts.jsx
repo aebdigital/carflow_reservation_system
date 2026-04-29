@@ -84,6 +84,7 @@ import {
   useGetSettingsQuery,
   useGenerateNitraCarInvoiceMutation,
   useDeleteNitraCarInvoiceMutation,
+  useGetUsersQuery,
 } from '../store/store'
 import { t } from '../utils/translations'
 import NitraCarInvoiceEditor from '../components/NitraCarInvoiceEditor'
@@ -240,6 +241,8 @@ function Contracts() {
   const [updateUser, { isLoading: updatingUser }] = useUpdateUserMutation()
   const { data: carsData } = useGetCarsQuery(undefined, { skip: !isNitraCarUser })
   const { data: settingsData, isLoading: settingsLoading } = useGetSettingsQuery(undefined, { skip: !isNitraCarUser })
+  const { data: usersData, isLoading: usersLoading } = useGetUsersQuery({ role: 'customer' })
+  const users = usersData?.data || []
   const cars = carsData?.data || []
   const pickupLocations = (settingsData?.data?.business?.pickupLocations || []).filter(loc => loc.isActive !== false)
 
@@ -764,25 +767,11 @@ function Contracts() {
         pricing: { ...editReservationData.pricing, dailyRate, totalDays: days, subtotal, totalAmount, locationFeesTotal, pickupFee, dropoffFee }
       }
 
-      // Prepare customer update data
-      const customerUpdateData = {
-        id: editCustomerId,
-        firstName: editCustomerData.firstName,
-        lastName: editCustomerData.lastName,
-        email: editCustomerData.email,
-        phone: editCustomerData.phone,
-        dateOfBirth: editCustomerData.dateOfBirth || undefined,
-        rodneCislo: editCustomerData.rodneCislo || undefined,
-        licenseNumber: editCustomerData.licenseNumber || undefined,
-        licenseExpiry: editCustomerData.licenseExpiry || undefined,
-        status: editCustomerData.status,
-        address: editCustomerData.address,
-      }
-
-      // Call mutations
+      // Customer record is selected from the customer DB and shown read-only in
+      // this dialog — we no longer mutate it from here. The reservation just
+      // gets re-linked to the picked customerId via updateReservation above.
       const promises = [
         updateReservation(reservationUpdateData).unwrap(),
-        updateUser(customerUpdateData).unwrap(),
       ]
       // Also update contract paymentMethod if changed
       if (editContractId) {
@@ -1175,7 +1164,7 @@ function Contracts() {
               </Grid>
             )}
 
-            {/* Customer Information */}
+            {/* Customer Information — picked from customer DB, fields read-only */}
             <Accordion defaultExpanded>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <PersonAddIcon sx={{ mr: 1 }} />
@@ -1183,80 +1172,67 @@ function Contracts() {
               </AccordionSummary>
               <AccordionDetails>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Meno"
-                      value={formData.customer.firstName}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        customer: { ...prev.customer, firstName: e.target.value }
-                      }))}
+                  <Grid item xs={12}>
+                    <Autocomplete
+                      options={users}
+                      loading={usersLoading}
+                      getOptionLabel={(option) => `${option.firstName || ''} ${option.lastName || ''} (${option.email || 'bez emailu'})`}
+                      isOptionEqualToValue={(option, value) => option._id === value?._id}
+                      value={users.find(u => u.email && u.email === formData.customer.email) || null}
+                      onChange={(e, picked) => {
+                        if (!picked) {
+                          setFormData(prev => ({
+                            ...prev,
+                            customer: { firstName: '', lastName: '', phone: '', email: '', address: { street: '', city: '', state: '', zipCode: '', country: 'Slovensko' }, idNumber: '' }
+                          }))
+                          return
+                        }
+                        setFormData(prev => ({
+                          ...prev,
+                          customer: {
+                            firstName: picked.firstName || '',
+                            lastName: picked.lastName || '',
+                            phone: picked.phone || '',
+                            email: picked.email || '',
+                            address: {
+                              street: picked.address?.street || '',
+                              city: picked.address?.city || '',
+                              state: picked.address?.state || '',
+                              zipCode: picked.address?.zipCode || '',
+                              country: picked.address?.country || 'Slovensko'
+                            },
+                            idNumber: picked.idNumber || ''
+                          }
+                        }))
+                      }}
                       disabled={dialogMode === 'view'}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Vybrať zákazníka z databázy"
+                          helperText={users.length === 0 ? 'Žiadni zákazníci nie sú dostupní' : `${users.length} zákazníkov dostupných`}
+                        />
+                      )}
+                      noOptionsText={usersLoading ? 'Načítavajú sa zákazníci…' : 'Žiadni zákazníci neboli nájdení'}
                     />
                   </Grid>
                   <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Priezvisko"
-                      value={formData.customer.lastName}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        customer: { ...prev.customer, lastName: e.target.value }
-                      }))}
-                      disabled={dialogMode === 'view'}
-                    />
+                    <TextField fullWidth label="Meno" value={formData.customer.firstName} disabled InputProps={{ readOnly: true }} />
                   </Grid>
                   <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Telefón"
-                      value={formData.customer.phone}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        customer: { ...prev.customer, phone: e.target.value }
-                      }))}
-                      disabled={dialogMode === 'view'}
-                    />
+                    <TextField fullWidth label="Priezvisko" value={formData.customer.lastName} disabled InputProps={{ readOnly: true }} />
                   </Grid>
                   <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="E-mail"
-                      value={formData.customer.email}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        customer: { ...prev.customer, email: e.target.value }
-                      }))}
-                      disabled={dialogMode === 'view'}
-                    />
+                    <TextField fullWidth label="Telefón" value={formData.customer.phone} disabled InputProps={{ readOnly: true }} />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField fullWidth label="E-mail" value={formData.customer.email} disabled InputProps={{ readOnly: true }} />
                   </Grid>
                   <Grid item xs={12} md={8}>
-                    <TextField
-                      fullWidth
-                      label="Adresa"
-                      value={formData.customer.address.street}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        customer: { 
-                          ...prev.customer, 
-                          address: { ...prev.customer.address, street: e.target.value }
-                        }
-                      }))}
-                      disabled={dialogMode === 'view'}
-                    />
+                    <TextField fullWidth label="Adresa" value={formData.customer.address.street} disabled InputProps={{ readOnly: true }} />
                   </Grid>
                   <Grid item xs={12} md={4}>
-                    <TextField
-                      fullWidth
-                      label="Číslo OP (voliteľné)"
-                      value={formData.customer.idNumber}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        customer: { ...prev.customer, idNumber: e.target.value }
-                      }))}
-                      disabled={dialogMode === 'view'}
-                    />
+                    <TextField fullWidth label="Číslo OP (voliteľné)" value={formData.customer.idNumber} disabled InputProps={{ readOnly: true }} />
                   </Grid>
                 </Grid>
               </AccordionDetails>
@@ -2020,70 +1996,64 @@ function Contracts() {
                   </Grid>
                 )}
 
-                {/* Customer Tab */}
+                {/* Customer Tab — picked from customer DB, fields read-only */}
                 {editTabValue === 1 && (
                   <Grid container spacing={2}>
-                    <Grid item xs={12} md={6}>
-                      <TextField
-                        fullWidth
-                        label="Meno"
-                        value={editCustomerData.firstName || ''}
-                        onChange={(e) => setEditCustomerData(prev => ({ ...prev, firstName: e.target.value }))}
-                        required
+                    <Grid item xs={12}>
+                      <Autocomplete
+                        options={users}
+                        loading={usersLoading}
+                        getOptionLabel={(option) => `${option.firstName || ''} ${option.lastName || ''} (${option.email || 'bez emailu'})`}
+                        isOptionEqualToValue={(option, value) => option._id === value?._id}
+                        value={users.find(u => u._id === editCustomerId) || null}
+                        onChange={(e, picked) => {
+                          if (!picked) {
+                            setEditCustomerId(null)
+                            setEditCustomerData({})
+                            return
+                          }
+                          setEditCustomerId(picked._id)
+                          setEditCustomerData({
+                            firstName: picked.firstName || '',
+                            lastName: picked.lastName || '',
+                            email: picked.email || '',
+                            phone: picked.phone || '',
+                            dateOfBirth: picked.dateOfBirth ? String(picked.dateOfBirth).slice(0, 10) : '',
+                            licenseNumber: picked.licenseNumber || '',
+                            licenseExpiry: picked.licenseExpiry ? String(picked.licenseExpiry).slice(0, 10) : '',
+                            rodneCislo: picked.rodneCislo || '',
+                            idNumber: picked.idNumber || '',
+                            status: picked.status || 'active',
+                            address: picked.address || {}
+                          })
+                        }}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            label="Vybrať zákazníka z databázy"
+                            helperText={users.length === 0 ? 'Žiadni zákazníci nie sú dostupní' : `${users.length} zákazníkov dostupných`}
+                          />
+                        )}
+                        noOptionsText={usersLoading ? 'Načítavajú sa zákazníci…' : 'Žiadni zákazníci neboli nájdení'}
                       />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <TextField
-                        fullWidth
-                        label="Priezvisko"
-                        value={editCustomerData.lastName || ''}
-                        onChange={(e) => setEditCustomerData(prev => ({ ...prev, lastName: e.target.value }))}
-                        required
-                      />
+                      <TextField fullWidth label="Meno" value={editCustomerData.firstName || ''} disabled InputProps={{ readOnly: true }} />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <TextField
-                        fullWidth
-                        label="E-mail"
-                        type="email"
-                        value={editCustomerData.email || ''}
-                        onChange={(e) => setEditCustomerData(prev => ({ ...prev, email: e.target.value }))}
-                        required
-                      />
+                      <TextField fullWidth label="Priezvisko" value={editCustomerData.lastName || ''} disabled InputProps={{ readOnly: true }} />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <TextField
-                        fullWidth
-                        label="Telefón"
-                        value={editCustomerData.phone || ''}
-                        onChange={(e) => setEditCustomerData(prev => ({ ...prev, phone: e.target.value }))}
-                        required
-                      />
+                      <TextField fullWidth label="E-mail" value={editCustomerData.email || ''} disabled InputProps={{ readOnly: true }} />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <TextField
-                        fullWidth
-                        label="Dátum narodenia"
-                        type="date"
-                        value={editCustomerData.dateOfBirth || ''}
-                        onChange={(e) => setEditCustomerData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
-                        InputLabelProps={{ shrink: true }}
-                      />
+                      <TextField fullWidth label="Telefón" value={editCustomerData.phone || ''} disabled InputProps={{ readOnly: true }} />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <FormControl fullWidth>
-                        <InputLabel>Stav zákazníka</InputLabel>
-                        <Select
-                          value={editCustomerData.status || 'active'}
-                          onChange={(e) => setEditCustomerData(prev => ({ ...prev, status: e.target.value }))}
-                          label="Stav zákazníka"
-                        >
-                          <MenuItem value="active">Aktívny</MenuItem>
-                          <MenuItem value="inactive">Neaktívny</MenuItem>
-                          <MenuItem value="pending">Čakajúci</MenuItem>
-                          <MenuItem value="blacklisted">Na čiernej listine</MenuItem>
-                        </Select>
-                      </FormControl>
+                      <TextField fullWidth label="Dátum narodenia" type="date" value={editCustomerData.dateOfBirth || ''} disabled InputLabelProps={{ shrink: true }} InputProps={{ readOnly: true }} />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField fullWidth label="Stav zákazníka" value={editCustomerData.status || 'active'} disabled InputProps={{ readOnly: true }} />
                     </Grid>
 
                     {/* License */}
@@ -2091,34 +2061,13 @@ function Contracts() {
                       <Typography variant="subtitle2" sx={{ fontWeight: 600, mt: 1 }}>Vodičský preukaz</Typography>
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <TextField
-                        fullWidth
-                        label="Číslo vodičského preukazu"
-                        value={editCustomerData.licenseNumber || ''}
-                        onChange={(e) => setEditCustomerData(prev => ({ ...prev, licenseNumber: e.target.value }))}
-                      />
+                      <TextField fullWidth label="Číslo vodičského preukazu" value={editCustomerData.licenseNumber || ''} disabled InputProps={{ readOnly: true }} />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <TextField
-                        fullWidth
-                        label="Platnosť vodičského preukazu"
-                        type="date"
-                        value={editCustomerData.licenseExpiry || ''}
-                        onChange={(e) => setEditCustomerData(prev => ({ ...prev, licenseExpiry: e.target.value }))}
-                        InputLabelProps={{ shrink: true }}
-                      />
+                      <TextField fullWidth label="Platnosť vodičského preukazu" type="date" value={editCustomerData.licenseExpiry || ''} disabled InputLabelProps={{ shrink: true }} InputProps={{ readOnly: true }} />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <TextField
-                        fullWidth
-                        label="Rodné číslo"
-                        value={editCustomerData.rodneCislo || ''}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9]/g, '')
-                          setEditCustomerData(prev => ({ ...prev, rodneCislo: val }))
-                        }}
-                        inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
-                      />
+                      <TextField fullWidth label="Rodné číslo" value={editCustomerData.rodneCislo || ''} disabled InputProps={{ readOnly: true }} />
                     </Grid>
 
                     {/* ID Document Type - NitraCar only */}
@@ -2128,12 +2077,12 @@ function Contracts() {
                           <Typography variant="subtitle2" sx={{ fontWeight: 600, mt: 1 }}>Doklad totožnosti</Typography>
                         </Grid>
                         <Grid item xs={12} md={6}>
-                          <FormControl fullWidth>
+                          <FormControl fullWidth disabled>
                             <InputLabel>Typ dokladu</InputLabel>
                             <Select
                               value={editIdDocumentType}
-                              onChange={(e) => setEditIdDocumentType(e.target.value)}
                               label="Typ dokladu"
+                              readOnly
                             >
                               <MenuItem value="op">Občiansky preukaz</MenuItem>
                               <MenuItem value="pas">Pas</MenuItem>
@@ -2142,12 +2091,7 @@ function Contracts() {
                           </FormControl>
                         </Grid>
                         <Grid item xs={12} md={6}>
-                          <TextField
-                            fullWidth
-                            label="Číslo dokladu"
-                            value={editCustomerData.idNumber || ''}
-                            onChange={(e) => setEditCustomerData(prev => ({ ...prev, idNumber: e.target.value }))}
-                          />
+                          <TextField fullWidth label="Číslo dokladu" value={editCustomerData.idNumber || ''} disabled InputProps={{ readOnly: true }} />
                         </Grid>
                       </>
                     )}
