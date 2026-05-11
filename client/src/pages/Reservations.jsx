@@ -1020,6 +1020,64 @@ function Reservations() {
     }
   }
 
+  // Rival only: export ALL reservations from the past year as a downloadable
+  // JSON file. Bypasses the paginated in-memory list (which only holds 25
+  // records) by fetching with a large limit directly.
+  const [exportingRivalJson, setExportingRivalJson] = useState(false)
+  const handleExportRivalReservationsJson = async () => {
+    setExportingRivalJson(true)
+    try {
+      const oneYearAgo = new Date()
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+      const cutoff = oneYearAgo.getTime()
+
+      const apiBase = (import.meta.env?.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/+$/, '')
+      const populate = 'customer,car,payment,selectedServices.service,selectedServices._id,selectedAdditionalInsurance.insuranceId,selectedExtendedInsurance.insuranceId,createdBy,lastModifiedBy,checkIn.staffMember,checkOut.staffMember'
+      const url = `${apiBase}/reservations?limit=10000&populate=${encodeURIComponent(populate)}`
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${auth.token}` }
+      })
+      if (!res.ok) {
+        let msg = `Server vrátil ${res.status}`
+        try { const j = await res.json(); msg = j?.message || msg } catch (_) {}
+        throw new Error(msg)
+      }
+      const json = await res.json()
+      const all = Array.isArray(json?.data) ? json.data : []
+
+      // Keep anything whose createdAt OR startDate falls inside the past year
+      const recent = all.filter(r => {
+        const created = r.createdAt ? new Date(r.createdAt).getTime() : 0
+        const start = r.startDate ? new Date(r.startDate).getTime() : 0
+        return Math.max(created, start) >= cutoff
+      })
+
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        rangeStart: oneYearAgo.toISOString(),
+        rangeEnd: new Date().toISOString(),
+        count: recent.length,
+        totalReservationsInTenant: all.length,
+        reservations: recent
+      }
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = `rival-reservations-${new Date().toISOString().slice(0, 10)}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(blobUrl)
+    } catch (err) {
+      console.error('JSON export failed:', err)
+      alert('Export JSON zlyhal: ' + err.message)
+    } finally {
+      setExportingRivalJson(false)
+    }
+  }
+
 
 
   const handleCreateInvoice = async (reservation) => {
@@ -1377,18 +1435,33 @@ function Reservations() {
             Spravujte všetky rezervácie a požiadavky zákazníkov.
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog('create')}
-          size="large"
-          sx={{ 
-            alignSelf: { xs: 'flex-start', sm: 'auto' },
-            mt: { xs: 1, sm: 0 }
-          }}
-        >
-          Nová rezervácia
-        </Button>
+        <Box sx={{
+          display: 'flex',
+          gap: 1,
+          flexDirection: { xs: 'column', sm: 'row' },
+          alignSelf: { xs: 'flex-start', sm: 'auto' },
+          mt: { xs: 1, sm: 0 }
+        }}>
+          {auth.user?.email === 'rival@test.sk' && (
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={handleExportRivalReservationsJson}
+              disabled={exportingRivalJson}
+              size="large"
+            >
+              {exportingRivalJson ? 'Exportuje sa…' : 'Export JSON (1 rok)'}
+            </Button>
+          )}
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpenDialog('create')}
+            size="large"
+          >
+            Nová rezervácia
+          </Button>
+        </Box>
       </Box>
 
       {/* Filter section for NitraCar user only */}

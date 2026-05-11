@@ -44,7 +44,8 @@ import {
   Phone as PhoneIcon,
   Badge as LicenseIcon,
   Search as SearchIcon,
-  Clear as ClearIcon
+  Clear as ClearIcon,
+  Download as DownloadIcon
 } from '@mui/icons-material'
 import {
   useGetUsersQuery,
@@ -94,6 +95,60 @@ function Customers() {
   const [searchQuery, setSearchQuery] = useState('')
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [customerToDelete, setCustomerToDelete] = useState(null)
+  const [exportingRivalJson, setExportingRivalJson] = useState(false)
+
+  // Rival only: export ALL customers from the past year as a downloadable JSON file.
+  // Bypasses the paginated in-memory list by fetching with a large limit directly.
+  const handleExportRivalCustomersJson = async () => {
+    setExportingRivalJson(true)
+    try {
+      const oneYearAgo = new Date()
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+      const cutoff = oneYearAgo.getTime()
+
+      const apiBase = (import.meta.env?.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/+$/, '')
+      const url = `${apiBase}/users?role=customer&limit=10000`
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${auth.token}` }
+      })
+      if (!res.ok) {
+        let msg = `Server vrátil ${res.status}`
+        try { const j = await res.json(); msg = j?.message || msg } catch (_) {}
+        throw new Error(msg)
+      }
+      const json = await res.json()
+      const all = Array.isArray(json?.data) ? json.data : []
+
+      const recent = all.filter(c => {
+        const created = c.createdAt ? new Date(c.createdAt).getTime() : 0
+        return created >= cutoff
+      })
+
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        rangeStart: oneYearAgo.toISOString(),
+        rangeEnd: new Date().toISOString(),
+        count: recent.length,
+        totalCustomersInTenant: all.length,
+        customers: recent
+      }
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = `rival-customers-${new Date().toISOString().slice(0, 10)}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(blobUrl)
+    } catch (err) {
+      console.error('JSON export failed:', err)
+      alert('Export JSON zlyhal: ' + err.message)
+    } finally {
+      setExportingRivalJson(false)
+    }
+  }
 
   // Initial form state
   const initialFormState = {
@@ -560,18 +615,33 @@ function Customers() {
             {t('manageCustomerAccounts')}
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog('create')}
-          size="large"
-          sx={{ 
-            alignSelf: { xs: 'flex-start', sm: 'auto' },
-            mt: { xs: 1, sm: 0 }
-          }}
-        >
-          {t('addCustomer')}
-        </Button>
+        <Box sx={{
+          display: 'flex',
+          gap: 1,
+          flexDirection: { xs: 'column', sm: 'row' },
+          alignSelf: { xs: 'flex-start', sm: 'auto' },
+          mt: { xs: 1, sm: 0 }
+        }}>
+          {auth.user?.email === 'rival@test.sk' && (
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={handleExportRivalCustomersJson}
+              disabled={exportingRivalJson}
+              size="large"
+            >
+              {exportingRivalJson ? 'Exportuje sa…' : 'Export JSON (1 rok)'}
+            </Button>
+          )}
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpenDialog('create')}
+            size="large"
+          >
+            {t('addCustomer')}
+          </Button>
+        </Box>
       </Box>
 
       {/* Search Bar */}
