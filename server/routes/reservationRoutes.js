@@ -5,6 +5,7 @@ const {
   createReservation,
   updateReservation,
   cancelReservation,
+  restoreReservation,
   confirmReservation,
   checkInReservation,
   checkOutReservation,
@@ -52,6 +53,7 @@ router.route('/:id')
 
 // Special actions
 router.put('/:id/cancel', cancelReservation);
+router.put('/:id/restore', requireStaff, restoreReservation);
 router.put('/:id/confirm', confirmReservation);
 router.put('/:id/confirm-payment', requireStaff, confirmPayment);
 router.post('/:id/send-payment-notification', requireStaff, sendPaymentNotification);

@@ -957,6 +957,39 @@ const cancelReservation = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Restore a cancelled reservation back to "confirmed" status.
+// @route   PUT /api/reservations/:id/restore
+// @access  Private/Staff
+const restoreReservation = asyncHandler(async (req, res, next) => {
+  const reservation = await Reservation.findOne({
+    _id: req.params.id,
+    tenantId: req.user.tenantId
+  });
+
+  if (!reservation) {
+    return next(new AppError('Rezervácia nebola nájdená', 404));
+  }
+
+  if (reservation.status !== 'cancelled') {
+    return next(new AppError('Obnoviť možno iba zrušenú rezerváciu', 400));
+  }
+
+  reservation.status = 'confirmed';
+  reservation.cancellation = undefined;
+  reservation.confirmation = {
+    date: new Date(),
+    notes: 'Obnovená zo zrušeného stavu',
+    confirmedBy: req.user._id
+  };
+  await reservation.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Rezervácia bola obnovená',
+    data: reservation
+  });
+});
+
 // @desc    Confirm reservation
 // @route   PUT /api/reservations/:id/confirm
 // @access  Private
@@ -3150,6 +3183,7 @@ module.exports = {
   createReservation,
   updateReservation,
   cancelReservation,
+  restoreReservation,
   confirmReservation,
   checkInReservation,
   checkOutReservation,

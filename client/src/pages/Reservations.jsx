@@ -68,6 +68,7 @@ import {
   useCreateReservationMutation,
   useUpdateReservationMutation,
   useCancelReservationMutation,
+  useRestoreReservationMutation,
   useDeleteReservationMutation,
   useConfirmReservationMutation,
   useConfirmReservationPaymentMutation,
@@ -353,6 +354,7 @@ function Reservations() {
   const [createReservation, { isLoading: creating }] = useCreateReservationMutation()
   const [updateReservation, { isLoading: updating }] = useUpdateReservationMutation()
   const [cancelReservation] = useCancelReservationMutation()
+  const [restoreReservation] = useRestoreReservationMutation()
   const [deleteReservation] = useDeleteReservationMutation()
   const [confirmReservation] = useConfirmReservationMutation()
   const [confirmReservationPayment] = useConfirmReservationPaymentMutation()
@@ -865,12 +867,21 @@ function Reservations() {
   // Action handlers
   const handleCancel = async (reservation) => {
     try {
-      await cancelReservation({ 
-        id: reservation._id, 
-        reason: 'Cancelled by admin' 
+      await cancelReservation({
+        id: reservation._id,
+        reason: 'Cancelled by admin'
       }).unwrap()
     } catch (error) {
       console.error('Error cancelling reservation:', error)
+    }
+  }
+
+  const handleRestore = async (reservation) => {
+    try {
+      await restoreReservation({ id: reservation._id }).unwrap()
+    } catch (error) {
+      console.error('Error restoring reservation:', error)
+      alert('Obnovenie zlyhalo: ' + (error?.data?.message || error.message))
     }
   }
 
@@ -1859,6 +1870,17 @@ function Reservations() {
                               <CancelIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          {reservation.status === 'cancelled' && (
+                            <Tooltip title="Obnoviť rezerváciu">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleRestore(reservation)}
+                                color="success"
+                              >
+                                <ConfirmIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                           {(reservation.status === 'cancelled' || reservation.status === 'completed') && (
                             <Tooltip title="Vymazať rezerváciu">
                               <IconButton
@@ -2631,6 +2653,28 @@ function Reservations() {
                               <ViewIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          {reservation.status === 'cancelled' && (
+                            <Tooltip title="Obnoviť rezerváciu">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleRestore(reservation)}
+                                color="success"
+                              >
+                                <ConfirmIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          {(reservation.status === 'cancelled' || reservation.status === 'completed') && (
+                            <Tooltip title="Vymazať rezerváciu">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDeleteClick(reservation)}
+                                color="error"
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                           <Tooltip title={auth.user?.email === 'lerent@lerent.sk' ? 'Funkcia dočasne nedostupná' : 'Stiahnuť zmluvu'}>
                             <span>
                               <IconButton

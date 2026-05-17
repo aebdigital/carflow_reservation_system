@@ -406,6 +406,13 @@ export const api = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [{ type: 'Reservation', id }, 'Reservation', 'Car'],
     }),
+    restoreReservation: builder.mutation({
+      query: ({ id }) => ({
+        url: `reservations/${id}/restore`,
+        method: 'PUT',
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Reservation', id }, 'Reservation', 'Car'],
+    }),
     deleteReservation: builder.mutation({
       query: (id) => ({
         url: `reservations/${id}`,
@@ -1269,6 +1276,7 @@ export const {
   useSendConfirmationEmailMutation,
   useCreateInvoiceMutation,
   useCancelReservationMutation,
+  useRestoreReservationMutation,
   useDeleteReservationMutation,
   useCheckInReservationMutation,
   useCheckOutReservationMutation,
