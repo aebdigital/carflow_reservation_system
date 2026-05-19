@@ -1389,7 +1389,7 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     // Populate reservation details for response
     const populatedReservation = await Reservation.findById(savedReservation._id)
       .populate('customer', 'firstName lastName email phone')
-      .populate('car', 'brand model year registrationNumber images')
+      .populate('car', 'brand model year registrationNumber images mileageLimits')
       .populate('appliedDiscountCodes.discountCode', 'code description discountType discountValue');
 
     // 🧾 Create SuperFaktura invoice for all LeRent reservations
@@ -2289,7 +2289,7 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     // Populate the reservation with customer and car details
     const populatedReservation = await Reservation.findById(savedReservation._id)
       .populate('customer', 'firstName lastName email phone')
-      .populate('car', 'brand model year registrationNumber dailyRate images');
+      .populate('car', 'brand model year registrationNumber dailyRate images mileageLimits');
 
     // 🧾 Create SuperFaktura invoice for LeRent tenants with bank transfer payment only
     let invoicePdfBuffer = null;

@@ -537,12 +537,24 @@ class SMTP2GOService {
       }))
     ];
 
-    // Total allowed km = base daily limit * days + any "km" service quantity
+    // Total allowed km = daily limit * days + any "km" service quantity.
+    // Resolution order for the per-day limit:
+    //   1. reservation.terms.mileageLimit  (explicit per-reservation override, >0)
+    //   2. car.mileageLimits.dailyLimit    (explicit per-car limit, >0)
+    //   3. NitraCar standard fallback of 200 km/day (matches the contract's
+    //      rentalRules.dailyKmLimit default — NitraCar is never "unlimited")
+    //   4. otherwise unlimited
+    const NITRACAR_DEFAULT_DAILY_KM = 200;
     const carDailyKm = rawReservation?.car?.mileageLimits?.dailyLimit;
     const reservationKmLimit = rawReservation?.terms?.mileageLimit;
-    const baseKmPerDay = (typeof reservationKmLimit === 'number' && reservationKmLimit > 0)
-      ? reservationKmLimit
-      : (typeof carDailyKm === 'number' && carDailyKm > 0 ? carDailyKm : null);
+    let baseKmPerDay = null;
+    if (typeof reservationKmLimit === 'number' && reservationKmLimit > 0) {
+      baseKmPerDay = reservationKmLimit;
+    } else if (typeof carDailyKm === 'number' && carDailyKm > 0) {
+      baseKmPerDay = carDailyKm;
+    } else if (isNitraCar) {
+      baseKmPerDay = NITRACAR_DEFAULT_DAILY_KM;
+    }
     const baseKmTotal = baseKmPerDay ? baseKmPerDay * totalDays : null;
     const extraKmFromServices = selectedServices
       .filter(s => /\bkm\b/i.test(s.name || s.serviceName || ''))
