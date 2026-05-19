@@ -197,10 +197,15 @@ class ReminderScheduler {
       // Prepare email data using existing helper
       const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
 
-      // Get the admin/tenant user for tenant-specific email templates
-      let adminUser = reservation.createdBy || null;
-      if (!adminUser && reservation.tenantId) {
-        adminUser = await User.findById(reservation.tenantId).select('email tenantId');
+      // Get the tenant admin user for tenant-specific email templates.
+      // We must NEVER use reservation.createdBy here — for public bookings
+      // that's the customer, and feeding the customer's identity into
+      // getTenantEmailConfig() makes the template loader fall back to
+      // the default folder (Rival). Look up by tenantId + role='admin'.
+      let adminUser = null;
+      if (reservation.tenantId) {
+        adminUser = await User.findOne({ tenantId: reservation.tenantId, role: 'admin' })
+          .select('email tenantId businessName companyName phoneNumber phone');
       }
 
       // Send 24-hour reminder email, pass raw reservation for car image
@@ -281,10 +286,15 @@ class ReminderScheduler {
       // Prepare email data using existing helper
       const emailData = emailHelpers.prepareReservationEmailData(reservation, reservation.car, reservation.customer);
       
-      // Get the admin/tenant user for tenant-specific email templates
-      let adminUser = reservation.createdBy || null;
-      if (!adminUser && reservation.tenantId) {
-        adminUser = await User.findById(reservation.tenantId).select('email tenantId');
+      // Get the tenant admin user for tenant-specific email templates.
+      // We must NEVER use reservation.createdBy here — for public bookings
+      // that's the customer, and feeding the customer's identity into
+      // getTenantEmailConfig() makes the template loader fall back to
+      // the default folder (Rival). Look up by tenantId + role='admin'.
+      let adminUser = null;
+      if (reservation.tenantId) {
+        adminUser = await User.findOne({ tenantId: reservation.tenantId, role: 'admin' })
+          .select('email tenantId businessName companyName phoneNumber phone');
       }
 
       // Send review request email, pass raw reservation for car image
