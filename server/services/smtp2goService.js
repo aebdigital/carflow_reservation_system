@@ -35,6 +35,14 @@ class SMTP2GOService {
    * @param {Object} user - User object with email to determine tenant
    */
   getTenantEmailConfig(user = null) {
+    // SAFETY: callers must pass a tenant ADMIN/STAFF user, never a customer.
+    // If a customer ever leaks in here we'd fall through to the default
+    // (Rival) config and the customer would get a Rival-branded email.
+    if (user && user.role && user.role === 'customer') {
+      console.warn('⚠️ [EMAIL] getTenantEmailConfig received a customer user — ignoring to prevent wrong-tenant template selection. email=' + (user.email || 'unknown'));
+      user = null;
+    }
+
     const userEmail = user?.email ? user.email.toLowerCase().trim() : '';
 
     // DEBUG: Log tenant email configuration
