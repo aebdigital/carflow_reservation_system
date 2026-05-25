@@ -160,6 +160,9 @@ function Customers() {
     rodneCislo: '',
     licenseNumber: '',
     licenseExpiry: null,
+    idNumber: '',
+    passportNumber: '',
+    residencePermitNumber: '',
     address: {
       street: '',
       city: '',
@@ -356,6 +359,9 @@ function Customers() {
         rodneCislo: customer.rodneCislo || '',
         licenseNumber: customer.licenseNumber || '',
         licenseExpiry: customer.licenseExpiry ? new Date(customer.licenseExpiry).toISOString().split('T')[0] : null,
+        idNumber: customer.idNumber || '',
+        passportNumber: customer.passportNumber || '',
+        residencePermitNumber: customer.residencePermitNumber || '',
         address: customer.address || initialFormState.address,
         preferences: customer.preferences || initialFormState.preferences,
         role: customer.role || 'customer',
@@ -780,6 +786,28 @@ function Customers() {
                 )}
               </Grid>
 
+              {/* Doklady totožnosti — NitraCar only */}
+              {isNitraCarUser && (selectedCustomer.idNumber || selectedCustomer.passportNumber || selectedCustomer.residencePermitNumber) && (
+                <Grid item xs={12} md={6}>
+                  <Typography variant="h6" gutterBottom>Doklady totožnosti</Typography>
+                  {selectedCustomer.idNumber && (
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Občiansky preukaz: {selectedCustomer.idNumber}
+                    </Typography>
+                  )}
+                  {selectedCustomer.passportNumber && (
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Pas: {selectedCustomer.passportNumber}
+                    </Typography>
+                  )}
+                  {selectedCustomer.residencePermitNumber && (
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Povolenie na pobyt: {selectedCustomer.residencePermitNumber}
+                    </Typography>
+                  )}
+                </Grid>
+              )}
+
               {/* Address Information */}
               <Grid item xs={12}>
                 <Typography variant="h6" gutterBottom>Adresa</Typography>
@@ -965,6 +993,44 @@ function Customers() {
                     inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                   />
                 </Grid>
+              )}
+
+              {/* Doklady totožnosti — NitraCar only */}
+              {isNitraCarUser && (
+                <>
+                  <Grid item xs={12}>
+                    <Typography variant="h6" gutterBottom>
+                      Doklady totožnosti
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      fullWidth
+                      label="Číslo občianskeho preukazu"
+                      value={formData.idNumber || ''}
+                      onChange={(e) => setFormData({ ...formData, idNumber: e.target.value })}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      fullWidth
+                      label="Číslo pasu"
+                      value={formData.passportNumber || ''}
+                      onChange={(e) => setFormData({ ...formData, passportNumber: e.target.value })}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      fullWidth
+                      label="Číslo povolenia na pobyt"
+                      value={formData.residencePermitNumber || ''}
+                      onChange={(e) => setFormData({ ...formData, residencePermitNumber: e.target.value })}
+                      disabled={dialogMode === 'view'}
+                    />
+                  </Grid>
+                </>
               )}
 
               {/* Address Information */}

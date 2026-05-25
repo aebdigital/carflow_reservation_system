@@ -177,7 +177,9 @@ const createUser = asyncHandler(async (req, res, next) => {
     dateOfBirth,
     address,
     idNumber,
-    rodneCislo
+    rodneCislo,
+    passportNumber,
+    residencePermitNumber
   } = req.body;
 
   // Check if user already exists in this tenant (only when email is provided —
@@ -218,6 +220,8 @@ const createUser = asyncHandler(async (req, res, next) => {
     if (dateOfBirth) userData.dateOfBirth = dateOfBirth;
     if (idNumber) userData.idNumber = idNumber;
     if (rodneCislo) userData.rodneCislo = rodneCislo;
+    if (passportNumber) userData.passportNumber = passportNumber;
+    if (residencePermitNumber) userData.residencePermitNumber = residencePermitNumber;
   }
 
   if (address) {
@@ -275,7 +279,9 @@ const updateUser = asyncHandler(async (req, res, next) => {
     'dateOfBirth',
     'address',
     'idNumber',
-    'rodneCislo'
+    'rodneCislo',
+    'passportNumber',
+    'residencePermitNumber'
   ];
 
   // Admin can update additional fields

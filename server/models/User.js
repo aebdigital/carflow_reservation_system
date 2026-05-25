@@ -71,7 +71,17 @@ const userSchema = new mongoose.Schema({
     required: false // Made optional to support public API customers without license
   },
   idNumber: {
-    type: String, // Číslo OP (ID card number)
+    type: String, // Číslo OP (občiansky preukaz)
+    sparse: true,
+    trim: true
+  },
+  passportNumber: {
+    type: String, // Číslo pasu
+    sparse: true,
+    trim: true
+  },
+  residencePermitNumber: {
+    type: String, // Číslo povolenia na pobyt
     sparse: true,
     trim: true
   },
