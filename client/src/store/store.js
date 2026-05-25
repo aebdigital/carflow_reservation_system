@@ -332,10 +332,10 @@ export const api = createApi({
       invalidatesTags: (result, error, { id }) => [{ type: 'Reservation', id }, 'Reservation'],
     }),
     confirmReservation: builder.mutation({
-      query: ({ id, notes, skipEmail }) => ({
+      query: ({ id, notes, skipEmail, skipPaymentInfo }) => ({
         url: `reservations/${id}/confirm`,
         method: 'PUT',
-        body: { notes, skipEmail },
+        body: { notes, skipEmail, skipPaymentInfo },
       }),
       invalidatesTags: (result, error, { id }) => [{ type: 'Reservation', id }, 'Reservation', 'Car'],
     }),
