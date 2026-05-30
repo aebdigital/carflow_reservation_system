@@ -3203,65 +3203,59 @@ function Reservations() {
                               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <Typography variant="body1" fontWeight="bold">{t('totalAmount')}:</Typography>
 
-                                {/* Price editing for Lerent only */}
-                                {auth.user?.email === 'lerent@lerent.sk' ? (
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    {editingPrice ? (
-                                      <>
-                                        <TextField
-                                          value={editedPrice}
-                                          onChange={(e) => setEditedPrice(e.target.value)}
-                                          size="small"
-                                          type="number"
-                                          inputProps={{ step: '0.01', min: '0' }}
-                                          sx={{ width: '120px' }}
-                                          autoFocus
-                                          onKeyPress={(e) => {
-                                            if (e.key === 'Enter') {
-                                              handleSaveEditedPrice()
-                                            } else if (e.key === 'Escape') {
-                                              handleCancelEditingPrice()
-                                            }
-                                          }}
-                                        />
-                                        <Typography variant="body1" fontWeight="bold">€</Typography>
-                                        <IconButton
-                                          size="small"
-                                          color="success"
-                                          onClick={handleSaveEditedPrice}
-                                          title="Uložiť"
-                                        >
-                                          <CheckIcon fontSize="small" />
-                                        </IconButton>
-                                        <IconButton
-                                          size="small"
-                                          color="error"
-                                          onClick={handleCancelEditingPrice}
-                                          title="Zrušiť"
-                                        >
-                                          <CloseIcon fontSize="small" />
-                                        </IconButton>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Typography variant="body1" fontWeight="bold" color="primary">
-                                          {fullTotal.toFixed(2)}€
-                                        </Typography>
-                                        <IconButton
-                                          size="small"
-                                          onClick={handleStartEditingPrice}
-                                          title="Upraviť cenu"
-                                        >
-                                          <EditIcon fontSize="small" />
-                                        </IconButton>
-                                      </>
-                                    )}
-                                  </Box>
-                                ) : (
-                                  <Typography variant="body1" fontWeight="bold" color="primary">
-                                    {fullTotal.toFixed(2)}€
-                                  </Typography>
-                                )}
+                                {/* Inline price editing — available for all admins */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  {editingPrice ? (
+                                    <>
+                                      <TextField
+                                        value={editedPrice}
+                                        onChange={(e) => setEditedPrice(e.target.value)}
+                                        size="small"
+                                        type="number"
+                                        inputProps={{ step: '0.01', min: '0' }}
+                                        sx={{ width: '120px' }}
+                                        autoFocus
+                                        onKeyPress={(e) => {
+                                          if (e.key === 'Enter') {
+                                            handleSaveEditedPrice()
+                                          } else if (e.key === 'Escape') {
+                                            handleCancelEditingPrice()
+                                          }
+                                        }}
+                                      />
+                                      <Typography variant="body1" fontWeight="bold">€</Typography>
+                                      <IconButton
+                                        size="small"
+                                        color="success"
+                                        onClick={handleSaveEditedPrice}
+                                        title="Uložiť"
+                                      >
+                                        <CheckIcon fontSize="small" />
+                                      </IconButton>
+                                      <IconButton
+                                        size="small"
+                                        color="error"
+                                        onClick={handleCancelEditingPrice}
+                                        title="Zrušiť"
+                                      >
+                                        <CloseIcon fontSize="small" />
+                                      </IconButton>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Typography variant="body1" fontWeight="bold" color="primary">
+                                        {Number(selectedReservation.pricing?.totalAmount || fullTotal).toFixed(2)}€
+                                      </Typography>
+                                      <IconButton
+                                        size="small"
+                                        onClick={handleStartEditingPrice}
+                                        title="Upraviť cenu"
+                                      >
+                                        <EditIcon fontSize="small" />
+                                      </IconButton>
+                                    </>
+                                  )}
+                                </Box>
                               </Box>
                             );
                           })()}
