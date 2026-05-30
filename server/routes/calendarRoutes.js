@@ -81,10 +81,12 @@ router.get('/ics', async (req, res) => {
 
       const startDate = new Date(reservation.startDate);
       const endDate = new Date(reservation.endDate);
+      const customerPhone = reservation.customer?.phone || '';
+      const phoneSuffix = customerPhone ? ` - ${customerPhone}` : '';
 
       // Timed event marking the exact start-of-rental hour
-      // (e.g. "Toyota Yaris (BL-123XY) - zaciatok" at 10:00 if rental starts at 10:00).
-      const startEventLabel = `${carInfo}${licensePlate ? ` (${licensePlate})` : ''} - zaciatok`;
+      // (e.g. "Toyota Yaris (BL-123XY) - zaciatok - +421 ..." at 10:00 if rental starts at 10:00).
+      const startEventLabel = `${carInfo}${licensePlate ? ` (${licensePlate})` : ''} - zaciatok${phoneSuffix}`;
       const startEventEnd = new Date(startDate);
       startEventEnd.setMinutes(startEventEnd.getMinutes() + 30);
 
@@ -105,7 +107,7 @@ router.get('/ics', async (req, res) => {
       // All-day "occupied" markers for every full day between the pickup and return
       // dates (exclusive of both). Makes it obvious in month/week view that the car
       // is booked all day on those in-between days.
-      const dayLabel = `${carInfo}${licensePlate ? ` (${licensePlate})` : ''} - ${customerName}`;
+      const dayLabel = `${carInfo}${licensePlate ? ` (${licensePlate})` : ''} - ${customerName}${phoneSuffix}`;
       const startDay = new Date(startDate);
       startDay.setHours(0, 0, 0, 0);
       const endDay = new Date(endDate);
@@ -138,7 +140,7 @@ router.get('/ics', async (req, res) => {
 
       // Timed event marking the exact end-of-rental hour
       // (e.g. "Toyota Yaris (BL-123XY) - koniec" at 14:00 if rental ends at 14:00).
-      const endEventLabel = `${carInfo}${licensePlate ? ` (${licensePlate})` : ''} - koniec`;
+      const endEventLabel = `${carInfo}${licensePlate ? ` (${licensePlate})` : ''} - koniec${phoneSuffix}`;
       const endEventEnd = new Date(endDate);
       endEventEnd.setMinutes(endEventEnd.getMinutes() + 30);
 
