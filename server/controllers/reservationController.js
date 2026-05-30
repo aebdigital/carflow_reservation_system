@@ -695,13 +695,15 @@ const createReservation = asyncHandler(async (req, res, next) => {
         results.push({ type: 'admin', success: false, error: adminError.message });
       }
 
-      // Send customer confirmation with PDF attachment
+      // Send customer confirmation with PDF attachment. Pass the enriched
+      // reservation (car inlined as carDoc) so deposit / pricing / mileage
+      // are available to the template renderer.
       try {
         await emailService.sendCustomerReservationConfirmation(
           customerDoc.email,
           emailData,
           req.user,
-          reservation
+          enrichedReservation
         );
         console.log('✅ [EMAIL] Customer confirmation (without attachment) sent to:', customerDoc.email);
 
@@ -711,7 +713,7 @@ const createReservation = asyncHandler(async (req, res, next) => {
             customerDoc.email,
             emailData,
             req.user,
-            reservation,
+            enrichedReservation,
             attachments
           );
           console.log('✅ [EMAIL] Customer confirmation email with PDF attachment sent to:', customerDoc.email);
