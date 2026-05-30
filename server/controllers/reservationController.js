@@ -309,8 +309,9 @@ const createReservation = asyncHandler(async (req, res, next) => {
   const overlappingReservations = await Reservation.find({
     car: car,
     tenantId: req.user.tenantId,
+    // Canonical strict overlap (back-to-back is NOT overlap)
     $or: [
-      { startDate: { $lte: end }, endDate: { $gte: start } }
+      { startDate: { $lt: end }, endDate: { $gt: start } }
     ],
     status: { $in: overlapBlockingStatuses }
   });

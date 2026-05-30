@@ -2304,10 +2304,11 @@ const getCarCalendar = asyncHandler(async (req, res, next) => {
   const reservations = await Reservation.find({
     car: req.params.id,
     status: { $in: statusesToInclude },
+    // Canonical strict overlap (back-to-back is NOT overlap)
     $or: [
       {
-        startDate: { $lte: end },
-        endDate: { $gte: start }
+        startDate: { $lt: end },
+        endDate: { $gt: start }
       }
     ]
   }).select('startDate endDate status reservationNumber');

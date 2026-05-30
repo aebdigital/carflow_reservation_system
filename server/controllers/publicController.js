@@ -179,18 +179,12 @@ const getCarsByUser = asyncHandler(async (req, res, next) => {
         car: car._id,
         tenantId: car.tenantId,
         status: { $in: blockingStatuses },
+        // Canonical strict overlap: existing.start < new.end AND existing.end > new.start.
+        // Back-to-back rentals (one ends 10:00, next starts 10:00) are NOT overlaps.
         $or: [
           {
-            startDate: { $lte: start },
-            endDate: { $gte: start }
-          },
-          {
-            startDate: { $lte: end },
-            endDate: { $gte: end }
-          },
-          {
-            startDate: { $gte: start },
-            endDate: { $lte: end }
+            startDate: { $lt: end },
+            endDate: { $gt: start }
           }
         ]
       });
@@ -228,18 +222,11 @@ const getCarsByUser = asyncHandler(async (req, res, next) => {
         car: car._id,
         tenantId: car.tenantId,
         status: { $in: fallbackBlockingStatuses },
+        // Canonical strict overlap (back-to-back is NOT overlap)
         $or: [
           {
-            startDate: { $lte: new Date(startDate) },
-            endDate: { $gte: new Date(startDate) }
-          },
-          {
-            startDate: { $lte: new Date(endDate) },
-            endDate: { $gte: new Date(endDate) }
-          },
-          {
-            startDate: { $gte: new Date(startDate) },
-            endDate: { $lte: new Date(endDate) }
+            startDate: { $lt: new Date(endDate) },
+            endDate: { $gt: new Date(startDate) }
           }
         ]
       });
@@ -419,18 +406,12 @@ const getCarAvailabilityByUser = asyncHandler(async (req, res, next) => {
       car: carId,
       tenantId,
       status: { $in: availabilityStatuses },
+      // Canonical strict overlap: existing.start < new.end AND existing.end > new.start.
+      // Back-to-back rentals (one ends 10:00, next starts 10:00) are NOT overlaps.
       $or: [
         {
-          startDate: { $lte: start },
-          endDate: { $gte: start }
-        },
-        {
-          startDate: { $lte: end },
-          endDate: { $gte: end }
-        },
-        {
-          startDate: { $gte: start },
-          endDate: { $lte: end }
+          startDate: { $lt: end },
+          endDate: { $gt: start }
         }
       ]
     }).select('startDate endDate');
@@ -716,18 +697,12 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
     car: carId,
     tenantId,
     status: { $in: createBlockingStatuses },
+    // Canonical strict overlap: existing.start < new.end AND existing.end > new.start.
+    // Back-to-back rentals (one ends 10:00, next starts 10:00) are NOT overlaps.
     $or: [
       {
-        startDate: { $lte: start },
-        endDate: { $gte: start }
-      },
-      {
-        startDate: { $lte: end },
-        endDate: { $gte: end }
-      },
-      {
-        startDate: { $gte: start },
-        endDate: { $lte: end }
+        startDate: { $lt: end },
+        endDate: { $gt: start }
       }
     ]
   });
@@ -1816,18 +1791,12 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
     car: carId,
     tenantId,
     status: { $in: createBlockingStatuses },
+    // Canonical strict overlap: existing.start < new.end AND existing.end > new.start.
+    // Back-to-back rentals (one ends 10:00, next starts 10:00) are NOT overlaps.
     $or: [
       {
-        startDate: { $lte: start },
-        endDate: { $gte: start }
-      },
-      {
-        startDate: { $lte: end },
-        endDate: { $gte: end }
-      },
-      {
-        startDate: { $gte: start },
-        endDate: { $lte: end }
+        startDate: { $lt: end },
+        endDate: { $gt: start }
       }
     ]
   });
@@ -3205,18 +3174,12 @@ const getPublicCars = asyncHandler(async (req, res, next) => {
         car: car._id,
         tenantId: car.tenantId,
         status: { $in: await getBlockingForCar(car.tenantId) },
+        // Canonical strict overlap: existing.start < new.end AND existing.end > new.start.
+        // Back-to-back rentals (one ends 10:00, next starts 10:00) are NOT overlaps.
         $or: [
           {
-            startDate: { $lte: start },
-            endDate: { $gte: start }
-          },
-          {
-            startDate: { $lte: end },
-            endDate: { $gte: end }
-          },
-          {
-            startDate: { $gte: start },
-            endDate: { $lte: end }
+            startDate: { $lt: end },
+            endDate: { $gt: start }
           }
         ]
       });
@@ -3262,18 +3225,11 @@ const getPublicCars = asyncHandler(async (req, res, next) => {
         car: car._id,
         tenantId: car.tenantId,
         status: { $in: await getBlockingForFallbackCar(car.tenantId) },
+        // Canonical strict overlap (back-to-back is NOT overlap)
         $or: [
           {
-            startDate: { $lte: new Date(startDate) },
-            endDate: { $gte: new Date(startDate) }
-          },
-          {
-            startDate: { $lte: new Date(endDate) },
-            endDate: { $gte: new Date(endDate) }
-          },
-          {
-            startDate: { $gte: new Date(startDate) },
-            endDate: { $lte: new Date(endDate) }
+            startDate: { $lt: new Date(endDate) },
+            endDate: { $gt: new Date(startDate) }
           }
         ]
       });
@@ -3869,8 +3825,8 @@ const getCarCalendarByUser = asyncHandler(async (req, res, next) => {
     status: { $in: statusesToInclude },
     $or: [
       {
-        startDate: { $lte: end },
-        endDate: { $gte: start }
+        startDate: { $lt: end },
+        endDate: { $gt: start }
       }
     ]
   }).select('startDate endDate status reservationNumber customer')
@@ -3987,8 +3943,8 @@ const getReservedDatesByUser = asyncHandler(async (req, res, next) => {
     status: { $in: statusesToInclude },
     $or: [
       {
-        startDate: { $lte: end },
-        endDate: { $gte: start }
+        startDate: { $lt: end },
+        endDate: { $gt: start }
       }
     ]
   }).select('car startDate endDate status reservationNumber customer')
@@ -4084,8 +4040,8 @@ const getPublicCarCalendar = asyncHandler(async (req, res, next) => {
     status: { $in: statusesToInclude },
     $or: [
       {
-        startDate: { $lte: end },
-        endDate: { $gte: start }
+        startDate: { $lt: end },
+        endDate: { $gt: start }
       }
     ]
   }).select('startDate endDate status reservationNumber');
@@ -5202,18 +5158,11 @@ const getCarsByBrandByUser = asyncHandler(async (req, res, next) => {
           car: car._id,
           tenantId: car.tenantId,
           status: { $in: carsBlockingStatuses },
+          // Canonical strict overlap (back-to-back is NOT overlap)
           $or: [
             {
-              startDate: { $lte: new Date(startDate) },
-              endDate: { $gte: new Date(startDate) }
-            },
-            {
-              startDate: { $lte: new Date(endDate) },
-              endDate: { $gte: new Date(endDate) }
-            },
-            {
-              startDate: { $gte: new Date(startDate) },
-              endDate: { $lte: new Date(endDate) }
+              startDate: { $lt: new Date(endDate) },
+              endDate: { $gt: new Date(startDate) }
             }
           ]
         });
@@ -5352,18 +5301,11 @@ const getCarsByEquipmentByUser = asyncHandler(async (req, res, next) => {
           car: car._id,
           tenantId: car.tenantId,
           status: { $in: carsBlockingStatuses },
+          // Canonical strict overlap (back-to-back is NOT overlap)
           $or: [
             {
-              startDate: { $lte: new Date(startDate) },
-              endDate: { $gte: new Date(startDate) }
-            },
-            {
-              startDate: { $lte: new Date(endDate) },
-              endDate: { $gte: new Date(endDate) }
-            },
-            {
-              startDate: { $gte: new Date(startDate) },
-              endDate: { $lte: new Date(endDate) }
+              startDate: { $lt: new Date(endDate) },
+              endDate: { $gt: new Date(startDate) }
             }
           ]
         });
@@ -5539,18 +5481,11 @@ const searchCarsByUser = asyncHandler(async (req, res, next) => {
           car: car._id,
           tenantId: car.tenantId,
           status: { $in: carsBlockingStatuses },
+          // Canonical strict overlap (back-to-back is NOT overlap)
           $or: [
             {
-              startDate: { $lte: new Date(startDate) },
-              endDate: { $gte: new Date(startDate) }
-            },
-            {
-              startDate: { $lte: new Date(endDate) },
-              endDate: { $gte: new Date(endDate) }
-            },
-            {
-              startDate: { $gte: new Date(startDate) },
-              endDate: { $lte: new Date(endDate) }
+              startDate: { $lt: new Date(endDate) },
+              endDate: { $gt: new Date(startDate) }
             }
           ]
         });

@@ -620,13 +620,16 @@ reservationSchema.methods.canBeCancelled = function() {
 // Static method to find overlapping reservations
 // statuses: optional array to override which statuses block a car (default: ['pending', 'confirmed', 'ongoing'])
 reservationSchema.statics.findOverlapping = function(carId, startDate, endDate, excludeId = null, statuses = null) {
+  // Canonical strict overlap: existing.start < new.end AND existing.end > new.start.
+  // Strict inequality means back-to-back rentals (e.g. one ends 10:00, next starts
+  // 10:00) are NOT treated as overlapping — the car is free again at the return time.
   const query = {
     car: carId,
     status: { $in: statuses || ['pending', 'confirmed', 'ongoing'] },
     $or: [
       {
-        startDate: { $lte: endDate },
-        endDate: { $gte: startDate }
+        startDate: { $lt: endDate },
+        endDate: { $gt: startDate }
       }
     ]
   };
