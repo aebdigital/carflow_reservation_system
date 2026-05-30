@@ -624,6 +624,14 @@ class SMTP2GOService {
 
     ${notes ? `<h3 style="margin:24px 0 8px;color:#111;font-size:15px;">Poznámky</h3><div style="padding:12px;background:#fffaf0;border:1px solid #f0e6c8;border-radius:6px;color:#333;white-space:pre-wrap;font-size:14px;">${escape(notes)}</div>` : ''}
 
+    ${reservationMongoId ? (() => {
+      const adminBase = (process.env.ADMIN_PANEL_URL || 'https://admindemo.carflow.sk').replace(/\/+$/, '');
+      const link = `${adminBase}/reservations?id=${escape(reservationMongoId)}`;
+      return `<div style="margin:24px 0 0;text-align:center;">
+        <a href="${link}" target="_blank" style="display:inline-block;padding:12px 24px;background:#22D3EE;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;">Otvoriť rezerváciu v admin systéme</a>
+      </div>`;
+    })() : ''}
+
     ${isNitraCar && reservationMongoId ? `<p style="margin:24px 0 0;color:#999;font-size:12px;">Reservation ID: <code style="background:#f5f5f5;padding:2px 6px;border-radius:3px;">${escape(reservationMongoId)}</code></p>` : ''}
   </div>
 </body></html>`;
@@ -643,6 +651,9 @@ class SMTP2GOService {
       ...serviceLines.map(s => ` - ${s.name}${s.qty > 1 ? ' × ' + s.qty : ''}: ${s.price}€`),
       `Celková cena: ${totalAmount.toFixed(2)}€`,
       notes ? `Poznámky: ${notes}` : null,
+      reservationMongoId
+        ? `Otvoriť v admin systéme: ${(process.env.ADMIN_PANEL_URL || 'https://admindemo.carflow.sk').replace(/\/+$/, '')}/reservations?id=${reservationMongoId}`
+        : null,
       isNitraCar && reservationMongoId ? `Reservation ID: ${reservationMongoId}` : null
     ].filter(Boolean).join('\n');
 

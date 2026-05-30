@@ -87,7 +87,7 @@ import {
   useGetPickupLocationsByUserQuery,
   useGetCarAvailabilityQuery,
 } from '../store/store'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { t } from '../utils/translations'
 import QRCodeDisplay from '../components/QRCodeDisplay'
 import NitraCarInvoiceEditor from '../components/NitraCarInvoiceEditor'
@@ -1239,6 +1239,26 @@ function Reservations() {
   }
 
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Deep-link: when arriving via /reservations?id=<reservationId> (e.g. from the
+  // admin notification email), auto-open that reservation in view mode once.
+  const deepLinkOpenedRef = React.useRef(false)
+  React.useEffect(() => {
+    const wantedId = searchParams.get('id')
+    if (!wantedId || deepLinkOpenedRef.current) return
+    if (!reservations || reservations.length === 0) return
+    const match = reservations.find(r => r._id === wantedId)
+    if (match) {
+      deepLinkOpenedRef.current = true
+      handleOpenDialog('view', match)
+      // Clean the URL so refreshes don't keep re-opening
+      const next = new URLSearchParams(searchParams)
+      next.delete('id')
+      setSearchParams(next, { replace: true })
+    }
+  }, [searchParams, reservations])
+
 
   // Check if reservation has payment
   const hasPayment = (reservationId) => {
@@ -1678,13 +1698,7 @@ function Reservations() {
                         />
                       </TableCell>
                       <TableCell>
-                        {(() => {
-                          const rental = reservation.pricing?.totalAmount || 0;
-                          const services = reservation.servicesTotal || (reservation.selectedServices?.reduce((s, x) => s + (x.totalPrice || 0), 0) || 0);
-                          const addIns = reservation.selectedAdditionalInsurance?.reduce((s, x) => s + (x.calculatedPrice || x.totalPrice || 0), 0) || 0;
-                          const extIns = reservation.selectedExtendedInsurance?.reduce((s, x) => s + (x.calculatedPrice || x.totalPrice || 0), 0) || 0;
-                          return (rental + services + addIns + extIns).toFixed(2);
-                        })()}€
+                        {Number(reservation.pricing?.totalAmount || 0).toFixed(2)}€
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', minWidth: 120 }}>
@@ -2105,13 +2119,7 @@ function Reservations() {
                         />
                       </TableCell>
                       <TableCell>
-                        {(() => {
-                          const rental = reservation.pricing?.totalAmount || 0;
-                          const services = reservation.servicesTotal || (reservation.selectedServices?.reduce((s, x) => s + (x.totalPrice || 0), 0) || 0);
-                          const addIns = reservation.selectedAdditionalInsurance?.reduce((s, x) => s + (x.calculatedPrice || x.totalPrice || 0), 0) || 0;
-                          const extIns = reservation.selectedExtendedInsurance?.reduce((s, x) => s + (x.calculatedPrice || x.totalPrice || 0), 0) || 0;
-                          return (rental + services + addIns + extIns).toFixed(2);
-                        })()}€
+                        {Number(reservation.pricing?.totalAmount || 0).toFixed(2)}€
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -2343,13 +2351,7 @@ function Reservations() {
                         />
                       </TableCell>
                       <TableCell>
-                        {(() => {
-                          const rental = reservation.pricing?.totalAmount || 0;
-                          const services = reservation.servicesTotal || (reservation.selectedServices?.reduce((s, x) => s + (x.totalPrice || 0), 0) || 0);
-                          const addIns = reservation.selectedAdditionalInsurance?.reduce((s, x) => s + (x.calculatedPrice || x.totalPrice || 0), 0) || 0;
-                          const extIns = reservation.selectedExtendedInsurance?.reduce((s, x) => s + (x.calculatedPrice || x.totalPrice || 0), 0) || 0;
-                          return (rental + services + addIns + extIns).toFixed(2);
-                        })()}€
+                        {Number(reservation.pricing?.totalAmount || 0).toFixed(2)}€
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', minWidth: 120 }}>
@@ -2635,13 +2637,7 @@ function Reservations() {
                         />
                       </TableCell>
                       <TableCell>
-                        {(() => {
-                          const rental = reservation.pricing?.totalAmount || 0;
-                          const services = reservation.servicesTotal || (reservation.selectedServices?.reduce((s, x) => s + (x.totalPrice || 0), 0) || 0);
-                          const addIns = reservation.selectedAdditionalInsurance?.reduce((s, x) => s + (x.calculatedPrice || x.totalPrice || 0), 0) || 0;
-                          const extIns = reservation.selectedExtendedInsurance?.reduce((s, x) => s + (x.calculatedPrice || x.totalPrice || 0), 0) || 0;
-                          return (rental + services + addIns + extIns).toFixed(2);
-                        })()}€
+                        {Number(reservation.pricing?.totalAmount || 0).toFixed(2)}€
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
