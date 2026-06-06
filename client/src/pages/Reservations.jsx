@@ -3124,7 +3124,9 @@ function Reservations() {
                             // Full total with everything
                             const fullTotal = rentalAmount + servicesAmount + additionalInsuranceAmount + extendedInsuranceAmount;
 
-                            // Calculate VAT (23%) - VAT is included in the total, so we extract it
+                            // VAT 23% — extracted only for VAT-payer tenants.
+                            // NitraCar is a non-VAT payer (neplátca DPH), so the
+                            // displayed total is the actual total, no DPH line.
                             const dph = fullTotal * 0.23;
                             const subtotal = fullTotal - dph;
 
@@ -3145,15 +3147,19 @@ function Reservations() {
                                     <Typography variant="body2">{totalExtras.toFixed(2)}€</Typography>
                                   </Box>
                                 )}
-                                <Divider sx={{ my: 1 }} />
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                  <Typography variant="body2">Medzisúčet:</Typography>
-                                  <Typography variant="body2">{subtotal.toFixed(2)}€</Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                  <Typography variant="body2">DPH (23%):</Typography>
-                                  <Typography variant="body2">{dph.toFixed(2)}€</Typography>
-                                </Box>
+                                {!isNitraCarUser && (
+                                  <>
+                                    <Divider sx={{ my: 1 }} />
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                      <Typography variant="body2">Medzisúčet:</Typography>
+                                      <Typography variant="body2">{subtotal.toFixed(2)}€</Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                      <Typography variant="body2">DPH (23%):</Typography>
+                                      <Typography variant="body2">{dph.toFixed(2)}€</Typography>
+                                    </Box>
+                                  </>
+                                )}
                               </>
                             );
                           })()}
