@@ -96,6 +96,11 @@ router.get('/ics', async (req, res) => {
         description: `Zaciatok prenajmu: ${customerName}\n${description}`,
         start: startDate,
         end: startEventEnd,
+        // Without `timezone`, ical-generator emits DTSTART as UTC (...Z) and
+        // Apple Calendar displays it in the device's local zone — which for
+        // clients abroad won't match the Bratislava times shown in admin.
+        // Forcing TZID=Europe/Bratislava pins the wall-clock time.
+        timezone: 'Europe/Bratislava',
         allDay: false,
         timestamp: reservation.updatedAt || reservation.createdAt,
         categories: [{ name: 'Zaciatok prenajmu' }],
@@ -107,18 +112,36 @@ router.get('/ics', async (req, res) => {
       // All-day "occupied" markers for every full day between the pickup and return
       // dates (exclusive of both). Makes it obvious in month/week view that the car
       // is booked all day on those in-between days.
+      //
+      // Day boundaries must be computed in Bratislava time, not the server's
+      // process timezone (UTC on Render) — otherwise a rental starting at e.g.
+      // 01:00 local time can land on the previous calendar day in UTC and the
+      // in-between days shift by one.
       const dayLabel = `${carInfo}${licensePlate ? ` (${licensePlate})` : ''} - ${customerName}${phoneSuffix}`;
-      const startDay = new Date(startDate);
-      startDay.setHours(0, 0, 0, 0);
-      const endDay = new Date(endDate);
-      endDay.setHours(0, 0, 0, 0);
+      const ymdInBratislava = (d) => {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Europe/Bratislava',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }).formatToParts(d);
+        const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
+        return { y: Number(map.year), m: Number(map.month), d: Number(map.day) };
+      };
+      const startYmd = ymdInBratislava(startDate);
+      const endYmd = ymdInBratislava(endDate);
+      // Use UTC midnight as a stable "calendar date" container; ical-generator
+      // emits DTSTART;VALUE=DATE using the date portion, which is what matters
+      // for all-day events.
+      const startDay = new Date(Date.UTC(startYmd.y, startYmd.m - 1, startYmd.d));
+      const endDay = new Date(Date.UTC(endYmd.y, endYmd.m - 1, endYmd.d));
 
       const cursor = new Date(startDay);
-      cursor.setDate(cursor.getDate() + 1); // first day after pickup
+      cursor.setUTCDate(cursor.getUTCDate() + 1); // first day after pickup
       while (cursor < endDay) {
         const dayStart = new Date(cursor);
         const dayEnd = new Date(cursor);
-        dayEnd.setDate(dayEnd.getDate() + 1); // ICS all-day end is exclusive
+        dayEnd.setUTCDate(dayEnd.getUTCDate() + 1); // ICS all-day end is exclusive
         const dayId = `${reservation._id.toString()}-day-${cursor.toISOString().slice(0, 10)}`;
 
         calendar.createEvent({
@@ -135,7 +158,7 @@ router.get('/ics', async (req, res) => {
           url: `https://admindemo.carflow.sk/reservations?id=${reservation._id}`
         });
 
-        cursor.setDate(cursor.getDate() + 1);
+        cursor.setUTCDate(cursor.getUTCDate() + 1);
       }
 
       // Timed event marking the exact end-of-rental hour
@@ -150,6 +173,7 @@ router.get('/ics', async (req, res) => {
         description: `Koniec prenajmu: ${customerName}\n${description}`,
         start: endDate,
         end: endEventEnd,
+        timezone: 'Europe/Bratislava',
         allDay: false,
         timestamp: reservation.updatedAt || reservation.createdAt,
         categories: [{ name: 'Koniec prenajmu' }],
