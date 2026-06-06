@@ -772,12 +772,31 @@ function Contracts() {
         pricing: { ...editReservationData.pricing, dailyRate, totalDays: days, subtotal, totalAmount, locationFeesTotal, pickupFee, dropoffFee }
       }
 
-      // Customer record is selected from the customer DB and shown read-only in
-      // this dialog — we no longer mutate it from here. The reservation just
-      // gets re-linked to the picked customerId via updateReservation above.
+      // For NitraCar, the customer fields in this dialog are fully editable
+      // and must be persisted to the User record (firstName, lastName, email,
+      // phone, license, rodné číslo, address, idNumber, status). Other tenants
+      // still treat them as read-only — pick-from-DB only.
       const promises = [
         updateReservation(reservationUpdateData).unwrap(),
       ]
+      if (isNitraCarUser && editCustomerId) {
+        const customerUpdate = {
+          id: editCustomerId,
+          firstName: editCustomerData.firstName || '',
+          lastName: editCustomerData.lastName || '',
+          email: editCustomerData.email || '',
+          phone: editCustomerData.phone || '',
+          dateOfBirth: editCustomerData.dateOfBirth || null,
+          licenseNumber: editCustomerData.licenseNumber || '',
+          licenseExpiry: editCustomerData.licenseExpiry || null,
+          rodneCislo: editCustomerData.rodneCislo || '',
+          idNumber: editCustomerData.idNumber || '',
+          address: editCustomerData.address || {},
+          // status is only updatable by admin per the backend allowedFields
+          ...(editCustomerData.status ? { isActive: editCustomerData.status === 'active' } : {})
+        }
+        promises.push(updateUser(customerUpdate).unwrap())
+      }
       // Also update contract paymentMethod if changed
       if (editContractId) {
         const contractUpdate = { id: editContractId, paymentMethod: editPaymentMethod }
@@ -2014,8 +2033,23 @@ function Contracts() {
                   </Grid>
                 )}
 
-                {/* Customer Tab — picked from customer DB, fields read-only */}
-                {editTabValue === 1 && (
+                {/* Customer Tab.
+                    For NitraCar: all customer fields are fully editable and
+                    changes are persisted to the User record via updateUser
+                    in handleSaveEdit. Other tenants: pick-from-DB only,
+                    fields stay read-only. */}
+                {editTabValue === 1 && (() => {
+                  const editable = isNitraCarUser && !!editCustomerId
+                  const setField = (key) => (e) =>
+                    setEditCustomerData(prev => ({ ...prev, [key]: e.target.value }))
+                  const fieldProps = (key) => editable
+                    ? { value: editCustomerData[key] || '', onChange: setField(key) }
+                    : { value: editCustomerData[key] || '', disabled: true, InputProps: { readOnly: true } }
+                  const dateFieldProps = (key) => editable
+                    ? { value: editCustomerData[key] || '', onChange: setField(key), InputLabelProps: { shrink: true } }
+                    : { value: editCustomerData[key] || '', disabled: true, InputLabelProps: { shrink: true }, InputProps: { readOnly: true } }
+
+                  return (
                   <Grid container spacing={2}>
                     <Grid item xs={12}>
                       <Autocomplete
@@ -2056,22 +2090,36 @@ function Contracts() {
                       />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <TextField fullWidth label="Meno" value={editCustomerData.firstName || ''} disabled InputProps={{ readOnly: true }} />
+                      <TextField fullWidth label="Meno" {...fieldProps('firstName')} />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <TextField fullWidth label="Priezvisko" value={editCustomerData.lastName || ''} disabled InputProps={{ readOnly: true }} />
+                      <TextField fullWidth label="Priezvisko" {...fieldProps('lastName')} />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <TextField fullWidth label="E-mail" value={editCustomerData.email || ''} disabled InputProps={{ readOnly: true }} />
+                      <TextField fullWidth label="E-mail" {...fieldProps('email')} />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <TextField fullWidth label="Telefón" value={editCustomerData.phone || ''} disabled InputProps={{ readOnly: true }} />
+                      <TextField fullWidth label="Telefón" {...fieldProps('phone')} />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <TextField fullWidth label="Dátum narodenia" type="date" value={editCustomerData.dateOfBirth || ''} disabled InputLabelProps={{ shrink: true }} InputProps={{ readOnly: true }} />
+                      <TextField fullWidth label="Dátum narodenia" type="date" {...dateFieldProps('dateOfBirth')} />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <TextField fullWidth label="Stav zákazníka" value={editCustomerData.status || 'active'} disabled InputProps={{ readOnly: true }} />
+                      {editable ? (
+                        <FormControl fullWidth>
+                          <InputLabel>Stav zákazníka</InputLabel>
+                          <Select
+                            value={editCustomerData.status || 'active'}
+                            label="Stav zákazníka"
+                            onChange={setField('status')}
+                          >
+                            <MenuItem value="active">Aktívny</MenuItem>
+                            <MenuItem value="inactive">Neaktívny</MenuItem>
+                          </Select>
+                        </FormControl>
+                      ) : (
+                        <TextField fullWidth label="Stav zákazníka" value={editCustomerData.status || 'active'} disabled InputProps={{ readOnly: true }} />
+                      )}
                     </Grid>
 
                     {/* License */}
@@ -2079,13 +2127,13 @@ function Contracts() {
                       <Typography variant="subtitle2" sx={{ fontWeight: 600, mt: 1 }}>Vodičský preukaz</Typography>
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <TextField fullWidth label="Číslo vodičského preukazu" value={editCustomerData.licenseNumber || ''} disabled InputProps={{ readOnly: true }} />
+                      <TextField fullWidth label="Číslo vodičského preukazu" {...fieldProps('licenseNumber')} />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <TextField fullWidth label="Platnosť vodičského preukazu" type="date" value={editCustomerData.licenseExpiry || ''} disabled InputLabelProps={{ shrink: true }} InputProps={{ readOnly: true }} />
+                      <TextField fullWidth label="Platnosť vodičského preukazu" type="date" {...dateFieldProps('licenseExpiry')} />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <TextField fullWidth label="Rodné číslo" value={editCustomerData.rodneCislo || ''} disabled InputProps={{ readOnly: true }} />
+                      <TextField fullWidth label="Rodné číslo" {...fieldProps('rodneCislo')} />
                     </Grid>
 
                     {/* ID Document Type - NitraCar only */}
@@ -2095,12 +2143,13 @@ function Contracts() {
                           <Typography variant="subtitle2" sx={{ fontWeight: 600, mt: 1 }}>Doklad totožnosti</Typography>
                         </Grid>
                         <Grid item xs={12} md={6}>
-                          <FormControl fullWidth disabled>
+                          <FormControl fullWidth disabled={!editable}>
                             <InputLabel>Typ dokladu</InputLabel>
                             <Select
                               value={editIdDocumentType}
                               label="Typ dokladu"
-                              readOnly
+                              onChange={editable ? (e) => setEditIdDocumentType(e.target.value) : undefined}
+                              readOnly={!editable}
                             >
                               <MenuItem value="op">Občiansky preukaz</MenuItem>
                               <MenuItem value="pas">Pas</MenuItem>
@@ -2109,7 +2158,7 @@ function Contracts() {
                           </FormControl>
                         </Grid>
                         <Grid item xs={12} md={6}>
-                          <TextField fullWidth label="Číslo dokladu" value={editCustomerData.idNumber || ''} disabled InputProps={{ readOnly: true }} />
+                          <TextField fullWidth label="Číslo dokladu" {...fieldProps('idNumber')} />
                         </Grid>
                       </>
                     )}
@@ -2224,7 +2273,8 @@ function Contracts() {
                       />
                     </Grid>
                   </Grid>
-                )}
+                )
+                })()}
               </>
             )}
           </DialogContent>
