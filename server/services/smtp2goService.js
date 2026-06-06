@@ -1621,12 +1621,16 @@ class SMTP2GOService {
     const emailConfig = this.getTenantEmailConfig(user);
     const senderEmail = emailConfig.emailFrom;
 
-    // Get pickup location from settings
-    const pickupLocation = await this.getPickupLocation(reservationData.tenantId);
+    // Settings-based pickup fallback (only used when the reservation itself
+    // has no pickup location set — e.g. legacy records).
+    const settingsPickupLocation = await this.getPickupLocation(reservationData.tenantId);
 
-    // Prepare template variables from actual backend data structure
-    const startDate = reservationData.startDate;
-    const endDate = reservationData.endDate;
+    // Source raw Date objects from rawReservation, NOT the pre-formatted
+    // Slovak strings on reservationData (`new Date("pondelok 1. júla …")`
+    // produces "Invalid Date"). Matches the pattern used by every other
+    // email method in this file.
+    const startDate = rawReservation?.startDate || reservationData.startDate;
+    const endDate = rawReservation?.endDate || reservationData.endDate;
 
     const templateVariables = {
       customer_name: reservationData.customerName || '',
@@ -1637,8 +1641,8 @@ class SMTP2GOService {
       end_date: endDate ? new Date(endDate).toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' }) : '',
       start_time: startDate ? new Date(startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bratislava' }) : '',
       end_time: endDate ? new Date(endDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bratislava' }) : '',
-      pickup_location: reservationData.pickupLocation || pickupLocation,
-      dropoff_location: reservationData.dropoffLocation || reservationData.pickupLocation || pickupLocation,
+      pickup_location: rawReservation?.pickupLocation?.name || reservationData.pickupLocation || settingsPickupLocation || 'Miesto vyzdvihnutia',
+      dropoff_location: rawReservation?.dropoffLocation?.name || reservationData.dropoffLocation || rawReservation?.pickupLocation?.name || reservationData.pickupLocation || settingsPickupLocation || 'Miesto vrátenia',
       company_name: user?.businessName || user?.companyName || 'Autopožičovňa',
       company_email: emailConfig.emailFrom,
       company_phone: user?.phoneNumber || user?.phone || '+421 XXX XXX XXX'
@@ -1701,12 +1705,14 @@ class SMTP2GOService {
     const emailConfig = this.getTenantEmailConfig(user);
     const senderEmail = emailConfig.emailFrom;
 
-    // Get pickup location from settings (used for return location too)
-    const pickupLocation = await this.getPickupLocation(reservationData.tenantId);
+    // Settings-based pickup fallback (used for both pickup and dropoff
+    // only when the reservation itself has no location data set).
+    const settingsPickupLocation = await this.getPickupLocation(reservationData.tenantId);
 
-    // Prepare template variables from actual backend data structure
-    const startDate = reservationData.startDate;
-    const endDate = reservationData.endDate;
+    // Source raw Date objects from rawReservation — see note in
+    // sendCustomerReservationReminder24 above.
+    const startDate = rawReservation?.startDate || reservationData.startDate;
+    const endDate = rawReservation?.endDate || reservationData.endDate;
 
     const templateVariables = {
       customer_name: reservationData.customerName || '',
@@ -1717,8 +1723,8 @@ class SMTP2GOService {
       end_date: endDate ? new Date(endDate).toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' }) : '',
       start_time: startDate ? new Date(startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bratislava' }) : '',
       end_time: endDate ? new Date(endDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bratislava' }) : '',
-      pickup_location: reservationData.pickupLocation || pickupLocation,
-      dropoff_location: reservationData.dropoffLocation || reservationData.pickupLocation || pickupLocation,
+      pickup_location: rawReservation?.pickupLocation?.name || reservationData.pickupLocation || settingsPickupLocation || 'Miesto vyzdvihnutia',
+      dropoff_location: rawReservation?.dropoffLocation?.name || reservationData.dropoffLocation || rawReservation?.pickupLocation?.name || reservationData.pickupLocation || settingsPickupLocation || 'Miesto vrátenia',
       company_name: user?.businessName || user?.companyName || 'Autopožičovňa',
       company_email: emailConfig.emailFrom,
       company_phone: user?.phoneNumber || user?.phone || '+421 XXX XXX XXX'
@@ -1778,9 +1784,10 @@ class SMTP2GOService {
     const emailConfig = this.getTenantEmailConfig(user);
     const senderEmail = emailConfig.emailFrom;
 
-    // Prepare template variables from actual backend data structure
-    const startDate = reservationData.startDate;
-    const endDate = reservationData.endDate;
+    // Source raw Date objects from rawReservation — see note in
+    // sendCustomerReservationReminder24 above.
+    const startDate = rawReservation?.startDate || reservationData.startDate;
+    const endDate = rawReservation?.endDate || reservationData.endDate;
 
     const templateVariables = {
       customer_name: reservationData.customerName || '',
@@ -1791,8 +1798,8 @@ class SMTP2GOService {
       end_date: endDate ? new Date(endDate).toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' }) : '',
       start_time: startDate ? new Date(startDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bratislava' }) : '',
       end_time: endDate ? new Date(endDate).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bratislava' }) : '',
-      pickup_location: reservationData.pickupLocation || 'Miesto vyzdvihnutia',
-      dropoff_location: reservationData.dropoffLocation || reservationData.pickupLocation || 'Miesto vrátenia',
+      pickup_location: rawReservation?.pickupLocation?.name || reservationData.pickupLocation || 'Miesto vyzdvihnutia',
+      dropoff_location: rawReservation?.dropoffLocation?.name || reservationData.dropoffLocation || rawReservation?.pickupLocation?.name || reservationData.pickupLocation || 'Miesto vrátenia',
       company_name: user?.businessName || user?.companyName || 'Autopožičovňa',
       company_email: emailConfig.emailFrom,
       company_phone: user?.phoneNumber || user?.phone || '+421 XXX XXX XXX',
