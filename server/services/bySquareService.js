@@ -36,8 +36,8 @@ class BySquareService {
     this.lerentConfig = {
       username: process.env.LERENT_BYSQUARE_USERNAME || '',
       password: process.env.LERENT_BYSQUARE_PASSWORD || '',
-      bankAccount: 'SK7311000000002943157379', // LeRent IBAN (formatted without spaces)
-      bankBIC: 'TATRSKBX',
+      bankAccount: 'SK6002000000007221924153', // LeRent IBAN — VÚB banka (formatted without spaces)
+      bankBIC: 'SUBASKBX',
       constantSymbol: '0308',
       beneficiaryName: 'LeRent s. r. o.',
       companyName: 'LeRent s. r. o.',

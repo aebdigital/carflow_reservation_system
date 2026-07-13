@@ -536,19 +536,22 @@ const createReservation = asyncHandler(async (req, res, next) => {
           reservation._id.toString().slice(-8);
         const variableSymbol = reservationDigits.slice(-10).padStart(10, '0');
         
-        // Update reservation with QR codes - use new separate structure
+        // Update reservation with QR codes - use new separate structure.
+        // Bank details come from the tenant's bySquare config (same source the
+        // QR payloads are generated from), so emails show the account the QR pays to.
+        const tenantBankConfig = bySquareService.getTenantConfig(tenantEmail);
         reservation.qrCodes = {
           payBySquareRental: qrResult.qrCodes.payBySquareRental,
           payBySquareDeposit: qrResult.qrCodes.payBySquareDeposit,
           generatedAt: new Date(),
           lastUpdated: new Date(),
           isActive: true,
-          bankAccount: 'SK6807200000000000000000',
+          bankAccount: tenantBankConfig.bankAccount,
           variableSymbol: variableSymbol,
-          constantSymbol: '0308',
+          constantSymbol: tenantBankConfig.constantSymbol || '0308',
           specificSymbol: '',
           amount: totalAmount,
-          beneficiaryName: 'CarFlow Rental',
+          beneficiaryName: tenantBankConfig.beneficiaryName || 'CarFlow Rental',
           paymentNote: `Car rental + deposit: ${carDoc.brand} ${carDoc.model} (${start.toISOString().split('T')[0]} - ${end.toISOString().split('T')[0]})`
         };
         
@@ -700,16 +703,22 @@ const createReservation = asyncHandler(async (req, res, next) => {
       // reservation (car inlined as carDoc) so deposit / pricing / mileage
       // are available to the template renderer.
       try {
+        // LeRent bank transfer (prevod): the reservation stays pending (čakajúca)
+        // until the transfer arrives, so the customer gets only the "received"
+        // email — with the invoice attached — and no "confirmed" email.
+        const isLerentPrevod = req.user.email.toLowerCase() === 'lerent@lerent.sk'
+          && enrichedReservation.paymentType === 'prevod';
         await emailService.sendCustomerReservationConfirmation(
           customerDoc.email,
           emailData,
           req.user,
-          enrichedReservation
+          enrichedReservation,
+          isLerentPrevod ? attachments : []
         );
-        console.log('✅ [EMAIL] Customer confirmation (without attachment) sent to:', customerDoc.email);
+        console.log('✅ [EMAIL] Customer confirmation sent to:', customerDoc.email);
 
-        // Also send the "confirmed" email with attachment for LeRent
-        if (req.user.email.toLowerCase() === 'lerent@lerent.sk') {
+        // Also send the "confirmed" email with attachment for LeRent (non-prevod payments)
+        if (req.user.email.toLowerCase() === 'lerent@lerent.sk' && !isLerentPrevod) {
           await emailService.sendCustomerReservationConfirmed(
             customerDoc.email,
             emailData,
@@ -1142,16 +1151,18 @@ const confirmReservation = asyncHandler(async (req, res, next) => {
           reservation.qrCodes.payBySquareRental = qrResult.qrCodes.payBySquareRental;
           reservation.qrCodes.payBySquareDeposit = qrResult.qrCodes.payBySquareDeposit;
           
-          // Add/update metadata
+          // Add/update metadata. Bank details come from the tenant's bySquare
+          // config so they match the account the fresh QR codes pay to.
+          const tenantBankConfig = bySquareService.getTenantConfig(tenantEmail);
           reservation.qrCodes.generatedAt = reservation.qrCodes.generatedAt || new Date();
           reservation.qrCodes.lastUpdated = new Date();
           reservation.qrCodes.isActive = true;
-          reservation.qrCodes.bankAccount = reservation.qrCodes.bankAccount || 'SK6807200000000000000000';
+          reservation.qrCodes.bankAccount = tenantBankConfig.bankAccount;
           reservation.qrCodes.variableSymbol = reservation.qrCodes.variableSymbol || variableSymbol;
-          reservation.qrCodes.constantSymbol = reservation.qrCodes.constantSymbol || '0308';
+          reservation.qrCodes.constantSymbol = reservation.qrCodes.constantSymbol || tenantBankConfig.constantSymbol || '0308';
           reservation.qrCodes.specificSymbol = reservation.qrCodes.specificSymbol || '';
           reservation.qrCodes.amount = reservation.qrCodes.amount || totalAmount;
-          reservation.qrCodes.beneficiaryName = reservation.qrCodes.beneficiaryName || 'CarFlow Rental';
+          reservation.qrCodes.beneficiaryName = reservation.qrCodes.beneficiaryName || tenantBankConfig.beneficiaryName || 'CarFlow Rental';
           reservation.qrCodes.paymentNote = reservation.qrCodes.paymentNote || `Car rental + deposit: ${reservation.car.brand} ${reservation.car.model}`;
           
           console.log('🔍 [QR DEBUG] QR codes after update:', {

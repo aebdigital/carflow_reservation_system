@@ -11,6 +11,10 @@ class SuperFakturaService {
     this.apiKey = process.env.LERENT_FA_API;
     this.companyId = process.env.LERENT_FA_CID;
     this.baseUrl = process.env.LERENT_FA_URL || 'https://moja.superfaktura.sk';
+    // Kill switch: SuperFaktura is disconnected for now — no new invoices are
+    // created (reservations and emails still work, just without the invoice
+    // PDF). Set SUPERFAKTURA_ENABLED=true in the environment to reconnect.
+    this.disabled = process.env.SUPERFAKTURA_ENABLED !== 'true';
   }
 
   /**
@@ -121,6 +125,11 @@ class SuperFakturaService {
    * @returns {Promise<Object>} SuperFaktura API response
    */
   async createInvoiceFromReservation(reservation) {
+    if (this.disabled) {
+      console.log('ℹ️ [SUPERFAKTURA] Integration is disabled — skipping invoice creation for reservation:', reservation._id);
+      return { success: false, disabled: true, error: 'SuperFaktura integration is disabled' };
+    }
+
     // Get total price including VAT from reservation
     const totalPriceWithVat = reservation.pricing?.totalAmount || reservation.totalPrice || 0;
     const vatRate = 23; // 23% VAT (Slovakia standard rate)

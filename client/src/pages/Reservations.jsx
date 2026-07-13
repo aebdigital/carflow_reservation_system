@@ -419,6 +419,29 @@ function Reservations() {
   // Check if NitraCar user (show filters only for this tenant)
   const isNitraCarUser = auth.user?.email === 'nitra-car@nitra-car.sk'
 
+  // LeRent: allowed km per day is tiered by rental length
+  // 2-3 dní 250 | 4-10 dní 210 | 11-20 dní 180 | 21-29 dní 150 | 30+ dní 125 km/deň
+  const isLerentUser = auth.user?.email === 'lerent@lerent.sk'
+
+  // LeRent: pin the "Vyblokovať termíny" pseudo-customer to the top of the
+  // customer dropdown (the list otherwise comes back newest-first)
+  const customerOptions = useMemo(() => {
+    if (!isLerentUser) return users
+    const isBlockCustomer = (u) =>
+      `${u.firstName || ''} ${u.lastName || ''}`
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase().includes('vyblokov')
+    return [...users].sort((a, b) => (isBlockCustomer(b) ? 1 : 0) - (isBlockCustomer(a) ? 1 : 0))
+  }, [users, isLerentUser])
+
+  const lerentDailyKm = (days) => {
+    if (days <= 3) return 250
+    if (days <= 10) return 210
+    if (days <= 20) return 180
+    if (days <= 29) return 150
+    return 125
+  }
+
   // NitraCar: cap "Druhý vodič" service total at 24 EUR regardless of days
   const DRUHÝ_VODIČ_MAX = 24
   const capServicePrice = (price, serviceName) => {
@@ -3540,7 +3563,14 @@ function Reservations() {
                         <Grid container spacing={2}>
                           <Grid item xs={12} md={6}>
                             <Typography variant="body2" gutterBottom>
-                              <strong>Denný limit km:</strong> {selectedReservation.car.mileageLimits?.dailyLimit || selectedReservation.terms?.mileageLimit || 'Neobmedzené'} km/deň
+                              <strong>Denný limit km:</strong> {(() => {
+                                if (isLerentUser) {
+                                  const days = selectedReservation.pricing?.totalDays || Math.max(1, Math.ceil((new Date(selectedReservation.endDate) - new Date(selectedReservation.startDate)) / (1000 * 60 * 60 * 24)))
+                                  const perDay = lerentDailyKm(days)
+                                  return `${perDay} km/deň (spolu ${perDay * days} km / ${days} dní)`
+                                }
+                                return `${selectedReservation.car.mileageLimits?.dailyLimit || selectedReservation.terms?.mileageLimit || 'Neobmedzené'} km/deň`
+                              })()}
                             </Typography>
                           </Grid>
                           <Grid item xs={12} md={6}>
@@ -3793,8 +3823,8 @@ function Reservations() {
               {/* Customer Selection */}
               <Grid item xs={12} md={6}>
                 <Autocomplete
-                  options={users}
-                  getOptionLabel={(option) => 
+                  options={customerOptions}
+                  getOptionLabel={(option) =>
                     `${option.firstName} ${option.lastName} (${option.email})`
                   }
                   isOptionEqualToValue={(option, value) => option._id === value?._id}

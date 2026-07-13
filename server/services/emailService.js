@@ -76,10 +76,10 @@ class EmailService {
   }
 
   // Customer reservation confirmation
-  async sendCustomerReservationConfirmation(customerEmail, reservationData, user = null, rawReservation = null) {
+  async sendCustomerReservationConfirmation(customerEmail, reservationData, user = null, rawReservation = null, attachments = []) {
     const suppressed = this._isReservationEmailSuppressed(rawReservation, 'sendCustomerReservationConfirmation');
     if (suppressed) return suppressed;
-    return await smtp2goService.sendCustomerReservationConfirmation(customerEmail, reservationData, user, rawReservation);
+    return await smtp2goService.sendCustomerReservationConfirmation(customerEmail, reservationData, user, rawReservation, attachments);
   }
 
   // Customer reservation confirmed (after admin approval)

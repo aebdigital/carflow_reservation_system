@@ -1469,9 +1469,12 @@ const createReservationByUser = asyncHandler(async (req, res, next) => {
           results.push({ type: 'admin', success: false, error: adminError.message });
         }
 
-        // Send customer confirmation with PDF attachment
+        // Send customer "reservation received" email with the invoice PDF attached.
+        // This branch only runs for LeRent bank-transfer (prevod) reservations — the
+        // reservation stays pending (čakajúca) until the admin confirms it after the
+        // transfer arrives, so the customer must NOT get the "confirmed" email here.
         try {
-          await emailService.sendCustomerReservationConfirmed(
+          await emailService.sendCustomerReservationConfirmation(
             customer.email,
             emailData,
             tenantAdminUser,
@@ -2357,9 +2360,12 @@ const createPublicReservation = asyncHandler(async (req, res, next) => {
           results.push({ type: 'admin', success: false, error: adminError.message });
         }
 
-        // Send customer confirmation with PDF attachment
+        // Send customer "reservation received" email with the invoice PDF attached.
+        // This branch only runs for LeRent bank-transfer (prevod) reservations — the
+        // reservation stays pending (čakajúca) until the admin confirms it after the
+        // transfer arrives, so the customer must NOT get the "confirmed" email here.
         try {
-          await emailService.sendCustomerReservationConfirmed(
+          await emailService.sendCustomerReservationConfirmation(
             customer.email,
             emailData,
             tenantAdminUser,

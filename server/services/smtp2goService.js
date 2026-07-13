@@ -501,6 +501,7 @@ class SMTP2GOService {
     const escape = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const fmtDateTime = (d) => d ? new Date(d).toLocaleString('sk-SK', { timeZone: 'Europe/Bratislava', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
     const isNitraCar = (user?.email || '').toLowerCase() === 'nitra-car@nitra-car.sk';
+    const isLerent = (user?.email || '').toLowerCase() === 'lerent@lerent.sk';
 
     // Pull the underlying numbers from rawReservation when available, fall back to emailData
     const startDate = rawReservation?.startDate || reservationData.startDate;
@@ -540,16 +541,27 @@ class SMTP2GOService {
     // Total allowed km = daily limit * days + any "km" service quantity.
     // Resolution order for the per-day limit:
     //   1. reservation.terms.mileageLimit  (explicit per-reservation override, >0)
-    //   2. car.mileageLimits.dailyLimit    (explicit per-car limit, >0)
-    //   3. NitraCar standard fallback of 200 km/day (matches the contract's
+    //   2. LeRent: tier by rental length (2-3 dní 250 | 4-10 dní 210 |
+    //      11-20 dní 180 | 21-29 dní 150 | 30+ dní 125 km/deň)
+    //   3. car.mileageLimits.dailyLimit    (explicit per-car limit, >0)
+    //   4. NitraCar standard fallback of 200 km/day (matches the contract's
     //      rentalRules.dailyKmLimit default — NitraCar is never "unlimited")
-    //   4. otherwise unlimited
+    //   5. otherwise unlimited
     const NITRACAR_DEFAULT_DAILY_KM = 200;
+    const lerentDailyKm = (days) => {
+      if (days <= 3) return 250;
+      if (days <= 10) return 210;
+      if (days <= 20) return 180;
+      if (days <= 29) return 150;
+      return 125;
+    };
     const carDailyKm = rawReservation?.car?.mileageLimits?.dailyLimit;
     const reservationKmLimit = rawReservation?.terms?.mileageLimit;
     let baseKmPerDay = null;
     if (typeof reservationKmLimit === 'number' && reservationKmLimit > 0) {
       baseKmPerDay = reservationKmLimit;
+    } else if (isLerent && totalDays > 0) {
+      baseKmPerDay = lerentDailyKm(totalDays);
     } else if (typeof carDailyKm === 'number' && carDailyKm > 0) {
       baseKmPerDay = carDailyKm;
     } else if (isNitraCar) {
@@ -661,13 +673,14 @@ class SMTP2GOService {
   }
 
   // Customer confirmation email for new reservation
-  async sendCustomerReservationConfirmation(to, reservationData, user = null, rawReservation = null) {
+  async sendCustomerReservationConfirmation(to, reservationData, user = null, rawReservation = null, externalAttachments = []) {
     console.log('📧 [SMTP2GO DEBUG] sendCustomerReservationConfirmation called with:', {
       to: to,
       hasReservationData: !!reservationData,
       hasRawReservation: !!rawReservation,
       rawReservationId: rawReservation?._id,
-      rawReservationQrCodes: !!rawReservation?.qrCodes
+      rawReservationQrCodes: !!rawReservation?.qrCodes,
+      externalAttachmentsCount: externalAttachments.length
     });
 
     const emailTemplateService = require('./emailTemplateService');
@@ -864,9 +877,11 @@ class SMTP2GOService {
     if (isLeRent && isPrevodPayment) {
       console.log('🏦 [EMAIL] Adding LeRent bank transfer details for prevod payment');
       templateVariables.show_bank_details = 'block';
-      templateVariables.bank_name = 'Tatra banka, a.s.';
-      templateVariables.bank_iban = 'SK31 1100 0000 0029 4103 7541';
+      templateVariables.bank_name = 'VÚB, a.s.';
+      templateVariables.bank_iban = 'SK60 0200 0000 0072 2192 4153';
       templateVariables.payment_amount = rawReservation.pricing?.totalAmount?.toFixed(2) || '0.00';
+      // Variable symbol = numeric reservation number (LeRent format YYYYMMNN)
+      templateVariables.payment_vs = String(rawReservation.reservationNumber || reservationData.reservationNumber || '').replace(/[^0-9]/g, '');
     } else {
       templateVariables.show_bank_details = 'none';
     }
@@ -898,6 +913,19 @@ class SMTP2GOService {
     // Override subject to match exact specification (use English for NitraCar English reservations)
     // isNitraCar already defined above for VAT calculation
     const subject = (isNitraCar && language === 'en') ? 'Reservation Received' : '📥 Rezervácia prijatá';
+
+    // External attachments (e.g., SuperFaktura invoice for LeRent bank transfer)
+    if (externalAttachments && externalAttachments.length > 0) {
+      const attachments = externalAttachments.map(extAttachment => ({
+        filename: extAttachment.filename,
+        content: extAttachment.content instanceof Buffer
+          ? extAttachment.content.toString('base64')
+          : extAttachment.content,
+        type: extAttachment.contentType || 'application/pdf'
+      }));
+      console.log('📎 [EMAIL] Sending confirmation email with attachments:', attachments.length);
+      return this.sendEmailWithAttachment(to, subject, emailData.html, attachments, null, user);
+    }
 
     return this.sendEmail(to, subject, emailData.html, null, user);
   }
