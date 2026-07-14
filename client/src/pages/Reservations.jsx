@@ -726,9 +726,30 @@ function Reservations() {
   }
 
   // Dialog handlers
+  // Signature of the pricing-relevant inputs (car, dates, services) so the
+  // edit-mode recalculation can tell "dialog just opened" apart from "admin
+  // actually changed something" — the stored (agreed) price must survive
+  // opening the dialog and editing unrelated fields.
+  const pricingBaselineRef = React.useRef(null)
+  const pricingSignature = (carId, startDate, endDate, services) => {
+    const time = (d) => (d ? new Date(d).getTime() : '')
+    const servicesSig = (services || []).map(s => [
+      s.service?._id || s.service || s._id || s.name || '',
+      s.quantity || 1
+    ])
+    return `${carId || ''}|${time(startDate)}|${time(endDate)}|${JSON.stringify(servicesSig)}`
+  }
+
   const handleOpenDialog = (mode, reservation = null) => {
     setDialogMode(mode)
     setSelectedReservation(reservation)
+    pricingBaselineRef.current = (mode === 'edit' && reservation)
+      ? {
+          sig: pricingSignature(reservation.car?._id, reservation.startDate, reservation.endDate, reservation.selectedServices),
+          pricing: reservation.pricing || {},
+          servicesTotal: reservation.servicesTotal || 0
+        }
+      : null
     
     // Debug: Log reservation data (can be removed in production)
     if (reservation && process.env.NODE_ENV === 'development') {
@@ -799,6 +820,7 @@ function Reservations() {
     setSelectedReservation(null)
     setFormData(initialFormState)
     setFormErrors({})
+    pricingBaselineRef.current = null
   }
 
   // Customer creation handlers
@@ -1265,7 +1287,8 @@ function Reservations() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   // Deep-link: when arriving via /reservations?id=<reservationId> (e.g. from the
-  // admin notification email), auto-open that reservation in view mode once.
+  // admin notification email), auto-open that reservation once — in edit mode
+  // when &edit=1 is present, otherwise in view mode.
   const deepLinkOpenedRef = React.useRef(false)
   React.useEffect(() => {
     const wantedId = searchParams.get('id')
@@ -1274,10 +1297,11 @@ function Reservations() {
     const match = reservations.find(r => r._id === wantedId)
     if (match) {
       deepLinkOpenedRef.current = true
-      handleOpenDialog('view', match)
+      handleOpenDialog(searchParams.get('edit') === '1' ? 'edit' : 'view', match)
       // Clean the URL so refreshes don't keep re-opening
       const next = new URLSearchParams(searchParams)
       next.delete('id')
+      next.delete('edit')
       setSearchParams(next, { replace: true })
     }
   }, [searchParams, reservations])
@@ -1409,9 +1433,22 @@ function Reservations() {
     fetchServices()
   }, [isNitraCarUser, dialogMode, openDialog])
 
-  // Recalculate price when car or dates change in edit mode for NitraCar
+  // Recalculate price when car or dates change in edit mode for NitraCar.
+  // Skipped while the inputs still match the reservation as it was opened —
+  // the stored (agreed) pricing stays authoritative until the admin actually
+  // changes the car, dates, or services.
   React.useEffect(() => {
     if (isNitraCarUser && dialogMode === 'edit' && formData.car?._id && formData.startDate && formData.endDate) {
+      const baseline = pricingBaselineRef.current
+      const currentSig = pricingSignature(formData.car._id, formData.startDate, formData.endDate, formData.selectedServices)
+      if (baseline && currentSig === baseline.sig) {
+        // Nothing pricing-relevant changed (or the admin reverted their
+        // changes) — make sure the stored pricing is what's shown/saved.
+        if (formData.pricing !== baseline.pricing) {
+          setFormData(prev => ({ ...prev, pricing: baseline.pricing, servicesTotal: baseline.servicesTotal }))
+        }
+        return
+      }
       const days = Math.ceil((formData.endDate - formData.startDate) / (1000 * 60 * 60 * 24))
       if (days > 0) {
         // Calculate base rental price using car's rate calculation

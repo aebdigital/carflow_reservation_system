@@ -146,11 +146,17 @@ async function sendAdminNotificationEmail(reservation, car, customer, user = nul
     // Prepare email data
     const emailData = prepareReservationEmailData(reservation, car, customer);
 
+    // Inline car/customer onto a plain copy (see sendReservationEmails) so the
+    // renderer can read deposit/mileageLimits even from unpopulated reservations
+    const enrichedReservation = (reservation?.toObject ? reservation.toObject() : { ...reservation });
+    if (car && typeof car === 'object') enrichedReservation.car = car;
+    if (customer && typeof customer === 'object') enrichedReservation.customer = customer;
+
     // Get admin email based on tenant
     const adminEmail = getAdminEmailForTenant(user);
     console.log('📧 [EMAIL] Admin email for tenant:', adminEmail, '(User:', user?.email || 'No user context', ')');
 
-    const result = await emailService.sendAdminReservationNotification(adminEmail, emailData, user, reservation);
+    const result = await emailService.sendAdminReservationNotification(adminEmail, emailData, user, enrichedReservation);
 
     console.log('✅ [EMAIL] Admin notification sent successfully to:', adminEmail);
     return { success: true, result };
@@ -179,7 +185,15 @@ async function sendReservationEmails(reservation, car, customer, user = null) {
 
     // Prepare email data
     const emailData = prepareReservationEmailData(reservation, car, customer);
-    
+
+    // Inline car/customer onto a plain copy so the email renderers can read
+    // deposit, mileageLimits, registration, etc. — callers often pass a
+    // reservation whose car/customer are unpopulated ObjectIds while the full
+    // docs arrive as separate arguments.
+    const enrichedReservation = (reservation?.toObject ? reservation.toObject() : { ...reservation });
+    if (car && typeof car === 'object') enrichedReservation.car = car;
+    if (customer && typeof customer === 'object') enrichedReservation.customer = customer;
+
     const results = [];
 
     // Send email to admin
@@ -187,7 +201,7 @@ async function sendReservationEmails(reservation, car, customer, user = null) {
       const adminEmail = getAdminEmailForTenant(user);
       console.log('📧 [EMAIL] Sending admin notification to:', adminEmail);
       console.log('📧 [EMAIL] Admin email user context:', user ? { email: user.email, tenantId: user.tenantId } : 'No user context');
-      const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData, user, reservation);
+      const adminResult = await emailService.sendAdminReservationNotification(adminEmail, emailData, user, enrichedReservation);
       results.push({ type: 'admin', success: true, result: adminResult });
       console.log('✅ [EMAIL] Admin notification sent successfully to:', adminEmail);
     } catch (adminError) {
@@ -204,7 +218,7 @@ async function sendReservationEmails(reservation, car, customer, user = null) {
         console.log('📧 [EMAIL] Sending customer confirmation to:', customer.email);
         console.log('📧 [EMAIL] Customer email user context:', user ? { email: user.email, tenantId: user.tenantId } : 'No user context');
 
-        const customerResult = await emailService.sendCustomerReservationConfirmation(customer.email, emailData, user, reservation);
+        const customerResult = await emailService.sendCustomerReservationConfirmation(customer.email, emailData, user, enrichedReservation);
         results.push({ type: 'customer_email', success: true, result: customerResult });
         console.log('✅ [EMAIL] Customer confirmation sent successfully to:', customer.email);
       } catch (customerError) {

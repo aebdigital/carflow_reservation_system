@@ -419,17 +419,28 @@ const getCarAvailabilityByUser = asyncHandler(async (req, res, next) => {
     availability.isAvailableForDates = overlappingReservations.length === 0 && car.status === 'active';
     availability.conflictingReservations = overlappingReservations.length;
 
-    // Generate array of all unavailable dates within the requested range
+    // Generate array of all unavailable dates within the requested range.
+    // The return day is NOT blocked: a rental ending e.g. at 10:00 frees the
+    // car that same morning, so the day must stay selectable for a
+    // back-to-back pickup. The exact-time overlap check at reservation
+    // creation still rejects true time conflicts on that day.
     const unavailableDates = [];
     overlappingReservations.forEach(reservation => {
       const reservationStart = new Date(reservation.startDate);
       const reservationEnd = new Date(reservation.endDate);
 
-      // Generate all dates in this reservation range
       const currentDate = new Date(reservationStart);
       currentDate.setHours(0, 0, 0, 0);
+      const returnDayStart = new Date(reservationEnd);
+      returnDayStart.setHours(0, 0, 0, 0);
 
-      while (currentDate <= reservationEnd) {
+      // Same-day rental: still block the pickup day itself
+      if (currentDate.getTime() === returnDayStart.getTime()
+          && currentDate >= start && currentDate <= end) {
+        unavailableDates.push(currentDate.toISOString().split('T')[0]);
+      }
+
+      while (currentDate < returnDayStart) {
         // Only include dates within the requested range
         if (currentDate >= start && currentDate <= end) {
           unavailableDates.push(currentDate.toISOString().split('T')[0]); // YYYY-MM-DD format
@@ -3857,14 +3868,29 @@ const getCarCalendarByUser = asyncHandler(async (req, res, next) => {
         'Unknown Customer'
     });
     
-    // Generate daily entries for calendar
-    for (let d = new Date(reservationStart); d <= reservationEnd; d.setDate(d.getDate() + 1)) {
+    // Generate daily entries for calendar. The return day is not marked as
+    // booked (car is free again from the return time), except for same-day
+    // rentals where the pickup day itself stays marked.
+    const returnDayStart = new Date(reservationEnd);
+    returnDayStart.setHours(0, 0, 0, 0);
+    const firstDay = new Date(reservationStart);
+    firstDay.setHours(0, 0, 0, 0);
+    if (firstDay.getTime() === returnDayStart.getTime()) {
+      bookedDates.push({
+        date: firstDay.toISOString().split('T')[0],
+        reservationNumber: reservation.reservationNumber,
+        status: reservation.status,
+        isStartDate: true,
+        isEndDate: true
+      });
+    }
+    for (let d = new Date(firstDay); d < returnDayStart; d.setDate(d.getDate() + 1)) {
       bookedDates.push({
         date: new Date(d).toISOString().split('T')[0],
         reservationNumber: reservation.reservationNumber,
         status: reservation.status,
-        isStartDate: d.getTime() === reservation.startDate.getTime(),
-        isEndDate: d.getTime() === reservation.endDate.getTime()
+        isStartDate: d.getTime() === firstDay.getTime(),
+        isEndDate: false
       });
     }
   });
@@ -4052,19 +4078,34 @@ const getPublicCarCalendar = asyncHandler(async (req, res, next) => {
     ]
   }).select('startDate endDate status reservationNumber');
 
-  // Create calendar data
+  // Create calendar data. The return day is not marked as booked (car is
+  // free again from the return time), except for same-day rentals where the
+  // pickup day itself stays marked.
   const bookedDates = [];
   reservations.forEach(reservation => {
     const reservationStart = new Date(Math.max(reservation.startDate, start));
     const reservationEnd = new Date(Math.min(reservation.endDate, end));
-    
-    for (let d = new Date(reservationStart); d <= reservationEnd; d.setDate(d.getDate() + 1)) {
+
+    const returnDayStart = new Date(reservationEnd);
+    returnDayStart.setHours(0, 0, 0, 0);
+    const firstDay = new Date(reservationStart);
+    firstDay.setHours(0, 0, 0, 0);
+    if (firstDay.getTime() === returnDayStart.getTime()) {
+      bookedDates.push({
+        date: firstDay.toISOString().split('T')[0],
+        reservationNumber: reservation.reservationNumber,
+        status: reservation.status,
+        isStartDate: true,
+        isEndDate: true
+      });
+    }
+    for (let d = new Date(firstDay); d < returnDayStart; d.setDate(d.getDate() + 1)) {
       bookedDates.push({
         date: new Date(d).toISOString().split('T')[0],
         reservationNumber: reservation.reservationNumber,
         status: reservation.status,
-        isStartDate: d.getTime() === reservation.startDate.getTime(),
-        isEndDate: d.getTime() === reservation.endDate.getTime()
+        isStartDate: d.getTime() === firstDay.getTime(),
+        isEndDate: false
       });
     }
   });

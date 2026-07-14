@@ -2313,13 +2313,26 @@ const getCarCalendar = asyncHandler(async (req, res, next) => {
     ]
   }).select('startDate endDate status reservationNumber');
 
-  // Create calendar data
+  // Create calendar data. The return day is not marked as booked (car is
+  // free again from the return time), except for same-day rentals where the
+  // pickup day itself stays marked.
   const bookedDates = [];
   reservations.forEach(reservation => {
     const reservationStart = new Date(Math.max(reservation.startDate, start));
     const reservationEnd = new Date(Math.min(reservation.endDate, end));
-    
-    for (let d = new Date(reservationStart); d <= reservationEnd; d.setDate(d.getDate() + 1)) {
+
+    const returnDayStart = new Date(reservationEnd);
+    returnDayStart.setHours(0, 0, 0, 0);
+    const firstDay = new Date(reservationStart);
+    firstDay.setHours(0, 0, 0, 0);
+    if (firstDay.getTime() === returnDayStart.getTime()) {
+      bookedDates.push({
+        date: firstDay.toISOString().split('T')[0],
+        reservationNumber: reservation.reservationNumber,
+        status: reservation.status
+      });
+    }
+    for (let d = new Date(firstDay); d < returnDayStart; d.setDate(d.getDate() + 1)) {
       bookedDates.push({
         date: new Date(d).toISOString().split('T')[0],
         reservationNumber: reservation.reservationNumber,

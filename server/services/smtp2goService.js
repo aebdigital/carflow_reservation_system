@@ -639,8 +639,10 @@ class SMTP2GOService {
     ${reservationMongoId ? (() => {
       const adminBase = (process.env.ADMIN_PANEL_URL || 'https://admindemo.carflow.sk').replace(/\/+$/, '');
       const link = `${adminBase}/reservations?id=${escape(reservationMongoId)}`;
+      const editLink = `${link}&edit=1`;
       return `<div style="margin:24px 0 0;text-align:center;">
         <a href="${link}" target="_blank" style="display:inline-block;padding:12px 24px;background:#22D3EE;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;">Otvoriť rezerváciu v admin systéme</a>
+        <a href="${editLink}" target="_blank" style="display:inline-block;padding:12px 24px;background:#fff;color:#22D3EE;border:2px solid #22D3EE;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;margin-left:8px;">✏️ Upraviť rezerváciu</a>
       </div>`;
     })() : ''}
 
@@ -665,6 +667,9 @@ class SMTP2GOService {
       notes ? `Poznámky: ${notes}` : null,
       reservationMongoId
         ? `Otvoriť v admin systéme: ${(process.env.ADMIN_PANEL_URL || 'https://admindemo.carflow.sk').replace(/\/+$/, '')}/reservations?id=${reservationMongoId}`
+        : null,
+      reservationMongoId
+        ? `Upraviť rezerváciu: ${(process.env.ADMIN_PANEL_URL || 'https://admindemo.carflow.sk').replace(/\/+$/, '')}/reservations?id=${reservationMongoId}&edit=1`
         : null,
       isNitraCar && reservationMongoId ? `Reservation ID: ${reservationMongoId}` : null
     ].filter(Boolean).join('\n');
