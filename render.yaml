@@ -2,7 +2,7 @@ services:
   - type: web
     name: carflow-reservation-system
     env: node
-    plan: free
+    plan: starter
     buildCommand: cd server && npm install
     startCommand: cd server && npm start
     envVars:
