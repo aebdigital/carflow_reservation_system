@@ -548,13 +548,7 @@ class SMTP2GOService {
     //      rentalRules.dailyKmLimit default — NitraCar is never "unlimited")
     //   5. otherwise unlimited
     const NITRACAR_DEFAULT_DAILY_KM = 200;
-    const lerentDailyKm = (days) => {
-      if (days <= 3) return 250;
-      if (days <= 10) return 210;
-      if (days <= 20) return 180;
-      if (days <= 29) return 150;
-      return 125;
-    };
+    const { lerentDailyKm } = require('../utils/kmPolicy');
     const carDailyKm = rawReservation?.car?.mileageLimits?.dailyLimit;
     const reservationKmLimit = rawReservation?.terms?.mileageLimit;
     let baseKmPerDay = null;

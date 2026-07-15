@@ -5715,7 +5715,54 @@ const getBrandsCatalog = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Get allowed-km policy for a rental duration (per-day + total).
+//          LeRent uses duration tiers (single source of truth in
+//          utils/kmPolicy); other tenants fall back to the car's own
+//          mileageLimits.dailyLimit, or unlimited.
+// @route   GET /api/public/users/:email/km-allowance?days=N[&carId=...]
+// @access  Public
+const getKmAllowance = asyncHandler(async (req, res, next) => {
+  const { email } = req.params;
+  const days = Math.max(1, parseInt(req.query.days, 10) || 1);
+  const { LERENT_KM_TIERS, lerentDailyKm } = require('../utils/kmPolicy');
+
+  if (email.toLowerCase() === 'lerent@lerent.sk') {
+    const kmPerDay = lerentDailyKm(days);
+    return res.status(200).json({
+      success: true,
+      data: {
+        policy: 'tiered',
+        days,
+        kmPerDay,
+        totalKm: kmPerDay * days,
+        tiers: LERENT_KM_TIERS
+      }
+    });
+  }
+
+  // Other tenants: the car's own daily limit when a carId is provided
+  let kmPerDay = null;
+  if (req.query.carId) {
+    const tenantId = await getTenantByUserEmail(email);
+    const car = await Car.findOne({ _id: req.query.carId, tenantId }).select('mileageLimits');
+    const daily = car?.mileageLimits?.dailyLimit;
+    kmPerDay = (typeof daily === 'number' && daily > 0) ? daily : null;
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      policy: kmPerDay ? 'per_car' : 'unlimited',
+      days,
+      kmPerDay,
+      totalKm: kmPerDay ? kmPerDay * days : null,
+      tiers: null
+    }
+  });
+});
+
 module.exports = {
+  getKmAllowance,
   createPublicReservation,
   getCarsByUser,
   getCarByUser,

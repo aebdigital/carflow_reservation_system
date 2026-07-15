@@ -25,6 +25,7 @@ const {
   getPublicCarFilterOptions,
   getCarCalendarByUser,
   getReservedDatesByUser,
+  getKmAllowance,
   getPublicCarCalendar,
   getReservationQR,
   getReservationQRByUser,
@@ -101,6 +102,7 @@ router.get('/users/:email/brands', getBrandsWithLogosByUser); // Get all car bra
 router.get('/users/:email/cars/brands', getCarBrandsByUser); // Get all available car brands
 router.get('/users/:email/cars/search', searchCarsByUser); // Advanced car search with filters
 router.get('/users/:email/cars/reserved-dates', getReservedDatesByUser); // Get reserved dates for multiple cars
+router.get('/users/:email/km-allowance', getKmAllowance); // Allowed km for a rental duration (LeRent: tiered)
 router.get('/users/:email/cars/by-brand/:brand', getCarsByBrandByUser); // Get cars by specific brand
 router.get('/users/:email/cars/models/:brand', getCarModelsByBrandByUser); // Get models for specific brand
 router.get('/users/:email/cars/by-equipment/:equipmentName', getCarsByEquipmentByUser); // Find cars with specific equipment
