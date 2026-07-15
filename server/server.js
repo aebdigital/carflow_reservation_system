@@ -45,23 +45,6 @@ app.use(helmet());
 // Trust proxy - required for Render deployment
 app.set('trust proxy', 1);
 
-// Rate limiting (more lenient for public endpoints)
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200, // increased for public access
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use('/api/', limiter);
-
-// More permissive rate limiting for public endpoints
-const publicLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // higher limit for public browsing
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
 // CORS configuration - more permissive for public access
 // Updated: Allow localhost:3007 for LeRent development
 const allowedOrigins = [
@@ -156,6 +139,40 @@ app.use((req, res, next) => {
 
 // Logging middleware
 app.use(morgan('combined'));
+
+// Rate limiting — mounted AFTER the CORS middleware and morgan, deliberately:
+//  - a 429 sent before cors() carries no Access-Control-Allow-Origin header,
+//    which browsers surface as an opaque CORS/"Failed to fetch" error instead
+//    of a 429 the frontends can recognise (and it made rate-limited outages
+//    look like total API failures);
+//  - a 429 sent before morgan never appeared in access logs, so rate-limit
+//    incidents were invisible. The handler below also logs each block.
+// Preflight OPTIONS requests are never counted or blocked.
+const rateLimitHandler = (req, res, next, options) => {
+  console.warn(`⛔ [RATE LIMIT] ${req.ip} exceeded ${options.max}/${Math.round(options.windowMs / 60000)}min — ${req.method} ${req.originalUrl}`);
+  res.status(429).json({ success: false, message: 'Príliš veľa požiadaviek — skúste to o chvíľu znova.' });
+};
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // admin panel is chatty (RTK Query refetches) and offices share one IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+  // Public routes have their own limiter — don't double-count them here
+  // (previously both limiters applied to /api/public, capping websites at 200)
+  skip: (req) => req.method === 'OPTIONS' || req.originalUrl.startsWith('/api/public')
+});
+app.use('/api/', limiter);
+
+const publicLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 2000, // tenant websites fire ~40 availability calls per page view
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+  skip: (req) => req.method === 'OPTIONS'
+});
 
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
