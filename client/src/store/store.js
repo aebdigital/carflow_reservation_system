@@ -1,9 +1,9 @@
 import { configureStore } from '@reduxjs/toolkit'
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
+import { createApi, fetchBaseQuery, retry } from '@reduxjs/toolkit/query/react'
 import authSlice, { clearStateOnLogout } from './authSlice'
 
 // Base query with authentication - Fixed API URL concatenation
-const baseQuery = fetchBaseQuery({
+const rawBaseQuery = fetchBaseQuery({
   baseUrl: (import.meta.env.VITE_API_URL || 'https://carflow-reservation-system.onrender.com/api').replace(/\/$/, ''),
   prepareHeaders: (headers, { getState }) => {
     const token = getState().auth.token
@@ -11,6 +11,22 @@ const baseQuery = fetchBaseQuery({
       headers.set('authorization', `Bearer ${token}`)
     }
     return headers
+  },
+})
+
+// Silently retry transient network failures — a connection dropped
+// mid-download (FETCH_ERROR) or a truncated response (PARSING_ERROR),
+// as caused by flaky networks or antivirus HTTPS inspection on client
+// machines. Only idempotent GET reads are retried; mutations never are
+// (re-POSTing a reservation would create duplicates). HTTP error
+// statuses (401, 500, ...) are not retried either — those are real
+// answers from the server, not transport failures.
+const TRANSIENT_ERRORS = ['FETCH_ERROR', 'PARSING_ERROR', 'TIMEOUT_ERROR']
+const baseQuery = retry(rawBaseQuery, {
+  retryCondition: (error, args, { attempt }) => {
+    if (attempt > 3) return false
+    const method = (typeof args === 'string' ? 'GET' : (args?.method || 'GET')).toUpperCase()
+    return method === 'GET' && TRANSIENT_ERRORS.includes(error?.status)
   },
 })
 
