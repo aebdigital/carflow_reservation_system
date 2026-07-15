@@ -44,9 +44,11 @@ const getReservations = asyncHandler(async (req, res, next) => {
       if (field === 'customer') {
         query = query.populate('customer', 'firstName lastName email phone licenseNumber');
       } else if (field === 'car') {
-        query = query.populate('car', 'brand model year registrationNumber category pricing mileageLimits dailyRate images status');
+        // No `images`: car photo galleries are the heaviest field and nothing
+        // in the admin reads them off a reservation (Cars page has its own query)
+        query = query.populate('car', 'brand model year registrationNumber category pricing mileageLimits dailyRate status');
       } else if (field === 'payment') {
-        query = query.populate('payment');
+        query = query.populate('payment', 'status amount paymentMethod');
       } else if (field === 'selectedServices.service') {
         query = query.populate('selectedServices.service', 'name category pricing');
       } else if (field === 'selectedInsurance.insurance') {
@@ -56,9 +58,9 @@ const getReservations = asyncHandler(async (req, res, next) => {
       }
     });
   } else {
-    // Default population
+    // Default population (no car images — heavy and unused in list consumers)
     query = query.populate('customer', 'firstName lastName email phone')
-                 .populate('car', 'brand model year registrationNumber images')
+                 .populate('car', 'brand model year registrationNumber')
                  .populate('payment', 'status amount paymentMethod')
                  .populate('selectedServices.service', 'name category pricing')
                  .populate('selectedServices._id', 'name category pricing')
