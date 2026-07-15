@@ -3,7 +3,8 @@ const router = express.Router();
 const {
   getCarsCount,
   getRentalRevenue,
-  getUniqueCustomersCount
+  getUniqueCustomersCount,
+  getReservationsCount
 } = require('../controllers/lerentStatsController');
 
 // @route   GET /api/lerent-stats/cars-count
@@ -20,5 +21,10 @@ router.get('/rental-revenue', getRentalRevenue);
 // @desc    Get number of unique customers for LeRent
 // @access  Public
 router.get('/unique-customers', getUniqueCustomersCount);
+
+// @route   GET /api/lerent-stats/reservations-count
+// @desc    Get total number of reservations for LeRent (single request)
+// @access  Public
+router.get('/reservations-count', getReservationsCount);
 
 module.exports = router;

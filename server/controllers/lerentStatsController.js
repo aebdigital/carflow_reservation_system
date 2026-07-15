@@ -95,8 +95,29 @@ const getUniqueCustomersCount = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Get total number of reservations for LeRent (one request instead
+//          of the website counting per car)
+// @route   GET /api/lerent-stats/reservations-count
+// @access  Public
+const getReservationsCount = asyncHandler(async (req, res, next) => {
+  const tenantId = await getLerentTenantId();
+
+  const count = await Reservation.countDocuments({
+    tenantId,
+    status: { $nin: ['cancelled', 'no-show'] }
+  });
+
+  res.status(200).json({
+    success: true,
+    data: {
+      reservationsCount: count
+    }
+  });
+});
+
 module.exports = {
   getCarsCount,
   getRentalRevenue,
-  getUniqueCustomersCount
+  getUniqueCustomersCount,
+  getReservationsCount
 };

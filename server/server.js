@@ -105,7 +105,10 @@ app.use(cors({
   ],
   exposedHeaders: ['Content-Range', 'X-Content-Range'],
   preflightContinue: false,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  // Let browsers cache preflight results for 24h so repeat API calls
+  // don't pay (or count) an OPTIONS round-trip each time
+  maxAge: 86400
 }));
 
 // Additional debugging for CORS (but no conflicting headers)
