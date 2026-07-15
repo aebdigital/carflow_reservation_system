@@ -322,11 +322,28 @@ function Reservations() {
   const [formErrors, setFormErrors] = useState({})
 
   // API hooks
-  const { 
-    data: reservationsData, 
-    isLoading: reservationsLoading, 
-    error: reservationsError 
+  const {
+    data: reservationsData,
+    isLoading: reservationsLoading,
+    error: reservationsError,
+    refetch: refetchReservations
   } = useGetReservationsQuery({ populate: 'customer,car,payment,selectedServices.service,selectedServices._id,selectedAdditionalInsurance.insuranceId,selectedExtendedInsurance.insuranceId,createdBy,lastModifiedBy,checkIn.staffMember,checkOut.staffMember' })
+
+  // Human-readable description of an RTK Query error. FetchBaseQueryError
+  // (network/parse failures) has no .message, which used to render as an
+  // empty "Error loading reservations: " — spell out what actually failed
+  // so a user report identifies the cause (FETCH_ERROR = connection died,
+  // PARSING_ERROR = truncated/mangled response, number = HTTP status).
+  const describeQueryError = (err) => {
+    if (!err) return ''
+    if (err.message) return err.message
+    const parts = []
+    if (err.status) parts.push(String(err.status))
+    if (err.originalStatus) parts.push(`HTTP ${err.originalStatus}`)
+    if (typeof err.error === 'string') parts.push(err.error)
+    if (err.data?.message) parts.push(err.data.message)
+    return parts.join(' — ') || 'neznáma chyba'
+  }
 
   const { 
     data: carsData, 
@@ -1666,8 +1683,16 @@ function Reservations() {
               <CircularProgress />
             </Box>
           ) : reservationsError ? (
-            <Alert severity="error" sx={{ m: 2 }}>
-              Error loading reservations: {reservationsError.message}
+            <Alert
+              severity="error"
+              sx={{ m: 2 }}
+              action={
+                <Button color="inherit" size="small" onClick={() => refetchReservations()}>
+                  Skúsiť znova
+                </Button>
+              }
+            >
+              Chyba pri načítaní rezervácií: {describeQueryError(reservationsError)}
             </Alert>
           ) : (
             <DualScrollbarTableContainer>
@@ -2087,8 +2112,16 @@ function Reservations() {
               <CircularProgress />
             </Box>
           ) : reservationsError ? (
-            <Alert severity="error" sx={{ m: 2 }}>
-              Error loading reservations: {reservationsError.message}
+            <Alert
+              severity="error"
+              sx={{ m: 2 }}
+              action={
+                <Button color="inherit" size="small" onClick={() => refetchReservations()}>
+                  Skúsiť znova
+                </Button>
+              }
+            >
+              Chyba pri načítaní rezervácií: {describeQueryError(reservationsError)}
             </Alert>
           ) : (
             <DualScrollbarTableContainer>
@@ -2319,8 +2352,16 @@ function Reservations() {
               <CircularProgress />
             </Box>
           ) : reservationsError ? (
-            <Alert severity="error" sx={{ m: 2 }}>
-              Error loading reservations: {reservationsError.message}
+            <Alert
+              severity="error"
+              sx={{ m: 2 }}
+              action={
+                <Button color="inherit" size="small" onClick={() => refetchReservations()}>
+                  Skúsiť znova
+                </Button>
+              }
+            >
+              Chyba pri načítaní rezervácií: {describeQueryError(reservationsError)}
             </Alert>
           ) : (
             <DualScrollbarTableContainer>
@@ -2605,8 +2646,16 @@ function Reservations() {
               <CircularProgress />
             </Box>
           ) : reservationsError ? (
-            <Alert severity="error" sx={{ m: 2 }}>
-              Error loading reservations: {reservationsError.message}
+            <Alert
+              severity="error"
+              sx={{ m: 2 }}
+              action={
+                <Button color="inherit" size="small" onClick={() => refetchReservations()}>
+                  Skúsiť znova
+                </Button>
+              }
+            >
+              Chyba pri načítaní rezervácií: {describeQueryError(reservationsError)}
             </Alert>
           ) : (
             <DualScrollbarTableContainer>
