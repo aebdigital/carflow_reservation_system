@@ -2180,19 +2180,32 @@ const EnhancedCarForm = ({
             </Grid>
 
             <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Denný kilometrový limit"
-                type="number"
-                value={formData.mileageLimits?.dailyLimit === -1 ? '' : formData.mileageLimits?.dailyLimit || ''}
-                onChange={(e) => handleNestedChange('mileageLimits.dailyLimit', e.target.value === '' ? -1 : parseInt(e.target.value))}
-                disabled={dialogMode === 'view'}
-                placeholder="Neobmedzené"
-                helperText="-1 alebo prázdne = neobmedzené"
-                InputProps={{
-                  endAdornment: <InputAdornment position="end">km/deň</InputAdornment>,
-                }}
-              />
+              {isLeRent ? (
+                // LeRent: allowed km is tiered by rental length (utils/kmPolicy
+                // on the server) — the per-car daily limit is not used anywhere,
+                // so editing it here would only mislead
+                <TextField
+                  fullWidth
+                  label="Denný kilometrový limit"
+                  value="Automaticky podľa dĺžky prenájmu"
+                  disabled
+                  helperText="2–3 dni 250 · 4–10 dní 210 · 11–20 dní 180 · 21–29 dní 150 · 30+ dní 125 km/deň"
+                />
+              ) : (
+                <TextField
+                  fullWidth
+                  label="Denný kilometrový limit"
+                  type="number"
+                  value={formData.mileageLimits?.dailyLimit === -1 ? '' : formData.mileageLimits?.dailyLimit || ''}
+                  onChange={(e) => handleNestedChange('mileageLimits.dailyLimit', e.target.value === '' ? -1 : parseInt(e.target.value))}
+                  disabled={dialogMode === 'view'}
+                  placeholder="Neobmedzené"
+                  helperText="-1 alebo prázdne = neobmedzené"
+                  InputProps={{
+                    endAdornment: <InputAdornment position="end">km/deň</InputAdornment>,
+                  }}
+                />
+              )}
             </Grid>
 
             <Grid item xs={12} md={6}>
