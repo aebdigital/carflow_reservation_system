@@ -1362,7 +1362,17 @@ function Reservations() {
       if (!response.ok) {
         const errorText = await response.text()
         console.error('Server error:', errorText)
-        throw new Error(`Failed to download Slovak agreement: ${response.status}`)
+        // Surface the server's actual reason (e.g. "Zmluva pre túto rezerváciu
+        // nebola nájdená. Najprv vytvorte zmluvu.") instead of a bare status
+        // code — NitraCar's agreement download requires a Contract to exist
+        // first, and the raw "404" told the user nothing about why or what to do.
+        let serverMessage = ''
+        try {
+          serverMessage = JSON.parse(errorText)?.message || ''
+        } catch {
+          // Response wasn't JSON; fall through to the generic message below
+        }
+        throw new Error(serverMessage || `Nepodarilo sa stiahnuť zmluvu (chyba ${response.status})`)
       }
 
       // Get the blob from the response
